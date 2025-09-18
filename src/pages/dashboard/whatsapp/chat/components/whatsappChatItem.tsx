@@ -1,17 +1,41 @@
 import { Badge } from "@/components/ui/badge";
+import { WhatsappMessageContentType } from "@/enums/whatsappMessageContentType.enum";
 import { formatAcronym } from "@/utils/formatString";
-import type { FC } from "react";
+import type { FC, ReactNode } from "react";
+import { FiFile, FiImage, FiMic, FiUser, FiVideo } from "react-icons/fi";
+import type { IconType } from "react-icons/lib";
 
 type WhatsappChatItemProps = {
   isRead?: boolean;
   isSelected: boolean;
   name?: string;
   messageContent?: string;
+  messageContentType?: string;
   categories: WhatsappMessageCategory[];
   onClick?: () => void;
   usersInContact: User[];
   isIncomming: boolean;
 };
+
+const MessageContent = ({
+  children,
+  isIncomming,
+  icon: Icon,
+}: {
+  children: ReactNode;
+  isIncomming: boolean;
+  icon?: IconType;
+}) => (
+  <div className="grid items-center gap-1 grid-cols-[min-content_1fr]">
+    {Icon && <Icon size={14} />}
+    <p
+      data-incomming={isIncomming}
+      className="text-sm text-foreground/50 data-[incomming=true]:font-bold data-[incomming=true]:text-foreground/80 truncate col-start-2"
+    >
+      {children}
+    </p>
+  </div>
+);
 
 export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({
   isSelected,
@@ -19,6 +43,7 @@ export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({
   name,
   categories,
   messageContent,
+  messageContentType,
   onClick,
   usersInContact,
   isIncomming,
@@ -36,12 +61,36 @@ export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({
             <Badge key={category.id}>{category.name}</Badge>
           ))}
         </div>
-        <p
-          data-incomming={isIncomming}
-          className="text-sm text-foreground/50 data-[incomming=true]:font-bold data-[incomming=true]:text-foreground/80 truncate"
-        >
-          {messageContent}
-        </p>
+        {messageContentType === WhatsappMessageContentType.TEXT && (
+          <MessageContent isIncomming={isIncomming}>
+            {messageContent}
+          </MessageContent>
+        )}
+        {messageContentType === WhatsappMessageContentType.AUDIO && (
+          <MessageContent isIncomming={isIncomming} icon={FiMic}>
+            {messageContent}
+          </MessageContent>
+        )}
+        {messageContentType === WhatsappMessageContentType.CONTACTS && (
+          <MessageContent isIncomming={isIncomming} icon={FiUser}>
+            {messageContent}
+          </MessageContent>
+        )}
+        {messageContentType === WhatsappMessageContentType.DOCUMENT && (
+          <MessageContent isIncomming={isIncomming} icon={FiFile}>
+            {messageContent}
+          </MessageContent>
+        )}
+        {messageContentType === WhatsappMessageContentType.IMAGE && (
+          <MessageContent isIncomming={isIncomming} icon={FiImage}>
+            {messageContent}
+          </MessageContent>
+        )}
+        {messageContentType === WhatsappMessageContentType.VIDEO && (
+          <MessageContent isIncomming={isIncomming} icon={FiVideo}>
+            {messageContent}
+          </MessageContent>
+        )}
       </div>
 
       <div className="grid grid-rows-2 h-full">

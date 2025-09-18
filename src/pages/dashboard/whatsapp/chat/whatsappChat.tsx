@@ -169,6 +169,7 @@ export const WhatsappChat = () => {
                       name={contactMessage.name}
                       categories={contactMessage.categories}
                       messageContent={contactMessage.messageContent}
+                      messageContentType={contactMessage.messageContentType}
                       onClick={() => setContactSelected(contactMessage)}
                       key={contactMessage.id}
                       usersInContact={usersInContacts[contactMessage.id] || []}
@@ -200,6 +201,7 @@ export const WhatsappChat = () => {
                     name={contactMessage.name}
                     categories={contactMessage.categories}
                     messageContent={contactMessage.messageContent}
+                    messageContentType={contactMessage.messageContentType}
                     onClick={() => setContactSelected(contactMessage)}
                     key={contactMessage.id}
                     usersInContact={usersInContacts[contactMessage.id] || []}
