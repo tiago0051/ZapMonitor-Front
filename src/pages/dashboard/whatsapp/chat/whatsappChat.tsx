@@ -84,7 +84,7 @@ export const WhatsappChat = () => {
 
   function onScrollChat(event: React.UIEvent<HTMLDivElement, UIEvent>) {
     const scrollInTop =
-      event.currentTarget.scrollHeight - event.currentTarget.scrollTop <= 800;
+      event.currentTarget.scrollHeight - event.currentTarget.scrollTop <= 500;
 
     if (
       scrollInTop &&
@@ -155,11 +155,8 @@ export const WhatsappChat = () => {
       <Header title="WhatsApp Chat" />
       <div className="grid sm:grid-cols-4 grid-rows-[calc(100svh-128px)]">
         {(!isMobile || !hasContactSelected) && (
-          <div
-            className="border-r grid grid-rows-[min-content_min-content_auto] overflow-y-auto"
-            onScroll={onScrollChat}
-          >
-            <div className="space-y-2 mb-4 pr-4">
+          <div className="border-r grid grid-rows-[min-content_min-content_auto] h-full gap-4">
+            <div className="space-y-2 pr-4">
               <h2 className="mb-2">Filtros</h2>
               {
                 <DialogFilterCategory
@@ -172,8 +169,10 @@ export const WhatsappChat = () => {
                 onChange={(e) => setFilterText(e.currentTarget.value)}
               />
             </div>
-
-            <div>
+            <div
+              className="overflow-y-auto max-h-[calc(100vh-300px)]"
+              onScroll={onScrollChat}
+            >
               {contactMessagesInService.length > 0 && (
                 <div className="mb-8">
                   <h3 className="text-xl text-foreground/80">
