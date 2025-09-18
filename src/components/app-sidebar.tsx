@@ -48,11 +48,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton tooltip={"Início"}>
-              <div className="bg-slate-600 font-bold w-4 h-4 shrink-0 rounded-sm text-white justify-center flex items-center text-[6px]">
-                Z<span className="text-primary">M</span>
-              </div>
+              <p className="font-bold text-foreground text-[10px]">ZM</p>
               <Link to="/dashboard">
-                <p className="text-2xl font-bold text-white bg-slate-600 px-2 rounded-sm">
+                <p className="text-2xl font-bold text-white bg-foreground px-2 rounded-sm">
                   Zap<span className="text-primary">Monitor</span>
                 </p>
               </Link>

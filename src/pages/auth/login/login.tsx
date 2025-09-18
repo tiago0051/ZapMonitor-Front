@@ -8,11 +8,12 @@ export const Login = () => {
     <div className="grid min-h-svh lg:grid-cols-2">
       <div className="flex flex-col gap-4 p-6 md:p-10">
         <div className="flex justify-center gap-2 md:justify-start">
-          <a
-            href="https://zapmonitor.devsoftbr.com"
-            className="text-2xl font-bold text-white bg-slate-600 p-2 rounded-sm"
-          >
-            Zap<span className="text-primary">Monitor</span>
+          <a href="https://zapmonitor.devsoftbr.com">
+            <img
+              src="/assets/logo.svg"
+              alt="Logo ZapMonitor"
+              className="w-50"
+            />
           </a>
         </div>
         <div className="flex flex-1 items-center justify-center">
