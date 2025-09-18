@@ -9,14 +9,10 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
-  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useUserContext } from "@/context/UserContext/userContext";
-import { FiHome, FiLogOut, FiMail, FiSettings } from "react-icons/fi";
+import { FiLogOut, FiMail, FiSettings } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
 import { PanelLeftIcon } from "lucide-react";
 import { Link } from "react-router";
