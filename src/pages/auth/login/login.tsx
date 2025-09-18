@@ -10,7 +10,7 @@ export const Login = () => {
         <div className="flex justify-center gap-2 md:justify-start">
           <a
             href="https://zapmonitor.devsoftbr.com"
-            className="text-2xl font-bold text-white"
+            className="text-2xl font-bold text-white bg-slate-600 p-2 rounded-sm"
           >
             Zap<span className="text-primary">Monitor</span>
           </a>
