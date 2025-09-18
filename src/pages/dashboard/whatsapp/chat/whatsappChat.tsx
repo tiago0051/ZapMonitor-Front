@@ -1,4 +1,3 @@
-import { Header } from "@/components/ui/header";
 import { whatsappService } from "@/services/api/whatsappService";
 import {
   useInfiniteQuery,
@@ -151,66 +150,32 @@ export const WhatsappChat = () => {
   }, [user]);
 
   return (
-    <>
-      <Header title="WhatsApp Chat" />
-      <div className="grid sm:grid-cols-4 grid-rows-[calc(100svh-128px)]">
-        {(!isMobile || !hasContactSelected) && (
-          <div className="border-r grid grid-rows-[min-content_min-content_auto] h-full gap-4">
-            <div className="space-y-2 pr-4">
-              <h2 className="mb-2">Filtros</h2>
-              {
-                <DialogFilterCategory
-                  categories={filterCategories}
-                  onSelectCategories={setFilterCategories}
-                />
-              }
-              <Input
-                placeholder="Buscar contatos"
-                onChange={(e) => setFilterText(e.currentTarget.value)}
+    <div className="grid sm:grid-cols-4 grid-rows-[calc(100svh-16px)]">
+      {(!isMobile || !hasContactSelected) && (
+        <div className="border-r grid grid-rows-[min-content_min-content_auto] h-full gap-4">
+          <div className="space-y-2 pr-4">
+            <h2 className="mb-2">Filtros</h2>
+            {
+              <DialogFilterCategory
+                categories={filterCategories}
+                onSelectCategories={setFilterCategories}
               />
-            </div>
-            <div
-              className="overflow-y-auto max-h-[calc(100vh-300px)]"
-              onScroll={onScrollChat}
-            >
-              {contactMessagesInService.length > 0 && (
-                <div className="mb-8">
-                  <h3 className="text-xl text-foreground/80">
-                    Seus atendimentos
-                  </h3>
-                  {contactMessagesInService?.map((contactMessage) => (
-                    <WhatsappChatItem
-                      isSelected={contactSelected?.id === contactMessage.id}
-                      isRead={contactMessage.isRead}
-                      name={contactMessage.name}
-                      categories={contactMessage.categories}
-                      messageContent={contactMessage.messageContent}
-                      messageContentType={contactMessage.messageContentType}
-                      onClick={() => setContactSelected(contactMessage)}
-                      key={contactMessage.id}
-                      usersInContact={usersInContacts[contactMessage.id] || []}
-                      isIncomming={
-                        contactMessage.messageType ===
-                        WhatsappMessageType.INCOMING
-                      }
-                    />
-                  ))}
-                </div>
-              )}
-
-              <div className="flex items-center justify-between mb-2">
+            }
+            <Input
+              placeholder="Buscar contatos"
+              onChange={(e) => setFilterText(e.currentTarget.value)}
+            />
+          </div>
+          <div
+            className="overflow-y-auto max-h-[calc(100vh-162px)]"
+            onScroll={onScrollChat}
+          >
+            {contactMessagesInService.length > 0 && (
+              <div className="mb-8">
                 <h3 className="text-xl text-foreground/80">
-                  Todos os contatos
+                  Seus atendimentos
                 </h3>
-                {countUnreadMessages > 0 && (
-                  <div className="w-6 h-6 text-sm flex justify-center items-center rounded-full bg-primary text-primary-foreground self-start justify-self-end">
-                    {countUnreadMessages}
-                  </div>
-                )}
-              </div>
-
-              {listPagesContactMessages?.pages.map((page) =>
-                page.items.map((contactMessage) => (
+                {contactMessagesInService?.map((contactMessage) => (
                   <WhatsappChatItem
                     isSelected={contactSelected?.id === contactMessage.id}
                     isRead={contactMessage.isRead}
@@ -226,40 +191,68 @@ export const WhatsappChat = () => {
                       WhatsappMessageType.INCOMING
                     }
                   />
-                ))
-              )}
+                ))}
+              </div>
+            )}
 
-              {findAllContactMessagesQuery.isFetching && (
-                <li className="grid gap-2 p-4 border-b">
-                  <div className="flex gap-2">
-                    <Skeleton className="h-4 w-4 rounded-full" />
-                    <Skeleton className="h-4 w-full" />
-                  </div>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xl text-foreground/80">Todos os contatos</h3>
+              {countUnreadMessages > 0 && (
+                <div className="w-6 h-6 text-sm flex justify-center items-center rounded-full bg-primary text-primary-foreground self-start justify-self-end">
+                  {countUnreadMessages}
+                </div>
+              )}
+            </div>
+
+            {listPagesContactMessages?.pages.map((page) =>
+              page.items.map((contactMessage) => (
+                <WhatsappChatItem
+                  isSelected={contactSelected?.id === contactMessage.id}
+                  isRead={contactMessage.isRead}
+                  name={contactMessage.name}
+                  categories={contactMessage.categories}
+                  messageContent={contactMessage.messageContent}
+                  messageContentType={contactMessage.messageContentType}
+                  onClick={() => setContactSelected(contactMessage)}
+                  key={contactMessage.id}
+                  usersInContact={usersInContacts[contactMessage.id] || []}
+                  isIncomming={
+                    contactMessage.messageType === WhatsappMessageType.INCOMING
+                  }
+                />
+              ))
+            )}
+
+            {findAllContactMessagesQuery.isFetching && (
+              <li className="grid gap-2 p-4 border-b">
+                <div className="flex gap-2">
+                  <Skeleton className="h-4 w-4 rounded-full" />
                   <Skeleton className="h-4 w-full" />
-                </li>
-              )}
-            </div>
+                </div>
+                <Skeleton className="h-4 w-full" />
+              </li>
+            )}
           </div>
-        )}
+        </div>
+      )}
 
-        {!hasContactSelected && !isMobile && (
-          <div className="col-span-3 h-full flex items-center justify-center">
-            <div className="flex flex-col items-center gap-4">
-              <FaWhatsapp className="text-green-600" size={60} />
-              <h1 className="text-2xl text-green-600 font-bold text-center">
-                Seja bem-vindo ao WhatsApp, selecione um contato
-              </h1>
-            </div>
+      {!hasContactSelected && !isMobile && (
+        <div className="col-span-3 h-full flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <FaWhatsapp className="text-green-600" size={60} />
+            <h1 className="text-2xl text-green-600 font-bold text-center">
+              Seja bem-vindo ao WhatsApp, selecione um contato
+            </h1>
           </div>
-        )}
+        </div>
+      )}
 
-        {hasContactSelected && (
-          <WhatsappChatMessageList
-            contactMessage={contactSelected}
-            onBack={() => setContactSelected(null)}
-          />
-        )}
-      </div>
-    </>
+      {hasContactSelected && (
+        <WhatsappChatMessageList
+          contactMessage={contactSelected}
+          onBack={() => setContactSelected(null)}
+        />
+      )}
+    </div>
   );
 };
