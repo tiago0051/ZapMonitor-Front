@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { WhatsappChatMessageHeader } from "./components/whatsappChatMessageList/whatsappChatMessageHeader";
 import { requestErrorHandling } from "@/utils/request";
 import { WhatsappChatMessageListService } from "./components/whatsappChatMessageList/whatsappChatMessageListService/whatsappChatMessageListService";
+import { IsTopScrolled } from "@/utils/scroll";
 
 type WhatsappChatMessageListProps = {
   contactMessage: WhatsappContactMessage;
@@ -70,11 +71,10 @@ export const WhatsappChatMessageList = ({
   });
 
   function onScrollChat(event: React.UIEvent<HTMLDivElement, UIEvent>) {
-    const scrollInTop =
-      event.currentTarget.scrollTop + event.currentTarget.scrollHeight <= 700;
+    const isTopScrolled = IsTopScrolled(event.currentTarget);
 
     if (
-      scrollInTop &&
+      isTopScrolled &&
       findAllWhatsappMessagesByContact.hasNextPage &&
       !findAllWhatsappMessagesByContact.isFetching
     ) {

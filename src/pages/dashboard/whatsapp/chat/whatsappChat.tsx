@@ -17,6 +17,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
 import { useDebounceValue } from "usehooks-ts";
 import { globalContants } from "@/contants/globalContants";
+import { IsTopScrolled } from "@/utils/scroll";
 
 export const WhatsappChat = () => {
   const { user } = useUserContext();
@@ -82,11 +83,10 @@ export const WhatsappChat = () => {
   );
 
   function onScrollChat(event: React.UIEvent<HTMLDivElement, UIEvent>) {
-    const scrollInTop =
-      event.currentTarget.scrollHeight - event.currentTarget.scrollTop <= 500;
+    const isTopScrolled = IsTopScrolled(event.currentTarget);
 
     if (
-      scrollInTop &&
+      isTopScrolled &&
       findAllContactMessagesQuery.hasNextPage &&
       !findAllContactMessagesQuery.isFetching
     ) {
