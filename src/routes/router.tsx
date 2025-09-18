@@ -19,6 +19,8 @@ const PublicRouter: FC = () => {
   return (
     <Routes>
       <Route path="auth/*" element={<LoginRouter />} />
+
+      <Route path="*" element={<Navigate to="/auth/login" />} />
     </Routes>
   );
 };
