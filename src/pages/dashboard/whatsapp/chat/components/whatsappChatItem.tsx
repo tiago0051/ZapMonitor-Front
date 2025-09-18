@@ -10,6 +10,7 @@ type WhatsappChatItemProps = {
   categories: WhatsappMessageCategory[];
   onClick?: () => void;
   usersInContact: User[];
+  isIncomming: boolean;
 };
 
 export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({
@@ -20,11 +21,12 @@ export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({
   messageContent,
   onClick,
   usersInContact,
+  isIncomming,
 }) => {
   return (
     <div
       data-selected={isSelected}
-      className="py-2 pr-2 border-b cursor-pointer hover:bg-gray-100 relative data-[selected=true]:bg-primary/15 flex justify-between gap-4"
+      className="py-2 pr-2 border-b cursor-pointer bg-background hover:brightness-125 relative data-[selected=true]:bg-primary/15 flex justify-between gap-4"
       onClick={onClick}
     >
       <div className="grid">
@@ -34,7 +36,12 @@ export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({
             <Badge key={category.id}>{category.name}</Badge>
           ))}
         </div>
-        <p className="text-sm text-gray-600 truncate">{messageContent}</p>
+        <p
+          data-incomming={isIncomming}
+          className="text-sm text-foreground/50 data-[incomming=true]:font-bold data-[incomming=true]:text-foreground/80 truncate"
+        >
+          {messageContent}
+        </p>
       </div>
 
       <div className="grid grid-rows-2 h-full">

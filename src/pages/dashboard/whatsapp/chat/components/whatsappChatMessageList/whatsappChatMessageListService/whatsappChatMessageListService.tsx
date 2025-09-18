@@ -83,10 +83,10 @@ export const WhatsappChatMessageListService: FC<
                   <div
                     key={action.id}
                     data-type={action.type}
-                    className="p-2 border rounded data-[type='1']:bg-blue-50 data-[type='2']:bg-yellow-50 data-[type='3']:bg-green-50"
+                    className="p-2 border rounded data-[type='1']:bg-blue-950 data-[type='2']:bg-yellow-600 data-[type='3']:bg-green-800"
                   >
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-foreground/50">
                         {new Date(action.createdAt).toLocaleString()}
                       </span>
                     </div>

@@ -172,6 +172,10 @@ export const WhatsappChat = () => {
                       onClick={() => setContactSelected(contactMessage)}
                       key={contactMessage.id}
                       usersInContact={usersInContacts[contactMessage.id] || []}
+                      isIncomming={
+                        contactMessage.messageType ===
+                        WhatsappMessageType.INCOMING
+                      }
                     />
                   ))}
                 </div>
@@ -199,6 +203,10 @@ export const WhatsappChat = () => {
                     onClick={() => setContactSelected(contactMessage)}
                     key={contactMessage.id}
                     usersInContact={usersInContacts[contactMessage.id] || []}
+                    isIncomming={
+                      contactMessage.messageType ===
+                      WhatsappMessageType.INCOMING
+                    }
                   />
                 ))
               )}
