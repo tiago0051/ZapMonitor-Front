@@ -1,23 +1,14 @@
 import { whatsappService } from "@/services/api/whatsappService";
-import {
-  useInfiniteQuery,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { FaWhatsapp } from "react-icons/fa";
 import { WhatsappChatMessageList } from "./whatsappChatMessageList";
 import { useUserContext } from "@/context/UserContext/userContext";
 import { socket } from "@/services/socket/socket";
 import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
-import { WhatsappChatItem } from "./components/whatsappChatItem";
-import { Skeleton } from "@/components/ui/skeleton";
-import { DialogFilterCategory } from "./components/dialogSelectCategory/dialogFilterCategory";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Input } from "@/components/ui/input";
-import { useDebounceValue } from "usehooks-ts";
-import { globalContants } from "@/contants/globalContants";
-import { IsTopScrolled } from "@/utils/scroll";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { WhatsappContactOutServiceList } from "./whatsappContactOutServiceList";
 
 export const WhatsappChat = () => {
   const { user } = useUserContext();
@@ -32,37 +23,7 @@ export const WhatsappChat = () => {
     Record<string, User[]>
   >({});
 
-  const [filterCategories, setFilterCategories] = useState<
-    WhatsappMessageCategory[]
-  >([]);
-  const [filterText, setFilterText] = useDebounceValue(
-    "",
-    globalContants.DEBOUNCE_DELAY
-  );
-
   const queryClient = useQueryClient();
-
-  const findAllContactMessagesQuery = useInfiniteQuery({
-    queryKey: [
-      "chat:update",
-      "findAllContactMessages",
-      filterCategories,
-      filterText,
-    ],
-    queryFn: async ({ pageParam = 1 }) =>
-      await whatsappService.findAllContactMessagesByUser({
-        queries: {
-          page: pageParam,
-          take: 10,
-          categoryIds: filterCategories.map((cat) => cat.id),
-          text: filterText,
-        },
-      }),
-    getNextPageParam: (lastPage, allPages) =>
-      lastPage.canNextPage ? allPages.length + 1 : undefined,
-    initialPageParam: 1,
-  });
-  const listPagesContactMessages = findAllContactMessagesQuery.data;
 
   const findAllContactMessagesInServiceByUser = useQuery({
     queryKey: ["chat:update", "findAllContactMessagesInServiceByUser"],
@@ -81,18 +42,6 @@ export const WhatsappChat = () => {
     () => new Audio("/assets/whatsapp/chat/sounds/new-message.mp3"),
     []
   );
-
-  function onScrollChat(event: React.UIEvent<HTMLDivElement, UIEvent>) {
-    const isTopScrolled = IsTopScrolled(event.currentTarget);
-
-    if (
-      isTopScrolled &&
-      findAllContactMessagesQuery.hasNextPage &&
-      !findAllContactMessagesQuery.isFetching
-    ) {
-      findAllContactMessagesQuery.fetchNextPage();
-    }
-  }
 
   useEffect(() => {
     socket.on(
@@ -152,6 +101,78 @@ export const WhatsappChat = () => {
   return (
     <div className="grid sm:grid-cols-4 grid-rows-[calc(100svh-16px)]">
       {(!isMobile || !hasContactSelected) && (
+        <div className="border-r ">
+          <Tabs defaultValue="allContacts" className="w-full pr-4">
+            <TabsList className="w-full">
+              <TabsTrigger
+                value="allContacts"
+                className="w-full text-sm flex items-center gap-2 justify-center"
+              >
+                Todos
+                {countUnreadMessages > 0 && (
+                  <div className="w-4 h-4 text-sm flex justify-center items-center rounded-full bg-primary text-primary-foreground">
+                    {countUnreadMessages}
+                  </div>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="inService" className="w-full text-sm">
+                Em atendimento
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="allContacts">
+              <WhatsappContactOutServiceList
+                contactSelected={contactSelected}
+                setContactSelected={setContactSelected}
+                usersInContacts={usersInContacts}
+              />
+            </TabsContent>
+          </Tabs>
+          {/* <div
+            className="overflow-y-auto max-h-[calc(100vh-162px)]"
+            onScroll={onScrollChat}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xl text-foreground/80">Todos os contatos</h3>
+              {countUnreadMessages > 0 && (
+                <div className="w-6 h-6 text-sm flex justify-center items-center rounded-full bg-primary text-primary-foreground self-start justify-self-end">
+                  {countUnreadMessages}
+                </div>
+              )}
+            </div>
+
+            {listPagesContactMessages?.pages.map((page) =>
+              page.items.map((contactMessage) => (
+                <WhatsappChatItem
+                  isSelected={contactSelected?.id === contactMessage.id}
+                  isRead={contactMessage.isRead}
+                  name={contactMessage.name}
+                  categories={contactMessage.categories}
+                  messageContent={contactMessage.messageContent}
+                  messageContentType={contactMessage.messageContentType}
+                  onClick={() => setContactSelected(contactMessage)}
+                  key={contactMessage.id}
+                  usersInContact={usersInContacts[contactMessage.id] || []}
+                  isIncomming={
+                    contactMessage.messageType === WhatsappMessageType.INCOMING
+                  }
+                />
+              ))
+            )}
+
+            {findAllContactMessagesQuery.isFetching && (
+              <li className="grid gap-2 p-4 border-b">
+                <div className="flex gap-2">
+                  <Skeleton className="h-4 w-4 rounded-full" />
+                  <Skeleton className="h-4 w-full" />
+                </div>
+                <Skeleton className="h-4 w-full" />
+              </li>
+            )}
+          </div> */}
+        </div>
+      )}
+      {/* {(!isMobile || !hasContactSelected) && (
         <div className="border-r grid grid-rows-[min-content_min-content_auto] h-full gap-4">
           <div className="space-y-2 pr-4">
             <h2 className="mb-2">Filtros</h2>
@@ -234,7 +255,7 @@ export const WhatsappChat = () => {
             )}
           </div>
         </div>
-      )}
+      )} */}
 
       {!hasContactSelected && !isMobile && (
         <div className="col-span-3 h-full flex items-center justify-center">
