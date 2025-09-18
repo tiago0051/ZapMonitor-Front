@@ -55,6 +55,7 @@ type FindAllWhatsappContactMessagesRequestData = {
 
 type FindAllWhatsappContactMessagesRequestQuery = PaginateRequestQuery & {
   categoryIds: string[];
+  text: string;
 };
 
 type FindAllWhatsappMessagesByContactRequestData = {

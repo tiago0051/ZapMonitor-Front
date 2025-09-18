@@ -15,6 +15,9 @@ import { WhatsappChatItem } from "./components/whatsappChatItem";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DialogFilterCategory } from "./components/dialogSelectCategory/dialogFilterCategory";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Input } from "@/components/ui/input";
+import { useDebounceValue } from "usehooks-ts";
+import { globalContants } from "@/contants/globalContants";
 
 export const WhatsappChat = () => {
   const { user } = useUserContext();
@@ -32,17 +35,27 @@ export const WhatsappChat = () => {
   const [filterCategories, setFilterCategories] = useState<
     WhatsappMessageCategory[]
   >([]);
+  const [filterText, setFilterText] = useDebounceValue(
+    "",
+    globalContants.DEBOUNCE_DELAY
+  );
 
   const queryClient = useQueryClient();
 
   const findAllContactMessagesQuery = useInfiniteQuery({
-    queryKey: ["chat:update", "findAllContactMessages", filterCategories],
+    queryKey: [
+      "chat:update",
+      "findAllContactMessages",
+      filterCategories,
+      filterText,
+    ],
     queryFn: async ({ pageParam = 1 }) =>
       await whatsappService.findAllContactMessagesByUser({
         queries: {
           page: pageParam,
           take: 10,
           categoryIds: filterCategories.map((cat) => cat.id),
+          text: filterText,
         },
       }),
     getNextPageParam: (lastPage, allPages) =>
@@ -154,6 +167,10 @@ export const WhatsappChat = () => {
                   onSelectCategories={setFilterCategories}
                 />
               }
+              <Input
+                placeholder="Buscar contatos"
+                onChange={(e) => setFilterText(e.currentTarget.value)}
+              />
             </div>
 
             <div>
