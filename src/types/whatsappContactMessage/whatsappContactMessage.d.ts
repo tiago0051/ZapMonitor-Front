@@ -1,0 +1,12 @@
+type WhatsappContactMessage = {
+  id: string;
+  phoneNumber: string;
+  name: string;
+  messageContent: string;
+  messageContentType: string;
+  messageType: number;
+  isRead: boolean;
+  whatsappConfigurationId: string;
+  categories: WhatsappMessageCategory[];
+  clientId: string;
+};
