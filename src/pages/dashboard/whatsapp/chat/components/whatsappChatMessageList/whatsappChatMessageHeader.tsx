@@ -3,6 +3,7 @@ import { DialogLinkMessageCategory } from "./components/dialogLinkMessageCategor
 import { FiArrowLeft } from "react-icons/fi";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import parsePhoneNumberFromString from "libphonenumber-js";
 
 type WhatsappChatMessageHeaderProps = {
   contactMessage: WhatsappContactMessage;
@@ -16,6 +17,10 @@ export const WhatsappChatMessageHeader = ({
   className,
 }: WhatsappChatMessageHeaderProps) => {
   const isMobile = useIsMobile();
+
+  const parsedPhoneNumber = parsePhoneNumberFromString(
+    contactMessage.phoneNumber
+  );
 
   return (
     <div
@@ -37,7 +42,7 @@ export const WhatsappChatMessageHeader = ({
         )}
         <div>
           <p className="text-xl">{contactMessage.name}</p>
-          <p className="text-lg">{contactMessage.phoneNumber}</p>
+          <p className="text-lg">{parsedPhoneNumber?.formatNational()}</p>
         </div>
       </div>
 

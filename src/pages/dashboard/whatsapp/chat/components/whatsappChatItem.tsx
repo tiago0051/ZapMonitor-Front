@@ -1,7 +1,9 @@
 import { Badge } from "@/components/ui/badge";
 import { WhatsappMessageContentType } from "@/enums/whatsappMessageContentType.enum";
 import { formatAcronym } from "@/utils/formatString";
+import parsePhoneNumberFromString from "libphonenumber-js";
 import type { FC, ReactNode } from "react";
+import { FaRobot } from "react-icons/fa";
 import { FiFile, FiImage, FiMic, FiUser, FiVideo } from "react-icons/fi";
 import type { IconType } from "react-icons/lib";
 
@@ -9,6 +11,7 @@ type WhatsappChatItemProps = {
   isRead?: boolean;
   isSelected: boolean;
   name?: string;
+  phoneNumber: string;
   messageContent?: string;
   messageContentType?: string;
   categories: WhatsappMessageCategory[];
@@ -41,6 +44,7 @@ export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({
   isSelected,
   isRead,
   name,
+  phoneNumber,
   categories,
   messageContent,
   messageContentType,
@@ -48,6 +52,8 @@ export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({
   usersInContact,
   isIncomming,
 }) => {
+  const parsedPhoneNumber = parsePhoneNumberFromString(phoneNumber);
+
   return (
     <div
       data-selected={isSelected}
@@ -55,7 +61,9 @@ export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({
       onClick={onClick}
     >
       <div className="grid">
-        <h3 className="font-bold">{name}</h3>
+        <h3 className="font-bold">
+          {name || parsedPhoneNumber?.formatNational()}
+        </h3>
         <div className="flex gap-1 flex-wrap">
           {categories.map((category) => (
             <Badge key={category.id}>{category.name}</Badge>
@@ -88,6 +96,11 @@ export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({
         )}
         {messageContentType === WhatsappMessageContentType.VIDEO && (
           <MessageContent isIncomming={isIncomming} icon={FiVideo}>
+            {messageContent}
+          </MessageContent>
+        )}
+        {messageContentType === WhatsappMessageContentType.TEMPLATE && (
+          <MessageContent isIncomming={isIncomming} icon={FaRobot}>
             {messageContent}
           </MessageContent>
         )}

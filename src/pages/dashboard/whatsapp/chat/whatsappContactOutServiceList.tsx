@@ -86,6 +86,7 @@ export const WhatsappContactOutServiceList: FC<
               isSelected={contactSelected?.id === contactMessage.id}
               isRead={contactMessage.isRead}
               name={contactMessage.name}
+              phoneNumber={contactMessage.phoneNumber}
               categories={contactMessage.categories}
               messageContent={contactMessage.messageContent}
               messageContentType={contactMessage.messageContentType}
