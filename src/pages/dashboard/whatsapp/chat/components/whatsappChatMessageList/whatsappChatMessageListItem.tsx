@@ -81,6 +81,10 @@ export const WhatsappChatMessageListItem: FC<
       {message.contentType === WhatsappMessageContentType.CONTACTS && (
         <p className="whitespace-pre-wrap">{message.content}</p>
       )}
+
+      {message.contentType === WhatsappMessageContentType.TEMPLATE && (
+        <p className="whitespace-pre-wrap">{message.content}</p>
+      )}
       <span className="absolute text-xs top-2 right-2">
         {format(message.createdAt, "dd/MM/yyyy HH:mm")}
       </span>
