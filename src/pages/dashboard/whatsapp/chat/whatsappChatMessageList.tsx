@@ -13,15 +13,18 @@ import { WhatsappChatMessageHeader } from "./components/whatsappChatMessageList/
 import { requestErrorHandling } from "@/utils/request";
 import { WhatsappChatMessageListService } from "./components/whatsappChatMessageList/whatsappChatMessageListService/whatsappChatMessageListService";
 import { IsTopScrolled } from "@/utils/scroll";
+import { cn } from "@/lib/utils";
 
 type WhatsappChatMessageListProps = {
   contactMessage: WhatsappContactMessage;
   onBack: () => void;
+  className?: string;
 };
 
 export const WhatsappChatMessageList = ({
   contactMessage,
   onBack,
+  className,
 }: WhatsappChatMessageListProps) => {
   const { user } = useUserContext();
 
@@ -128,7 +131,9 @@ export const WhatsappChatMessageList = ({
   }, [user, contactMessage]);
 
   return (
-    <div className="grid grid-rows-[min-content_auto] grid-cols-4 col-span-3">
+    <div
+      className={cn(className, "grid grid-rows-[min-content_auto] grid-cols-4")}
+    >
       <WhatsappChatMessageHeader
         contactMessage={contactMessage}
         onBack={onBack}

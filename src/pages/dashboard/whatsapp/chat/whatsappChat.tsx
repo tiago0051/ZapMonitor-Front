@@ -92,27 +92,31 @@ export const WhatsappChat = () => {
   }, [user]);
 
   return (
-    <div className="grid sm:grid-cols-4 grid-rows-[calc(100svh-16px)]">
-      {(!isMobile || !hasContactSelected) && (
-        <div className="border-r ">
-          <Tabs defaultValue="allContacts" className="w-full pr-4">
-            <TabsList className="w-full">
-              <TabsTrigger
-                value="allContacts"
-                className="w-full text-sm flex items-center gap-2 justify-center"
-              >
-                Todos
-                {countUnreadMessages > 0 && (
-                  <div className="w-4 h-4 text-sm flex justify-center items-center rounded-full bg-primary text-primary-foreground">
-                    {countUnreadMessages}
-                  </div>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="inService" className="w-full text-sm">
-                Em atendimento
-              </TabsTrigger>
-            </TabsList>
-
+    <Tabs defaultValue="allContacts" className="grid">
+      <div className="overflow-x-auto max-w-full">
+        <TabsList>
+          <TabsTrigger
+            value="allContacts"
+            className="text-xs flex items-center gap-2 justify-center"
+          >
+            Todos
+            {countUnreadMessages > 0 && (
+              <div className="w-4 h-4 text-sm flex justify-center items-center rounded-full bg-primary text-primary-foreground">
+                {countUnreadMessages}
+              </div>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="inService" className="w-full text-xs">
+            Em atendimento
+          </TabsTrigger>
+          <TabsTrigger value="myService" className="w-full text-xs">
+            Meus atendimentos
+          </TabsTrigger>
+        </TabsList>
+      </div>
+      <div className="grid sm:grid-cols-5 grid-rows-[calc(100svh-16px)]">
+        {(!isMobile || !hasContactSelected) && (
+          <div className="border-r col-span-1">
             <TabsContent value="allContacts">
               <WhatsappContactOutServiceList
                 contactSelected={contactSelected}
@@ -128,27 +132,28 @@ export const WhatsappChat = () => {
                 usersInContacts={usersInContacts}
               />
             </TabsContent>
-          </Tabs>
-        </div>
-      )}
-
-      {!hasContactSelected && !isMobile && (
-        <div className="col-span-3 h-full flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <FaWhatsapp className="text-green-600" size={60} />
-            <h1 className="text-2xl text-green-600 font-bold text-center">
-              Seja bem-vindo ao WhatsApp, selecione um contato
-            </h1>
           </div>
-        </div>
-      )}
+        )}
 
-      {hasContactSelected && (
-        <WhatsappChatMessageList
-          contactMessage={contactSelected}
-          onBack={() => setContactSelected(null)}
-        />
-      )}
-    </div>
+        {!hasContactSelected && !isMobile && (
+          <div className="col-span-4 h-full flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+              <FaWhatsapp className="text-green-600" size={60} />
+              <h1 className="text-2xl text-green-600 font-bold text-center">
+                Seja bem-vindo ao WhatsApp, selecione um contato
+              </h1>
+            </div>
+          </div>
+        )}
+
+        {hasContactSelected && (
+          <WhatsappChatMessageList
+            contactMessage={contactSelected}
+            onBack={() => setContactSelected(null)}
+            className="md:col-span-4"
+          />
+        )}
+      </div>
+    </Tabs>
   );
 };
