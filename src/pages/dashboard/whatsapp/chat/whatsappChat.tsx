@@ -109,14 +109,11 @@ export const WhatsappChat = () => {
           <TabsTrigger value="inService" className="w-full text-xs">
             Em atendimento
           </TabsTrigger>
-          <TabsTrigger value="myService" className="w-full text-xs">
-            Meus atendimentos
-          </TabsTrigger>
         </TabsList>
       </div>
-      <div className="grid sm:grid-cols-5 grid-rows-[calc(100svh-16px)]">
+      <div className="grid sm:grid-cols-6 grid-rows-[calc(100svh-16px)]">
         {(!isMobile || !hasContactSelected) && (
-          <div className="border-r col-span-1">
+          <div className="border-r col-span-2">
             <TabsContent value="allContacts">
               <WhatsappContactOutServiceList
                 contactSelected={contactSelected}
