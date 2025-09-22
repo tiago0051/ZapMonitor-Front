@@ -5,7 +5,7 @@ import { useState, type FC } from "react";
 import { useDebounceValue } from "usehooks-ts";
 import { WhatsappChatItem } from "./components/whatsappChatItem";
 import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
-import { DialogFilterCategory } from "./components/dialogSelectCategory/dialogFilterCategory";
+import { DialogFilterCategory } from "../components/dialogSelectCategory/dialogFilterCategory";
 import { Input } from "@/components/ui/input";
 import { IsTopScrolled } from "@/utils/scroll";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -65,12 +65,10 @@ export const WhatsappContactOutServiceList: FC<
     <div className="space-y-4">
       <div className="space-y-2 pr-4">
         <h2 className="mb-2">Filtros</h2>
-        {
-          <DialogFilterCategory
-            categories={filterCategories}
-            onSelectCategories={setFilterCategories}
-          />
-        }
+        <DialogFilterCategory
+          categories={filterCategories}
+          onSelectCategories={setFilterCategories}
+        />
         <Input
           placeholder="Buscar contatos"
           onChange={(e) => setFilterText(e.currentTarget.value)}
