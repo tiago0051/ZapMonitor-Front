@@ -11,9 +11,11 @@ import { useUserContext } from "@/context/UserContext/userContext";
 
 type KanbanCardProps = {
   contactMessage: WhatsappContactMessage;
+  columnTitle: string;
+  isDraggable?: boolean;
 };
 
-export const KanbanCard = ({ contactMessage }: KanbanCardProps) => {
+export const KanbanCard = ({ contactMessage, isDraggable = false, columnTitle }: KanbanCardProps) => {
   const ref = useRef<HTMLButtonElement>(null);
 
   const { user } = useUserContext();
@@ -37,12 +39,13 @@ export const KanbanCard = ({ contactMessage }: KanbanCardProps) => {
     const el = ref.current;
 
     if (!el) return;
+    if (!isDraggable) return;
 
     return draggable({
       element: el,
-      getInitialData: () => ({ id: contactMessage.id }),
+      getInitialData: () => ({ id: contactMessage.id, column: columnTitle }),
     });
-  }, [contactMessage]);
+  }, [contactMessage, isDraggable, columnTitle]);
 
   return (
     <DialogKanbanCard contactMessage={contactMessage}>
