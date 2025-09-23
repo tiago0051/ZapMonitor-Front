@@ -1,11 +1,8 @@
 import { Badge } from "@/components/ui/badge";
-import { WhatsappMessageContentType } from "@/enums/whatsappMessageContentType.enum";
 import { formatAcronym } from "@/utils/formatString";
 import parsePhoneNumberFromString from "libphonenumber-js";
-import type { FC, ReactNode } from "react";
-import { FaRobot } from "react-icons/fa";
-import { FiFile, FiImage, FiMic, FiUser, FiVideo } from "react-icons/fi";
-import type { IconType } from "react-icons/lib";
+import type { FC } from "react";
+import { WhatsappChatContactMessage } from "../../components/whatsappChatContactMessage";
 
 type WhatsappChatItemProps = {
   isRead?: boolean;
@@ -17,28 +14,8 @@ type WhatsappChatItemProps = {
   categories: WhatsappMessageCategory[];
   onClick?: () => void;
   usersInContact: User[];
-  isIncomming: boolean;
+  isIncoming: boolean;
 };
-
-const MessageContent = ({
-  children,
-  isIncomming,
-  icon: Icon,
-}: {
-  children: ReactNode;
-  isIncomming: boolean;
-  icon?: IconType;
-}) => (
-  <div className="grid items-center gap-1 grid-cols-[min-content_1fr]">
-    {Icon && <Icon size={14} />}
-    <p
-      data-incomming={isIncomming}
-      className="text-sm text-foreground/50 data-[incomming=true]:font-bold data-[incomming=true]:text-foreground/80 truncate col-start-2"
-    >
-      {children}
-    </p>
-  </div>
-);
 
 export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({
   isSelected,
@@ -50,67 +27,31 @@ export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({
   messageContentType,
   onClick,
   usersInContact,
-  isIncomming,
+  isIncoming,
 }) => {
   const parsedPhoneNumber = parsePhoneNumberFromString(phoneNumber);
 
   return (
     <div
       data-selected={isSelected}
-      className="py-2 pr-2 border-b cursor-pointer bg-background hover:brightness-125 relative data-[selected=true]:bg-primary/15 flex justify-between gap-4"
+      className="bg-background data-[selected=true]:bg-primary/15 relative flex cursor-pointer justify-between gap-4 border-b py-2 pr-2 hover:brightness-125"
       onClick={onClick}
     >
       <div className="grid">
-        <h3 className="font-bold">
-          {name || parsedPhoneNumber?.formatNational()}
-        </h3>
-        <div className="flex gap-1 flex-wrap">
+        <h3 className="font-bold">{name || parsedPhoneNumber?.formatNational()}</h3>
+        <div className="flex flex-wrap gap-1">
           {categories.map((category) => (
             <Badge key={category.id}>{category.name}</Badge>
           ))}
         </div>
-        {messageContentType === WhatsappMessageContentType.TEXT && (
-          <MessageContent isIncomming={isIncomming}>
-            {messageContent}
-          </MessageContent>
-        )}
-        {messageContentType === WhatsappMessageContentType.AUDIO && (
-          <MessageContent isIncomming={isIncomming} icon={FiMic}>
-            {messageContent}
-          </MessageContent>
-        )}
-        {messageContentType === WhatsappMessageContentType.CONTACTS && (
-          <MessageContent isIncomming={isIncomming} icon={FiUser}>
-            {messageContent}
-          </MessageContent>
-        )}
-        {messageContentType === WhatsappMessageContentType.DOCUMENT && (
-          <MessageContent isIncomming={isIncomming} icon={FiFile}>
-            {messageContent}
-          </MessageContent>
-        )}
-        {messageContentType === WhatsappMessageContentType.IMAGE && (
-          <MessageContent isIncomming={isIncomming} icon={FiImage}>
-            {messageContent}
-          </MessageContent>
-        )}
-        {messageContentType === WhatsappMessageContentType.VIDEO && (
-          <MessageContent isIncomming={isIncomming} icon={FiVideo}>
-            {messageContent}
-          </MessageContent>
-        )}
-        {messageContentType === WhatsappMessageContentType.TEMPLATE && (
-          <MessageContent isIncomming={isIncomming} icon={FaRobot}>
-            {messageContent}
-          </MessageContent>
-        )}
+        <WhatsappChatContactMessage isIncoming={isIncoming} messageContentType={messageContentType}>
+          {messageContent}
+        </WhatsappChatContactMessage>
       </div>
 
-      <div className="grid grid-rows-2 h-full">
-        {isRead === false && (
-          <div className="w-2 h-2 rounded-full bg-primary self-start justify-self-end"></div>
-        )}
-        <div className="self-end row-start-2 flex gap-1 flex-wrap justify-end justify-self-end align-bottom">
+      <div className="grid h-full grid-rows-2">
+        {isRead === false && <div className="bg-primary h-2 w-2 self-start justify-self-end rounded-full"></div>}
+        <div className="row-start-2 flex flex-wrap justify-end gap-1 self-end justify-self-end align-bottom">
           {usersInContact.map((user) => (
             <div
               className="bg-secondary text-secondary-foreground flex h-5 w-5 items-center justify-center rounded-full text-xs uppercase"
