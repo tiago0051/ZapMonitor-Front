@@ -67,6 +67,22 @@ type FindAllWhatsappMessagesByContactRequestParams = {
   contactMessageId: string;
 };
 
+type GetFileDocumentUploadUrlRequestData = {
+  params: GetFileDocumentUploadUrlRequestParams;
+  body: GetFileDocumentUploadUrlRequestBody;
+};
+
+type GetFileDocumentUploadUrlRequestParams = {
+  contactId: string;
+  configurationId: string;
+};
+
+type GetFileDocumentUploadUrlRequestBody = {
+  mimeType: string;
+  fileSize: number;
+  fileName: string;
+};
+
 type CreateWhatsappMessageRequestData = {
   params: CreateWhatsappMessageRequestParams;
   body: CreateWhatsappMessageRequestBody;
@@ -78,7 +94,9 @@ type CreateWhatsappMessageRequestParams = {
 };
 
 type CreateWhatsappMessageRequestBody = {
-  message: string;
+  type: string;
+  text?: string;
+  fileId?: string;
 };
 
 type CreateLinkCategoryToContactRequestData = {
