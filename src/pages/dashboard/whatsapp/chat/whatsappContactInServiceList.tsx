@@ -10,16 +10,17 @@ type WhatsappContactInServiceListProps = {
   usersInContacts: Record<string, User[]>;
 };
 
-export const WhatsappContactInServiceList: FC<
-  WhatsappContactInServiceListProps
-> = ({ contactSelected, setContactSelected, usersInContacts }) => {
+export const WhatsappContactInServiceList: FC<WhatsappContactInServiceListProps> = ({
+  contactSelected,
+  setContactSelected,
+  usersInContacts,
+}) => {
   const findAllContactMessagesInServiceByUser = useQuery({
     queryKey: ["chat:update", "findAllContactMessagesInServiceByUser"],
     queryFn: () => whatsappService.findAllContactMessagesInServiceByUser(),
   });
 
-  const contactMessagesInService =
-    findAllContactMessagesInServiceByUser.data || [];
+  const contactMessagesInService = findAllContactMessagesInServiceByUser.data || [];
 
   const isEmpty = contactMessagesInService.length === 0;
 
@@ -37,17 +38,11 @@ export const WhatsappContactInServiceList: FC<
           onClick={() => setContactSelected(contactMessage)}
           key={contactMessage.id}
           usersInContact={usersInContacts[contactMessage.id] || []}
-          isIncomming={
-            contactMessage.messageType === WhatsappMessageType.INCOMING
-          }
+          isIncoming={contactMessage.messageType === WhatsappMessageType.INCOMING}
         />
       ))}
 
-      {isEmpty && (
-        <div className="text-center text-sm text-muted-foreground">
-          Nenhuma mensagem em atendimento
-        </div>
-      )}
+      {isEmpty && <div className="text-muted-foreground text-center text-sm">Nenhuma mensagem em atendimento</div>}
     </div>
   );
 };

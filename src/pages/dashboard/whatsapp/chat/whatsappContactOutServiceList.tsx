@@ -16,24 +16,16 @@ type WhatsappContactOutServiceListProps = {
   usersInContacts: Record<string, User[]>;
 };
 
-export const WhatsappContactOutServiceList: FC<
-  WhatsappContactOutServiceListProps
-> = ({ contactSelected, setContactSelected, usersInContacts }) => {
-  const [filterCategories, setFilterCategories] = useState<
-    WhatsappMessageCategory[]
-  >([]);
-  const [filterText, setFilterText] = useDebounceValue(
-    "",
-    globalContants.DEBOUNCE_DELAY
-  );
+export const WhatsappContactOutServiceList: FC<WhatsappContactOutServiceListProps> = ({
+  contactSelected,
+  setContactSelected,
+  usersInContacts,
+}) => {
+  const [filterCategories, setFilterCategories] = useState<WhatsappMessageCategory[]>([]);
+  const [filterText, setFilterText] = useDebounceValue("", globalContants.DEBOUNCE_DELAY);
 
   const findAllContactMessagesQuery = useInfiniteQuery({
-    queryKey: [
-      "chat:update",
-      "findAllContactMessages",
-      filterCategories,
-      filterText,
-    ],
+    queryKey: ["chat:update", "findAllContactMessages", filterCategories, filterText],
     queryFn: async ({ pageParam = 1 }) =>
       await whatsappService.findAllContactMessagesByUser({
         queries: {
@@ -43,8 +35,7 @@ export const WhatsappContactOutServiceList: FC<
           text: filterText,
         },
       }),
-    getNextPageParam: (lastPage, allPages) =>
-      lastPage.canNextPage ? allPages.length + 1 : undefined,
+    getNextPageParam: (lastPage, allPages) => (lastPage.canNextPage ? allPages.length + 1 : undefined),
     initialPageParam: 1,
   });
   const listPagesContactMessages = findAllContactMessagesQuery.data;
@@ -52,11 +43,7 @@ export const WhatsappContactOutServiceList: FC<
   function onScrollChat(event: React.UIEvent<HTMLDivElement, UIEvent>) {
     const isTopScrolled = IsTopScrolled(event.currentTarget);
 
-    if (
-      isTopScrolled &&
-      findAllContactMessagesQuery.hasNextPage &&
-      !findAllContactMessagesQuery.isFetching
-    ) {
+    if (isTopScrolled && findAllContactMessagesQuery.hasNextPage && !findAllContactMessagesQuery.isFetching) {
       findAllContactMessagesQuery.fetchNextPage();
     }
   }
@@ -65,19 +52,10 @@ export const WhatsappContactOutServiceList: FC<
     <div className="space-y-4">
       <div className="space-y-2 pr-4">
         <h2 className="mb-2">Filtros</h2>
-        <DialogFilterCategory
-          categories={filterCategories}
-          onSelectCategories={setFilterCategories}
-        />
-        <Input
-          placeholder="Buscar contatos"
-          onChange={(e) => setFilterText(e.currentTarget.value)}
-        />
+        <DialogFilterCategory categories={filterCategories} onSelectCategories={setFilterCategories} />
+        <Input placeholder="Buscar contatos" onChange={(e) => setFilterText(e.currentTarget.value)} />
       </div>
-      <div
-        onScroll={onScrollChat}
-        className="space-y-1 overflow-y-auto max-h-[calc(100vh-210px)]"
-      >
+      <div onScroll={onScrollChat} className="max-h-[calc(100vh-210px)] space-y-1 overflow-y-auto">
         {listPagesContactMessages?.pages.map((page) =>
           page.items.map((contactMessage) => (
             <WhatsappChatItem
@@ -91,15 +69,13 @@ export const WhatsappContactOutServiceList: FC<
               onClick={() => setContactSelected(contactMessage)}
               key={contactMessage.id}
               usersInContact={usersInContacts[contactMessage.id] || []}
-              isIncomming={
-                contactMessage.messageType === WhatsappMessageType.INCOMING
-              }
+              isIncoming={contactMessage.messageType === WhatsappMessageType.INCOMING}
             />
-          ))
+          )),
         )}
 
         {findAllContactMessagesQuery.isFetching && (
-          <li className="grid gap-2 p-4 border-b">
+          <li className="grid gap-2 border-b p-4">
             <div className="flex gap-2">
               <Skeleton className="h-4 w-4 rounded-full" />
               <Skeleton className="h-4 w-full" />

@@ -1,52 +1,73 @@
-import { Input } from "@/components/ui/input";
-import { DialogFilterCategory } from "../components/dialogSelectCategory/dialogFilterCategory";
-import { globalContants } from "@/contants/globalContants";
-import { useDebounceValue } from "usehooks-ts";
-import { useState } from "react";
-import { Label } from "@/components/ui/label";
+import { useEffect } from "react";
 import { KanbanColumn } from "./components/kanbanColumn";
 import { KanbanCard } from "./components/kanbanCard";
+import { whatsappService } from "@/services/api/whatsappService";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
+import { useUserContext } from "@/context/UserContext/userContext";
+import { toast } from "sonner";
+import { requestErrorHandling } from "@/utils/request";
 
 export const WhatsappKanban = () => {
-  const [filterCategories, setFilterCategories] = useState<
-    WhatsappMessageCategory[]
-  >([]);
-  const [filterText, setFilterText] = useDebounceValue(
-    "",
-    globalContants.DEBOUNCE_DELAY
-  );
+  const { user } = useUserContext();
+
+  const findAllContactMessagesAwaitServiceByUser = useQuery({
+    queryKey: ["chat:update", "findAllContactMessagesAwaitServiceByUser"],
+    queryFn: () => whatsappService.findAllContactMessagesAwaitServiceByUser(),
+  });
+  const listPagesContactMessagesAwaitService = findAllContactMessagesAwaitServiceByUser.data;
+
+  const findAllContactMessagesInServiceByUser = useQuery({
+    queryKey: ["chat:update", "findAllContactMessagesInServiceByUser"],
+    queryFn: () => whatsappService.findAllContactMessagesInServiceByUser(),
+  });
+
+  const contactMessagesInService = findAllContactMessagesInServiceByUser.data || [];
+  const contactMessagesInServiceFromUser = contactMessagesInService.filter((msg) => msg.serviceUserServiceId === user?.id);
+  const contactMessagesInServiceFromOthers = contactMessagesInService.filter((msg) => msg.serviceUserServiceId !== user?.id);
+
+  const startServiceMutation = useMutation({
+    mutationFn: whatsappService.startService,
+    onSuccess: () => {
+      toast.success("Atendimento iniciado com sucesso");
+    },
+    onError: requestErrorHandling,
+  });
+
+  useEffect(() => {
+    return monitorForElements({
+      onDrop: ({ source, location }) => {
+        const contactId = source.data.id as string;
+        const [dropTarget] = location.current.dropTargets;
+
+        if (dropTarget.data.title === "Meus atendimentos") {
+          startServiceMutation.mutate({
+            params: {
+              contactId,
+            },
+          });
+        }
+      },
+    });
+  }, [startServiceMutation]);
 
   return (
-    <div className="grid grid-rows-[min-content_1fr] h-[calc(100dvh-16px)] gap-5">
-      <div className="space-y-2 pr-4">
-        <h2 className="mb-2">Filtros</h2>
-        <div className="grid grid-cols-4 gap-4">
-          <DialogFilterCategory
-            categories={filterCategories}
-            onSelectCategories={setFilterCategories}
-          />
-          <div className="grid gap-2">
-            <Label>Buscar contatos</Label>
-            <Input
-              placeholder="Nome ou número de telefone"
-              onChange={(e) => setFilterText(e.currentTarget.value)}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="border-collapse flex gap-1">
+    <div className="grid h-[calc(100dvh-16px)] grid-rows-[min-content_1fr] gap-5">
+      <div className="flex border-collapse gap-1 overflow-auto">
         <KanbanColumn title="Aguardando">
-          <KanbanCard />
+          {listPagesContactMessagesAwaitService?.map((contactMessage) => (
+            <KanbanCard key={contactMessage.id} contactMessage={contactMessage} isDraggable columnTitle="Aguardando" />
+          ))}
         </KanbanColumn>
-        <KanbanColumn title="Em atendimento">
-          <KanbanCard />
+        <KanbanColumn title="Meus atendimentos" count={contactMessagesInServiceFromUser.length} isDroppable>
+          {contactMessagesInServiceFromUser.map((contactMessage) => (
+            <KanbanCard key={contactMessage.id} contactMessage={contactMessage} columnTitle="Meus atendimentos" />
+          ))}
         </KanbanColumn>
-        <KanbanColumn title="Meus atendimentos">
-          <KanbanCard />
-        </KanbanColumn>
-        <KanbanColumn title="Finalizados">
-          <KanbanCard />
+        <KanbanColumn title="Em atendimento" count={contactMessagesInServiceFromOthers.length}>
+          {contactMessagesInServiceFromOthers.map((contactMessage) => (
+            <KanbanCard key={contactMessage.id} contactMessage={contactMessage} columnTitle="Em atendimento" />
+          ))}
         </KanbanColumn>
       </div>
     </div>
