@@ -15,7 +15,7 @@ export const WhatsappKanban = () => {
     queryKey: ["chat:update", "findAllContactMessagesAwaitServiceByUser"],
     queryFn: () => whatsappService.findAllContactMessagesAwaitServiceByUser(),
   });
-  const listPagesContactMessagesAwaitService = findAllContactMessagesAwaitServiceByUser.data;
+  const listPagesContactMessagesAwaitService = findAllContactMessagesAwaitServiceByUser.data || [];
 
   const findAllContactMessagesInServiceByUser = useQuery({
     queryKey: ["chat:update", "findAllContactMessagesInServiceByUser"],
@@ -52,9 +52,9 @@ export const WhatsappKanban = () => {
   }, [startServiceMutation]);
 
   return (
-    <div className="grid h-[calc(100dvh-16px)] grid-rows-[min-content_1fr] gap-5">
-      <div className="flex border-collapse gap-1 overflow-auto">
-        <KanbanColumn title="Aguardando">
+    <div className="grid grid-rows-[min-content_1fr] gap-5">
+      <div className="grid w-min grid-cols-[repeat(3,320px)] gap-1">
+        <KanbanColumn title="Aguardando" count={listPagesContactMessagesAwaitService.length}>
           {listPagesContactMessagesAwaitService?.map((contactMessage) => (
             <KanbanCard key={contactMessage.id} contactMessage={contactMessage} isDraggable columnTitle="Aguardando" />
           ))}
