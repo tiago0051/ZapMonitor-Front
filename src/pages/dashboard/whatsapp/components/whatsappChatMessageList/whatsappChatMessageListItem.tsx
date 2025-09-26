@@ -8,28 +8,28 @@ import { useEffect, useState, type FC } from "react";
 import { FiDownload } from "react-icons/fi";
 import { IoCheckmarkDoneOutline, IoCheckmarkOutline, IoTimeOutline } from "react-icons/io5";
 
-type MessageDocumentContent = { url: string; filename: string };
+type MessageFileContent = { url: string; filename: string };
 
 const MessageText = ({ message }: { message: WhatsappMessage<string> }) => <p className="whitespace-pre-wrap">{message.content}</p>;
-const MessageAudio = ({ message }: { message: WhatsappMessage<string> }) => (
+const MessageAudio = ({ message }: { message: WhatsappMessage<MessageFileContent> }) => (
   <div>
-    <audio controls src={message.content} className="w-full" />
+    {message.content && <audio controls src={message.content.url} className="w-full" />}
     {!message.content && <p className="text-xs">Baixando...</p>}
   </div>
 );
-const MessageImage = ({ message }: { message: WhatsappMessage<string> }) => (
+const MessageImage = ({ message }: { message: WhatsappMessage<MessageFileContent> }) => (
   <div>
-    <img src={message.content} alt="Imagem" className="w-full" />
+    {message.content && <img src={message.content.url} alt="Imagem" className="w-full" />}
     {!message.content && <p className="text-xs">Baixando...</p>}
   </div>
 );
-const MessageVideo = ({ message }: { message: WhatsappMessage<string> }) => (
+const MessageVideo = ({ message }: { message: WhatsappMessage<MessageFileContent> }) => (
   <div>
-    <video src={message.content} controls className="w-full" />
+    {message.content && <video src={message.content.url} controls className="w-full" />}
     {!message.content && <p className="text-xs">Baixando...</p>}
   </div>
 );
-const MessageDocument = ({ message }: { message: WhatsappMessage<MessageDocumentContent> }) => (
+const MessageDocument = ({ message }: { message: WhatsappMessage<MessageFileContent> }) => (
   <div>
     {message.content && (
       <a href={message.content.url} target="_blank" download className="text-primary flex items-center justify-between gap-2">
@@ -69,11 +69,17 @@ export const WhatsappChatMessageListItem: FC<WhatsappChatMessageListItemProps> =
       className="bg-secondary text-secondary-foreground relative max-w-[50%] min-w-[250px] rounded p-2 pt-8 pb-5 data-[type=1]:self-end"
     >
       {message.contentType === WhatsappMessageContentType.TEXT && <MessageText message={message as WhatsappMessage<string>} />}
-      {message.contentType === WhatsappMessageContentType.AUDIO && <MessageAudio message={message as WhatsappMessage<string>} />}
-      {message.contentType === WhatsappMessageContentType.IMAGE && <MessageImage message={message as WhatsappMessage<string>} />}
-      {message.contentType === WhatsappMessageContentType.VIDEO && <MessageVideo message={message as WhatsappMessage<string>} />}
+      {message.contentType === WhatsappMessageContentType.AUDIO && (
+        <MessageAudio message={message as WhatsappMessage<MessageFileContent>} />
+      )}
+      {message.contentType === WhatsappMessageContentType.IMAGE && (
+        <MessageImage message={message as WhatsappMessage<MessageFileContent>} />
+      )}
+      {message.contentType === WhatsappMessageContentType.VIDEO && (
+        <MessageVideo message={message as WhatsappMessage<MessageFileContent>} />
+      )}
       {message.contentType === WhatsappMessageContentType.DOCUMENT && (
-        <MessageDocument message={message as WhatsappMessage<MessageDocumentContent>} />
+        <MessageDocument message={message as WhatsappMessage<MessageFileContent>} />
       )}
 
       {message.contentType === WhatsappMessageContentType.CONTACTS && <MessageContact message={message as WhatsappMessage<string>} />}
