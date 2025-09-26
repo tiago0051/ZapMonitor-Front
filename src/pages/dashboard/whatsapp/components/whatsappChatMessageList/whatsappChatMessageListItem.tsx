@@ -33,7 +33,7 @@ const MessageDocument = ({ message }: { message: WhatsappMessage<MessageFileCont
   <div>
     {message.content && (
       <a href={message.content.url} target="_blank" download className="text-primary flex items-center justify-between gap-2">
-        <p className="whitespace-normal">{message.content.filename}</p>
+        <p className="overflow-hidden break-words">{message.content.filename}</p>
         <FiDownload className="shrink-0" size={20} />
       </a>
     )}
