@@ -25,14 +25,20 @@ export const whatsappService = {
   },
   findAllContactMessagesInServiceByUser: async ({
     params,
+    queries,
   }: FindAllContactMessagesInServiceByUserRequestData): Promise<WhatsappContactMessage[]> => {
-    const response = await api.get(`/client/${params.clientId}/whatsapp/message/in-service`);
+    const response = await api.get(`/client/${params.clientId}/whatsapp/message/in-service`, {
+      params: queries,
+    });
     return response.data;
   },
   findAllContactMessagesAwaitServiceByUser: async ({
     params,
+    queries,
   }: FindAllContactMessagesAwaitServiceByUserRequestData): Promise<WhatsappContactMessage[]> => {
-    const response = await api.get(`/client/${params.clientId}/whatsapp/message/await-service`);
+    const response = await api.get(`/client/${params.clientId}/whatsapp/message/await-service`, {
+      params: queries,
+    });
     return response.data;
   },
   findAllContactMessagesByUser: async ({

@@ -39,20 +39,32 @@ type CreateWhatsappMessageCategoryRequestParams = {
 //#region findAllContactMessagesInServiceByUser
 type FindAllContactMessagesInServiceByUserRequestData = {
   params: FindAllContactMessagesInServiceByUserRequestParams;
+  queries: FindAllContactMessagesInServiceByUserRequestQuery;
 };
 
 type FindAllContactMessagesInServiceByUserRequestParams = {
   clientId: string;
+};
+
+type FindAllContactMessagesInServiceByUserRequestQuery = {
+  categoryIds: string[];
+  text: string;
 };
 //#endregion
 
 //#region findAllContactMessagesAwaitServiceByUser
 type FindAllContactMessagesAwaitServiceByUserRequestData = {
   params: FindAllContactMessagesAwaitServiceByUserRequestParams;
+  queries: FindAllContactMessagesAwaitServiceByUserRequestQuery;
 };
 
 type FindAllContactMessagesAwaitServiceByUserRequestParams = {
   clientId: string;
+};
+
+type FindAllContactMessagesAwaitServiceByUserRequestQuery = {
+  categoryIds: string[];
+  text: string;
 };
 //#endregion
 
