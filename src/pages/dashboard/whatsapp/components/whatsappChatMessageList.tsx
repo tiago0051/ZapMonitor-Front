@@ -14,6 +14,8 @@ import { FiFile, FiPaperclip } from "react-icons/fi";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { whatsappContants } from "@/contants/whatsappContants";
 import { BlockBlobClient } from "@azure/storage-blob";
+import { useClientContext } from "@/context/ClientContext/clientContext";
+import { useWhatsappContext } from "../whatsappLayout";
 
 type WhatsappChatMessageListProps = {
   contactService: WhatsappContactService;
@@ -23,6 +25,10 @@ type WhatsappChatMessageListProps = {
 
 export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationId, className }: WhatsappChatMessageListProps) => {
   const { user } = useUserContext();
+  const { client } = useClientContext();
+  const { playSound } = useWhatsappContext();
+
+  const [newMessagesList, setNewMessagesList] = useState<WhatsappMessage[]>([]);
 
   const [message, setMessage] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -33,6 +39,7 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
       await whatsappService.findAllWhatsappMessagesByContact({
         params: {
           contactMessageId: contactService.id,
+          clientId: client.id,
         },
         queries: {
           page: pageParam,
@@ -58,6 +65,7 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
         params: {
           contactId: contactService.id,
           configurationId: whatsappConfigurationId,
+          clientId: client.id,
         },
         body: {
           fileName: file.name,
@@ -94,6 +102,7 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
         params: {
           contactId: contactService.id,
           configurationId: whatsappConfigurationId,
+          clientId: client.id,
         },
         body: {
           type: WhatsappMessageContentType.TEXT,
@@ -147,6 +156,7 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
             params: {
               contactId: contactService.id,
               configurationId: whatsappConfigurationId,
+              clientId: client.id,
             },
             body: {
               type: WhatsappMessageContentType.DOCUMENT,
@@ -172,9 +182,29 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
     };
   }, [user, contactService]);
 
+  useEffect(() => {
+    socket.on(`contact:${contactService.id}:newMessage`, (data: WhatsappMessage) => {
+      playSound();
+
+      setNewMessagesList((prev) => [data, ...prev]);
+    });
+
+    return () => {
+      socket.off(`contact:${contactService.id}:newMessage`);
+    };
+  }, [contactService.id, playSound]);
+
+  useEffect(() => {
+    setNewMessagesList([]);
+  }, [findAllWhatsappMessagesByContact.data]);
+
   return (
     <div className={cn(className, "grid h-full grid-rows-[auto_50px] overflow-hidden pt-4")}>
       <div onScroll={onScrollChat} className="flex max-h-full flex-col-reverse gap-2 overflow-auto px-4">
+        {newMessagesList.map((message) => (
+          <WhatsappChatMessageListItem message={message} key={message.id} />
+        ))}
+
         {findAllWhatsappMessagesByContact.data?.pages.map((page) =>
           page.items.map((message) => <WhatsappChatMessageListItem message={message} key={message.id} />),
         )}

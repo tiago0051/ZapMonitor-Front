@@ -1,3 +1,4 @@
+import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useUserContext } from "@/context/UserContext/userContext";
 import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
 import { socket } from "@/services/socket/socket";
@@ -10,12 +11,14 @@ type WhatsappLayoutContextType = {
   hasContactSelected: boolean;
   setContactSelected: (contact: WhatsappContactMessage | null) => void;
   usersInContacts: Record<string, User[]>;
+  playSound: () => void;
 };
 
 const WhatsappContext = createContext({} as WhatsappLayoutContextType);
 
 export const WhatsappLayout = () => {
   const { user } = useUserContext();
+  const { client } = useClientContext();
 
   const [contactSelected, setContactSelected] = useState<WhatsappContactMessage | null>(null);
   const [usersInContacts, setUsersInContacts] = useState<Record<string, User[]>>({});
@@ -24,18 +27,22 @@ export const WhatsappLayout = () => {
 
   const newMessageAudio = useMemo(() => new Audio("/assets/whatsapp/chat/sounds/new-message.mp3"), []);
 
+  function playSound() {
+    newMessageAudio.play();
+  }
+
   useEffect(() => {
     socket.on("chat:update", async ({ contactId, eventType }: { contactId: string; eventType: WhatsappMessageType }) => {
       if (contactId) {
         const isNewMessageIncoming = eventType === WhatsappMessageType.INCOMING;
         const hasUsersInContact = usersInContacts[contactId] && usersInContacts[contactId].length > 0;
 
-        if (isNewMessageIncoming && !hasUsersInContact) await newMessageAudio.play();
+        if (isNewMessageIncoming && !hasUsersInContact) playSound();
 
         const isContactSelected = contactSelected?.id === contactId;
 
         if (isContactSelected) {
-          if (isNewMessageIncoming) await newMessageAudio.play();
+          if (isNewMessageIncoming) playSound();
         }
 
         queryClient.invalidateQueries({
@@ -64,8 +71,8 @@ export const WhatsappLayout = () => {
   }, []);
 
   useEffect(() => {
-    if (user) socket.emit("chat:start", user!.id);
-  }, [user]);
+    socket.emit("chat:start", client.id);
+  }, [client]);
 
   return (
     <WhatsappContext.Provider
@@ -74,6 +81,7 @@ export const WhatsappLayout = () => {
         hasContactSelected: !!contactSelected,
         setContactSelected,
         usersInContacts,
+        playSound,
       }}
     >
       <Outlet />

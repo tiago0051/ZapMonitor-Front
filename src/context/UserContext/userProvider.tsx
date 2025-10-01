@@ -13,11 +13,5 @@ export const UserProvider: FC<UserProviderProps> = ({ children }) => {
     setUser(null);
   }
 
-  return (
-    <UserContext.Provider
-      value={{ user, setUser, isAuthenticated: !!user, logout }}
-    >
-      {children}
-    </UserContext.Provider>
-  );
+  return <UserContext.Provider value={{ user, setUser, isAuthenticated: !!user, logout }}>{children}</UserContext.Provider>;
 };

@@ -1,65 +1,33 @@
-import { whatsappService } from "@/services/api/whatsappService";
-import { useQuery } from "@tanstack/react-query";
 import { FaWhatsapp } from "react-icons/fa";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { WhatsappContactOutServiceList } from "./whatsappContactOutServiceList";
-import { WhatsappContactInServiceList } from "./whatsappContactInServiceList";
 import { useWhatsappContext } from "../whatsappLayout";
 import { WhatsappChatMessages } from "./whatsappChatMessages";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router";
+import { useBaseUrl } from "@/hooks/use-baseUrl";
+import { WhatsappContactsList } from "./whatsappContacts";
 
 export const WhatsappChat = () => {
+  const baseUrl = useBaseUrl();
   const { contactSelected, hasContactSelected, setContactSelected, usersInContacts } = useWhatsappContext();
 
   const isMobile = useIsMobile();
 
-  const findCountUnreadMessagesQuery = useQuery({
-    queryKey: ["chat:update", "whatsappChatNoRead"],
-    queryFn: whatsappService.findCountUnreadMessages,
-  });
-  const countUnreadMessages = findCountUnreadMessagesQuery.data || 0;
-
   return (
-    <Tabs defaultValue="allContacts" className="grid">
+    <div className="grid">
       <div className="flex max-w-full justify-between overflow-x-auto">
-        <TabsList>
-          <TabsTrigger value="allContacts" className="flex items-center justify-center gap-2 text-xs">
-            Todos
-            {countUnreadMessages > 0 && (
-              <div className="bg-primary text-primary-foreground flex h-4 w-4 items-center justify-center rounded-full text-sm">
-                {countUnreadMessages}
-              </div>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="inService" className="w-full text-xs">
-            Em atendimento
-          </TabsTrigger>
-        </TabsList>
-
-        <Link to={"/dashboard/whatsapp/kanban"}>
+        <Link to={`${baseUrl}/whatsapp/kanban`}>
           <Button variant={"outline"}>Kanban</Button>
         </Link>
       </div>
       <div className="grid grid-rows-[calc(100svh-100px)] sm:grid-cols-6">
         {(!isMobile || !hasContactSelected) && (
           <div className="col-span-2 border-r">
-            <TabsContent value="allContacts">
-              <WhatsappContactOutServiceList
-                contactSelected={contactSelected}
-                setContactSelected={setContactSelected}
-                usersInContacts={usersInContacts}
-              />
-            </TabsContent>
-
-            <TabsContent value="inService">
-              <WhatsappContactInServiceList
-                contactSelected={contactSelected}
-                setContactSelected={setContactSelected}
-                usersInContacts={usersInContacts}
-              />
-            </TabsContent>
+            <WhatsappContactsList
+              contactSelected={contactSelected}
+              setContactSelected={setContactSelected}
+              usersInContacts={usersInContacts}
+            />
           </div>
         )}
 
@@ -76,6 +44,6 @@ export const WhatsappChat = () => {
           <WhatsappChatMessages className="col-span-4" contactMessage={contactSelected!} onBack={() => setContactSelected(null)} />
         )}
       </div>
-    </Tabs>
+    </div>
   );
 };

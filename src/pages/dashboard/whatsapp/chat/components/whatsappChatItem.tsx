@@ -1,35 +1,43 @@
 import { Badge } from "@/components/ui/badge";
 import { formatAcronym } from "@/utils/formatString";
 import parsePhoneNumberFromString from "libphonenumber-js";
-import type { FC } from "react";
+import { useEffect, useState, type FC } from "react";
 import { WhatsappChatContactMessage } from "../../components/whatsappChatContactMessage";
+import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
+import { socket } from "@/services/socket/socket";
+import { useWhatsappContext } from "../../whatsappLayout";
 
 type WhatsappChatItemProps = {
-  isRead?: boolean;
   isSelected: boolean;
-  name?: string;
-  phoneNumber: string;
-  messageContent?: string;
-  messageContentType?: string;
-  categories: WhatsappMessageCategory[];
   onClick?: () => void;
   usersInContact: User[];
-  isIncoming: boolean;
+  contactMessage: WhatsappContactMessage;
 };
 
 export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({
   isSelected,
-  isRead,
-  name,
-  phoneNumber,
-  categories,
-  messageContent,
-  messageContentType,
   onClick,
   usersInContact,
-  isIncoming,
+  contactMessage: contactMessageDefault,
 }) => {
-  const parsedPhoneNumber = parsePhoneNumberFromString(phoneNumber);
+  const { playSound } = useWhatsappContext();
+
+  const [contactMessage, setContactMessage] = useState<WhatsappContactMessage>(contactMessageDefault);
+
+  const isIncoming = contactMessage.messageType === WhatsappMessageType.INCOMING;
+  const parsedPhoneNumber = parsePhoneNumberFromString(contactMessage.phoneNumber);
+
+  useEffect(() => {
+    socket.on(`contact:${contactMessage.id}`, (data: WhatsappContactMessage) => {
+      if (data.isRead === false) playSound();
+
+      setContactMessage(data);
+    });
+
+    return () => {
+      socket.off(`contact:${contactMessage.id}`);
+    };
+  }, [contactMessage, playSound]);
 
   return (
     <div
@@ -38,19 +46,19 @@ export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({
       onClick={onClick}
     >
       <div className="grid">
-        <h3 className="font-bold">{name || parsedPhoneNumber?.formatNational()}</h3>
+        <h3 className="font-bold">{contactMessage.name || parsedPhoneNumber?.formatNational()}</h3>
         <div className="flex flex-wrap gap-1">
-          {categories.map((category) => (
+          {contactMessage.categories.map((category) => (
             <Badge key={category.id}>{category.name}</Badge>
           ))}
         </div>
-        <WhatsappChatContactMessage isIncoming={isIncoming} messageContentType={messageContentType}>
-          {messageContent}
+        <WhatsappChatContactMessage isIncoming={isIncoming} messageContentType={contactMessage.messageContentType}>
+          {contactMessage.messageContent}
         </WhatsappChatContactMessage>
       </div>
 
       <div className="grid h-full grid-rows-2">
-        {isRead === false && <div className="bg-primary h-2 w-2 self-start justify-self-end rounded-full"></div>}
+        {contactMessage.isRead === false && <div className="bg-primary h-2 w-2 self-start justify-self-end rounded-full"></div>}
         <div className="row-start-2 flex flex-wrap justify-end gap-1 self-end justify-self-end align-bottom">
           {usersInContact.map((user) => (
             <div

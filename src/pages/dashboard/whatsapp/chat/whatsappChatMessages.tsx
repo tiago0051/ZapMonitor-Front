@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { WhatsappChatMessageHeader } from "../components/whatsappChatMessageList/whatsappChatMessageHeader";
 import { WhatsappChatMessageList } from "../components/whatsappChatMessageList";
 import { WhatsappChatMessageListService } from "../components/whatsappChatMessageList/whatsappChatMessageListService/whatsappChatMessageListService";
+import { useClientContext } from "@/context/ClientContext/clientContext";
 
 type WhatsappChatMessagesProps = {
   contactMessage: WhatsappContactMessage;
@@ -12,12 +13,15 @@ type WhatsappChatMessagesProps = {
 };
 
 export const WhatsappChatMessages = ({ contactMessage, onBack, className }: WhatsappChatMessagesProps) => {
+  const { client } = useClientContext();
+
   const findContactServiceByContact = useSuspenseQuery({
     queryKey: [`contact-${contactMessage.id}`, "findContactServiceByContact"],
     queryFn: async () =>
       await whatsappService.findContactServiceByContact({
         params: {
           contactId: contactMessage.id,
+          clientId: client.id,
         },
       }),
   });

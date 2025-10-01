@@ -1,14 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { DataTablePaginate } from "@/components/ui/dataTablePaginate";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { globalContants } from "@/contants/globalContants";
 import { whatsappService } from "@/services/api/whatsappService";
@@ -19,29 +11,25 @@ import { useDebounceValue } from "usehooks-ts";
 import { getColumns } from "./whatsappCategoryColumns";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useClientContext } from "@/context/ClientContext/clientContext";
 
 type DialogFilterCategoryProps = {
   onSelectCategories: (categories: WhatsappMessageCategory[]) => void;
   categories: WhatsappMessageCategory[];
 };
 
-export const DialogFilterCategory = ({
-  onSelectCategories,
-  categories,
-}: DialogFilterCategoryProps) => {
+export const DialogFilterCategory = ({ onSelectCategories, categories }: DialogFilterCategoryProps) => {
+  const { client } = useClientContext();
+
   const [isOpen, setIsOpen] = useState(false);
 
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
   });
-  const [textSearch, setTextSearch] = useDebounceValue<string>(
-    "",
-    globalContants.DEBOUNCE_DELAY
-  );
+  const [textSearch, setTextSearch] = useDebounceValue<string>("", globalContants.DEBOUNCE_DELAY);
 
-  const [categoriesSelected, setCategoriesSelected] =
-    useState<WhatsappMessageCategory[]>(categories);
+  const [categoriesSelected, setCategoriesSelected] = useState<WhatsappMessageCategory[]>(categories);
 
   const findAllWhatsappCategoriesQuery = useQuery({
     queryKey: ["whatsappCategories", pagination, textSearch],
@@ -51,6 +39,9 @@ export const DialogFilterCategory = ({
           page: pagination.pageIndex + 1,
           take: pagination.pageSize,
           text: textSearch,
+        },
+        params: {
+          clientId: client.id,
         },
       }),
     enabled: isOpen,
@@ -77,23 +68,19 @@ export const DialogFilterCategory = ({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button
-          variant={"outline"}
-          className="w-full justify-start flex flex-wrap h-auto"
-          asChild
-        >
+        <Button variant={"outline"} className="flex h-auto w-full flex-wrap justify-start" asChild>
           <div>
             {categories.length > 0 ? (
               <>
                 {categories.map((cat) => (
                   <Badge key={cat.id}>{cat.name}</Badge>
                 ))}
-                <Button variant={"link"} className="text-xs px-0">
+                <Button variant={"link"} className="px-0 text-xs">
                   Selecionar
                 </Button>
               </>
             ) : (
-              <Button variant={"link"} className="text-xs px-0">
+              <Button variant={"link"} className="px-0 text-xs">
                 Selecionar categoria
               </Button>
             )}
@@ -103,9 +90,7 @@ export const DialogFilterCategory = ({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Categorias</DialogTitle>
-          <DialogDescription>
-            Adicionar uma categoria para esta conversa.
-          </DialogDescription>
+          <DialogDescription>Adicionar uma categoria para esta conversa.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="mb-4">
@@ -120,16 +105,9 @@ export const DialogFilterCategory = ({
           </div>
 
           {findAllWhatsappCategoriesQuery.isLoading && <p>Loading...</p>}
-          {findAllWhatsappCategoriesQuery.isError && (
-            <p>Error fetching emails</p>
-          )}
+          {findAllWhatsappCategoriesQuery.isError && <p>Error fetching emails</p>}
           {listWhatsappCategories && (
-            <DataTablePaginate
-              columns={columns}
-              data={listWhatsappCategories}
-              onPaginationChange={setPagination}
-              pagination={pagination}
-            />
+            <DataTablePaginate columns={columns} data={listWhatsappCategories} onPaginationChange={setPagination} pagination={pagination} />
           )}
         </div>
         <DialogFooter>

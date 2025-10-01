@@ -4,5 +4,5 @@ import { useNavigate } from "react-router";
 export const Login = () => {
   const navigate = useNavigate();
 
-  return <LoginForm onLoginSuccess={() => navigate("/dashboard")} />;
+  return <LoginForm onLoginSuccess={() => navigate("/auth/select_client")} />;
 };

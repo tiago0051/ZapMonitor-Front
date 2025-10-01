@@ -36,6 +36,26 @@ type CreateWhatsappMessageCategoryRequestParams = {
   clientId: string;
 };
 
+//#region findAllContactMessagesInServiceByUser
+type FindAllContactMessagesInServiceByUserRequestData = {
+  params: FindAllContactMessagesInServiceByUserRequestParams;
+};
+
+type FindAllContactMessagesInServiceByUserRequestParams = {
+  clientId: string;
+};
+//#endregion
+
+//#region findAllContactMessagesAwaitServiceByUser
+type FindAllContactMessagesAwaitServiceByUserRequestData = {
+  params: FindAllContactMessagesAwaitServiceByUserRequestParams;
+};
+
+type FindAllContactMessagesAwaitServiceByUserRequestParams = {
+  clientId: string;
+};
+//#endregion
+
 type FindAllWhatsappMessageCategoryRequestData = {
   params: FindAllWhatsappMessageCategoryRequestParams;
   queries: FindAllWhatsappMessageCategoryRequestQuery;
@@ -49,15 +69,33 @@ type FindAllWhatsappMessageCategoryRequestParams = {
   clientId: string;
 };
 
+//#region findAllContactMessagesByUser
 type FindAllWhatsappContactMessagesRequestData = {
   queries: FindAllWhatsappContactMessagesRequestQuery;
+  params: FindAllWhatsappContactMessagesRequestParams;
+};
+
+type FindAllWhatsappContactMessagesRequestParams = {
+  clientId: string;
 };
 
 type FindAllWhatsappContactMessagesRequestQuery = PaginateRequestQuery & {
   categoryIds: string[];
   text: string;
 };
+//#endregion
 
+//#region findCountUnreadMessages
+type FindCountUnreadMessagesRequestData = {
+  params: FindCountUnreadMessagesRequestParams;
+};
+
+type FindCountUnreadMessagesRequestParams = {
+  clientId: string;
+};
+//#endregion
+
+//#region findAllWhatsappMessagesByContact
 type FindAllWhatsappMessagesByContactRequestData = {
   params: FindAllWhatsappMessagesByContactRequestParams;
   queries: PaginateRequestQuery;
@@ -65,8 +103,11 @@ type FindAllWhatsappMessagesByContactRequestData = {
 
 type FindAllWhatsappMessagesByContactRequestParams = {
   contactMessageId: string;
+  clientId: string;
 };
+//#endregion
 
+//#region getFileDocumentUploadUrl
 type GetFileDocumentUploadUrlRequestData = {
   params: GetFileDocumentUploadUrlRequestParams;
   body: GetFileDocumentUploadUrlRequestBody;
@@ -75,6 +116,7 @@ type GetFileDocumentUploadUrlRequestData = {
 type GetFileDocumentUploadUrlRequestParams = {
   contactId: string;
   configurationId: string;
+  clientId: string;
 };
 
 type GetFileDocumentUploadUrlRequestBody = {
@@ -82,7 +124,9 @@ type GetFileDocumentUploadUrlRequestBody = {
   fileSize: number;
   fileName: string;
 };
+//#endregion
 
+//#region createWhatsappMessage
 type CreateWhatsappMessageRequestData = {
   params: CreateWhatsappMessageRequestParams;
   body: CreateWhatsappMessageRequestBody;
@@ -91,6 +135,7 @@ type CreateWhatsappMessageRequestData = {
 type CreateWhatsappMessageRequestParams = {
   contactId: string;
   configurationId: string;
+  clientId: string;
 };
 
 type CreateWhatsappMessageRequestBody = {
@@ -98,7 +143,9 @@ type CreateWhatsappMessageRequestBody = {
   text?: string;
   fileId?: string;
 };
+//#endregion
 
+//#region updateLinkCategoryToContact
 type CreateLinkCategoryToContactRequestData = {
   params: CreateLinkCategoryToContactRequestParams;
   body: string[];
@@ -106,24 +153,37 @@ type CreateLinkCategoryToContactRequestData = {
 
 type CreateLinkCategoryToContactRequestParams = {
   contactId: string;
+  clientId: string;
 };
+//#endregion
 
+//#region findAllMessageCategoriesByUser
 type FindAllMessageCategoriesByUserData = {
   queries: FindAllMessageCategoriesByUserQuery;
+  params: FindAllMessageCategoriesByUserParams;
+};
+
+type FindAllMessageCategoriesByUserParams = {
+  clientId: string;
 };
 
 type FindAllMessageCategoriesByUserQuery = PaginateRequestQuery & {
   text: string;
 };
+//#endregion
 
+//#region findContactServiceByContact
 type FindWhatsappContactServiceByContactRequestData = {
   params: FindWhatsappContactServiceByContactRequestParams;
 };
 
 type FindWhatsappContactServiceByContactRequestParams = {
   contactId: string;
+  clientId: string;
 };
+//#endregion
 
+//#region findAllServicesHistoryByContact
 type FindAllWhatsappServicesHistoryByContactRequestData = {
   queries: PaginateRequestQuery;
   params: FindAllWhatsappServicesHistoryByContactRequestParams;
@@ -131,16 +191,22 @@ type FindAllWhatsappServicesHistoryByContactRequestData = {
 
 type FindAllWhatsappServicesHistoryByContactRequestParams = {
   contactId: string;
+  clientId: string;
 };
+//#endregion
 
+//#region startService
 type StartWhatsappServiceRequestData = {
   params: StartWhatsappServiceRequestParams;
 };
 
 type StartWhatsappServiceRequestParams = {
   contactId: string;
+  clientId: string;
 };
+//#endregion
 
+//#region transferService
 type TransferWhatsappServiceRequestData = {
   params: TransferWhatsappServiceRequestParams;
 };
@@ -148,12 +214,17 @@ type TransferWhatsappServiceRequestData = {
 type TransferWhatsappServiceRequestParams = {
   contactId: string;
   userId: string;
+  clientId: string;
 };
+//#endregion
 
+//#region endService
 type EndWhatsappServiceRequestData = {
   params: EndWhatsappServiceRequestParams;
 };
 
 type EndWhatsappServiceRequestParams = {
   contactId: string;
+  clientId: string;
 };
+//#endregion

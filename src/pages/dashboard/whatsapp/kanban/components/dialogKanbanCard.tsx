@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { requestErrorHandling } from "@/utils/request";
 import { useUserContext } from "@/context/UserContext/userContext";
+import { useClientContext } from "@/context/ClientContext/clientContext";
 
 type DialogKanbanCardProps = {
   children?: React.ReactNode;
@@ -17,15 +18,17 @@ type DialogKanbanCardProps = {
 
 export const DialogKanbanCard: FC<DialogKanbanCardProps> = ({ children, contactMessage }) => {
   const { user } = useUserContext();
+  const { client } = useClientContext();
 
   const [isOpen, setIsOpen] = useState(false);
 
   const findContactServiceByContact = useQuery({
-    queryKey: [`contact-${contactMessage.id}`, "findContactServiceByContact"],
+    queryKey: [`contact-${contactMessage.id}`, "findContactServiceByContact", client.id],
     queryFn: async () =>
       await whatsappService.findContactServiceByContact({
         params: {
           contactId: contactMessage.id,
+          clientId: client.id,
         },
       }),
     enabled: isOpen,
@@ -79,7 +82,7 @@ export const DialogKanbanCard: FC<DialogKanbanCardProps> = ({ children, contactM
                   disabled={isLoading}
                   onClick={() =>
                     endServiceMutation.mutate({
-                      params: { contactId: contactService.id },
+                      params: { contactId: contactService.id, clientId: client.id },
                     })
                   }
                 >
@@ -93,6 +96,7 @@ export const DialogKanbanCard: FC<DialogKanbanCardProps> = ({ children, contactM
                     startServiceMutation.mutate({
                       params: {
                         contactId: contactService.id,
+                        clientId: client.id,
                       },
                     })
                   }
@@ -108,6 +112,7 @@ export const DialogKanbanCard: FC<DialogKanbanCardProps> = ({ children, contactM
                       params: {
                         contactId: contactService.id,
                         userId: user!.id,
+                        clientId: client.id,
                       },
                     })
                   }

@@ -1,12 +1,10 @@
-import { ClientList } from "@/pages/dashboard/client/clientList/clientList";
-import { EditClientLayout } from "@/pages/dashboard/client/clientList/edit/layout";
+import { EditClientLayout } from "@/pages/dashboard/configuration/layout";
 import { Route, Routes } from "react-router";
 
-export const ClientRouter = () => {
+export const ConfigurationRouter = () => {
   return (
     <Routes>
-      <Route index element={<ClientList />} />
-      <Route path=":clientId" element={<EditClientLayout />} />
+      <Route index element={<EditClientLayout />} />
     </Routes>
   );
 };

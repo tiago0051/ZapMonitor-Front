@@ -5,9 +5,10 @@ import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
 import { Badge } from "@/components/ui/badge";
 import { useWhatsappContext } from "../../whatsappLayout";
 import { formatShortName } from "@/utils/formatString";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { draggable } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { useUserContext } from "@/context/UserContext/userContext";
+import { socket } from "@/services/socket/socket";
 
 type KanbanCardProps = {
   contactMessage: WhatsappContactMessage;
@@ -15,11 +16,13 @@ type KanbanCardProps = {
   isDraggable?: boolean;
 };
 
-export const KanbanCard = ({ contactMessage, isDraggable = false, columnTitle }: KanbanCardProps) => {
+export const KanbanCard = ({ contactMessage: contactMessageDefault, isDraggable = false, columnTitle }: KanbanCardProps) => {
   const ref = useRef<HTMLButtonElement>(null);
 
   const { user } = useUserContext();
-  const { usersInContacts } = useWhatsappContext();
+  const { usersInContacts, playSound } = useWhatsappContext();
+
+  const [contactMessage, setContactMessage] = useState<WhatsappContactMessage>(contactMessageDefault);
 
   const phoneNumber = parsePhoneNumberFromString(contactMessage.phoneNumber);
   const isBrazilianPhoneNumber = phoneNumber?.country === "BR";
@@ -46,6 +49,18 @@ export const KanbanCard = ({ contactMessage, isDraggable = false, columnTitle }:
       getInitialData: () => ({ id: contactMessage.id, column: columnTitle }),
     });
   }, [contactMessage, isDraggable, columnTitle]);
+
+  useEffect(() => {
+    socket.on(`contact:${contactMessage.id}`, (data: WhatsappContactMessage) => {
+      if (data.isRead === false) playSound();
+
+      setContactMessage(data);
+    });
+
+    return () => {
+      socket.off(`contact:${contactMessage.id}`);
+    };
+  }, [contactMessage, playSound]);
 
   return (
     <DialogKanbanCard contactMessage={contactMessage}>

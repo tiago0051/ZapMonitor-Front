@@ -7,19 +7,31 @@ import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/ad
 import { useUserContext } from "@/context/UserContext/userContext";
 import { toast } from "sonner";
 import { requestErrorHandling } from "@/utils/request";
+import { useClientContext } from "@/context/ClientContext/clientContext";
 
 export const WhatsappKanban = () => {
   const { user } = useUserContext();
+  const { client } = useClientContext();
 
   const findAllContactMessagesAwaitServiceByUser = useQuery({
-    queryKey: ["chat:update", "findAllContactMessagesAwaitServiceByUser"],
-    queryFn: () => whatsappService.findAllContactMessagesAwaitServiceByUser(),
+    queryKey: ["chat:update", "findAllContactMessagesAwaitServiceByUser", client.id],
+    queryFn: () =>
+      whatsappService.findAllContactMessagesAwaitServiceByUser({
+        params: {
+          clientId: client.id,
+        },
+      }),
   });
   const listPagesContactMessagesAwaitService = findAllContactMessagesAwaitServiceByUser.data || [];
 
   const findAllContactMessagesInServiceByUser = useQuery({
-    queryKey: ["chat:update", "findAllContactMessagesInServiceByUser"],
-    queryFn: () => whatsappService.findAllContactMessagesInServiceByUser(),
+    queryKey: ["chat:update", "findAllContactMessagesInServiceByUser", client.id],
+    queryFn: () =>
+      whatsappService.findAllContactMessagesInServiceByUser({
+        params: {
+          clientId: client.id,
+        },
+      }),
   });
 
   const contactMessagesInService = findAllContactMessagesInServiceByUser.data || [];
@@ -44,12 +56,13 @@ export const WhatsappKanban = () => {
           startServiceMutation.mutate({
             params: {
               contactId,
+              clientId: client.id,
             },
           });
         }
       },
     });
-  }, [startServiceMutation]);
+  }, [startServiceMutation, client]);
 
   return (
     <div className="grid grid-rows-[min-content_1fr] gap-5">
