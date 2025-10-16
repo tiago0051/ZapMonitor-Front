@@ -68,14 +68,13 @@ export const DialogKanbanCard: FC<DialogKanbanCardProps> = ({ children, contactM
 
       <DialogContent className="grid max-h-[90dvh] grid-rows-[min-content_1fr] overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
-          <DialogTitle>Detalhes do contato</DialogTitle>
-          <DialogDescription>Informações detalhadas sobre o contato selecionado.</DialogDescription>
+          <DialogTitle hidden>Detalhes do contato</DialogTitle>
+          <DialogDescription hidden>Informações detalhadas sobre o contato selecionado.</DialogDescription>
         </DialogHeader>
 
         {contactService && (
-          <div className="grid grid-rows-[min-content_auto_min-content] gap-4 overflow-hidden">
+          <div className="grid grid-rows-[min-content_min-content_auto] gap-4 overflow-hidden">
             <WhatsappChatMessageHeader contactMessage={contactMessage} className="w-full" />
-            <WhatsappChatMessageList whatsappConfigurationId={contactMessage.whatsappConfigurationId} contactService={contactService} />
             <div className="flex flex-col gap-2 [&>button]:w-full">
               {contactService?.canBeServiceEnded && (
                 <Button
@@ -121,6 +120,7 @@ export const DialogKanbanCard: FC<DialogKanbanCardProps> = ({ children, contactM
                 </Button>
               )}
             </div>
+            <WhatsappChatMessageList whatsappConfigurationId={contactMessage.whatsappConfigurationId} contactService={contactService} />
           </div>
         )}
       </DialogContent>

@@ -129,6 +129,7 @@ type GetFileDocumentUploadUrlRequestParams = {
   contactId: string;
   configurationId: string;
   clientId: string;
+  fileType: string;
 };
 
 type GetFileDocumentUploadUrlRequestBody = {

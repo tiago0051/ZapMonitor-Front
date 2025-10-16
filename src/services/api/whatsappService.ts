@@ -69,7 +69,7 @@ export const whatsappService = {
     params,
   }: GetFileDocumentUploadUrlRequestData): Promise<GetFileDocumentUploadUrlResponseData> => {
     const response = await api.post(
-      `/client/${params.clientId}/whatsapp/contact/${params.contactId}/configuration/${params.configurationId}/message/document/upload-url`,
+      `/client/${params.clientId}/whatsapp/contact/${params.contactId}/configuration/${params.configurationId}/message/document/${params.fileType}/upload-url`,
       body,
     );
     return response.data;
