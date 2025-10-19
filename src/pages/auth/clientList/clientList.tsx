@@ -3,6 +3,7 @@ import { DataTable } from "@/components/ui/dataTable";
 import { clientService } from "@/services/api/clientService";
 import { useQuery } from "@tanstack/react-query";
 import { getColumns } from "./clientListColumns";
+import { Navigate } from "react-router";
 
 export const ClientList = () => {
   const findAllClientQuery = useQuery({
@@ -11,8 +12,11 @@ export const ClientList = () => {
   });
 
   const clientsList = findAllClientQuery.data;
+  const onlyClient = clientsList?.length === 1 && clientsList[0];
 
   const columns = getColumns();
+
+  if (onlyClient) return <Navigate to={`/dashboard/client/${onlyClient.id}`} />;
 
   return (
     <Card className="w-full">
