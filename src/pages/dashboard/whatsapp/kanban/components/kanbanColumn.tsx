@@ -26,7 +26,7 @@ export const KanbanColumn: FC<KanbanColumnProps> = ({ title, children, isDroppab
   return (
     <div
       ref={ref}
-      className="bg-secondary grid h-[calc(100dvh-118px)] grid-rows-[min-content_auto] overflow-hidden rounded-sm border-x border-b"
+      className="bg-secondary grid h-[calc(100dvh-310px)] grid-rows-[min-content_auto] overflow-hidden rounded-sm border-x border-b md:h-[calc(100dvh-155px)]"
     >
       <div className="bg-primary flex justify-between border-t border-b px-4 py-2">
         <h3 className="text-primary-foreground text-lg font-bold">{title}</h3>

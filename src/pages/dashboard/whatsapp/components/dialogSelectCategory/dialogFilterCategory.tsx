@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { DataTablePaginate } from "@/components/ui/dataTablePaginate";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ import { getColumns } from "./whatsappCategoryColumns";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useClientContext } from "@/context/ClientContext/clientContext";
+import { cn } from "@/lib/utils";
 
 type DialogFilterCategoryProps = {
   onSelectCategories: (categories: WhatsappMessageCategory[]) => void;
@@ -68,24 +69,22 @@ export const DialogFilterCategory = ({ onSelectCategories, categories }: DialogF
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant={"outline"} className="flex h-auto w-full flex-wrap justify-start" asChild>
-          <div>
-            {categories.length > 0 ? (
-              <>
-                {categories.map((cat) => (
-                  <Badge key={cat.id}>{cat.name}</Badge>
-                ))}
-                <Button variant={"link"} className="px-0 text-xs">
-                  Selecionar
-                </Button>
-              </>
-            ) : (
+        <div className={cn(buttonVariants({ variant: "outline" }), "flex h-auto min-h-9 w-full flex-wrap justify-start py-0")}>
+          {categories.length > 0 ? (
+            <>
+              {categories.map((cat) => (
+                <Badge key={cat.id}>{cat.name}</Badge>
+              ))}
               <Button variant={"link"} className="px-0 text-xs">
-                Selecionar categoria
+                Selecionar
               </Button>
-            )}
-          </div>
-        </Button>
+            </>
+          ) : (
+            <Button variant={"link"} className="h-min px-0 py-0 text-xs">
+              Selecionar categoria
+            </Button>
+          )}
+        </div>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

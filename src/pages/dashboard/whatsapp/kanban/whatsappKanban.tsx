@@ -13,10 +13,16 @@ import { Input } from "@/components/ui/input";
 import { useDebounceValue } from "usehooks-ts";
 import { globalContants } from "@/contants/globalContants";
 import { Label } from "@/components/ui/label";
+import { buttonVariants } from "@/components/ui/button";
+import { Link } from "react-router";
+import { useBaseUrl } from "@/hooks/use-baseUrl";
+import { FiBookOpen } from "react-icons/fi";
+import { Header } from "@/components/ui/header";
 
 export const WhatsappKanban = () => {
   const { user } = useUserContext();
   const { client } = useClientContext();
+  const baseUrl = useBaseUrl();
 
   const [filterCategories, setFilterCategories] = useState<WhatsappMessageCategory[]>([]);
   const [filterText, setFilterText] = useDebounceValue("", globalContants.DEBOUNCE_DELAY);
@@ -81,18 +87,24 @@ export const WhatsappKanban = () => {
   }, [startServiceMutation, client]);
 
   return (
-    <div className="grid grid-rows-[min-content_1fr] gap-2">
-      <div>
-        <h2 className="mb-2">Filtros</h2>
-        <div className="grid gap-4 space-y-2 md:grid-cols-4">
+    <>
+      <Header title="Whatsapp">
+        <Link className={buttonVariants()} to={`${baseUrl}/whatsapp/contacts`}>
+          <FiBookOpen />
+          Contatos
+        </Link>
+      </Header>
+      <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-1">
+          <Label>Filtrar por categoria:</Label>
           <DialogFilterCategory categories={filterCategories} onSelectCategories={setFilterCategories} />
-          <div className="space-y-1">
-            <Label>Buscar contato:</Label>
-            <Input placeholder="Nome ou número de telefone" onChange={(e) => setFilterText(e.currentTarget.value)} />
-          </div>
+        </div>
+        <div className="space-y-1">
+          <Label>Buscar contato:</Label>
+          <Input placeholder="Nome ou número de telefone" onChange={(e) => setFilterText(e.currentTarget.value)} />
         </div>
       </div>
-      <div className="grid w-min grid-cols-[repeat(3,320px)] gap-1">
+      <div className="grid w-min max-w-screen grid-cols-[repeat(3,320px)] gap-1 overflow-scroll">
         <KanbanColumn title="Aguardando" count={listPagesContactMessagesAwaitService.length}>
           {listPagesContactMessagesAwaitService?.map((contactMessage) => (
             <KanbanCard key={contactMessage.id} contactMessage={contactMessage} isDraggable columnTitle="Aguardando" />
@@ -109,6 +121,6 @@ export const WhatsappKanban = () => {
           ))}
         </KanbanColumn>
       </div>
-    </div>
+    </>
   );
 };

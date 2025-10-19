@@ -6,15 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router";
 import { useBaseUrl } from "@/hooks/use-baseUrl";
 import { WhatsappContactsList } from "./whatsappContacts";
+import { Header } from "@/components/ui/header";
 
-export const WhatsappChat = () => {
+export const WhatsappContacts = () => {
   const baseUrl = useBaseUrl();
   const { contactSelected, hasContactSelected, setContactSelected, usersInContacts } = useWhatsappContext();
 
   const isMobile = useIsMobile();
 
   return (
-    <div className="grid">
+    <>
+      <Header title="Lista de contatos" />
       <div className="flex max-w-full justify-between overflow-x-auto">
         <Link to={`${baseUrl}/whatsapp/kanban`}>
           <Button variant={"outline"}>Kanban</Button>
@@ -44,6 +46,6 @@ export const WhatsappChat = () => {
           <WhatsappChatMessages className="col-span-4" contactMessage={contactSelected!} onBack={() => setContactSelected(null)} />
         )}
       </div>
-    </div>
+    </>
   );
 };
