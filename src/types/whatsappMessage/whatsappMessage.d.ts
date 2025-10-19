@@ -1,6 +1,6 @@
-type WhatsappMessage = {
+type WhatsappMessage<C = unknown> = {
   id: string;
-  content: string;
+  content: C;
   contentType: string;
   type: number;
   status: number;

@@ -8,6 +8,12 @@ import { requestErrorHandling } from "@/utils/request";
 import { IsTopScrolled } from "@/utils/scroll";
 import { WhatsappChatMessageListItem } from "./whatsappChatMessageList/whatsappChatMessageListItem";
 import { cn } from "@/lib/utils";
+import { WhatsappMessageContentType } from "@/enums/whatsappMessageContentType.enum";
+import { Button } from "@/components/ui/button";
+import { FiFile, FiPaperclip } from "react-icons/fi";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { whatsappContants } from "@/contants/whatsappContants";
+import { BlockBlobClient } from "@azure/storage-blob";
 
 type WhatsappChatMessageListProps = {
   contactService: WhatsappContactService;
@@ -46,6 +52,34 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
     onError: requestErrorHandling,
   });
 
+  const uploadFileDocumentMutation = useMutation({
+    mutationFn: async (file: globalThis.File) => {
+      const { fileId, url } = await whatsappService.getFileDocumentUploadUrl({
+        params: {
+          contactId: contactService.id,
+          configurationId: whatsappConfigurationId,
+        },
+        body: {
+          fileName: file.name,
+          fileSize: file.size,
+          mimeType: file.type,
+        },
+      });
+
+      const blockBlob = new BlockBlobClient(url);
+      await blockBlob.uploadData(file, {
+        blobHTTPHeaders: { blobContentType: file.type },
+        blockSize: file.size,
+      });
+
+      return fileId;
+    },
+    onSuccess: () => {
+      findAllWhatsappMessagesByContact.refetch();
+    },
+    onError: requestErrorHandling,
+  });
+
   function onScrollChat(event: React.UIEvent<HTMLDivElement, UIEvent>) {
     const isTopScrolled = IsTopScrolled(event.currentTarget);
 
@@ -62,7 +96,8 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
           configurationId: whatsappConfigurationId,
         },
         body: {
-          message,
+          type: WhatsappMessageContentType.TEXT,
+          text: message,
         },
       });
 
@@ -88,7 +123,45 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
     event.target.style.height = `${event.target.scrollHeight}px`;
   }
 
-  const disabledSendMessage = createMessageMutate.isPending;
+  function sendFileMessageClick(type: "document") {
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.multiple = true;
+
+    switch (type) {
+      case "document":
+        fileInput.accept = whatsappContants.DOCUMENT_TYPES;
+        break;
+      default:
+        fileInput.accept = "*/*";
+    }
+
+    fileInput.onchange = async () => {
+      if (fileInput.files) {
+        const files = Array.from(fileInput.files);
+
+        for (const file of files) {
+          const fileId = await uploadFileDocumentMutation.mutateAsync(file);
+
+          await createMessageMutate.mutateAsync({
+            params: {
+              contactId: contactService.id,
+              configurationId: whatsappConfigurationId,
+            },
+            body: {
+              type: WhatsappMessageContentType.DOCUMENT,
+              fileId,
+            },
+          });
+        }
+      }
+
+      fileInput.value = "";
+    };
+    fileInput.click();
+  }
+
+  const disabledSendMessage = createMessageMutate.isPending || uploadFileDocumentMutation.isPending;
 
   useEffect(() => {
     if (user) {
@@ -127,15 +200,30 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
             aria-label="Digite sua mensagem"
             rows={1}
           />
-          <button
-            type="button"
-            className="bg-primary rounded px-4 py-2 text-white transition disabled:opacity-50"
-            onClick={handleSendMessage}
-            disabled={disabledSendMessage || !message.trim()}
-            aria-label="Enviar mensagem"
-          >
-            Enviar
-          </button>
+          <div className="flex gap-1">
+            <Button
+              type="button"
+              onClick={handleSendMessage}
+              disabled={disabledSendMessage || !message.trim()}
+              aria-label="Enviar mensagem"
+            >
+              Enviar
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant={"outline"} disabled={disabledSendMessage}>
+                  <FiPaperclip />
+                </Button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => sendFileMessageClick("document")}>
+                  <FiFile />
+                  Documento
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       )}
     </div>

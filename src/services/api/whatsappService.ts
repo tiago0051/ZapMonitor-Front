@@ -53,6 +53,16 @@ export const whatsappService = {
     });
     return response.data;
   },
+  getFileDocumentUploadUrl: async ({
+    body,
+    params,
+  }: GetFileDocumentUploadUrlRequestData): Promise<GetFileDocumentUploadUrlResponseData> => {
+    const response = await api.post(
+      `/user/whatsapp/contact/${params.contactId}/configuration/${params.configurationId}/message/document/upload-url`,
+      body,
+    );
+    return response.data;
+  },
   createWhatsappMessage: async ({ body, params }: CreateWhatsappMessageRequestData): Promise<WhatsappMessage> => {
     const response = await api.post(`/user/whatsapp/contact/${params.contactId}/configuration/${params.configurationId}/message`, body);
     return response.data;
