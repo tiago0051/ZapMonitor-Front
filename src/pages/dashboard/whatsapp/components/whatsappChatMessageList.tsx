@@ -1,23 +1,16 @@
 import { useUserContext } from "@/context/UserContext/userContext";
 import { whatsappService } from "@/services/api/whatsappService";
 import { socket } from "@/services/socket/socket";
-import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { requestErrorHandling } from "@/utils/request";
 import { IsTopScrolled } from "@/utils/scroll";
 import { WhatsappChatMessageListItem } from "./whatsappChatMessageList/whatsappChatMessageListItem";
 import { cn } from "@/lib/utils";
-import { WhatsappMessageContentType } from "@/enums/whatsappMessageContentType.enum";
-import { Button } from "@/components/ui/button";
-import { FiFile, FiMic, FiPaperclip, FiSend } from "react-icons/fi";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { whatsappContants } from "@/contants/whatsappContants";
-import { BlockBlobClient } from "@azure/storage-blob";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useWhatsappContext } from "../whatsappLayout";
-import { useReactMediaRecorder } from "react-media-recorder";
-import { convertWavToMp3 } from "@/utils/fileConvert";
+import { WhatsappChatCreateMessageBar } from "./whatsappChatCreateMessageBar";
+import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
 
 type WhatsappChatMessageListProps = {
   contactService: WhatsappContactService;
@@ -31,9 +24,6 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
   const { playSound } = useWhatsappContext();
 
   const [newMessagesList, setNewMessagesList] = useState<WhatsappMessage[]>([]);
-
-  const [message, setMessage] = useState("");
-  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const findAllWhatsappMessagesByContact = useInfiniteQuery({
     queryKey: [`contact-${contactService.id}`, "findAllWhatsappMessagesByContact", contactService.id],
@@ -52,74 +42,6 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
     initialPageParam: 1,
   });
 
-  const createMessageMutate = useMutation({
-    mutationFn: whatsappService.createWhatsappMessage,
-    onSuccess: () => {
-      findAllWhatsappMessagesByContact.refetch();
-      inputRef.current?.focus();
-    },
-    onError: requestErrorHandling,
-  });
-
-  const uploadFileMutation = useMutation({
-    mutationFn: async ({ file, fileType }: { file: globalThis.File; fileType: string }) => {
-      const { fileId, url } = await whatsappService.getFileDocumentUploadUrl({
-        params: {
-          contactId: contactService.id,
-          configurationId: whatsappConfigurationId,
-          clientId: client.id,
-          fileType: fileType,
-        },
-        body: {
-          fileName: file.name,
-          fileSize: file.size,
-          mimeType: file.type,
-        },
-      });
-
-      const blockBlob = new BlockBlobClient(url);
-      await blockBlob.uploadData(file, {
-        blobHTTPHeaders: { blobContentType: file.type },
-        blockSize: file.size,
-      });
-
-      return fileId;
-    },
-    onSuccess: () => {
-      findAllWhatsappMessagesByContact.refetch();
-    },
-    onError: requestErrorHandling,
-  });
-
-  const { status, startRecording, stopRecording } = useReactMediaRecorder({
-    audio: true,
-    mediaRecorderOptions: {
-      mimeType: "audio/wav",
-    },
-    onStop: async (_u, blob) => {
-      const blobMp3 = await convertWavToMp3(blob);
-      const file = new File([blobMp3], new Date().getTime().toString(), { type: blobMp3.type });
-
-      const fileId = await uploadFileMutation.mutateAsync({
-        file,
-        fileType: "audio",
-      });
-
-      await createMessageMutate.mutateAsync({
-        params: {
-          contactId: contactService.id,
-          configurationId: whatsappConfigurationId,
-          clientId: client.id,
-        },
-        body: {
-          type: WhatsappMessageContentType.AUDIO,
-          fileId,
-        },
-      });
-    },
-  });
-  const isRecording = status === "recording";
-
   function onScrollChat(event: React.UIEvent<HTMLDivElement, UIEvent>) {
     const isTopScrolled = IsTopScrolled(event.currentTarget);
 
@@ -127,76 +49,6 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
       findAllWhatsappMessagesByContact.fetchNextPage();
     }
   }
-
-  async function handleSendMessage() {
-    if (message.trim()) {
-      createMessageMutate.mutate({
-        params: {
-          contactId: contactService.id,
-          configurationId: whatsappConfigurationId,
-          clientId: client.id,
-        },
-        body: {
-          type: WhatsappMessageContentType.TEXT,
-          text: message,
-        },
-      });
-
-      setMessage("");
-
-      if (inputRef.current) {
-        inputRef.current.style.height = "auto";
-      }
-    }
-  }
-
-  function onKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      handleSendMessage();
-    }
-  }
-
-  function onInput(event: React.ChangeEvent<HTMLTextAreaElement>) {
-    setMessage(event.target.value);
-    // Auto-resize
-    event.target.style.height = "auto";
-    event.target.style.height = `${event.target.scrollHeight}px`;
-  }
-
-  function sendFileDocumentMessageClick() {
-    const fileInput = document.createElement("input");
-    fileInput.type = "file";
-    fileInput.multiple = true;
-    fileInput.accept = whatsappContants.DOCUMENT_TYPES;
-
-    fileInput.onchange = async () => {
-      if (fileInput.files) {
-        const files = Array.from(fileInput.files);
-
-        for (const file of files) {
-          const fileId = await uploadFileMutation.mutateAsync({ file, fileType: "document" });
-
-          await createMessageMutate.mutateAsync({
-            params: {
-              contactId: contactService.id,
-              configurationId: whatsappConfigurationId,
-              clientId: client.id,
-            },
-            body: {
-              type: WhatsappMessageContentType.DOCUMENT,
-              fileId,
-            },
-          });
-        }
-      }
-
-      fileInput.value = "";
-    };
-    fileInput.click();
-  }
-
-  const disabledSendMessage = createMessageMutate.isPending || uploadFileMutation.isPending;
 
   useEffect(() => {
     if (user) {
@@ -209,7 +61,9 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
 
   useEffect(() => {
     socket.on(`contact:${contactService.id}:newMessage`, (data: WhatsappMessage) => {
-      playSound();
+      const isNewMessageIncoming = data.type === WhatsappMessageType.INCOMING;
+
+      if (isNewMessageIncoming) playSound();
 
       setNewMessagesList((prev) => [data, ...prev]);
     });
@@ -243,54 +97,7 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
       </div>
 
       {contactService.canBeSentMessage && (
-        <div className="flex items-center gap-2 pt-2">
-          <textarea
-            className="focus:ring-primary max-h-40 w-full resize-none overflow-auto rounded border px-4 py-2 leading-5 transition focus:ring-2 focus:outline-none"
-            placeholder="Digite sua mensagem"
-            onKeyDown={onKeyDown}
-            onChange={onInput}
-            value={message}
-            ref={inputRef}
-            readOnly={disabledSendMessage || isRecording}
-            aria-label="Digite sua mensagem"
-            rows={1}
-          />
-          <div className="flex gap-1">
-            <Button
-              type="button"
-              onClick={handleSendMessage}
-              disabled={disabledSendMessage || !message.trim() || isRecording}
-              aria-label="Enviar mensagem"
-              size={"icon"}
-            >
-              <FiSend />
-            </Button>
-            <Button
-              type="button"
-              onClick={() => (isRecording ? stopRecording() : startRecording())}
-              disabled={disabledSendMessage}
-              variant={isRecording ? "destructive" : "outline"}
-              aria-label="Enviar áudio"
-              size={"icon"}
-            >
-              <FiMic />
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild disabled={isRecording}>
-                <Button variant={"outline"} size={"icon"} disabled={disabledSendMessage}>
-                  <FiPaperclip />
-                </Button>
-              </DropdownMenuTrigger>
-
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => sendFileDocumentMessageClick()}>
-                  <FiFile />
-                  Documento
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
+        <WhatsappChatCreateMessageBar contactService={contactService} whatsappConfigurationId={whatsappConfigurationId} />
       )}
     </div>
   );
