@@ -41,7 +41,7 @@ export const WhatsappChatMessageHeader = ({ contactMessage, onBack, className }:
   const isLoading = updateWhatsappContactMutation.isPending;
 
   return (
-    <div className={cn("flex justify-between border-b py-1 pb-4 sm:px-4", className)}>
+    <div className={cn("flex flex-row md:flex-col justify-between border-b py-1 pb-4 sm:px-4", className)}>
       <div className={"flex flex-col gap-2"}>
         {isMobile && onBack && (
           <Button variant={"link"} className="p-0" onClick={onBack} aria-label="Voltar">
