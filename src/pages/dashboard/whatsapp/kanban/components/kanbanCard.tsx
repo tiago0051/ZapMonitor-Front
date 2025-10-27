@@ -69,7 +69,7 @@ export const KanbanCard = ({ contactMessage: contactMessageDefault, isDraggable 
         className="outline-primary/30 hover:outline-primary hover:shadow-primary focus:shadow-primary focus:outline-primary bg-primary/10 relative flex w-full flex-col gap-2 rounded-sm p-2 text-left shadow outline transition-all"
       >
         <div className="grid grid-cols-[auto_min-content] items-start gap-2">
-          <h4 className="truncate text-base font-bold">{contactMessage.name}</h4>
+          <h4 className="truncate text-base font-bold">{contactMessage.surname}</h4>
           <p className="text-muted-foreground text-sm whitespace-nowrap">{formattedPhoneNumber}</p>
         </div>
         <WhatsappChatContactMessage

@@ -241,3 +241,19 @@ type EndWhatsappServiceRequestParams = {
   clientId: string;
 };
 //#endregion
+
+//#region Update Contact
+type UpdateContactRequestData = {
+  params: UpdateContactRequestParams;
+  body: UpdateContactRequestBody;
+};
+
+type UpdateContactRequestParams = {
+  contactId: string;
+  clientId: string;
+};
+
+type UpdateContactRequestBody = {
+  surname: string;
+};
+//#endregion

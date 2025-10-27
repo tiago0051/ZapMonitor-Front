@@ -3,7 +3,7 @@ import { WhatsappKanban } from "@/pages/dashboard/whatsapp/kanban/whatsappKanban
 import { WhatsappLayout } from "@/pages/dashboard/whatsapp/whatsappLayout";
 import { Route, Routes } from "react-router";
 
-export const WhatsappRouter = () => {
+const WhatsappRouter = () => {
   return (
     <Routes>
       <Route element={<WhatsappLayout />}>
@@ -13,3 +13,5 @@ export const WhatsappRouter = () => {
     </Routes>
   );
 };
+
+export default WhatsappRouter;
