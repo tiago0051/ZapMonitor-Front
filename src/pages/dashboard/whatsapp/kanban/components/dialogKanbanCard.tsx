@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { requestErrorHandling } from "@/utils/request";
 import { useUserContext } from "@/context/UserContext/userContext";
+import { useClientContext } from "@/context/ClientContext/clientContext";
 
 type DialogKanbanCardProps = {
   children?: React.ReactNode;
@@ -17,15 +18,17 @@ type DialogKanbanCardProps = {
 
 export const DialogKanbanCard: FC<DialogKanbanCardProps> = ({ children, contactMessage }) => {
   const { user } = useUserContext();
+  const { client } = useClientContext();
 
   const [isOpen, setIsOpen] = useState(false);
 
   const findContactServiceByContact = useQuery({
-    queryKey: [`contact-${contactMessage.id}`, "findContactServiceByContact"],
+    queryKey: [`contact-${contactMessage.id}`, "findContactServiceByContact", client.id],
     queryFn: async () =>
       await whatsappService.findContactServiceByContact({
         params: {
           contactId: contactMessage.id,
+          clientId: client.id,
         },
       }),
     enabled: isOpen,
@@ -65,21 +68,20 @@ export const DialogKanbanCard: FC<DialogKanbanCardProps> = ({ children, contactM
 
       <DialogContent className="grid max-h-[90dvh] grid-rows-[min-content_1fr] overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
-          <DialogTitle>Detalhes do contato</DialogTitle>
-          <DialogDescription>Informações detalhadas sobre o contato selecionado.</DialogDescription>
+          <DialogTitle hidden>Detalhes do contato</DialogTitle>
+          <DialogDescription hidden>Informações detalhadas sobre o contato selecionado.</DialogDescription>
         </DialogHeader>
 
         {contactService && (
-          <div className="grid grid-rows-[min-content_auto_min-content] gap-4 overflow-hidden">
+          <div className="grid grid-rows-[min-content_min-content_auto] gap-4 overflow-hidden">
             <WhatsappChatMessageHeader contactMessage={contactMessage} className="w-full" />
-            <WhatsappChatMessageList whatsappConfigurationId={contactMessage.whatsappConfigurationId} contactService={contactService} />
             <div className="flex flex-col gap-2 [&>button]:w-full">
               {contactService?.canBeServiceEnded && (
                 <Button
                   disabled={isLoading}
                   onClick={() =>
                     endServiceMutation.mutate({
-                      params: { contactId: contactService.id },
+                      params: { contactId: contactService.id, clientId: client.id },
                     })
                   }
                 >
@@ -93,6 +95,7 @@ export const DialogKanbanCard: FC<DialogKanbanCardProps> = ({ children, contactM
                     startServiceMutation.mutate({
                       params: {
                         contactId: contactService.id,
+                        clientId: client.id,
                       },
                     })
                   }
@@ -108,6 +111,7 @@ export const DialogKanbanCard: FC<DialogKanbanCardProps> = ({ children, contactM
                       params: {
                         contactId: contactService.id,
                         userId: user!.id,
+                        clientId: client.id,
                       },
                     })
                   }
@@ -116,6 +120,7 @@ export const DialogKanbanCard: FC<DialogKanbanCardProps> = ({ children, contactM
                 </Button>
               )}
             </div>
+            <WhatsappChatMessageList whatsappConfigurationId={contactMessage.whatsappConfigurationId} contactService={contactService} />
           </div>
         )}
       </DialogContent>

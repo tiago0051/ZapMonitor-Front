@@ -10,9 +10,8 @@ export const LoginLayout = () => {
           </a>
         </div>
         <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-xs">
-            <Outlet />
-          </div>
+          <Outlet />
+          {/* <div className="w-full max-w-xs"></div> */}
         </div>
       </div>
       <div className="bg-muted relative hidden lg:block">

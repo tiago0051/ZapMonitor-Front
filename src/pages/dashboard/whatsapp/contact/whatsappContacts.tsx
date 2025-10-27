@@ -4,23 +4,21 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { useState, type FC } from "react";
 import { useDebounceValue } from "usehooks-ts";
 import { WhatsappChatItem } from "./components/whatsappChatItem";
-import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
 import { DialogFilterCategory } from "../components/dialogSelectCategory/dialogFilterCategory";
 import { Input } from "@/components/ui/input";
 import { IsTopScrolled } from "@/utils/scroll";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useClientContext } from "@/context/ClientContext/clientContext";
 
-type WhatsappContactOutServiceListProps = {
+type WhatsappContactsListProps = {
   contactSelected: WhatsappContactMessage | null;
   setContactSelected: (contact: WhatsappContactMessage) => void;
   usersInContacts: Record<string, User[]>;
 };
 
-export const WhatsappContactOutServiceList: FC<WhatsappContactOutServiceListProps> = ({
-  contactSelected,
-  setContactSelected,
-  usersInContacts,
-}) => {
+export const WhatsappContactsList: FC<WhatsappContactsListProps> = ({ contactSelected, setContactSelected, usersInContacts }) => {
+  const { client } = useClientContext();
+
   const [filterCategories, setFilterCategories] = useState<WhatsappMessageCategory[]>([]);
   const [filterText, setFilterText] = useDebounceValue("", globalContants.DEBOUNCE_DELAY);
 
@@ -33,6 +31,9 @@ export const WhatsappContactOutServiceList: FC<WhatsappContactOutServiceListProp
           take: 20,
           categoryIds: filterCategories.map((cat) => cat.id),
           text: filterText,
+        },
+        params: {
+          clientId: client.id,
         },
       }),
     getNextPageParam: (lastPage, allPages) => (lastPage.canNextPage ? allPages.length + 1 : undefined),
@@ -59,17 +60,11 @@ export const WhatsappContactOutServiceList: FC<WhatsappContactOutServiceListProp
         {listPagesContactMessages?.pages.map((page) =>
           page.items.map((contactMessage) => (
             <WhatsappChatItem
+              contactMessage={contactMessage}
               isSelected={contactSelected?.id === contactMessage.id}
-              isRead={contactMessage.isRead}
-              name={contactMessage.name}
-              phoneNumber={contactMessage.phoneNumber}
-              categories={contactMessage.categories}
-              messageContent={contactMessage.messageContent}
-              messageContentType={contactMessage.messageContentType}
               onClick={() => setContactSelected(contactMessage)}
               key={contactMessage.id}
               usersInContact={usersInContacts[contactMessage.id] || []}
-              isIncoming={contactMessage.messageType === WhatsappMessageType.INCOMING}
             />
           )),
         )}

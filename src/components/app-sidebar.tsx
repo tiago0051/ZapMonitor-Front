@@ -16,6 +16,7 @@ import { FiLogOut, FiMail, FiSettings } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
 import { PanelLeftIcon } from "lucide-react";
 import { Link } from "react-router";
+import { useBaseUrl } from "@/hooks/use-baseUrl";
 
 // This is sample data.
 const data = {
@@ -23,17 +24,17 @@ const data = {
     {
       title: "E-mails",
       icon: FiMail,
-      url: "/dashboard/email",
+      url: "email",
     },
     {
       title: "WhatsApp",
       icon: FaWhatsapp,
-      url: "/dashboard/whatsapp",
+      url: "whatsapp",
     },
     {
       title: "Clientes",
       icon: FiSettings,
-      url: "/dashboard/client",
+      url: "configuration",
     },
   ],
 };
@@ -41,16 +42,17 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { logout } = useUserContext();
   const { toggleSidebar } = useSidebar();
+  const baseUrl = useBaseUrl();
 
   return (
     <Sidebar variant="floating" collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip={"Início"}>
-              <p className="font-bold text-foreground text-[10px]">ZM</p>
-              <Link to="/dashboard">
-                <p className="text-2xl font-bold text-white bg-foreground px-2 rounded-sm">
+            <SidebarMenuButton tooltip={"Início"} asChild>
+              <Link to={baseUrl}>
+                <p className="text-foreground text-[10px] font-bold">ZM</p>
+                <p className="bg-foreground rounded-sm px-2 text-2xl font-bold text-white">
                   Zap<span className="text-primary">Monitor</span>
                 </p>
               </Link>
@@ -72,7 +74,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             {data.navMain.map((item) => (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton asChild tooltip={item.title}>
-                  <Link to={item.url} className="font-medium">
+                  <Link to={`${baseUrl}/${item.url}`} className="font-medium">
                     <item.icon />
                     {item.title}
                   </Link>

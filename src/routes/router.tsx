@@ -32,7 +32,8 @@ const PrivateRouter: FC = () => {
 
   return (
     <Routes>
-      <Route path="*" element={<DashboardRouter />} />
+      <Route path="/client/:clientId/*" element={<DashboardRouter />} />
+      <Route path="*" element={<Navigate to={"/auth/login"} />} />
     </Routes>
   );
 };
