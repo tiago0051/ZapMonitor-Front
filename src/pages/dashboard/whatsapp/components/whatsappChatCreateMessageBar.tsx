@@ -8,8 +8,8 @@ import { convertWavToMp3 } from "@/utils/fileConvert";
 import { requestErrorHandling } from "@/utils/request";
 import { BlockBlobClient } from "@azure/storage-blob";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState, type FC } from "react";
-import { FiFile, FiMic, FiPaperclip, FiSend, FiStopCircle, FiX } from "react-icons/fi";
+import { type FC, useEffect, useRef, useState } from "react";
+import { FiFile, FiImage, FiMic, FiPaperclip, FiSend, FiStopCircle, FiX } from "react-icons/fi";
 import { useReactMediaRecorder } from "react-media-recorder";
 import { toast } from "sonner";
 
@@ -140,18 +140,18 @@ export const WhatsappChatCreateMessageBar: FC<WhatsappChatCreateMessageBarProps>
     event.target.style.height = `${event.target.scrollHeight}px`;
   }
 
-  function sendFileDocumentMessageClick() {
+  function sendMediaMessageClick(contentType: WhatsappMessageContentType, acceptsTypes: string) {
     const fileInput = document.createElement("input");
     fileInput.type = "file";
     fileInput.multiple = true;
-    fileInput.accept = whatsappContants.DOCUMENT_TYPES;
+    fileInput.accept = acceptsTypes;
 
     fileInput.onchange = async () => {
       if (fileInput.files) {
         const files = Array.from(fileInput.files);
 
         for (const file of files) {
-          const fileId = await uploadFileMutation.mutateAsync({ file, fileType: "document" });
+          const fileId = await uploadFileMutation.mutateAsync({ file, fileType: contentType });
 
           await createMessageMutate.mutateAsync({
             params: {
@@ -160,7 +160,7 @@ export const WhatsappChatCreateMessageBar: FC<WhatsappChatCreateMessageBarProps>
               clientId: client.id,
             },
             body: {
-              type: WhatsappMessageContentType.DOCUMENT,
+              type: contentType,
               fileId,
             },
           });
@@ -241,9 +241,13 @@ export const WhatsappChatCreateMessageBar: FC<WhatsappChatCreateMessageBarProps>
             </DropdownMenuTrigger>
 
             <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => sendFileDocumentMessageClick()}>
+              <DropdownMenuItem onClick={() => sendMediaMessageClick(WhatsappMessageContentType.DOCUMENT, whatsappContants.DOCUMENT_TYPES)}>
                 <FiFile />
                 Documento
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => sendMediaMessageClick(WhatsappMessageContentType.IMAGE, whatsappContants.IMAGE_TYPES)}>
+                <FiImage />
+                Imagem
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
