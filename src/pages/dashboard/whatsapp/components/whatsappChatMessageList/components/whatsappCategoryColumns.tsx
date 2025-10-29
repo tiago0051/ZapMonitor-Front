@@ -14,7 +14,7 @@ export const getColumns = ({
     {
       header: "Ações",
       cell: ({ row }) => {
-        const id: string = row.getValue("id");
+        const {id} = row.original
 
         const selected = categoryIdsSelected?.includes(id);
 
