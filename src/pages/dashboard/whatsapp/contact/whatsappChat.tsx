@@ -2,14 +2,10 @@ import { FaWhatsapp } from "react-icons/fa";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useWhatsappContext } from "../whatsappLayout";
 import { WhatsappChatMessages } from "./whatsappChatMessages";
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router";
-import { useBaseUrl } from "@/hooks/use-baseUrl";
 import { WhatsappContactsList } from "./whatsappContacts";
 import { Header } from "@/components/ui/header";
 
 export const WhatsappContacts = () => {
-  const baseUrl = useBaseUrl();
   const { contactSelected, hasContactSelected, setContactSelected, usersInContacts } = useWhatsappContext();
 
   const isMobile = useIsMobile();
@@ -17,11 +13,6 @@ export const WhatsappContacts = () => {
   return (
     <>
       <Header title="Lista de contatos" />
-      <div className="flex max-w-full justify-between overflow-x-auto">
-        <Link to={`${baseUrl}/whatsapp/kanban`}>
-          <Button variant={"outline"}>Kanban</Button>
-        </Link>
-      </div>
       <div className="grid grid-rows-[calc(100svh-100px)] sm:grid-cols-6">
         {(!isMobile || !hasContactSelected) && (
           <div className="col-span-2 border-r">

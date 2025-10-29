@@ -78,7 +78,7 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
   }, [findAllWhatsappMessagesByContact.data]);
 
   return (
-    <div className={cn(className, "grid h-full grid-rows-[auto_50px] overflow-hidden pt-4")}>
+    <div className={cn(className, "grid h-full grid-rows-[auto_min-content] overflow-hidden pt-4")}>
       <div onScroll={onScrollChat} className="flex max-h-full flex-col-reverse gap-2 overflow-auto px-4">
         {newMessagesList.map((message) => (
           <WhatsappChatMessageListItem message={message} key={message.id} />

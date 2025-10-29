@@ -2,6 +2,7 @@ type WhatsappContactMessage = {
   id: string;
   phoneNumber: string;
   name: string;
+  surname: string;
   messageContent: string;
   messageContentType: string;
   messageType: number;

@@ -1,11 +1,12 @@
-import type { FC } from "react";
+import  { type FC, lazy } from "react";
 import { Navigate, Route, Routes, useParams } from "react-router";
 import { HomePage } from "../pages/dashboard/home/home";
 import { DashboardLayout } from "@/pages/dashboard/layout";
-import { EmailRouter } from "./emailRouter";
-import { WhatsappRouter } from "./whatsappRouter";
 import { ClientProvider } from "@/context/ClientContext/clientProvider";
-import { ConfigurationRouter } from "./clientRouter";
+
+const WhatsappRouter = lazy(() => import("./whatsappRouter"));
+const ConfigurationRouter = lazy(() => import("./clientRouter"));
+const EmailRouter = lazy(() => import("./emailRouter"));
 
 export const DashboardRouter: FC = () => {
   const { clientId } = useParams<{ clientId: string }>();

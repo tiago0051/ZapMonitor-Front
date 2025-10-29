@@ -119,4 +119,8 @@ export const whatsappService = {
     const response = await api.post(`/client/${params.clientId}/whatsapp/contact/${params.contactId}/service/end`);
     return response.data;
   },
+  updateContact: async ({ params, body }: UpdateContactRequestData) => {
+    const response = await api.put(`/client/${params.clientId}/whatsapp/contact/${params.contactId}`, body);
+    return response.data;
+  },
 };
