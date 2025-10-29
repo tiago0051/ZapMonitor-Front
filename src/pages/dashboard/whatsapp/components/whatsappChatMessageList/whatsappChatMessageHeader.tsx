@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { DialogLinkMessageCategory } from "./components/dialogLinkMessageCategory";
-import { FiArrowLeft, FiCheckCircle } from "react-icons/fi";
+import { FiCheckCircle } from "react-icons/fi";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import parsePhoneNumberFromString from "libphonenumber-js";
@@ -15,11 +15,10 @@ import { useClientContext } from "@/context/ClientContext/clientContext.ts";
 
 type WhatsappChatMessageHeaderProps = {
   contactMessage: WhatsappContactMessage;
-  onBack?: () => void;
   className?: string;
 };
 
-export const WhatsappChatMessageHeader = ({ contactMessage, onBack, className }: WhatsappChatMessageHeaderProps) => {
+export const WhatsappChatMessageHeader = ({ contactMessage, className }: WhatsappChatMessageHeaderProps) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { client } = useClientContext();
@@ -41,46 +40,39 @@ export const WhatsappChatMessageHeader = ({ contactMessage, onBack, className }:
   const isLoading = updateWhatsappContactMutation.isPending;
 
   return (
-    <div className={cn("flex flex-row md:flex-col justify-between border-b py-1 pb-4 sm:px-4", className)}>
-      <div className={"flex flex-col gap-2"}>
-        {isMobile && onBack && (
-          <Button variant={"link"} className="p-0" onClick={onBack} aria-label="Voltar">
-            <FiArrowLeft />
-          </Button>
-        )}
-        <div>
-          <div className={"flex gap-1"}>
-            <Input
-              disabled={isLoading}
-              data-changed={hasNewSurname}
-              defaultValue={contactMessage.surname}
-              onChange={(e) => setNewSurname(e.target.value)}
-            />
-            {hasNewSurname && (
-              <Button
-                size={"icon"}
-                onClick={() =>
-                  updateWhatsappContactMutation.mutate({
-                    params: {
-                      clientId: client.id,
-                      contactId: contactMessage.id,
-                    },
-                    body: {
-                      surname: newSurname,
-                    },
-                  })
-                }
-              >
-                <FiCheckCircle />
-              </Button>
-            )}
-          </div>
+    <div className={cn("flex flex-col gap-2 md:flex-row justify-between", className)}>
+      <div className={"flex flex-col gap-2 order-2 md:order-0"}>
+        <div className={"flex gap-1"}>
+          <Input
+            disabled={isLoading}
+            data-changed={hasNewSurname}
+            defaultValue={contactMessage.surname}
+            onChange={(e) => setNewSurname(e.target.value)}
+          />
+          {hasNewSurname && (
+            <Button
+              size={"icon"}
+              onClick={() =>
+                updateWhatsappContactMutation.mutate({
+                  params: {
+                    clientId: client.id,
+                    contactId: contactMessage.id,
+                  },
+                  body: {
+                    surname: newSurname,
+                  },
+                })
+              }
+            >
+              <FiCheckCircle />
+            </Button>
+          )}
         </div>
 
-        <p className="text-lg">{parsedPhoneNumber?.formatNational()}</p>
+        {!isMobile && <p className="text-lg">{parsedPhoneNumber?.formatNational()}</p>}
       </div>
 
-      <div>
+      <div className={"order-1"}>
         <DialogLinkMessageCategory contactMessage={contactMessage} categories={contactMessage.categories} />
       </div>
     </div>

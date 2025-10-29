@@ -52,13 +52,13 @@ export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServicePr
   });
 
   return (
-    <div className="flex flex-col justify-between overflow-hidden border-l px-2 py-4">
+    <div className="grid grid-rows-[min-content_auto_min-content] max-h-full overflow-auto gap-2">
       <h3>Histórico de atendimentos</h3>
 
-      <div className="flex flex-col-reverse overflow-auto">
+      <ul className="flex flex-col-reverse overflow-scroll">
         {findAllServicesHistoryByContact.data?.pages.map((page) =>
           page.items.map((service) => (
-            <div key={service.id} className="mb-4 rounded border p-2">
+            <li key={service.id} className="mb-4 rounded border p-2">
               <div className="mb-2 flex items-center justify-between">
                 <p className="text-sm">Protocolo: {formatShortId(service.id)}</p>
                 <span
@@ -83,12 +83,12 @@ export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServicePr
                   </div>
                 ))}
               </div>
-            </div>
+            </li>
           )),
         )}
         {findAllServicesHistoryByContact.isFetchingNextPage && <div>Carregando mais históricos...</div>}
         {findAllServicesHistoryByContact.data?.pages.length === 0 && <div>Nenhum histórico de atendimento encontrado.</div>}
-      </div>
+      </ul>
 
       <div className="flex flex-col gap-2 [&>button]:w-full">
         {contactService.canBeServiceEnded && (
