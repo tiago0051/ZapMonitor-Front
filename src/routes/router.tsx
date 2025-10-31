@@ -1,6 +1,5 @@
 import type { FC } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
-import { useUserContext } from "../context/UserContext/userContext";
 import { LoginRouter } from "./loginRouter";
 import { DashboardRouter } from "./dashboardRouter";
 
@@ -26,10 +25,6 @@ const PublicRouter: FC = () => {
 };
 
 const PrivateRouter: FC = () => {
-  const { isAuthenticated } = useUserContext();
-
-  if (!isAuthenticated) return <Navigate to="/auth/login" />;
-
   return (
     <Routes>
       <Route path="/client/:clientId/*" element={<DashboardRouter />} />

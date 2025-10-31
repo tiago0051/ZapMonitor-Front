@@ -14,7 +14,6 @@ import {
   FormMessage,
 } from "./ui/form";
 import { userService } from "@/services/api/userSevice";
-import { useUserContext } from "@/context/UserContext/userContext";
 import { requestErrorHandling } from "@/utils/request";
 
 const FormSchema = z.object({
@@ -33,13 +32,9 @@ export function LoginForm({
   onLoginSuccess,
   ...props
 }: LoginFormProps) {
-  const { setUser } = useUserContext();
-
   const loginRequestMutation = useMutation({
     mutationFn: userService.login,
-    onSuccess: (data) => {
-      window.localStorage.setItem("token", data.accessToken);
-      setUser(data.user);
+    onSuccess: () => {
       onLoginSuccess?.();
     },
     onError: requestErrorHandling,
