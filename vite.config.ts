@@ -14,7 +14,7 @@ export default defineConfig({
       manifest: {
         name: "ZapMonitor Whatsapp CRM",
         short_name: "ZapMonitor",
-        start_url: "/",
+        start_url: "/auth/select_client",
         background_color: "#ffffff",
         theme_color: "#000000",
         icons: [
