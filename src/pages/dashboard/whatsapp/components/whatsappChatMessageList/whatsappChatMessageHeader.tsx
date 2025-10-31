@@ -9,7 +9,6 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { whatsappService } from "@/services/api/whatsappService.ts";
 import { requestErrorHandling } from "@/utils/request.tsx";
-import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { useClientContext } from "@/context/ClientContext/clientContext.ts";
 
@@ -19,7 +18,6 @@ type WhatsappChatMessageHeaderProps = {
 };
 
 export const WhatsappChatMessageHeader = ({ contactMessage, className }: WhatsappChatMessageHeaderProps) => {
-  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { client } = useClientContext();
 
@@ -29,7 +27,6 @@ export const WhatsappChatMessageHeader = ({ contactMessage, className }: Whatsap
     mutationFn: whatsappService.updateContact,
     onError: requestErrorHandling,
     onSuccess: () => {
-      navigate(0);
       toast.success("Nome salvo com sucesso");
     },
   });
@@ -40,8 +37,8 @@ export const WhatsappChatMessageHeader = ({ contactMessage, className }: Whatsap
   const isLoading = updateWhatsappContactMutation.isPending;
 
   return (
-    <div className={cn("flex flex-col gap-2 md:flex-row justify-between", className)}>
-      <div className={"flex flex-col gap-2 order-2 md:order-0"}>
+    <div className={cn("flex flex-col justify-between gap-2 md:flex-row", className)}>
+      <div className={"order-2 flex flex-col gap-2 md:order-0"}>
         <div className={"flex gap-1"}>
           <Input
             disabled={isLoading}

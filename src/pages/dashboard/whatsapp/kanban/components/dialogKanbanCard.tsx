@@ -41,7 +41,7 @@ export const DialogKanbanCard: FC<DialogKanbanCardProps> = ({ children, contactM
       <DialogTrigger asChild>{children}</DialogTrigger>
 
       <DialogContent
-        className="grid max-h-dvh grid-rows-[1fr] max-w-dvw sm:max-w-none md:grid-cols-4"
+        className="grid max-h-dvh max-w-dvw grid-rows-[1fr] sm:max-w-none md:grid-cols-4"
         onOpenAutoFocus={(e) => e.preventDefault()}
         onWheel={(e) => e.stopPropagation()}
         onTouchMove={(e) => e.stopPropagation()}
@@ -58,7 +58,12 @@ export const DialogKanbanCard: FC<DialogKanbanCardProps> = ({ children, contactM
 
               <Separator />
 
-              {contactService && <WhatsappChatMessageListService contactService={contactService} />}
+              {contactService && (
+                <WhatsappChatMessageListService
+                  contactService={contactService}
+                  refetchContactService={() => findContactServiceByContact.refetch()}
+                />
+              )}
             </div>
 
             {contactService && (
@@ -72,7 +77,7 @@ export const DialogKanbanCard: FC<DialogKanbanCardProps> = ({ children, contactM
         )}
 
         {isMobile && (
-          <div className={"grid grid-rows-[min-content_1fr] overflow-hidden gap-2"}>
+          <div className={"grid grid-rows-[min-content_1fr] gap-2 overflow-hidden"}>
             <div className={"grid grid-rows-[min-content_min-content] gap-2"}>
               <DialogHeader>
                 <DialogTitle hidden>Detalhes do contato</DialogTitle>
@@ -82,7 +87,7 @@ export const DialogKanbanCard: FC<DialogKanbanCardProps> = ({ children, contactM
               <WhatsappChatMessageHeader contactMessage={contactMessage} className="w-full" />
             </div>
 
-            <Tabs defaultValue="messages" className={"grid grid-rows-[1fr] overflow-hidden max-h-full"}>
+            <Tabs defaultValue="messages" className={"grid max-h-full grid-rows-[1fr] overflow-hidden"}>
               <TabsList>
                 <TabsTrigger value="messages">Mensagens</TabsTrigger>
                 <TabsTrigger value="history">Histórico</TabsTrigger>
@@ -90,7 +95,7 @@ export const DialogKanbanCard: FC<DialogKanbanCardProps> = ({ children, contactM
 
               {contactService && (
                 <>
-                  <TabsContent value={"messages"} className={"grid grid-rows-[1fr] max-h-full overflow-hidden"}>
+                  <TabsContent value={"messages"} className={"grid max-h-full grid-rows-[1fr] overflow-hidden"}>
                     <WhatsappChatMessageList
                       whatsappConfigurationId={contactMessage.whatsappConfigurationId}
                       contactService={contactService}
@@ -98,7 +103,10 @@ export const DialogKanbanCard: FC<DialogKanbanCardProps> = ({ children, contactM
                   </TabsContent>
 
                   <TabsContent value={"history"}>
-                    <WhatsappChatMessageListService contactService={contactService} />
+                    <WhatsappChatMessageListService
+                      contactService={contactService}
+                      refetchContactService={() => findContactServiceByContact.refetch()}
+                    />
                   </TabsContent>
                 </>
               )}

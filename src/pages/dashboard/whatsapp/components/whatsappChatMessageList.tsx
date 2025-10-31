@@ -8,9 +8,9 @@ import { IsTopScrolled } from "@/utils/scroll";
 import { WhatsappChatMessageListItem } from "./whatsappChatMessageList/whatsappChatMessageListItem";
 import { cn } from "@/lib/utils";
 import { useClientContext } from "@/context/ClientContext/clientContext";
-import { useWhatsappContext } from "../whatsappLayout";
 import { WhatsappChatCreateMessageBar } from "./whatsappChatCreateMessageBar";
 import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
+import { useWhatsappContext } from "@/context/WhatsappContext/whatsappContext";
 
 type WhatsappChatMessageListProps = {
   contactService: WhatsappContactService;

@@ -2,17 +2,19 @@ import { Button } from "@/components/ui/button";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useUserContext } from "@/context/UserContext/userContext";
 import { whatsappService } from "@/services/api/whatsappService";
+import { socket } from "@/services/socket/socket";
 import { formatShortId } from "@/utils/formatString";
 import { requestErrorHandling } from "@/utils/request";
 import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
-import type { FC } from "react";
+import { useEffect, type FC } from "react";
 import { toast } from "sonner";
 
 type WhatsappChatMessageListServiceProps = {
   contactService: WhatsappContactService;
+  refetchContactService: () => void;
 };
 
-export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServiceProps> = ({ contactService }) => {
+export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServiceProps> = ({ contactService, refetchContactService }) => {
   const { user } = useUserContext();
   const { client } = useClientContext();
 
@@ -51,8 +53,18 @@ export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServicePr
     onError: requestErrorHandling,
   });
 
+  useEffect(() => {
+    socket.on(`contact:${contactService.id}:service:update`, () => {
+      refetchContactService();
+    });
+
+    return () => {
+      socket.off(`contact:${contactService.id}:service:update`);
+    };
+  }, []);
+
   return (
-    <div className="grid grid-rows-[min-content_auto_min-content] max-h-full overflow-auto gap-2">
+    <div className="grid max-h-full grid-rows-[min-content_auto_min-content] gap-2 overflow-auto">
       <h3>Histórico de atendimentos</h3>
 
       <ul className="flex flex-col-reverse overflow-scroll">

@@ -1,10 +1,10 @@
 import { FaWhatsapp } from "react-icons/fa";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useWhatsappContext } from "../whatsappLayout";
 import { WhatsappChatMessages } from "./whatsappChatMessages";
 import { WhatsappContactsList } from "./whatsappContacts";
 import { Header } from "@/components/ui/header";
 import { useNavigate } from "react-router";
+import { useWhatsappContext } from "@/context/WhatsappContext/whatsappContext";
 
 export const WhatsappContacts = () => {
   const navigate = useNavigate();
@@ -13,8 +13,8 @@ export const WhatsappContacts = () => {
   const isMobile = useIsMobile();
 
   return (
-    <div className={"grid grid-rows-[min-content_auto] max-h-[calc(100dvh-60px)] md:max-h-[calc(100dvh-22px)] overflow-hidden gap-2"}>
-      <Header title="Lista de contatos" onBack={() => contactSelected ? setContactSelected(null) : navigate(-1)} />
+    <div className={"grid max-h-[calc(100dvh-60px)] grid-rows-[min-content_auto] gap-2 overflow-hidden md:max-h-[calc(100dvh-22px)]"}>
+      <Header title="Lista de contatos" onBack={() => (contactSelected ? setContactSelected(null) : navigate(-1))} />
       <div className="grid grid-rows-[1fr] overflow-hidden sm:grid-cols-6">
         {(!isMobile || !hasContactSelected) && (
           <div className="col-span-2 border-r">
@@ -35,9 +35,7 @@ export const WhatsappContacts = () => {
           </div>
         )}
 
-        {hasContactSelected && (
-          <WhatsappChatMessages className="col-span-4" contactMessage={contactSelected!} />
-        )}
+        {hasContactSelected && <WhatsappChatMessages className="col-span-4" contactMessage={contactSelected!} />}
       </div>
     </div>
   );

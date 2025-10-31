@@ -1,11 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 import { formatAcronym } from "@/utils/formatString";
-import parsePhoneNumberFromString from "libphonenumber-js";
-import { useEffect, useState, type FC } from "react";
+import { type FC } from "react";
 import { WhatsappChatContactMessage } from "../../components/whatsappChatContactMessage";
 import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
-import { socket } from "@/services/socket/socket";
-import { useWhatsappContext } from "../../whatsappLayout";
 
 type WhatsappChatItemProps = {
   isSelected: boolean;
@@ -14,30 +11,8 @@ type WhatsappChatItemProps = {
   contactMessage: WhatsappContactMessage;
 };
 
-export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({
-  isSelected,
-  onClick,
-  usersInContact,
-  contactMessage: contactMessageDefault,
-}) => {
-  const { playSound } = useWhatsappContext();
-
-  const [contactMessage, setContactMessage] = useState<WhatsappContactMessage>(contactMessageDefault);
-
+export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({ isSelected, onClick, usersInContact, contactMessage }) => {
   const isIncoming = contactMessage.messageType === WhatsappMessageType.INCOMING;
-  const parsedPhoneNumber = parsePhoneNumberFromString(contactMessage.phoneNumber);
-
-  useEffect(() => {
-    socket.on(`contact:${contactMessage.id}`, (data: WhatsappContactMessage) => {
-      if (data.isRead === false) playSound();
-
-      setContactMessage(data);
-    });
-
-    return () => {
-      socket.off(`contact:${contactMessage.id}`);
-    };
-  }, [contactMessage, playSound]);
 
   return (
     <div
@@ -46,7 +21,7 @@ export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({
       onClick={onClick}
     >
       <div className="grid">
-        <h3 className="font-bold">{contactMessage.name || parsedPhoneNumber?.formatNational()}</h3>
+        <h3 className="font-bold">{contactMessage.surname || contactMessage.name}</h3>
         <div className="flex flex-wrap gap-1">
           {contactMessage.categories.map((category) => (
             <Badge key={category.id}>{category.name}</Badge>
@@ -55,6 +30,10 @@ export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({
         <WhatsappChatContactMessage isIncoming={isIncoming} messageContentType={contactMessage.messageContentType}>
           {contactMessage.messageContent}
         </WhatsappChatContactMessage>
+
+        {contactMessage.serviceUserServiceName && (
+          <p className="mt-3 text-xs">Em atendimento por: {contactMessage.serviceUserServiceName}</p>
+        )}
       </div>
 
       <div className="grid h-full grid-rows-2">

@@ -17,7 +17,7 @@ export const WhatsappChatMessages = ({ contactMessage, className }: WhatsappChat
   const { client } = useClientContext();
 
   const findContactServiceByContact = useSuspenseQuery({
-    queryKey: [`contact-${contactMessage.id}`, "findContactServiceByContact"],
+    queryKey: [`contact-service-${contactMessage.id}`],
     queryFn: async () =>
       await whatsappService.findContactServiceByContact({
         params: {
@@ -30,7 +30,7 @@ export const WhatsappChatMessages = ({ contactMessage, className }: WhatsappChat
   const contactService = findContactServiceByContact.data;
 
   return (
-    <div className={cn(className, "grid md:grid-cols-4 grid-rows-[min-content_auto] overflow-hidden")}>
+    <div className={cn(className, "grid grid-rows-[min-content_auto] overflow-hidden md:grid-cols-4")}>
       <WhatsappChatMessageHeader contactMessage={contactMessage} className="md:col-span-4" />
 
       <WhatsappChatMessageList
@@ -39,7 +39,12 @@ export const WhatsappChatMessages = ({ contactMessage, className }: WhatsappChat
         whatsappConfigurationId={contactMessage.whatsappConfigurationId}
       />
 
-      {!isMobile && <WhatsappChatMessageListService contactService={contactService} />}
+      {!isMobile && (
+        <WhatsappChatMessageListService
+          contactService={contactService}
+          refetchContactService={() => findContactServiceByContact.refetch()}
+        />
+      )}
     </div>
   );
 };
