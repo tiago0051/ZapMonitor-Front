@@ -24,6 +24,8 @@ export const WhatsappContactsList: FC<WhatsappContactsListProps> = ({ contactSel
   ];
 
   const filteredContacts = contactsConcatenated.filter((contact) => {
+    const filterOnlyNumbers = filterText.replace(/\D/g, "");
+
     const contactName = contact.surname || contact.name;
     const phoneNumber = contact.phoneNumber.replace(/\D/g, "");
 
@@ -32,7 +34,7 @@ export const WhatsappContactsList: FC<WhatsappContactsListProps> = ({ contactSel
       contact.categories.some((category) => filterCategories.some((filterCategory) => category.id === filterCategory.id));
     const matchesText =
       contactName.toLowerCase().includes(filterText.toLowerCase()) ||
-      phoneNumber.includes(filterText.replace(/\D/g, "")) ||
+      (filterOnlyNumbers && phoneNumber.includes(filterOnlyNumbers)) ||
       contact.messageContent?.toLowerCase().includes(filterText.toLowerCase());
 
     return matchesCategories && matchesText;
