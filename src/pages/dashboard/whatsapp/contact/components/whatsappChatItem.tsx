@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { formatAcronym } from "@/utils/formatString";
-import { type FC } from "react";
+import { type CSSProperties, type FC } from "react";
 import { WhatsappChatContactMessage } from "../../components/whatsappChatContactMessage";
 import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
 
@@ -9,9 +9,10 @@ type WhatsappChatItemProps = {
   onClick?: () => void;
   usersInContact: User[];
   contactMessage: WhatsappContactMessage;
+  style?: CSSProperties;
 };
 
-export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({ isSelected, onClick, usersInContact, contactMessage }) => {
+export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({ isSelected, onClick, usersInContact, contactMessage, style }) => {
   const isIncoming = contactMessage.messageType === WhatsappMessageType.INCOMING;
 
   return (
@@ -19,6 +20,7 @@ export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({ isSelected, onClic
       data-selected={isSelected}
       className="bg-background data-[selected=true]:bg-primary/15 relative flex cursor-pointer justify-between gap-4 border-b py-2 pr-2 hover:brightness-125"
       onClick={onClick}
+      style={style}
     >
       <div className="grid">
         <h3 className="font-bold">{contactMessage.surname || contactMessage.name}</h3>

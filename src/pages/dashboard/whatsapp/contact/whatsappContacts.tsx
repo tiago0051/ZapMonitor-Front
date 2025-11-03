@@ -5,6 +5,7 @@ import { WhatsappChatItem } from "./components/whatsappChatItem";
 import { DialogFilterCategory } from "../components/dialogSelectCategory/dialogFilterCategory";
 import { Input } from "@/components/ui/input";
 import { useWhatsappContext } from "@/context/WhatsappContext/whatsappContext";
+import { List, type RowComponentProps, useDynamicRowHeight } from "react-window";
 
 type WhatsappContactsListProps = {
   contactSelected: WhatsappContactMessage | null;
@@ -40,6 +41,31 @@ export const WhatsappContactsList: FC<WhatsappContactsListProps> = ({ contactSel
     return matchesCategories && matchesText;
   });
 
+  const rowHeight = useDynamicRowHeight({
+    defaultRowHeight: 61,
+  });
+
+  function RowComponent({
+    listState,
+    index,
+    style,
+  }: RowComponentProps<{
+    listState: WhatsappContactMessage[];
+  }>) {
+    const contactMessage = listState[index];
+
+    return (
+      <WhatsappChatItem
+        contactMessage={contactMessage}
+        isSelected={contactSelected?.id === contactMessage.id}
+        onClick={() => setContactSelected(contactMessage)}
+        key={contactMessage.id}
+        usersInContact={usersInContacts[contactMessage.id] || []}
+        style={style}
+      />
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="space-y-2 pr-4">
@@ -47,17 +73,13 @@ export const WhatsappContactsList: FC<WhatsappContactsListProps> = ({ contactSel
         <DialogFilterCategory categories={filterCategories} onSelectCategories={setFilterCategories} />
         <Input placeholder="Buscar contatos" onChange={(e) => setFilterText(e.currentTarget.value)} />
       </div>
-      <div className="max-h-[calc(100vh-210px)] space-y-1 overflow-y-auto">
-        {filteredContacts.map((contactMessage) => (
-          <WhatsappChatItem
-            contactMessage={contactMessage}
-            isSelected={contactSelected?.id === contactMessage.id}
-            onClick={() => setContactSelected(contactMessage)}
-            key={contactMessage.id}
-            usersInContact={usersInContacts[contactMessage.id] || []}
-          />
-        ))}
-      </div>
+        <List
+          rowComponent={RowComponent}
+          rowCount={filteredContacts.length}
+          rowHeight={rowHeight}
+          rowProps={{ listState: filteredContacts }}
+          className={"h-[calc(100dvh-210px)]"}
+        />
     </div>
   );
 };

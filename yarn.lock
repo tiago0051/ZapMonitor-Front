@@ -4231,6 +4231,11 @@ react-style-singleton@^2.2.2, react-style-singleton@^2.2.3:
     get-nonce "^1.0.0"
     tslib "^2.0.0"
 
+react-window@^2.2.2:
+  version "2.2.2"
+  resolved "https://registry.yarnpkg.com/react-window/-/react-window-2.2.2.tgz#09a7a8b2b1d3ab68e45c757c28f22a015f117adc"
+  integrity sha512-kvHKwFImKBWNbx2S87NZOhQhAVkBthjmnOfHlhQI45p3A+D+V53E+CqQMsyHrxNe3ke+YtWXuKDa1eoHAaIWJg==
+
 react@^19.1.1:
   version "19.1.1"
   resolved "https://registry.yarnpkg.com/react/-/react-19.1.1.tgz#06d9149ec5e083a67f9a1e39ce97b06a03b644af"
