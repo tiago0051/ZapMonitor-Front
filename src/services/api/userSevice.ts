@@ -8,4 +8,7 @@ export const userService = {
     const response = await api.get("/user/me");
     return response.data;
   },
+  logout: async (): Promise<void> => {
+    await api.post("/user/auth/logout");
+  },
 };

@@ -5,16 +5,11 @@ import { useForm } from "react-hook-form";
 import z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "./ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form";
 import { userService } from "@/services/api/userSevice";
 import { requestErrorHandling } from "@/utils/request";
+import { useUserContext } from "@/context/UserContext/userContext";
+import { Navigate } from "react-router";
 
 const FormSchema = z.object({
   email: z.email(),
@@ -27,14 +22,13 @@ type LoginFormProps = React.ComponentProps<"form"> & {
   onLoginSuccess?: () => void;
 };
 
-export function LoginForm({
-  className,
-  onLoginSuccess,
-  ...props
-}: LoginFormProps) {
+export function LoginForm({ className, onLoginSuccess, ...props }: LoginFormProps) {
+  const { login, isLogged } = useUserContext();
+
   const loginRequestMutation = useMutation({
     mutationFn: userService.login,
     onSuccess: () => {
+      login();
       onLoginSuccess?.();
     },
     onError: requestErrorHandling,
@@ -58,18 +52,14 @@ export function LoginForm({
     });
   };
 
+  if (isLogged) return <Navigate to="/auth/select_client" />;
+
   return (
     <Form {...form}>
-      <form
-        className={cn("flex flex-col gap-6", className)}
-        onSubmit={form.handleSubmit(handleSubmit)}
-        {...props}
-      >
+      <form className={cn("flex flex-col gap-6", className)} onSubmit={form.handleSubmit(handleSubmit)} {...props}>
         <div className="flex flex-col items-center gap-2 text-center">
           <h1 className="text-2xl font-bold">Entre na sua conta</h1>
-          <p className="text-muted-foreground text-sm text-balance">
-            Insira seu email abaixo para fazer login na sua conta
-          </p>
+          <p className="text-muted-foreground text-sm text-balance">Insira seu email abaixo para fazer login na sua conta</p>
         </div>
         <div className="grid gap-6">
           <FormField
@@ -100,11 +90,7 @@ export function LoginForm({
             )}
           />
 
-          <Button
-            type="submit"
-            disabled={loginRequestMutation.isPending}
-            className="w-full"
-          >
+          <Button type="submit" disabled={loginRequestMutation.isPending} className="w-full">
             Entrar
           </Button>
         </div>

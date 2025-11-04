@@ -17,12 +17,12 @@ api.interceptors.response.use(
     if (error.response.status === 401 && window.location.pathname !== "/auth/login" && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        await axios.post("/user/auth/refresh", undefined, {withCredentials: true, baseURL: baseApiUrl});
+        await axios.post("/user/auth/refresh", undefined, { withCredentials: true, baseURL: baseApiUrl });
         return api(originalRequest); // Retry the original request
       } catch (refreshError) {
         console.error("Failed to refresh token:", refreshError);
 
-        window.location.pathname = "/auth/login";
+        window.location.pathname = "/auth/logout";
         return Promise.reject(refreshError);
       }
     }

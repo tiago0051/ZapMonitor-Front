@@ -86,9 +86,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuButton onClick={() => logout()}>
-            <FiLogOut />
-            <span>Sair</span>
+          <SidebarMenuButton onClick={() => logout()} asChild tooltip={"Sair"}>
+            <Link to={`/auth/logout`}>
+              <FiLogOut />
+              Sair
+            </Link>
           </SidebarMenuButton>
         </SidebarMenu>
       </SidebarFooter>
