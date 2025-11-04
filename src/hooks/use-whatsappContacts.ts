@@ -92,8 +92,9 @@ export const useWhatsappContacts = () => {
   return {
     contacts,
     changeContacts: (contacts: WhatsappContactMessage[]) => {
-      setContacts(contacts.sort((a, b) => new Date(b.messageCreatedAt).getTime() - new Date(a.messageCreatedAt).getTime()));
-      saveContacts(contacts);
+      const newContactsList = contacts.sort((a, b) => new Date(b.messageCreatedAt).getTime() - new Date(a.messageCreatedAt).getTime());
+      setContacts(newContactsList);
+      saveContacts(newContactsList);
     },
     isPending,
   };
