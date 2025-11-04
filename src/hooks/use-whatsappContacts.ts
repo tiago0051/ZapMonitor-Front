@@ -66,15 +66,16 @@ export const useWhatsappContacts = () => {
         setContacts((prev) => [...prev, ...newMessagesList]);
 
         if (listPagesContactMessages.canNextPage) setPageToDownload((prev) => prev + 1);
-        else {
-          saveContacts(contacts);
-          setIsPending(false);
-        }
+        else setIsPending(false);
       } else {
         setIsPending(false);
       }
     }
   }, [listPagesContactMessages]);
+
+  useEffect(() => {
+    if (!isPending) saveContacts(contacts);
+  }, [isPending]);
 
   useEffect(() => {
     const fetchContacts = async () => {
