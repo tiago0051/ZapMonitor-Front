@@ -14,14 +14,12 @@ type WhatsappContactsListProps = {
 };
 
 export const WhatsappContactsList: FC<WhatsappContactsListProps> = ({ contactSelected, setContactSelected, usersInContacts }) => {
-  const { allContacts, inServiceContacts } = useWhatsappContext();
+  const { allContacts } = useWhatsappContext();
 
   const [filterCategories, setFilterCategories] = useState<WhatsappMessageCategory[]>([]);
   const [filterText, setFilterText] = useDebounceValue("", globalContants.DEBOUNCE_DELAY);
 
-  const otherContacts = allContacts.filter((contact) => !inServiceContacts.some((inService) => inService.id === contact.id));
-
-  const filteredContacts = otherContacts.filter((contact) => {
+  const filteredContacts = allContacts.filter((contact) => {
     const filterOnlyNumbers = filterText.replace(/\D/g, "");
 
     const contactName = contact.surname || contact.name;
