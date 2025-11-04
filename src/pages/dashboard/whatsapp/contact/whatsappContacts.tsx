@@ -42,7 +42,7 @@ export const WhatsappContactsList: FC<WhatsappContactsListProps> = ({ contactSel
   });
 
   const rowHeight = useDynamicRowHeight({
-    defaultRowHeight: 61,
+    defaultRowHeight: 50,
   });
 
   function RowComponent({
@@ -73,13 +73,13 @@ export const WhatsappContactsList: FC<WhatsappContactsListProps> = ({ contactSel
         <DialogFilterCategory categories={filterCategories} onSelectCategories={setFilterCategories} />
         <Input placeholder="Buscar contatos" onChange={(e) => setFilterText(e.currentTarget.value)} />
       </div>
-        <List
-          rowComponent={RowComponent}
-          rowCount={filteredContacts.length}
-          rowHeight={rowHeight}
-          rowProps={{ listState: filteredContacts }}
-          className={"h-[calc(100dvh-210px)]"}
-        />
+      <List
+        rowComponent={RowComponent}
+        rowCount={filteredContacts.length}
+        rowHeight={rowHeight}
+        rowProps={{ listState: filteredContacts }}
+        className={"h-[calc(100dvh-210px)]"}
+      />
     </div>
   );
 };
