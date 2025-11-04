@@ -7,14 +7,18 @@ import { Input } from "@/components/ui/input";
 import { useWhatsappContext } from "@/context/WhatsappContext/whatsappContext";
 import { List, type RowComponentProps, useDynamicRowHeight } from "react-window";
 
+type RowWhatsappContact = WhatsappContactMessage & {
+  isSelected: boolean;
+  onClick: () => void;
+  usersInContacts: User[];
+};
+
 type WhatsappContactsListProps = {
-  contactSelected: WhatsappContactMessage | null;
-  setContactSelected: (contact: WhatsappContactMessage) => void;
   usersInContacts: Record<string, User[]>;
 };
 
-export const WhatsappContactsList: FC<WhatsappContactsListProps> = ({ contactSelected, setContactSelected, usersInContacts }) => {
-  const { allContacts } = useWhatsappContext();
+export const WhatsappContactsList: FC<WhatsappContactsListProps> = ({ usersInContacts }) => {
+  const { allContacts, contactSelected, setContactSelected } = useWhatsappContext();
 
   const [filterCategories, setFilterCategories] = useState<WhatsappMessageCategory[]>([]);
   const [filterText, setFilterText] = useDebounceValue("", globalContants.DEBOUNCE_DELAY);
@@ -40,27 +44,6 @@ export const WhatsappContactsList: FC<WhatsappContactsListProps> = ({ contactSel
     defaultRowHeight: 50,
   });
 
-  function RowComponent({
-    listState,
-    index,
-    style,
-  }: RowComponentProps<{
-    listState: WhatsappContactMessage[];
-  }>) {
-    const contactMessage = listState[index];
-
-    return (
-      <WhatsappChatItem
-        contactMessage={contactMessage}
-        isSelected={contactSelected?.id === contactMessage.id}
-        onClick={() => setContactSelected(contactMessage)}
-        key={contactMessage.id}
-        usersInContact={usersInContacts[contactMessage.id] || []}
-        style={style}
-      />
-    );
-  }
-
   return (
     <div className="space-y-4">
       <div className="space-y-2 pr-4">
@@ -72,9 +55,36 @@ export const WhatsappContactsList: FC<WhatsappContactsListProps> = ({ contactSel
         rowComponent={RowComponent}
         rowCount={filteredContacts.length}
         rowHeight={rowHeight}
-        rowProps={{ listState: filteredContacts }}
+        rowProps={{
+          listState: filteredContacts.map((contact) => ({
+            ...contact,
+            isSelected: contactSelected?.id === contact.id,
+            onClick: () => setContactSelected(contact),
+            usersInContacts: usersInContacts[contact.id] || [],
+          })),
+        }}
         className={"h-[calc(100dvh-210px)]"}
       />
     </div>
   );
 };
+
+function RowComponent({
+  listState,
+  index,
+  style,
+}: RowComponentProps<{
+  listState: RowWhatsappContact[];
+}>) {
+  const contactMessage = listState[index];
+
+  return (
+    <WhatsappChatItem
+      contactMessage={contactMessage}
+      isSelected={contactMessage.isSelected}
+      onClick={contactMessage.onClick}
+      usersInContact={contactMessage.usersInContacts}
+      style={style}
+    />
+  );
+}

@@ -14,15 +14,11 @@ export const WhatsappContacts = () => {
 
   return (
     <div className={"grid max-h-[calc(100dvh-60px)] grid-rows-[min-content_auto] gap-2 overflow-hidden md:max-h-[calc(100dvh-22px)]"}>
-      <Header title="Lista de contatos" onBack={() => (contactSelected ? setContactSelected(null) : navigate(-1))} />
+      <Header title="Lista de contatos" onBack={() => (hasContactSelected ? setContactSelected(null) : navigate(-1))} />
       <div className="grid grid-rows-[1fr] overflow-hidden sm:grid-cols-6">
         {(!isMobile || !hasContactSelected) && (
           <div className="col-span-2 border-r">
-            <WhatsappContactsList
-              contactSelected={contactSelected}
-              setContactSelected={setContactSelected}
-              usersInContacts={usersInContacts}
-            />
+            <WhatsappContactsList usersInContacts={usersInContacts} />
           </div>
         )}
 

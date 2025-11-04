@@ -1,28 +1,39 @@
 import { Badge } from "@/components/ui/badge";
 import { formatAcronym } from "@/utils/formatString";
-import { type CSSProperties, type FC } from "react";
+import { type DetailedHTMLProps, type FC } from "react";
 import { WhatsappChatContactMessage } from "../../components/whatsappChatContactMessage";
 import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
+import { cn } from "@/lib/utils";
 
-type WhatsappChatItemProps = {
+type WhatsappChatItemProps = DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement> & {
   isSelected: boolean;
-  onClick?: () => void;
   usersInContact: User[];
   contactMessage: WhatsappContactMessage;
-  style?: CSSProperties;
 };
 
-export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({ isSelected, onClick, usersInContact, contactMessage, style }) => {
+export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({
+  isSelected,
+  onClick,
+  usersInContact,
+  contactMessage,
+  className,
+  ...props
+}) => {
   const isIncoming = contactMessage.messageType === WhatsappMessageType.INCOMING;
 
   return (
     <div
-      data-selected={isSelected}
-      className="bg-background data-[selected=true]:bg-primary/15 relative flex cursor-pointer justify-between gap-4 border-b py-2 pr-2 hover:brightness-125"
+      className={cn(
+        className,
+        "bg-background flex cursor-pointer justify-between gap-4 overflow-hidden border-b py-2 pr-2 hover:brightness-125",
+        {
+          "bg-primary/15": isSelected,
+        },
+      )}
       onClick={onClick}
-      style={style}
+      {...props}
     >
-      <div className="grid">
+      <div>
         <h3 className="font-bold">{contactMessage.surname || contactMessage.name}</h3>
         <div className="flex flex-wrap gap-1">
           {contactMessage.categories.map((category) => (
