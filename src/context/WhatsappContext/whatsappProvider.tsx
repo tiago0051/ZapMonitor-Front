@@ -16,6 +16,7 @@ export const WhatsappProvider: FC<WhatsappProviderProps> = ({ children }) => {
   const { contacts, changeContacts, isPending } = useWhatsappContacts();
   const [contactSelected, setContactSelected] = useState<WhatsappContactMessage | null>(null);
   const [usersInContacts, setUsersInContacts] = useState<Record<string, User[]>>({});
+  const [contactToUpdate, setContactToUpdate] = useState<WhatsappContactMessage | null>(null);
 
   const newMessageAudio = useMemo(() => new Audio("/assets/whatsapp/chat/sounds/new-message.mp3"), []);
 
@@ -39,16 +40,7 @@ export const WhatsappProvider: FC<WhatsappProviderProps> = ({ children }) => {
 
   useEffect(() => {
     socket.on("contacts:update", (data: { contact: WhatsappContactMessage; isNewMessage: boolean }) => {
-      const contactIndex = contacts.findIndex((c) => c.id === data.contact.id);
-
-      let contactsCopy = [...contacts];
-      if (contactIndex !== -1) {
-        contactsCopy[contactIndex] = data.contact;
-      } else {
-        contactsCopy = [data.contact, ...contactsCopy];
-      }
-
-      changeContacts(contactsCopy);
+      setContactToUpdate(data.contact);
 
       if (data.isNewMessage && data.contact.messageType === WhatsappMessageType.INCOMING) {
         playSound();
@@ -59,6 +51,23 @@ export const WhatsappProvider: FC<WhatsappProviderProps> = ({ children }) => {
       socket.off("contacts:update");
     };
   }, []);
+
+  useEffect(() => {
+    if (contactToUpdate) {
+      const contactIndex = contacts.findIndex((c) => c.id === contactToUpdate.id);
+
+      let contactsCopy = [...contacts];
+      if (contactIndex !== -1) {
+        contactsCopy[contactIndex] = contactToUpdate;
+      } else {
+        contactsCopy = [contactToUpdate, ...contactsCopy];
+      }
+
+      changeContacts(contactsCopy);
+
+      setContactToUpdate(null);
+    }
+  }, [contactToUpdate]);
 
   if (isPending) {
     return (
