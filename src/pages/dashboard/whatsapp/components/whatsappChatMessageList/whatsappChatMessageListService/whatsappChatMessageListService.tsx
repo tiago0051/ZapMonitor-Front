@@ -7,7 +7,6 @@ import { formatShortId } from "@/utils/formatString";
 import { requestErrorHandling } from "@/utils/request";
 import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
 import { useEffect, type FC } from "react";
-import { toast } from "sonner";
 
 type WhatsappChatMessageListServiceProps = {
   contactService: WhatsappContactService;
@@ -31,31 +30,23 @@ export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServicePr
 
   const startServiceMutation = useMutation({
     mutationFn: whatsappService.startService,
-    onSuccess: () => {
-      toast.success("Atendimento iniciado com sucesso");
-    },
     onError: requestErrorHandling,
   });
 
   const transferServiceMutation = useMutation({
     mutationFn: whatsappService.transferService,
-    onSuccess: () => {
-      toast.success("Atendimento transferido com sucesso");
-    },
     onError: requestErrorHandling,
   });
 
   const endServiceMutation = useMutation({
     mutationFn: whatsappService.endService,
-    onSuccess: () => {
-      toast.success("Atendimento finalizado com sucesso");
-    },
     onError: requestErrorHandling,
   });
 
   useEffect(() => {
     socket.on(`contact:${contactService.id}:service:update`, () => {
       refetchContactService();
+      findAllServicesHistoryByContact.refetch();
     });
 
     return () => {
