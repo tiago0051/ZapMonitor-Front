@@ -32,7 +32,7 @@ export const WhatsappChatMessageHeader = ({ contactMessage, className }: Whatsap
   });
 
   const parsedPhoneNumber = parsePhoneNumberFromString(contactMessage.phoneNumber);
-  const hasNewSurname = !!newSurname && newSurname !== contactMessage.name;
+  const hasNewSurname = !!newSurname && newSurname !== contactMessage.surname;
 
   const isLoading = updateWhatsappContactMutation.isPending;
 
