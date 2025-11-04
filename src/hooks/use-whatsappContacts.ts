@@ -81,7 +81,6 @@ export const useWhatsappContacts = () => {
       const contactsFromDB = await getContacts();
       if (contactsFromDB.length > 0) {
         setContacts(contactsFromDB.sort((a, b) => new Date(b.messageCreatedAt).getTime() - new Date(a.messageCreatedAt).getTime()));
-        setIsPending(false);
       }
       setLoadingContacts(false);
     };

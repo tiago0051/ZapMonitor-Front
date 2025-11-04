@@ -19,12 +19,9 @@ export const WhatsappContactsList: FC<WhatsappContactsListProps> = ({ contactSel
   const [filterCategories, setFilterCategories] = useState<WhatsappMessageCategory[]>([]);
   const [filterText, setFilterText] = useDebounceValue("", globalContants.DEBOUNCE_DELAY);
 
-  const contactsConcatenated = [
-    ...inServiceContacts,
-    ...allContacts.filter((contact) => !inServiceContacts.some((inService) => inService.id === contact.id)),
-  ];
+  const otherContacts = allContacts.filter((contact) => !inServiceContacts.some((inService) => inService.id === contact.id));
 
-  const filteredContacts = contactsConcatenated.filter((contact) => {
+  const filteredContacts = otherContacts.filter((contact) => {
     const filterOnlyNumbers = filterText.replace(/\D/g, "");
 
     const contactName = contact.surname || contact.name;
