@@ -5,7 +5,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import parsePhoneNumberFromString from "libphonenumber-js";
 import { Input } from "@/components/ui/input.tsx";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { whatsappService } from "@/services/api/whatsappService.ts";
 import { requestErrorHandling } from "@/utils/request.tsx";
@@ -21,7 +21,7 @@ export const WhatsappChatMessageHeader = ({ contactMessage, className }: Whatsap
   const isMobile = useIsMobile();
   const { client } = useClientContext();
 
-  const [newSurname, setNewSurname] = useState<string>(contactMessage.surname || contactMessage.name);
+  const [surname, setSurname] = useState<string>(contactMessage.surname || contactMessage.name);
 
   const updateWhatsappContactMutation = useMutation({
     mutationFn: whatsappService.updateContact,
@@ -32,15 +32,19 @@ export const WhatsappChatMessageHeader = ({ contactMessage, className }: Whatsap
   });
 
   const parsedPhoneNumber = parsePhoneNumberFromString(contactMessage.phoneNumber);
-  const hasNewSurname = newSurname !== contactMessage.surname;
+  const hasNewSurname = surname !== contactMessage.surname;
 
   const isLoading = updateWhatsappContactMutation.isPending;
+
+  useEffect(() => {
+    setSurname(contactMessage.surname || contactMessage.name);
+  }, [contactMessage]);
 
   return (
     <div className={cn("flex flex-col justify-between gap-2 md:flex-row", className)}>
       <div className={"order-2 flex flex-col gap-2 md:order-0"}>
         <div className={"flex gap-1"}>
-          <Input disabled={isLoading} value={newSurname} onChange={(e) => setNewSurname(e.target.value)} />
+          <Input disabled={isLoading} value={surname} onChange={(e) => setSurname(e.target.value)} />
           {hasNewSurname && (
             <Button
               size={"icon"}
@@ -51,7 +55,7 @@ export const WhatsappChatMessageHeader = ({ contactMessage, className }: Whatsap
                     contactId: contactMessage.id,
                   },
                   body: {
-                    surname: newSurname,
+                    surname: surname,
                   },
                 })
               }
