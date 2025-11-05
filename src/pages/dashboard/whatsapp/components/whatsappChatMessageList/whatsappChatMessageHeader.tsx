@@ -21,7 +21,7 @@ export const WhatsappChatMessageHeader = ({ contactMessage, className }: Whatsap
   const isMobile = useIsMobile();
   const { client } = useClientContext();
 
-  const [newSurname, setNewSurname] = useState<string | null>(null);
+  const [newSurname, setNewSurname] = useState<string>(contactMessage.surname || contactMessage.name);
 
   const updateWhatsappContactMutation = useMutation({
     mutationFn: whatsappService.updateContact,
@@ -32,7 +32,7 @@ export const WhatsappChatMessageHeader = ({ contactMessage, className }: Whatsap
   });
 
   const parsedPhoneNumber = parsePhoneNumberFromString(contactMessage.phoneNumber);
-  const hasNewSurname = !!newSurname && newSurname !== contactMessage.surname;
+  const hasNewSurname = newSurname !== contactMessage.surname;
 
   const isLoading = updateWhatsappContactMutation.isPending;
 
@@ -40,12 +40,7 @@ export const WhatsappChatMessageHeader = ({ contactMessage, className }: Whatsap
     <div className={cn("flex flex-col justify-between gap-2 md:flex-row", className)}>
       <div className={"order-2 flex flex-col gap-2 md:order-0"}>
         <div className={"flex gap-1"}>
-          <Input
-            disabled={isLoading}
-            data-changed={hasNewSurname}
-            defaultValue={contactMessage.surname}
-            onChange={(e) => setNewSurname(e.target.value)}
-          />
+          <Input disabled={isLoading} value={newSurname} onChange={(e) => setNewSurname(e.target.value)} />
           {hasNewSurname && (
             <Button
               size={"icon"}
