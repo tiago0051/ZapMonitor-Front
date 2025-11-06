@@ -15,7 +15,7 @@ export const UserProvider: FC<UserProviderProps> = ({ children }) => {
   const getsMeQuery = useQuery({
     queryKey: ["me"],
     queryFn: userService.me,
-    enabled: window.location.pathname !== "/auth/login",
+    enabled: !window.location.pathname.includes("/auth"),
   });
 
   useEffect(() => {

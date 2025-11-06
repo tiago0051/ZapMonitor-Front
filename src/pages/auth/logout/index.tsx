@@ -1,9 +1,10 @@
 import { useUserContext } from "@/context/UserContext/userContext";
 import { userService } from "@/services/api/userSevice";
 import { useLayoutEffect } from "react";
-import { Navigate } from "react-router";
+import { useNavigate } from "react-router";
 
 export const Logout = () => {
+  const navigate = useNavigate();
   const { logout } = useUserContext();
 
   useLayoutEffect(() => {
@@ -13,10 +14,12 @@ export const Logout = () => {
       } catch (error) {
         console.error("Logout failed:", error);
       }
+
+      logout();
+      navigate("/auth/login");
     };
     performLogout();
-    logout();
   }, []);
 
-  return <Navigate to={"/auth/login"} />;
+  return <></>;
 };
