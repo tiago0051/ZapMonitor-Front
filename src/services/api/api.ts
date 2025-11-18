@@ -7,31 +7,27 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-});
-
-async function getAccessToken() {
-  const tokenCookie = await window.localStorage.getItem("token");
-  return tokenCookie;
-}
-
-api.interceptors.request.use(async (config) => {
-  const accessToken = await getAccessToken();
-  if (accessToken) {
-    config.headers.Authorization = `Bearer ${accessToken}`;
-  }
-
-  return config;
+  withCredentials: true,
 });
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.status === 401 && window.location.pathname !== "/auth/login") {
-      window.location.pathname = "/auth/login";
-    }
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response.status === 401 && window.location.pathname !== "/auth/login" && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        await axios.post("/user/auth/refresh", undefined, { withCredentials: true, baseURL: baseApiUrl });
+        return api(originalRequest); // Retry the original request
+      } catch (refreshError) {
+        console.error("Failed to refresh token:", refreshError);
 
-    throw error;
-  }
+        window.location.pathname = "/auth/logout";
+        return Promise.reject(refreshError);
+      }
+    }
+    return Promise.reject(error);
+  },
 );
 
 export default api;

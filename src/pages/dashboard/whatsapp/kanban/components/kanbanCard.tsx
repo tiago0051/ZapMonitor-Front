@@ -3,12 +3,12 @@ import { DialogKanbanCard } from "./dialogKanbanCard";
 import { WhatsappChatContactMessage } from "../../components/whatsappChatContactMessage";
 import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
 import { Badge } from "@/components/ui/badge";
-import { useWhatsappContext } from "../../whatsappLayout";
 import { formatShortName } from "@/utils/formatString";
 import { useEffect, useRef, useState } from "react";
 import { draggable } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { useUserContext } from "@/context/UserContext/userContext";
 import { socket } from "@/services/socket/socket";
+import { useWhatsappContext } from "@/context/WhatsappContext/whatsappContext";
 
 type KanbanCardProps = {
   contactMessage: WhatsappContactMessage;

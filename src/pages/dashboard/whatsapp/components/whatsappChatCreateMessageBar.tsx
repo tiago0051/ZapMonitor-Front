@@ -213,7 +213,7 @@ export const WhatsappChatCreateMessageBar: FC<WhatsappChatCreateMessageBarProps>
       {!isRecording && messageIsText && (
         <textarea
           className="focus:ring-primary max-h-40 w-full resize-none overflow-auto rounded border px-4 py-2 leading-5 transition focus:ring-2 focus:outline-none"
-          placeholder="Digite sua mensagem"
+          placeholder="Sua mensagem"
           onKeyDown={onKeyDown}
           onChange={onInput}
           value={message.value as string}

@@ -79,7 +79,7 @@ export const DialogLinkMessageCategory = ({ contactMessage, categories }: Dialog
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant={"outline"}>Categorias</Button>
+        <Button variant={"outline"} className={"w-full md:w-min"}>Categorias</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

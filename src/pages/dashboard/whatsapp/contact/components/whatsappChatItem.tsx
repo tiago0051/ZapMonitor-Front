@@ -1,15 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 import { formatAcronym } from "@/utils/formatString";
-import parsePhoneNumberFromString from "libphonenumber-js";
-import { useEffect, useState, type FC } from "react";
+import { type DetailedHTMLProps, type FC } from "react";
 import { WhatsappChatContactMessage } from "../../components/whatsappChatContactMessage";
 import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
-import { socket } from "@/services/socket/socket";
-import { useWhatsappContext } from "../../whatsappLayout";
+import { cn } from "@/lib/utils";
 
-type WhatsappChatItemProps = {
+type WhatsappChatItemProps = DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement> & {
   isSelected: boolean;
-  onClick?: () => void;
   usersInContact: User[];
   contactMessage: WhatsappContactMessage;
 };
@@ -18,35 +15,26 @@ export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({
   isSelected,
   onClick,
   usersInContact,
-  contactMessage: contactMessageDefault,
+  contactMessage,
+  className,
+  ...props
 }) => {
-  const { playSound } = useWhatsappContext();
-
-  const [contactMessage, setContactMessage] = useState<WhatsappContactMessage>(contactMessageDefault);
-
   const isIncoming = contactMessage.messageType === WhatsappMessageType.INCOMING;
-  const parsedPhoneNumber = parsePhoneNumberFromString(contactMessage.phoneNumber);
-
-  useEffect(() => {
-    socket.on(`contact:${contactMessage.id}`, (data: WhatsappContactMessage) => {
-      if (data.isRead === false) playSound();
-
-      setContactMessage(data);
-    });
-
-    return () => {
-      socket.off(`contact:${contactMessage.id}`);
-    };
-  }, [contactMessage, playSound]);
 
   return (
     <div
-      data-selected={isSelected}
-      className="bg-background data-[selected=true]:bg-primary/15 relative flex cursor-pointer justify-between gap-4 border-b py-2 pr-2 hover:brightness-125"
+      className={cn(
+        className,
+        "bg-background flex cursor-pointer justify-between gap-4 overflow-hidden border-b py-2 pr-2 hover:brightness-125",
+        {
+          "bg-primary/15": isSelected,
+        },
+      )}
       onClick={onClick}
+      {...props}
     >
-      <div className="grid">
-        <h3 className="font-bold">{contactMessage.name || parsedPhoneNumber?.formatNational()}</h3>
+      <div>
+        <h3 className="font-bold">{contactMessage.surname || contactMessage.name}</h3>
         <div className="flex flex-wrap gap-1">
           {contactMessage.categories.map((category) => (
             <Badge key={category.id}>{category.name}</Badge>
@@ -55,6 +43,10 @@ export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({
         <WhatsappChatContactMessage isIncoming={isIncoming} messageContentType={contactMessage.messageContentType}>
           {contactMessage.messageContent}
         </WhatsappChatContactMessage>
+
+        {contactMessage.serviceUserServiceName && (
+          <p className="mt-3 text-xs">Em atendimento por: {contactMessage.serviceUserServiceName}</p>
+        )}
       </div>
 
       <div className="grid h-full grid-rows-2">

@@ -5,6 +5,7 @@ type WhatsappContactMessage = {
   surname: string;
   messageContent: string;
   messageContentType: string;
+  messageCreatedAt: string;
   messageType: number;
   isRead: boolean;
   whatsappConfigurationId: string;

@@ -3,13 +3,13 @@ import { DialogDescription } from "@radix-ui/react-dialog";
 import { useState, type FC } from "react";
 import { WhatsappChatMessageList } from "../../components/whatsappChatMessageList";
 import { WhatsappChatMessageHeader } from "../../components/whatsappChatMessageList/whatsappChatMessageHeader";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { whatsappService } from "@/services/api/whatsappService";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { requestErrorHandling } from "@/utils/request";
-import { useUserContext } from "@/context/UserContext/userContext";
 import { useClientContext } from "@/context/ClientContext/clientContext";
+import { WhatsappChatMessageListService } from "@/pages/dashboard/whatsapp/components/whatsappChatMessageList/whatsappChatMessageListService/whatsappChatMessageListService.tsx";
+import { Separator } from "@/components/ui/separator.tsx";
+import { useIsMobile } from "@/hooks/use-mobile.ts";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs.tsx";
 
 type DialogKanbanCardProps = {
   children?: React.ReactNode;
@@ -17,8 +17,8 @@ type DialogKanbanCardProps = {
 };
 
 export const DialogKanbanCard: FC<DialogKanbanCardProps> = ({ children, contactMessage }) => {
-  const { user } = useUserContext();
   const { client } = useClientContext();
+  const isMobile = useIsMobile();
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -36,91 +36,81 @@ export const DialogKanbanCard: FC<DialogKanbanCardProps> = ({ children, contactM
 
   const contactService = findContactServiceByContact.data;
 
-  const startServiceMutation = useMutation({
-    mutationFn: whatsappService.startService,
-    onSuccess: () => {
-      toast.success("Atendimento iniciado com sucesso");
-    },
-    onError: requestErrorHandling,
-  });
-
-  const transferServiceMutation = useMutation({
-    mutationFn: whatsappService.transferService,
-    onSuccess: () => {
-      toast.success("Atendimento transferido com sucesso");
-    },
-    onError: requestErrorHandling,
-  });
-
-  const endServiceMutation = useMutation({
-    mutationFn: whatsappService.endService,
-    onSuccess: () => {
-      toast.success("Atendimento finalizado com sucesso");
-    },
-    onError: requestErrorHandling,
-  });
-
-  const isLoading = startServiceMutation.isPending || transferServiceMutation.isPending || endServiceMutation.isPending;
-
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
 
-      <DialogContent className="grid max-h-[90dvh] grid-rows-[min-content_1fr] overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
-        <DialogHeader>
-          <DialogTitle hidden>Detalhes do contato</DialogTitle>
-          <DialogDescription hidden>Informações detalhadas sobre o contato selecionado.</DialogDescription>
-        </DialogHeader>
+      <DialogContent
+        className="grid max-h-dvh max-w-dvw grid-rows-[1fr] sm:max-w-none md:grid-cols-4"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onWheel={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
+      >
+        {!isMobile && (
+          <>
+            <div className={"grid grid-rows-[min-content_min-content_auto] gap-2 overflow-hidden md:col-span-1"}>
+              <DialogHeader>
+                <DialogTitle>Detalhes do contato</DialogTitle>
+                <DialogDescription>Informações sobre o contato selecionado.</DialogDescription>
+              </DialogHeader>
 
-        {contactService && (
-          <div className="grid grid-rows-[min-content_min-content_auto] gap-4 overflow-hidden">
-            <WhatsappChatMessageHeader contactMessage={contactMessage} className="w-full" />
-            <div className="flex flex-col gap-2 [&>button]:w-full">
-              {contactService?.canBeServiceEnded && (
-                <Button
-                  disabled={isLoading}
-                  onClick={() =>
-                    endServiceMutation.mutate({
-                      params: { contactId: contactService.id, clientId: client.id },
-                    })
-                  }
-                >
-                  Finalizar atendimento
-                </Button>
-              )}
-              {contactService?.canBeServiceStarted && (
-                <Button
-                  disabled={isLoading}
-                  onClick={() =>
-                    startServiceMutation.mutate({
-                      params: {
-                        contactId: contactService.id,
-                        clientId: client.id,
-                      },
-                    })
-                  }
-                >
-                  Iniciar atendimento
-                </Button>
-              )}
-              {contactService?.canBeServiceTransferred && (
-                <Button
-                  disabled={isLoading}
-                  onClick={() =>
-                    transferServiceMutation.mutate({
-                      params: {
-                        contactId: contactService.id,
-                        userId: user!.id,
-                        clientId: client.id,
-                      },
-                    })
-                  }
-                >
-                  Assumir atendimento
-                </Button>
+              <WhatsappChatMessageHeader contactMessage={contactMessage} className="w-full" />
+
+              <Separator />
+
+              {contactService && (
+                <WhatsappChatMessageListService
+                  contactService={contactService}
+                  refetchContactService={() => findContactServiceByContact.refetch()}
+                />
               )}
             </div>
-            <WhatsappChatMessageList whatsappConfigurationId={contactMessage.whatsappConfigurationId} contactService={contactService} />
+
+            {contactService && (
+              <WhatsappChatMessageList
+                className={"md:col-span-3"}
+                whatsappConfigurationId={contactMessage.whatsappConfigurationId}
+                contactService={contactService}
+              />
+            )}
+          </>
+        )}
+
+        {isMobile && (
+          <div className={"grid grid-rows-[min-content_1fr] gap-2 overflow-hidden"}>
+            <div className={"grid grid-rows-[min-content_min-content] gap-2"}>
+              <DialogHeader>
+                <DialogTitle hidden>Detalhes do contato</DialogTitle>
+                <DialogDescription hidden>Informações sobre o contato selecionado.</DialogDescription>
+              </DialogHeader>
+
+              <WhatsappChatMessageHeader contactMessage={contactMessage} className="w-full" />
+            </div>
+
+            <Tabs defaultValue="messages" className={"grid max-h-full grid-rows-[1fr] overflow-hidden"}>
+              <TabsList>
+                <TabsTrigger value="messages">Mensagens</TabsTrigger>
+                <TabsTrigger value="history">Histórico</TabsTrigger>
+              </TabsList>
+
+              {contactService && (
+                <>
+                  <TabsContent value={"messages"} className={"grid max-h-full grid-rows-[1fr] overflow-hidden"}>
+                    <WhatsappChatMessageList
+                      whatsappConfigurationId={contactMessage.whatsappConfigurationId}
+                      contactService={contactService}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value={"history"}>
+                    <WhatsappChatMessageListService
+                      contactService={contactService}
+                      refetchContactService={() => findContactServiceByContact.refetch()}
+                    />
+                  </TabsContent>
+                </>
+              )}
+            </Tabs>
           </div>
         )}
       </DialogContent>

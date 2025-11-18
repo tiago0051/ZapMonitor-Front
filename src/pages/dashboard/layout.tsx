@@ -19,7 +19,7 @@ export const DashboardLayout = () => {
             <div></div>
           </div>
         )}
-        <div className="flex max-w-screen flex-1 flex-col gap-4 overflow-hidden px-4 py-2">
+        <div className="flex max-w-screen flex-1 flex-col gap-2 overflow-hidden px-4 py-2">
           <Outlet />
         </div>
       </SidebarInset>

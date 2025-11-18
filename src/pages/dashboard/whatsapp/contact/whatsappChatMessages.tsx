@@ -5,18 +5,19 @@ import { WhatsappChatMessageHeader } from "../components/whatsappChatMessageList
 import { WhatsappChatMessageList } from "../components/whatsappChatMessageList";
 import { WhatsappChatMessageListService } from "../components/whatsappChatMessageList/whatsappChatMessageListService/whatsappChatMessageListService";
 import { useClientContext } from "@/context/ClientContext/clientContext";
+import { useIsMobile } from "@/hooks/use-mobile.ts";
 
 type WhatsappChatMessagesProps = {
   contactMessage: WhatsappContactMessage;
-  onBack: () => void;
   className?: string;
 };
 
-export const WhatsappChatMessages = ({ contactMessage, onBack, className }: WhatsappChatMessagesProps) => {
+export const WhatsappChatMessages = ({ contactMessage, className }: WhatsappChatMessagesProps) => {
+  const isMobile = useIsMobile();
   const { client } = useClientContext();
 
   const findContactServiceByContact = useSuspenseQuery({
-    queryKey: [`contact-${contactMessage.id}`, "findContactServiceByContact"],
+    queryKey: [`contact-service-${contactMessage.id}`],
     queryFn: async () =>
       await whatsappService.findContactServiceByContact({
         params: {
@@ -29,16 +30,21 @@ export const WhatsappChatMessages = ({ contactMessage, onBack, className }: What
   const contactService = findContactServiceByContact.data;
 
   return (
-    <div className={cn(className, "grid grid-cols-4 grid-rows-[min-content_auto]")}>
-      <WhatsappChatMessageHeader contactMessage={contactMessage} onBack={onBack} className="col-span-6" />
+    <div className={cn(className, "grid grid-rows-[min-content_auto] overflow-hidden md:grid-cols-4")}>
+      <WhatsappChatMessageHeader contactMessage={contactMessage} className="md:col-span-4" />
 
       <WhatsappChatMessageList
-        className="col-span-3"
+        className="md:col-span-3"
         contactService={contactService}
         whatsappConfigurationId={contactMessage.whatsappConfigurationId}
       />
 
-      <WhatsappChatMessageListService contactService={contactService} />
+      {!isMobile && (
+        <WhatsappChatMessageListService
+          contactService={contactService}
+          refetchContactService={() => findContactServiceByContact.refetch()}
+        />
+      )}
     </div>
   );
 };

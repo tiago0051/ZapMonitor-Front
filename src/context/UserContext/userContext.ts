@@ -2,9 +2,9 @@ import { createContext, useContext } from "react";
 
 type UserContextProps = {
   user: User | null;
-  setUser: (user: User | null) => void;
-  isAuthenticated: boolean;
   logout: () => void;
+  login: () => void;
+  isLogged: boolean;
 };
 
 export const UserContext = createContext({} as UserContextProps);

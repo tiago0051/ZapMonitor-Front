@@ -2,17 +2,18 @@ import { Button } from "@/components/ui/button";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useUserContext } from "@/context/UserContext/userContext";
 import { whatsappService } from "@/services/api/whatsappService";
+import { socket } from "@/services/socket/socket";
 import { formatShortId } from "@/utils/formatString";
 import { requestErrorHandling } from "@/utils/request";
 import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
-import type { FC } from "react";
-import { toast } from "sonner";
+import { useEffect, type FC } from "react";
 
 type WhatsappChatMessageListServiceProps = {
   contactService: WhatsappContactService;
+  refetchContactService: () => void;
 };
 
-export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServiceProps> = ({ contactService }) => {
+export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServiceProps> = ({ contactService, refetchContactService }) => {
   const { user } = useUserContext();
   const { client } = useClientContext();
 
@@ -29,36 +30,38 @@ export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServicePr
 
   const startServiceMutation = useMutation({
     mutationFn: whatsappService.startService,
-    onSuccess: () => {
-      toast.success("Atendimento iniciado com sucesso");
-    },
     onError: requestErrorHandling,
   });
 
   const transferServiceMutation = useMutation({
     mutationFn: whatsappService.transferService,
-    onSuccess: () => {
-      toast.success("Atendimento transferido com sucesso");
-    },
     onError: requestErrorHandling,
   });
 
   const endServiceMutation = useMutation({
     mutationFn: whatsappService.endService,
-    onSuccess: () => {
-      toast.success("Atendimento finalizado com sucesso");
-    },
     onError: requestErrorHandling,
   });
 
+  useEffect(() => {
+    socket.on(`contact:${contactService.id}:service:update`, () => {
+      refetchContactService();
+      findAllServicesHistoryByContact.refetch();
+    });
+
+    return () => {
+      socket.off(`contact:${contactService.id}:service:update`);
+    };
+  }, []);
+
   return (
-    <div className="flex flex-col justify-between overflow-hidden border-l px-2 py-4">
+    <div className="grid max-h-full grid-rows-[min-content_auto_min-content] gap-2 overflow-auto">
       <h3>Histórico de atendimentos</h3>
 
-      <div className="flex flex-col-reverse overflow-auto">
+      <ul className="flex flex-col-reverse overflow-scroll">
         {findAllServicesHistoryByContact.data?.pages.map((page) =>
           page.items.map((service) => (
-            <div key={service.id} className="mb-4 rounded border p-2">
+            <li key={service.id} className="mb-4 rounded border p-2">
               <div className="mb-2 flex items-center justify-between">
                 <p className="text-sm">Protocolo: {formatShortId(service.id)}</p>
                 <span
@@ -83,12 +86,12 @@ export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServicePr
                   </div>
                 ))}
               </div>
-            </div>
+            </li>
           )),
         )}
         {findAllServicesHistoryByContact.isFetchingNextPage && <div>Carregando mais históricos...</div>}
         {findAllServicesHistoryByContact.data?.pages.length === 0 && <div>Nenhum histórico de atendimento encontrado.</div>}
-      </div>
+      </ul>
 
       <div className="flex flex-col gap-2 [&>button]:w-full">
         {contactService.canBeServiceEnded && (
