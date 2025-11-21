@@ -83,17 +83,12 @@ type FindAllWhatsappMessageCategoryRequestParams = {
 
 //#region findAllContactMessagesByUser
 type FindAllWhatsappContactMessagesRequestData = {
-  queries: FindAllWhatsappContactMessagesRequestQuery;
+  queries: PaginateRequestQuery;
   params: FindAllWhatsappContactMessagesRequestParams;
 };
 
 type FindAllWhatsappContactMessagesRequestParams = {
   clientId: string;
-};
-
-type FindAllWhatsappContactMessagesRequestQuery = PaginateRequestQuery & {
-  categoryIds: string[];
-  text: string;
 };
 //#endregion
 
@@ -255,5 +250,26 @@ type UpdateContactRequestParams = {
 
 type UpdateContactRequestBody = {
   surname: string;
+};
+//#endregion
+
+//#region Find Last Whatsapp Event
+type FindLastWhatsappEventData = {
+  params: FindLastWhatsappEventParams;
+};
+
+type FindLastWhatsappEventParams = {
+  clientId: string;
+};
+//#endregion
+
+//#region Find After Whatsapp Events
+type FindAfterWhatsappEventsData = {
+  params: FindAfterWhatsappEventsParams;
+};
+
+type FindAfterWhatsappEventsParams = {
+  clientId: string;
+  whatsappEventId: string;
 };
 //#endregion
