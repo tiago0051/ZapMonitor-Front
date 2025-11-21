@@ -26,7 +26,7 @@ export const WhatsappContactsList: FC<WhatsappContactsListProps> = ({ usersInCon
   const filteredContacts = allContacts.filter((contact) => {
     const filterOnlyNumbers = filterText.replace(/\D/g, "");
 
-    const contactName = contact.surname || contact.name;
+    const contactName = contact.surname || contact.name || "";
     const phoneNumber = contact.phoneNumber.replace(/\D/g, "");
 
     const matchesCategories =
