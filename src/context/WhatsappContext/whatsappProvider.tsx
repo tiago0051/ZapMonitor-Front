@@ -5,7 +5,7 @@ import { WhatsappContext } from "./whatsappContext";
 import { useWhatsappContacts } from "@/hooks/use-whatsappContacts";
 import { FaWhatsapp } from "react-icons/fa";
 import { WhatsappEventType } from "@/enums/whatsappEventType.enum";
-import { useWhatsappEventsContext } from "../WhatsappEventsContext/WhatsappEventsContext";
+import { useWhatsappEventsContext } from "../WhatsappEventsContext/whatsappEventsContext";
 import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
 
 type WhatsappProviderProps = {
@@ -43,16 +43,18 @@ export const WhatsappProvider: FC<WhatsappProviderProps> = ({ children }) => {
   }, [client]);
 
   useEffect(() => {
-    contactEventsToExecute.forEach((event) => {
-      const payloadParsed = JSON.parse(event.payload) as { contact: WhatsappContactMessage; isNewMessage: boolean };
+    if (!isPending) {
+      contactEventsToExecute.forEach((event) => {
+        const payloadParsed = JSON.parse(event.payload) as { contact: WhatsappContactMessage; isNewMessage: boolean };
 
-      changeContacts([payloadParsed.contact]);
+        changeContacts([payloadParsed.contact]);
 
-      if (payloadParsed.isNewMessage && payloadParsed.contact.messageType === WhatsappMessageType.INCOMING) playSound();
+        if (payloadParsed.isNewMessage && payloadParsed.contact.messageType === WhatsappMessageType.INCOMING) playSound();
 
-      changeEventExecutedStatus(event);
-    });
-  }, [contactEventsToExecute]);
+        changeEventExecutedStatus(event);
+      });
+    }
+  }, [contactEventsToExecute, isPending]);
 
   if (isPending) {
     return (
