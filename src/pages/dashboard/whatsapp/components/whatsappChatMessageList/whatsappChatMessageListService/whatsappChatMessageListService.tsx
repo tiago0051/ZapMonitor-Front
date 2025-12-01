@@ -54,6 +54,8 @@ export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServicePr
     };
   }, []);
 
+  const loading = findAllServicesHistoryByContact.isFetching;
+
   return (
     <div className="grid max-h-full grid-rows-[min-content_auto_min-content] gap-2 overflow-auto">
       <h3>Histórico de atendimentos</h3>
@@ -96,6 +98,7 @@ export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServicePr
       <div className="flex flex-col gap-2 [&>button]:w-full">
         {contactService.canBeServiceEnded && (
           <Button
+            disabled={loading}
             onClick={() =>
               endServiceMutation.mutate({
                 params: { contactId: contactService.id, clientId: client.id },
@@ -107,6 +110,7 @@ export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServicePr
         )}
         {contactService.canBeServiceStarted && (
           <Button
+            disabled={loading}
             onClick={() =>
               startServiceMutation.mutate({
                 params: {
@@ -121,6 +125,7 @@ export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServicePr
         )}
         {contactService.canBeServiceTransferred && (
           <Button
+            disabled={loading}
             onClick={() =>
               transferServiceMutation.mutate({
                 params: {

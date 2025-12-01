@@ -9,8 +9,6 @@ import { WhatsappChatMessageListItem } from "./whatsappChatMessageList/whatsappC
 import { cn } from "@/lib/utils";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { WhatsappChatCreateMessageBar } from "./whatsappChatCreateMessageBar";
-import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
-import { useWhatsappContext } from "@/context/WhatsappContext/whatsappContext";
 
 type WhatsappChatMessageListProps = {
   contactService: WhatsappContactService;
@@ -21,7 +19,6 @@ type WhatsappChatMessageListProps = {
 export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationId, className }: WhatsappChatMessageListProps) => {
   const { user } = useUserContext();
   const { client } = useClientContext();
-  const { playSound } = useWhatsappContext();
 
   const [newMessagesList, setNewMessagesList] = useState<WhatsappMessage[]>([]);
 
@@ -60,18 +57,14 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
   }, [user, contactService]);
 
   useEffect(() => {
-    socket.on(`contact:${contactService.id}:newMessage`, (data: WhatsappMessage) => {
-      const isNewMessageIncoming = data.type === WhatsappMessageType.INCOMING;
-
-      if (isNewMessageIncoming) playSound();
-
-      setNewMessagesList((prev) => [data, ...prev]);
+    socket.on(`contact:${contactService.id}:messages:update`, (data: WhatsappMessage) => {
+      setNewMessagesList((prev) => [...prev, data]);
     });
 
     return () => {
-      socket.off(`contact:${contactService.id}:newMessage`);
+      socket.off(`contact:${contactService.id}:messages:update`);
     };
-  }, [contactService.id, playSound]);
+  }, [contactService.id]);
 
   useEffect(() => {
     setNewMessagesList([]);
@@ -97,7 +90,13 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
       </div>
 
       {contactService.canBeSentMessage && (
-        <WhatsappChatCreateMessageBar contactService={contactService} whatsappConfigurationId={whatsappConfigurationId} />
+        <WhatsappChatCreateMessageBar
+          contactService={contactService}
+          whatsappConfigurationId={whatsappConfigurationId}
+          updateMessageList={() => {
+            findAllWhatsappMessagesByContact.refetch();
+          }}
+        />
       )}
     </div>
   );
