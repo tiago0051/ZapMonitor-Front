@@ -1,12 +1,14 @@
 import { useLocalStorage } from "usehooks-ts";
 import { useClientContext } from "../ClientContext/clientContext";
-import { useEffect } from "react";
+import { useContext, useEffect } from "react";
 import { whatsappService } from "@/services/api/whatsappService";
 import { socket } from "@/services/socket/socket";
 import { Outlet } from "react-router";
 import { WhatsappEventsContext } from "./whatsappEventsContext";
+import { SocketContext } from "../SocketContext/socketContext";
 
 export const WhatsappEventsProvider = () => {
+  const { isConnected } = useContext(SocketContext);
   const { client } = useClientContext();
 
   const [events, setEvents] = useLocalStorage<WhatsappEventToExecute[]>("whatsappEvents", []);
@@ -64,14 +66,16 @@ export const WhatsappEventsProvider = () => {
   }, [events]);
 
   useEffect(() => {
-    socket.on("contacts:update", (data: WhatsappEvent) => {
-      setEvents((prev) => [...prev, data]);
-    });
+    if (isConnected) {
+      socket.on("contacts:update", (data: WhatsappEvent) => {
+        setEvents((prev) => [...prev, data]);
+      });
+    }
 
     return () => {
       socket.off("contacts:update");
     };
-  }, []);
+  }, [isConnected, setEvents]);
 
   return (
     <WhatsappEventsContext.Provider
@@ -80,7 +84,6 @@ export const WhatsappEventsProvider = () => {
         eventsToExecute: events.filter((item) => !item.executed),
       }}
     >
-      {socket.disconnected && <div>Desconectado, favor atualizar a tela</div>}
       <Outlet />
     </WhatsappEventsContext.Provider>
   );

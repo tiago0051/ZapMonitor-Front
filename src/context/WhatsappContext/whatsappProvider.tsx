@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FC } from "react";
+import { useContext, useEffect, useMemo, useState, type FC } from "react";
 import { useClientContext } from "../ClientContext/clientContext";
 import { socket } from "@/services/socket/socket";
 import { WhatsappContext } from "./whatsappContext";
@@ -7,12 +7,14 @@ import { FaWhatsapp } from "react-icons/fa";
 import { WhatsappEventType } from "@/enums/whatsappEventType.enum";
 import { useWhatsappEventsContext } from "../WhatsappEventsContext/whatsappEventsContext";
 import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
+import { SocketContext } from "../SocketContext/socketContext";
 
 type WhatsappProviderProps = {
   children: React.ReactNode;
 };
 
 export const WhatsappProvider: FC<WhatsappProviderProps> = ({ children }) => {
+  const { isConnected } = useContext(SocketContext);
   const { client } = useClientContext();
   const { eventsToExecute, changeEventExecutedStatus } = useWhatsappEventsContext();
   const contactEventsToExecute = eventsToExecute.filter((item) => item.eventType === WhatsappEventType.UpdateContactMessage);
@@ -39,8 +41,8 @@ export const WhatsappProvider: FC<WhatsappProviderProps> = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    socket.emit("chat:start", client.id);
-  }, [client]);
+    if (isConnected) socket.emit("chat:start", client.id);
+  }, [isConnected, client]);
 
   useEffect(() => {
     if (!isPending) {

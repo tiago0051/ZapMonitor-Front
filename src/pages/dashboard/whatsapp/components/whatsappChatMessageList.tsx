@@ -90,13 +90,7 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
       </div>
 
       {contactService.canBeSentMessage && (
-        <WhatsappChatCreateMessageBar
-          contactService={contactService}
-          whatsappConfigurationId={whatsappConfigurationId}
-          updateMessageList={() => {
-            // findAllWhatsappMessagesByContact.refetch();
-          }}
-        />
+        <WhatsappChatCreateMessageBar contactService={contactService} whatsappConfigurationId={whatsappConfigurationId} />
       )}
     </div>
   );

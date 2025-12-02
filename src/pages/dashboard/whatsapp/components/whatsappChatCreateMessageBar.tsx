@@ -16,14 +16,9 @@ import { toast } from "sonner";
 type WhatsappChatCreateMessageBarProps = {
   contactService: WhatsappContactService;
   whatsappConfigurationId: string;
-  updateMessageList: () => void;
 };
 
-export const WhatsappChatCreateMessageBar: FC<WhatsappChatCreateMessageBarProps> = ({
-  contactService,
-  whatsappConfigurationId,
-  updateMessageList,
-}) => {
+export const WhatsappChatCreateMessageBar: FC<WhatsappChatCreateMessageBarProps> = ({ contactService, whatsappConfigurationId }) => {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const { client } = useClientContext();
@@ -42,8 +37,6 @@ export const WhatsappChatCreateMessageBar: FC<WhatsappChatCreateMessageBarProps>
   const createMessageMutate = useMutation({
     mutationFn: whatsappService.createWhatsappMessage,
     onSuccess: () => {
-      updateMessageList();
-
       inputRef.current?.focus();
     },
     onError: requestErrorHandling,
@@ -72,9 +65,6 @@ export const WhatsappChatCreateMessageBar: FC<WhatsappChatCreateMessageBarProps>
       });
 
       return fileId;
-    },
-    onSuccess: () => {
-      updateMessageList();
     },
     onError: requestErrorHandling,
   });
