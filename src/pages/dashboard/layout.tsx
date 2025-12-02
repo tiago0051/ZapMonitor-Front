@@ -1,12 +1,11 @@
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { SocketContext } from "@/context/SocketContext/socketContext";
+import { useSocketContext } from "@/context/SocketContext/socketContext";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useContext } from "react";
 import { Outlet } from "react-router";
 
 export const DashboardLayout = () => {
-  const { isConnected } = useContext(SocketContext);
+  const { isConnected } = useSocketContext();
   const isMobile = useIsMobile();
 
   return (

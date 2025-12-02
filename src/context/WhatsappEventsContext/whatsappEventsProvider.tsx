@@ -1,14 +1,14 @@
 import { useLocalStorage } from "usehooks-ts";
 import { useClientContext } from "../ClientContext/clientContext";
-import { useContext, useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { whatsappService } from "@/services/api/whatsappService";
 import { socket } from "@/services/socket/socket";
 import { Outlet } from "react-router";
 import { WhatsappEventsContext } from "./whatsappEventsContext";
-import { SocketContext } from "../SocketContext/socketContext";
+import { useSocketContext } from "../SocketContext/socketContext";
 
 export const WhatsappEventsProvider = () => {
-  const { isConnected } = useContext(SocketContext);
+  const { isConnected } = useSocketContext();
   const { client } = useClientContext();
 
   const [events, setEvents] = useLocalStorage<WhatsappEventToExecute[]>("whatsappEvents", []);
@@ -26,7 +26,7 @@ export const WhatsappEventsProvider = () => {
     });
   }
 
-  const loadAsync = async () => {
+  const loadAsync = useCallback(async () => {
     if (lastEvent) {
       const data = await whatsappService.findAfterWhatsappEvent({
         params: {
@@ -51,11 +51,11 @@ export const WhatsappEventsProvider = () => {
 
       setEvents(() => [lastEvent]);
     }
-  };
+  }, [client.id, lastEvent, setEvents]);
 
   useEffect(() => {
-    loadAsync();
-  }, []);
+    if (isConnected) loadAsync();
+  }, [loadAsync, isConnected]);
 
   useEffect(() => {
     window.addEventListener("focus", loadAsync);
@@ -63,7 +63,7 @@ export const WhatsappEventsProvider = () => {
     return () => {
       window.removeEventListener("focus", loadAsync);
     };
-  }, [events]);
+  }, [loadAsync]);
 
   useEffect(() => {
     if (isConnected) {
