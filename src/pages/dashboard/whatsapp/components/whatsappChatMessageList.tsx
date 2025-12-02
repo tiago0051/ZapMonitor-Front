@@ -74,11 +74,11 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
     <div className={cn(className, "grid h-full grid-rows-[auto_min-content] overflow-hidden pt-4")}>
       <div onScroll={onScrollChat} className="flex max-h-full flex-col-reverse gap-2 overflow-auto px-4">
         {newMessagesList.map((message) => (
-          <WhatsappChatMessageListItem message={message} key={message.id} />
+          <WhatsappChatMessageListItem contactService={contactService} message={message} key={message.id} />
         ))}
 
         {findAllWhatsappMessagesByContact.data?.pages.map((page) =>
-          page.items.map((message) => <WhatsappChatMessageListItem message={message} key={message.id} />),
+          page.items.map((message) => <WhatsappChatMessageListItem contactService={contactService} message={message} key={message.id} />),
         )}
 
         {findAllWhatsappMessagesByContact.isFetching &&
@@ -94,7 +94,7 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
           contactService={contactService}
           whatsappConfigurationId={whatsappConfigurationId}
           updateMessageList={() => {
-            findAllWhatsappMessagesByContact.refetch();
+            // findAllWhatsappMessagesByContact.refetch();
           }}
         />
       )}

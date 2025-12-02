@@ -44,23 +44,24 @@ const MessageContact = ({ message }: { message: WhatsappMessage<string> }) => <p
 const MessageTemplate = ({ message }: { message: WhatsappMessage<string> }) => <p className="whitespace-pre-wrap">{message.content}</p>;
 
 type WhatsappChatMessageListItemProps = {
+  contactService: WhatsappContactService;
   message: WhatsappMessage;
 };
 
-export const WhatsappChatMessageListItem: FC<WhatsappChatMessageListItemProps> = ({ message }) => {
+export const WhatsappChatMessageListItem: FC<WhatsappChatMessageListItemProps> = ({ message, contactService }) => {
   const [status, setStatus] = useState(message.status);
 
   useEffect(() => {
     if (message.status === WhatsappMessageStatus.READ || message.type === WhatsappMessageType.INCOMING) return;
 
-    socket.on(`chat:message:${message.id}:update`, (data: { status: number }) => {
+    socket.on(`contact:${contactService.id}:message:${message.id}`, (data: { status: number }) => {
       setStatus(data.status);
     });
 
     return () => {
-      socket.off(`chat:message:${message.id}:update`);
+      socket.off(`contact:${contactService.id}:message:${message.id}`);
     };
-  }, [message.id, message.type, message.status]);
+  }, [contactService.id, message.id, message.type, message.status]);
 
   return (
     <div

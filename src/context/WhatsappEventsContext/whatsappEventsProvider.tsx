@@ -80,6 +80,7 @@ export const WhatsappEventsProvider = () => {
         eventsToExecute: events.filter((item) => !item.executed),
       }}
     >
+      {socket.disconnected && <div>Desconectado, favor atualizar a tela</div>}
       <Outlet />
     </WhatsappEventsContext.Provider>
   );
