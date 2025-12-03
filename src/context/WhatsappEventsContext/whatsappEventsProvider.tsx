@@ -35,13 +35,10 @@ export const WhatsappEventsProvider = () => {
         },
       });
 
-      setEvents((prev) => {
-        const dataToAdd = data.filter((newEvent) => !prev.some((existingEvent) => existingEvent.id === newEvent.id));
-
-        if (dataToAdd.length === 0) return prev;
-
-        return [...prev, ...dataToAdd];
-      });
+      const dataToAdd = data.filter((newEvent) => !events.some((existingEvent) => existingEvent.id === newEvent.id));
+      if (dataToAdd.length > 0) {
+        setEvents((prev) => [...prev, ...dataToAdd]);
+      }
     } else {
       const lastEvent = await whatsappService.findLastWhatsappEvent({
         params: {
