@@ -51,7 +51,7 @@ export const WhatsappEventsProvider = () => {
 
       setEvents(() => [lastEvent]);
     }
-  }, [client.id, lastEvent, setEvents]);
+  }, [client.id, lastEvent]);
 
   useEffect(() => {
     if (isConnected) loadAsync();
@@ -75,7 +75,7 @@ export const WhatsappEventsProvider = () => {
     return () => {
       socket.off("contacts:update");
     };
-  }, [isConnected, setEvents]);
+  }, [isConnected]);
 
   return (
     <WhatsappEventsContext.Provider
