@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useClientContext } from "@/context/ClientContext/clientContext";
+import { useSocketContext } from "@/context/SocketContext/socketContext";
 import { useUserContext } from "@/context/UserContext/userContext";
 import { whatsappService } from "@/services/api/whatsappService";
 import { socket } from "@/services/socket/socket";
@@ -14,6 +15,7 @@ type WhatsappChatMessageListServiceProps = {
 };
 
 export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServiceProps> = ({ contactService, refetchContactService }) => {
+  const {isConnected} = useSocketContext();
   const { user } = useUserContext();
   const { client } = useClientContext();
 
@@ -52,7 +54,7 @@ export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServicePr
     return () => {
       socket.off(`contact:${contactService.id}:service:update`);
     };
-  }, []);
+  }, [isConnected]);
 
   const loading = findAllServicesHistoryByContact.isFetching;
 
