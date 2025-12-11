@@ -1,14 +1,11 @@
-import { useClientContext } from "@/context/ClientContext/clientContext";
-import { whatsappService } from "@/services/api/whatsappService";
-import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { openDB } from "idb";
+import { whatsappService } from "@/services/api/whatsappService";
+import { useClientContext } from "@/context/ClientContext/clientContext";
 
 export const useWhatsappContacts = () => {
   const { client } = useClientContext();
 
-  const [pageToDownload, setPageToDownload] = useState(1);
-  const [isPending, setIsPending] = useState(true);
   const [loadingContacts, setLoadingContacts] = useState(true);
   const [contacts, setContacts] = useState<WhatsappContactMessage[]>([]);
 
@@ -37,65 +34,60 @@ export const useWhatsappContacts = () => {
     }
   }
 
-  const findAllContactMessagesQuery = useQuery({
-    queryKey: ["chat:update", "findAllContactMessages", pageToDownload],
-    queryFn: async () =>
-      await whatsappService.findAllContactMessagesByUser({
-        queries: {
-          page: pageToDownload,
-          take: 200,
-          categoryIds: [],
-          text: "",
-        },
-        params: {
-          clientId: client.id,
-        },
-      }),
-    enabled: !loadingContacts,
-  });
-  const listPagesContactMessages = findAllContactMessagesQuery.data;
+  async function changeContacts(contacts: WhatsappContactMessage[]) {
+    await saveContacts(contacts);
+
+    const newContactsList = await getContacts();
+    setContacts(newContactsList);
+  }
 
   useEffect(() => {
-    if (listPagesContactMessages) {
-      if (listPagesContactMessages.total !== contacts.length) {
-        if (listPagesContactMessages.page === 1) {
-          setContacts([]);
-        }
-
-        const newMessagesList = listPagesContactMessages.items;
-        setContacts((prev) => [...prev, ...newMessagesList]);
-
-        if (listPagesContactMessages.canNextPage) setPageToDownload((prev) => prev + 1);
-        else setIsPending(false);
-      } else {
-        setIsPending(false);
-      }
-    }
-  }, [listPagesContactMessages]);
-
-  useEffect(() => {
-    if (!isPending) saveContacts(contacts);
-  }, [isPending]);
-
-  useEffect(() => {
-    const fetchContacts = async () => {
+    const loadAsync = async () => {
       const contactsFromDB = await getContacts();
       if (contactsFromDB.length > 0) {
         setContacts(contactsFromDB.sort((a, b) => new Date(b.messageCreatedAt).getTime() - new Date(a.messageCreatedAt).getTime()));
       }
+      if (contactsFromDB.length === 0) {
+        const findWhatsappContactsByPage = async (page: number) => {
+          const data = await whatsappService.findAllContactMessages({
+            params: {
+              clientId: client.id,
+            },
+            queries: {
+              page,
+              take: 200,
+            },
+          });
+
+          return data;
+        };
+
+        let canFindNextPage = true;
+        let page = 1;
+
+        const temporaryContacts: WhatsappContactMessage[] = [];
+
+        while (canFindNextPage) {
+          const data = await findWhatsappContactsByPage(page);
+
+          data.items.forEach((item) => temporaryContacts.push(item));
+
+          page++;
+          canFindNextPage = data.canNextPage;
+        }
+
+        changeContacts(temporaryContacts);
+      }
+
       setLoadingContacts(false);
     };
 
-    fetchContacts();
+    loadAsync();
   }, []);
 
   return {
-    contacts,
-    changeContacts: (contacts: WhatsappContactMessage[]) => {
-      const newContactsList = contacts.sort((a, b) => new Date(b.messageCreatedAt).getTime() - new Date(a.messageCreatedAt).getTime());
-      setContacts(newContactsList);
-      saveContacts(newContactsList);
-    },
-    isPending,
+    contacts: contacts.sort((a, b) => new Date(b.messageCreatedAt).getTime() - new Date(a.messageCreatedAt).getTime()),
+    changeContacts,
+    isPending: loadingContacts,
   };
 };

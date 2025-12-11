@@ -9,8 +9,6 @@ import { WhatsappChatMessageListItem } from "./whatsappChatMessageList/whatsappC
 import { cn } from "@/lib/utils";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { WhatsappChatCreateMessageBar } from "./whatsappChatCreateMessageBar";
-import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
-import { useWhatsappContext } from "@/context/WhatsappContext/whatsappContext";
 
 type WhatsappChatMessageListProps = {
   contactService: WhatsappContactService;
@@ -21,7 +19,6 @@ type WhatsappChatMessageListProps = {
 export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationId, className }: WhatsappChatMessageListProps) => {
   const { user } = useUserContext();
   const { client } = useClientContext();
-  const { playSound } = useWhatsappContext();
 
   const [newMessagesList, setNewMessagesList] = useState<WhatsappMessage[]>([]);
 
@@ -60,18 +57,14 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
   }, [user, contactService]);
 
   useEffect(() => {
-    socket.on(`contact:${contactService.id}:newMessage`, (data: WhatsappMessage) => {
-      const isNewMessageIncoming = data.type === WhatsappMessageType.INCOMING;
-
-      if (isNewMessageIncoming) playSound();
-
-      setNewMessagesList((prev) => [data, ...prev]);
+    socket.on(`contact:${contactService.id}:messages:update`, (data: WhatsappMessage) => {
+      setNewMessagesList((prev) => [...prev, data]);
     });
 
     return () => {
-      socket.off(`contact:${contactService.id}:newMessage`);
+      socket.off(`contact:${contactService.id}:messages:update`);
     };
-  }, [contactService.id, playSound]);
+  }, [contactService.id]);
 
   useEffect(() => {
     setNewMessagesList([]);
@@ -81,11 +74,11 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
     <div className={cn(className, "grid h-full grid-rows-[auto_min-content] overflow-hidden pt-4")}>
       <div onScroll={onScrollChat} className="flex max-h-full flex-col-reverse gap-2 overflow-auto px-4">
         {newMessagesList.map((message) => (
-          <WhatsappChatMessageListItem message={message} key={message.id} />
+          <WhatsappChatMessageListItem contactService={contactService} message={message} key={message.id} />
         ))}
 
         {findAllWhatsappMessagesByContact.data?.pages.map((page) =>
-          page.items.map((message) => <WhatsappChatMessageListItem message={message} key={message.id} />),
+          page.items.map((message) => <WhatsappChatMessageListItem contactService={contactService} message={message} key={message.id} />),
         )}
 
         {findAllWhatsappMessagesByContact.isFetching &&

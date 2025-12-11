@@ -7,7 +7,7 @@ import { whatsappService } from "@/services/api/whatsappService";
 import { convertWavToMp3 } from "@/utils/fileConvert";
 import { requestErrorHandling } from "@/utils/request";
 import { BlockBlobClient } from "@azure/storage-blob";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { type ChangeEvent, type FC, useEffect, useRef, useState } from "react";
 import { FiFile, FiImage, FiMic, FiPaperclip, FiSend, FiStopCircle, FiX } from "react-icons/fi";
 import { useReactMediaRecorder } from "react-media-recorder";
@@ -34,19 +34,9 @@ export const WhatsappChatCreateMessageBar: FC<WhatsappChatCreateMessageBarProps>
   const messageIsDocument = message.type === WhatsappMessageContentType.DOCUMENT;
   const messageIsImage = message.type === WhatsappMessageContentType.IMAGE;
 
-  const queryClient = useQueryClient();
-
-  function invalidateFindAllWhatsappMessagesByContactQuery() {
-    queryClient.invalidateQueries({
-      queryKey: ["findAllWhatsappMessagesByContact"],
-    });
-  }
-
   const createMessageMutate = useMutation({
     mutationFn: whatsappService.createWhatsappMessage,
     onSuccess: () => {
-      invalidateFindAllWhatsappMessagesByContactQuery();
-
       inputRef.current?.focus();
     },
     onError: requestErrorHandling,
@@ -75,9 +65,6 @@ export const WhatsappChatCreateMessageBar: FC<WhatsappChatCreateMessageBarProps>
       });
 
       return fileId;
-    },
-    onSuccess: () => {
-      invalidateFindAllWhatsappMessagesByContactQuery();
     },
     onError: requestErrorHandling,
   });
@@ -235,7 +222,11 @@ export const WhatsappChatCreateMessageBar: FC<WhatsappChatCreateMessageBarProps>
 
           {messageIsAudio && <audio controls src={URL.createObjectURL(message.value as Blob)} className="w-full" />}
 
-          {messageIsImage && <div className={"w-full"}><img src={URL.createObjectURL(message.value as File)} alt={"Imagem selecioanda"} className={"h-[100px]"} /></div> }
+          {messageIsImage && (
+            <div className={"w-full"}>
+              <img src={URL.createObjectURL(message.value as File)} alt={"Imagem selecioanda"} className={"h-[100px]"} />
+            </div>
+          )}
 
           <Button variant={"ghost"} size={"icon"} onClick={() => setMessage(defaultMessage)} disabled={disabledMessage}>
             <FiX />

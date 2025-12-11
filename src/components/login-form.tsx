@@ -69,7 +69,7 @@ export function LoginForm({ className, onLoginSuccess, ...props }: LoginFormProp
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input placeholder="m@exemplo.com" {...field} />
+                  <Input placeholder="m@exemplo.com" type="email" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

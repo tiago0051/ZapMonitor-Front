@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useClientContext } from "@/context/ClientContext/clientContext";
+import { useSocketContext } from "@/context/SocketContext/socketContext";
 import { useUserContext } from "@/context/UserContext/userContext";
 import { whatsappService } from "@/services/api/whatsappService";
 import { socket } from "@/services/socket/socket";
@@ -14,6 +15,7 @@ type WhatsappChatMessageListServiceProps = {
 };
 
 export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServiceProps> = ({ contactService, refetchContactService }) => {
+  const {isConnected} = useSocketContext();
   const { user } = useUserContext();
   const { client } = useClientContext();
 
@@ -52,7 +54,9 @@ export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServicePr
     return () => {
       socket.off(`contact:${contactService.id}:service:update`);
     };
-  }, []);
+  }, [isConnected]);
+
+  const loading = findAllServicesHistoryByContact.isFetching;
 
   return (
     <div className="grid max-h-full grid-rows-[min-content_auto_min-content] gap-2 overflow-auto">
@@ -96,6 +100,7 @@ export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServicePr
       <div className="flex flex-col gap-2 [&>button]:w-full">
         {contactService.canBeServiceEnded && (
           <Button
+            disabled={loading}
             onClick={() =>
               endServiceMutation.mutate({
                 params: { contactId: contactService.id, clientId: client.id },
@@ -107,6 +112,7 @@ export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServicePr
         )}
         {contactService.canBeServiceStarted && (
           <Button
+            disabled={loading}
             onClick={() =>
               startServiceMutation.mutate({
                 params: {
@@ -121,6 +127,7 @@ export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServicePr
         )}
         {contactService.canBeServiceTransferred && (
           <Button
+            disabled={loading}
             onClick={() =>
               transferServiceMutation.mutate({
                 params: {

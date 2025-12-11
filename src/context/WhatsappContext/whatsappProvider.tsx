@@ -4,19 +4,25 @@ import { socket } from "@/services/socket/socket";
 import { WhatsappContext } from "./whatsappContext";
 import { useWhatsappContacts } from "@/hooks/use-whatsappContacts";
 import { FaWhatsapp } from "react-icons/fa";
+import { WhatsappEventType } from "@/enums/whatsappEventType.enum";
+import { useWhatsappEventsContext } from "../WhatsappEventsContext/whatsappEventsContext";
 import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
+import { useSocketContext } from "../SocketContext/socketContext";
 
 type WhatsappProviderProps = {
   children: React.ReactNode;
 };
 
 export const WhatsappProvider: FC<WhatsappProviderProps> = ({ children }) => {
+  const { isConnected } = useSocketContext();
   const { client } = useClientContext();
+  const { eventsToExecute, changeEventExecutedStatus } = useWhatsappEventsContext();
+  const contactEventsToExecute = eventsToExecute.filter((item) => item.eventType === WhatsappEventType.UpdateContactMessage);
 
   const { contacts, changeContacts, isPending } = useWhatsappContacts();
+
   const [contactSelected, setContactSelected] = useState<WhatsappContactMessage | null>(null);
   const [usersInContacts, setUsersInContacts] = useState<Record<string, User[]>>({});
-  const [contactToUpdate, setContactToUpdate] = useState<WhatsappContactMessage | null>(null);
 
   const newMessageAudio = useMemo(() => new Audio("/assets/whatsapp/chat/sounds/new-message.mp3"), []);
 
@@ -35,39 +41,22 @@ export const WhatsappProvider: FC<WhatsappProviderProps> = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    socket.emit("chat:start", client.id);
-  }, [client]);
+    if (isConnected) socket.emit("chat:start", client.id);
+  }, [isConnected, client]);
 
   useEffect(() => {
-    socket.on("contacts:update", (data: { contact: WhatsappContactMessage; isNewMessage: boolean }) => {
-      setContactToUpdate(data.contact);
+    if (!isPending) {
+      contactEventsToExecute.forEach((event) => {
+        const payloadParsed = JSON.parse(event.payload) as { contact: WhatsappContactMessage; isNewMessage: boolean };
 
-      if (data.isNewMessage && data.contact.messageType === WhatsappMessageType.INCOMING) {
-        playSound();
-      }
-    });
+        changeContacts([payloadParsed.contact]);
 
-    return () => {
-      socket.off("contacts:update");
-    };
-  }, []);
+        if (payloadParsed.isNewMessage && payloadParsed.contact.messageType === WhatsappMessageType.INCOMING) playSound();
 
-  useEffect(() => {
-    if (contactToUpdate) {
-      const contactIndex = contacts.findIndex((c) => c.id === contactToUpdate.id);
-
-      let contactsCopy = [...contacts];
-      if (contactIndex !== -1) {
-        contactsCopy[contactIndex] = contactToUpdate;
-      } else {
-        contactsCopy = [contactToUpdate, ...contactsCopy];
-      }
-
-      changeContacts(contactsCopy);
-
-      setContactToUpdate(null);
+        changeEventExecutedStatus(event);
+      });
     }
-  }, [contactToUpdate]);
+  }, [contactEventsToExecute, isPending]);
 
   if (isPending) {
     return (
