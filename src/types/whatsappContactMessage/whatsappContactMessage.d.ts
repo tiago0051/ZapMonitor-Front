@@ -13,4 +13,5 @@ type WhatsappContactMessage = {
   clientId: string;
   serviceUserServiceId: string | null;
   serviceUserServiceName: string | null;
+  awaitService: boolean;
 };

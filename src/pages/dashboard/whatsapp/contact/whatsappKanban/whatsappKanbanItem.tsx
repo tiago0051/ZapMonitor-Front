@@ -5,13 +5,13 @@ import { WhatsappChatContactMessage } from "../../components/whatsappChatContact
 import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
 import { cn } from "@/lib/utils";
 
-type WhatsappChatItemProps = DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement> & {
+type WhatsappKanbanItemProps = DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement> & {
   isSelected: boolean;
   usersInContact: User[];
   contactMessage: WhatsappContactMessage;
 };
 
-export const WhatsappChatItem: FC<WhatsappChatItemProps> = ({
+export const WhatsappKanbanItem: FC<WhatsappKanbanItemProps> = ({
   isSelected,
   onClick,
   usersInContact,
