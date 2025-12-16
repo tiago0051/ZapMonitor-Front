@@ -30,12 +30,12 @@ export const DialogWhatsappChat = ({ contactMessage }: DialogWhatsappChatProps) 
 
   return (
     <Dialog defaultOpen onOpenChange={() => setContactSelected(null)}>
-      <DialogContent className="grid max-h-dvh grid-cols-3 grid-rows-[min-content_100%] overflow-hidden md:max-w-4xl">
+      <DialogContent className="grid max-h-dvh grid-cols-3 grid-rows-[min-content_1fr] overflow-hidden md:max-w-4xl">
         <DialogHeader className="col-span-3">
           <DialogTitle>Chat</DialogTitle>
           <DialogDescription>Converse com o cliente</DialogDescription>
         </DialogHeader>
-        <div className="col-span-2 grid max-h-full grid-rows-[min-content-100%] overflow-hidden">
+        <div className="col-span-2 grid max-h-full grid-rows-[min-content-1fr] overflow-hidden">
           <WhatsappChatMessageHeader contactMessage={contactMessage} className="md:col-span-4" />
 
           <WhatsappChatMessageList
@@ -46,7 +46,7 @@ export const DialogWhatsappChat = ({ contactMessage }: DialogWhatsappChatProps) 
         </div>
 
         <WhatsappChatMessageListService
-          className=""
+          className="max-h-full"
           contactService={contactService}
           refetchContactService={() => findContactServiceByContact.refetch()}
         />
