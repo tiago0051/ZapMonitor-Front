@@ -64,8 +64,6 @@ export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServicePr
 
   const loading = findAllServicesHistoryByContact.isFetching;
 
-  console.log(contactService);
-
   return (
     <div className={cn(className, "grid grid-rows-[min-content_auto_min-content] gap-2 overflow-hidden")}>
       <h3>Histórico</h3>
