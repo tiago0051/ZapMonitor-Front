@@ -3,7 +3,7 @@ import { Navigate, Route, Routes, useParams } from "react-router";
 import { HomePage } from "../pages/dashboard/home/home";
 import { DashboardLayout } from "@/pages/dashboard/layout";
 import { ClientProvider } from "@/context/ClientContext/clientProvider";
-import { WhatsappEventsProvider } from "@/context/WhatsappEventsContext/whatsappEventsProvider";
+import { EventsProvider } from "@/context/EventsContext/eventsProvider";
 
 const WhatsappRouter = lazy(() => import("./whatsappRouter"));
 const ConfigurationRouter = lazy(() => import("./clientRouter"));
@@ -17,7 +17,7 @@ export const DashboardRouter: FC = () => {
   return (
     <Routes>
       <Route element={<ClientProvider />}>
-        <Route element={<WhatsappEventsProvider />}>
+        <Route element={<EventsProvider />}>
           <Route element={<DashboardLayout />}>
             <Route index element={<HomePage />} />
             <Route path="configuration/*" element={<ConfigurationRouter />} />

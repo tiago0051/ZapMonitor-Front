@@ -1,9 +1,9 @@
-type WhatsappEvent = {
+type TEvent = {
   id: string;
   eventType: number;
   payload: string;
 };
 
-type WhatsappEventToExecute = WhatsappEvent & {
+type TEventToExecute = TEvent & {
   executed?: boolean;
 };

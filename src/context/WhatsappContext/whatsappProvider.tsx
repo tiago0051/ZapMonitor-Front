@@ -5,9 +5,9 @@ import { WhatsappContext } from "./whatsappContext";
 import { useWhatsappContacts } from "@/hooks/use-whatsappContacts";
 import { FaWhatsapp } from "react-icons/fa";
 import { WhatsappEventType } from "@/enums/whatsappEventType.enum";
-import { useWhatsappEventsContext } from "../WhatsappEventsContext/whatsappEventsContext";
 import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
 import { useSocketContext } from "../SocketContext/socketContext";
+import { useEventsContext } from "../EventsContext/eventsContext";
 
 type WhatsappProviderProps = {
   children: React.ReactNode;
@@ -16,7 +16,7 @@ type WhatsappProviderProps = {
 export const WhatsappProvider: FC<WhatsappProviderProps> = ({ children }) => {
   const { isConnected } = useSocketContext();
   const { client } = useClientContext();
-  const { eventsToExecute, changeEventExecutedStatus } = useWhatsappEventsContext();
+  const { eventsToExecute, changeEventExecutedStatus } = useEventsContext();
   const contactEventsToExecute = eventsToExecute.filter((item) => item.eventType === WhatsappEventType.UpdateContactMessage);
 
   const { contacts, changeContacts, isPending } = useWhatsappContacts();

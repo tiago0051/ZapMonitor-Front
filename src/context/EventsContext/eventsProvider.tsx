@@ -1,20 +1,20 @@
 import { useLocalStorage } from "usehooks-ts";
 import { useClientContext } from "../ClientContext/clientContext";
 import { useCallback, useEffect } from "react";
-import { whatsappService } from "@/services/api/whatsappService";
 import { socket } from "@/services/socket/socket";
 import { Outlet } from "react-router";
-import { WhatsappEventsContext } from "./whatsappEventsContext";
 import { useSocketContext } from "../SocketContext/socketContext";
+import { EventsContext } from "./eventsContext";
+import { eventsService } from "@/services/api/eventsService";
 
-export const WhatsappEventsProvider = () => {
+export const EventsProvider = () => {
   const { isConnected } = useSocketContext();
   const { client } = useClientContext();
 
-  const [events, setEvents] = useLocalStorage<WhatsappEventToExecute[]>("whatsappEvents", []);
+  const [events, setEvents] = useLocalStorage<TEventToExecute[]>("events", []);
   const lastEvent = events[events.length - 1];
 
-  function changeEventExecutedStatus(event: WhatsappEventToExecute) {
+  function changeEventExecutedStatus(event: TEventToExecute) {
     setEvents((prev) => {
       const array = [...prev];
       const eventIndex = prev.findIndex((item) => item.id === event.id);
@@ -28,10 +28,10 @@ export const WhatsappEventsProvider = () => {
 
   const loadAsync = useCallback(async () => {
     if (lastEvent) {
-      const data = await whatsappService.findAfterWhatsappEvent({
+      const data = await eventsService.findAfters({
         params: {
           clientId: client.id,
-          whatsappEventId: lastEvent.id,
+          eventId: lastEvent.id,
         },
       });
 
@@ -40,7 +40,7 @@ export const WhatsappEventsProvider = () => {
         setEvents((prev) => [...prev, ...dataToAdd]);
       }
     } else {
-      const lastEvent = await whatsappService.findLastWhatsappEvent({
+      const lastEvent = await eventsService.findLast({
         params: {
           clientId: client.id,
         },
@@ -64,7 +64,7 @@ export const WhatsappEventsProvider = () => {
 
   useEffect(() => {
     if (isConnected) {
-      socket.on("contacts:update", (data: WhatsappEvent) => {
+      socket.on("contacts:update", (data: TEvent) => {
         setEvents((prev) => [...prev, data]);
       });
     }
@@ -75,13 +75,13 @@ export const WhatsappEventsProvider = () => {
   }, [isConnected]);
 
   return (
-    <WhatsappEventsContext.Provider
+    <EventsContext.Provider
       value={{
         changeEventExecutedStatus,
         eventsToExecute: events.filter((item) => !item.executed),
       }}
     >
       <Outlet />
-    </WhatsappEventsContext.Provider>
+    </EventsContext.Provider>
   );
 };
