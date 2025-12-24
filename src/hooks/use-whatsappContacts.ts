@@ -2,10 +2,11 @@ import { openDB } from "idb";
 import { whatsappService } from "@/services/api/whatsappService";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export const useWhatsappContacts = () => {
   const { client } = useClientContext();
+  const [loadingData, setLoadingData] = useState<{ total: number; value: number }>({ total: 0, value: 0 });
 
   const loadDb = openDB("app-db", 1, {
     upgrade(db) {
@@ -54,9 +55,11 @@ export const useWhatsappContacts = () => {
 
           data.items.forEach((item) => temporaryContacts.push(item));
 
-          if (!data.canNextPage) return;
+          setLoadingData({ value: page, total: Math.ceil(data.total / 200) });
 
           await new Promise((resolve) => setTimeout(resolve, 100));
+
+          if (!data.canNextPage) return;
 
           await findWhatsappContactsByPage(page + 1);
         };
@@ -83,5 +86,6 @@ export const useWhatsappContacts = () => {
     contacts: contactsQuery.data?.sort((a, b) => new Date(b.messageCreatedAt).getTime() - new Date(a.messageCreatedAt).getTime()) || [],
     changeContacts,
     isPending: contactsQuery.isLoading,
+    loadingData,
   };
 };

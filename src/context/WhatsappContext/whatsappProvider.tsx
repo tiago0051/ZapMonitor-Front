@@ -8,6 +8,7 @@ import { WhatsappEventType } from "@/enums/whatsappEventType.enum";
 import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
 import { useSocketContext } from "../SocketContext/socketContext";
 import { useEventsContext } from "../EventsContext/eventsContext";
+import { Progress } from "@/components/ui/progress";
 
 type WhatsappProviderProps = {
   children: React.ReactNode;
@@ -19,7 +20,7 @@ export const WhatsappProvider: FC<WhatsappProviderProps> = ({ children }) => {
   const { eventsToExecute, changeEventExecutedStatus } = useEventsContext();
   const contactEventsToExecute = eventsToExecute.filter((item) => item.eventType === WhatsappEventType.UpdateContactMessage);
 
-  const { contacts, changeContacts, isPending } = useWhatsappContacts();
+  const { contacts, changeContacts, isPending, loadingData } = useWhatsappContacts();
 
   const [contactSelected, setContactSelected] = useState<WhatsappContactMessage | null>(null);
   const [usersInContacts, setUsersInContacts] = useState<Record<string, User[]>>({});
@@ -58,11 +59,16 @@ export const WhatsappProvider: FC<WhatsappProviderProps> = ({ children }) => {
     }
   }, [contactEventsToExecute, isPending]);
 
+  const loadingPercent = Math.round((loadingData.value * 100) / loadingData.total);
+
   if (isPending) {
     return (
       <div className="bg-background absolute top-0 right-0 bottom-0 left-0 flex h-full w-full flex-col items-center justify-center gap-4">
-        <FaWhatsapp className="text-green-600" size={60} />
-        <h1 className="text-center text-2xl font-bold text-green-600">Baixando histórico de mensagens...</h1>
+        <div className="flex flex-col items-center">
+          <FaWhatsapp className="text-green-600" size={60} />
+          <h1 className="text-center text-2xl font-bold text-green-600">Baixando histórico de mensagens...</h1>
+        </div>
+        <Progress className="max-w-2/3" value={loadingPercent} />
       </div>
     );
   }
