@@ -55,14 +55,6 @@ export const EventsProvider = () => {
   }, [loadAsync, isConnected]);
 
   useEffect(() => {
-    window.addEventListener("focus", loadAsync);
-
-    return () => {
-      window.removeEventListener("focus", loadAsync);
-    };
-  }, [loadAsync]);
-
-  useEffect(() => {
     if (isConnected) {
       socket.on("contacts:update", (data: TEvent) => {
         setEvents((prev) => [...prev, data]);
