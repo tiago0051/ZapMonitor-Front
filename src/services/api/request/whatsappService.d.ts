@@ -252,24 +252,3 @@ type UpdateContactRequestBody = {
   surname: string;
 };
 //#endregion
-
-//#region Find Last Whatsapp Event
-type FindLastWhatsappEventData = {
-  params: FindLastWhatsappEventParams;
-};
-
-type FindLastWhatsappEventParams = {
-  clientId: string;
-};
-//#endregion
-
-//#region Find After Whatsapp Events
-type FindAfterWhatsappEventsData = {
-  params: FindAfterWhatsappEventsParams;
-};
-
-type FindAfterWhatsappEventsParams = {
-  clientId: string;
-  whatsappEventId: string;
-};
-//#endregion

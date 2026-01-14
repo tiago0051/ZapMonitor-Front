@@ -58,7 +58,7 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
 
   useEffect(() => {
     socket.on(`contact:${contactService.id}:messages:update`, (data: WhatsappMessage) => {
-      setNewMessagesList((prev) => [...prev, data]);
+      setNewMessagesList((prev) => [data, ...prev]);
     });
 
     return () => {

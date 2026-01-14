@@ -12,9 +12,9 @@ const queryClient = new QueryClient();
 export const Providers: FC<ProvidersProps> = ({ children }) => {
   return (
     <QueryClientProvider client={queryClient}>
-      <SocketProvider>
-        <UserProvider>{children}</UserProvider>
-      </SocketProvider>
+      <UserProvider>
+        <SocketProvider>{children}</SocketProvider>
+      </UserProvider>
     </QueryClientProvider>
   );
 };

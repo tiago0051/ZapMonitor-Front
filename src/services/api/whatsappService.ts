@@ -123,14 +123,4 @@ export const whatsappService = {
     const response = await api.put(`/client/${params.clientId}/whatsapp/contact/${params.contactId}`, body);
     return response.data;
   },
-  findLastWhatsappEvent: async ({ params }: FindLastWhatsappEventData): Promise<WhatsappEvent> => {
-    const response = await api.get(`/client/${params.clientId}/whatsapp/event/lastEvent`);
-
-    return response.data;
-  },
-  findAfterWhatsappEvent: async ({ params }: FindAfterWhatsappEventsData): Promise<WhatsappEvent[]> => {
-    const response = await api.get(`/client/${params.clientId}/whatsapp/event/${params.whatsappEventId}/afterEvents`);
-
-    return response.data;
-  },
 };
