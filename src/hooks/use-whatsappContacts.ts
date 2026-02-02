@@ -23,7 +23,7 @@ export const useWhatsappContacts = () => {
     await tx.done;
   }
 
-  async function getContacts() {
+  async function getContacts(): Promise<WhatsappContactMessage[]> {
     try {
       const db = await loadDb;
 
