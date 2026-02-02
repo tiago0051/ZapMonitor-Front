@@ -47,15 +47,20 @@ export const WhatsappProvider: FC<WhatsappProviderProps> = ({ children }) => {
 
   useEffect(() => {
     if (!isPending) {
+      const contactsToChangeRecord: Record<string, WhatsappContactMessage> = {};
+
       contactEventsToExecute.forEach((event) => {
         const payloadParsed = JSON.parse(event.payload) as { contact: WhatsappContactMessage; isNewMessage: boolean };
 
-        changeContacts([payloadParsed.contact]);
+        contactsToChangeRecord[payloadParsed.contact.id] = payloadParsed.contact;
 
         if (payloadParsed.isNewMessage && payloadParsed.contact.messageType === WhatsappMessageType.INCOMING) playSound();
 
         changeEventExecutedStatus(event);
       });
+
+      const contactsToChange = Object.values(contactsToChangeRecord);
+      if (contactsToChange.length > 0) changeContacts(contactsToChange);
     }
   }, [contactEventsToExecute, isPending]);
 
