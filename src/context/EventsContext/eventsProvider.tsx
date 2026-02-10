@@ -1,6 +1,6 @@
 import { useLocalStorage } from "usehooks-ts";
 import { useClientContext } from "../ClientContext/clientContext";
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import { socket } from "@/services/socket/socket";
 import { Outlet } from "react-router";
 import { useSocketContext } from "../SocketContext/socketContext";
@@ -26,7 +26,7 @@ export const EventsProvider = () => {
     });
   }
 
-  const loadAsync = useCallback(async () => {
+  const loadAsync = async () => {
     if (lastEvent) {
       const data = await eventsService.findAfters({
         params: {
@@ -48,11 +48,11 @@ export const EventsProvider = () => {
 
       setEvents(() => [lastEvent]);
     }
-  }, [client.id, lastEvent]);
+  };
 
   useEffect(() => {
     if (isConnected) loadAsync();
-  }, [loadAsync, isConnected]);
+  }, [isConnected]);
 
   useEffect(() => {
     if (isConnected) {
