@@ -83,7 +83,7 @@ export const useWhatsappContacts = () => {
   }, [contactsQuery.data, contactsQuery.isLoading]);
 
   return {
-    contacts: contactsQuery.data?.sort((a, b) => new Date(b.messageCreatedAt).getTime() - new Date(a.messageCreatedAt).getTime()) || [],
+    contacts: contactsQuery.data || [],
     changeContacts,
     isPending: contactsQuery.isLoading,
     loadingData,
