@@ -4,6 +4,11 @@ import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
+function orderContactsByLastMessage(contacts: WhatsappContactMessage[]) {
+  const newList = contacts.sort((a, b) => new Date(b.messageCreatedAt).getTime() - new Date(a.messageCreatedAt).getTime());
+  return [...newList];
+}
+
 export const useWhatsappContacts = () => {
   const { client } = useClientContext();
   const [loadingData, setLoadingData] = useState<{ total: number; value: number }>({ total: 0, value: 0 });
@@ -37,8 +42,7 @@ export const useWhatsappContacts = () => {
     queryKey: ["whatsappContacts"],
     queryFn: async () => {
       const contactsFromDB = await getContacts();
-      if (contactsFromDB.length > 0)
-        return contactsFromDB.sort((a, b) => new Date(b.messageCreatedAt).getTime() - new Date(a.messageCreatedAt).getTime());
+      if (contactsFromDB.length > 0) return orderContactsByLastMessage(contactsFromDB);
       if (contactsFromDB.length === 0) {
         const temporaryContacts: WhatsappContactMessage[] = [];
 

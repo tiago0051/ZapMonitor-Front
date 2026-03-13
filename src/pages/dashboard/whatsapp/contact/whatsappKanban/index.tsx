@@ -34,13 +34,14 @@ export const WhatsappKanban: FC<WhatsappKanbanProps> = ({ filterCategories, filt
   const otherSevicesContacts = filteredContacts.filter(
     (contact) => contact.serviceUserServiceId && contact.serviceUserServiceId !== user?.id,
   );
+  const otherContacts = filteredContacts.filter((contact) => !contact.awaitService && !contact.serviceUserServiceId);
 
   return (
     <ul className="grid grid-cols-4 space-x-2">
       <WhatsappKanbanColumn contacts={awaitingServiceContacts} title="Aguardando atendimento" />
       <WhatsappKanbanColumn contacts={mySevicesContacts} title="Meus atendimento" />
       <WhatsappKanbanColumn contacts={otherSevicesContacts} title="Em atendimento" />
-      <WhatsappKanbanColumn contacts={filteredContacts} title="Todos" />
+      <WhatsappKanbanColumn contacts={otherContacts} title="Todos" />
     </ul>
   );
 };
