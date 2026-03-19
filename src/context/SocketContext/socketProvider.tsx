@@ -1,10 +1,19 @@
 import { SocketContext } from "./socketContext";
-import { useEffect, useState, type FC } from "react";
-import { socket } from "@/services/socket/socket";
+import { useEffect, useMemo, useState } from "react";
+import { Outlet } from "react-router";
+import { io } from "socket.io-client";
 
-type SocketProviderProps = React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>;
+export const SocketProvider: React.FC = () => {
+  const URL = import.meta.env.VITE_API_URL;
 
-export const SocketProvider: FC<SocketProviderProps> = ({ children }) => {
+  const socket = useMemo(
+    () =>
+      io(URL, {
+        reconnection: true,
+      }),
+    [],
+  );
+
   const [isConnected, setIsConnected] = useState(socket.connected);
 
   useEffect(() => {
@@ -24,5 +33,9 @@ export const SocketProvider: FC<SocketProviderProps> = ({ children }) => {
       socket.off("disconnect", onDisconnect);
     };
   }, []);
-  return <SocketContext.Provider value={{ isConnected }}>{children}</SocketContext.Provider>;
+  return (
+    <SocketContext.Provider value={{ isConnected, socket }}>
+      <Outlet />
+    </SocketContext.Provider>
+  );
 };

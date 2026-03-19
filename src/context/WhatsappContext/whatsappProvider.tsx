@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, type FC } from "react";
 import { useClientContext } from "../ClientContext/clientContext";
-import { socket } from "@/services/socket/socket";
 import { WhatsappContext } from "./whatsappContext";
 import { useWhatsappContacts } from "@/hooks/use-whatsappContacts";
 import { FaWhatsapp } from "react-icons/fa";
@@ -15,7 +14,7 @@ type WhatsappProviderProps = {
 };
 
 export const WhatsappProvider: FC<WhatsappProviderProps> = ({ children }) => {
-  const { isConnected } = useSocketContext();
+  const { isConnected, socket } = useSocketContext();
   const { client } = useClientContext();
   const { eventsToExecute, changeEventExecutedStatus } = useEventsContext();
   const contactEventsToExecute = eventsToExecute.filter((item) => item.eventType === WhatsappEventType.UpdateContactMessage);
@@ -39,7 +38,7 @@ export const WhatsappProvider: FC<WhatsappProviderProps> = ({ children }) => {
     return () => {
       socket.off("users:byChat");
     };
-  }, []);
+  }, [isConnected]);
 
   useEffect(() => {
     if (isConnected) socket.emit("chat:start", client.id);

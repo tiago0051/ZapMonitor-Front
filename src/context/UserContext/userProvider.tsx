@@ -25,8 +25,8 @@ export const UserProvider: FC<UserProviderProps> = ({ children }) => {
   }, [getsMeQuery.data, setUser]);
 
   function logout() {
-    setIsLogged(false);
-    setUser(null);
+    indexedDB.deleteDatabase("app-db");
+    localStorage.clear();
   }
 
   function login() {

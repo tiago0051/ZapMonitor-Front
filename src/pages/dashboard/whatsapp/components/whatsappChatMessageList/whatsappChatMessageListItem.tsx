@@ -1,7 +1,7 @@
+import { useSocketContext } from "@/context/SocketContext/socketContext";
 import { WhatsappMessageContentType } from "@/enums/whatsappMessageContentType.enum";
 import { WhatsappMessageStatus } from "@/enums/whatsappMessageStatus.enum";
 import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
-import { socket } from "@/services/socket/socket";
 import { formatShortName } from "@/utils/formatString";
 import { format } from "date-fns";
 import { useEffect, useState, type FC } from "react";
@@ -49,6 +49,8 @@ type WhatsappChatMessageListItemProps = {
 };
 
 export const WhatsappChatMessageListItem: FC<WhatsappChatMessageListItemProps> = ({ message, contactService }) => {
+  const { socket, isConnected } = useSocketContext();
+
   const [status, setStatus] = useState(message.status);
 
   useEffect(() => {
@@ -61,7 +63,7 @@ export const WhatsappChatMessageListItem: FC<WhatsappChatMessageListItemProps> =
     return () => {
       socket.off(`contact:${contactService.id}:message:${message.id}`);
     };
-  }, [contactService.id, message.id, message.type, message.status]);
+  }, [contactService.id, message.id, message.type, message.status, isConnected]);
 
   return (
     <div

@@ -1,6 +1,5 @@
 import { useUserContext } from "@/context/UserContext/userContext";
 import { whatsappService } from "@/services/api/whatsappService";
-import { socket } from "@/services/socket/socket";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,6 +8,7 @@ import { WhatsappChatMessageListItem } from "./whatsappChatMessageList/whatsappC
 import { cn } from "@/lib/utils";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { WhatsappChatCreateMessageBar } from "./whatsappChatCreateMessageBar";
+import { useSocketContext } from "@/context/SocketContext/socketContext";
 
 type WhatsappChatMessageListProps = {
   contactService: WhatsappContactService;
@@ -17,6 +17,7 @@ type WhatsappChatMessageListProps = {
 };
 
 export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationId, className }: WhatsappChatMessageListProps) => {
+  const { socket, isConnected } = useSocketContext();
   const { user } = useUserContext();
   const { client } = useClientContext();
 
@@ -54,7 +55,7 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
     return () => {
       socket.emit("chat:unsubscribe", contactService.id);
     };
-  }, [user, contactService]);
+  }, [user, contactService, isConnected]);
 
   useEffect(() => {
     socket.on(`contact:${contactService.id}:messages:update`, (data: WhatsappMessage) => {
@@ -64,7 +65,7 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
     return () => {
       socket.off(`contact:${contactService.id}:messages:update`);
     };
-  }, [contactService.id]);
+  }, [contactService.id, isConnected]);
 
   useEffect(() => {
     setNewMessagesList([]);

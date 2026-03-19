@@ -4,7 +4,6 @@ import { useSocketContext } from "@/context/SocketContext/socketContext";
 import { useUserContext } from "@/context/UserContext/userContext";
 import { cn } from "@/lib/utils";
 import { whatsappService } from "@/services/api/whatsappService";
-import { socket } from "@/services/socket/socket";
 import { formatShortId } from "@/utils/formatString";
 import { requestErrorHandling } from "@/utils/request";
 import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
@@ -21,7 +20,7 @@ export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServicePr
   contactService,
   refetchContactService,
 }) => {
-  const { isConnected } = useSocketContext();
+  const { isConnected, socket } = useSocketContext();
   const { user } = useUserContext();
   const { client } = useClientContext();
 

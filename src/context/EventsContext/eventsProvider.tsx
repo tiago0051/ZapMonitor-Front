@@ -1,14 +1,13 @@
 import { useLocalStorage } from "usehooks-ts";
 import { useClientContext } from "../ClientContext/clientContext";
 import { useEffect } from "react";
-import { socket } from "@/services/socket/socket";
 import { Outlet } from "react-router";
 import { useSocketContext } from "../SocketContext/socketContext";
 import { EventsContext } from "./eventsContext";
 import { eventsService } from "@/services/api/eventsService";
 
 export const EventsProvider = () => {
-  const { isConnected } = useSocketContext();
+  const { isConnected, socket } = useSocketContext();
   const { client } = useClientContext();
 
   const [events, setEvents] = useLocalStorage<TEventToExecute[]>("events", []);
