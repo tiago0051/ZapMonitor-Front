@@ -8,6 +8,11 @@ type WhatsappKanbanProps = {
   filterText: string;
 };
 
+function orderContactsByLastMessage(contacts: WhatsappContactMessage[]) {
+  const newList = contacts.sort((a, b) => new Date(b.messageCreatedAt).getTime() - new Date(a.messageCreatedAt).getTime());
+  return [...newList];
+}
+
 export const WhatsappKanban: FC<WhatsappKanbanProps> = ({ filterCategories, filterText }) => {
   const { user } = useUserContext();
   const { allContacts } = useWhatsappContext();
@@ -29,12 +34,14 @@ export const WhatsappKanban: FC<WhatsappKanbanProps> = ({ filterCategories, filt
     return matchesCategories && matchesText;
   });
 
-  const awaitingServiceContacts = filteredContacts.filter((contact) => contact.awaitService);
-  const mySevicesContacts = filteredContacts.filter((contact) => contact.serviceUserServiceId === user?.id);
-  const otherSevicesContacts = filteredContacts.filter(
-    (contact) => contact.serviceUserServiceId && contact.serviceUserServiceId !== user?.id,
+  const awaitingServiceContacts = orderContactsByLastMessage(filteredContacts.filter((contact) => contact.awaitService));
+  const mySevicesContacts = orderContactsByLastMessage(filteredContacts.filter((contact) => contact.serviceUserServiceId === user?.id));
+  const otherSevicesContacts = orderContactsByLastMessage(
+    filteredContacts.filter((contact) => contact.serviceUserServiceId && contact.serviceUserServiceId !== user?.id),
   );
-  const otherContacts = filteredContacts.filter((contact) => !contact.awaitService && !contact.serviceUserServiceId);
+  const otherContacts = orderContactsByLastMessage(
+    filteredContacts.filter((contact) => !contact.awaitService && !contact.serviceUserServiceId),
+  );
 
   return (
     <ul className="grid grid-cols-4 space-x-2">
