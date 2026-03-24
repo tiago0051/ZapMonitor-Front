@@ -9,8 +9,15 @@ type WhatsappKanbanProps = {
 };
 
 function orderContactsByLastMessage(contacts: WhatsappContactMessage[]) {
-  const newList = contacts.sort((a, b) => new Date(b.messageCreatedAt).getTime() - new Date(a.messageCreatedAt).getTime());
-  return [...newList];
+  return [...contacts].sort((a, b) => {
+    const dateA = a.messageCreatedAt ? new Date(a.messageCreatedAt).getTime() : 0;
+    const dateB = b.messageCreatedAt ? new Date(b.messageCreatedAt).getTime() : 0;
+
+    const timeA = isNaN(dateA) ? 0 : dateA;
+    const timeB = isNaN(dateB) ? 0 : dateB;
+
+    return timeB - timeA;
+  });
 }
 
 export const WhatsappKanban: FC<WhatsappKanbanProps> = ({ filterCategories, filterText }) => {
@@ -41,7 +48,9 @@ export const WhatsappKanban: FC<WhatsappKanbanProps> = ({ filterCategories, filt
   );
   const otherContacts = orderContactsByLastMessage(
     filteredContacts.filter((contact) => !contact.awaitService && !contact.serviceUserServiceId),
-  );
+  ).slice(0, 10);
+
+  console.log(awaitingServiceContacts.findIndex((c) => c.name == "Alexandro Moraes"));
 
   return (
     <ul className="grid grid-cols-4 space-x-2">
