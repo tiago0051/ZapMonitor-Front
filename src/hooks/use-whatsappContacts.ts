@@ -4,6 +4,8 @@ import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
+type WhatsappContactMessageDb = WhatsappContactMessage & { updatedAt: number };
+
 export const useWhatsappContacts = () => {
   const { client } = useClientContext();
   const [loadingData, setLoadingData] = useState<{ total: number; value: number }>({ total: 0, value: 0 });
@@ -23,7 +25,7 @@ export const useWhatsappContacts = () => {
     await tx.done;
   }
 
-  async function getContacts(): Promise<WhatsappContactMessage[]> {
+  async function getContacts(): Promise<WhatsappContactMessageDb[]> {
     try {
       const db = await loadDb;
 
@@ -33,45 +35,60 @@ export const useWhatsappContacts = () => {
     }
   }
 
-  const contactsQuery = useQuery({
+  const contactsQuery = useQuery<WhatsappContactMessageDb[]>({
     queryKey: ["whatsappContacts"],
     queryFn: async () => {
       const contactsFromDB = await getContacts();
       if (contactsFromDB.length > 0) return contactsFromDB;
-      if (contactsFromDB.length === 0) {
-        const temporaryContacts: WhatsappContactMessage[] = [];
 
-        const findWhatsappContactsByPage = async (page: number) => {
-          const data = await whatsappService.findAllContactMessages({
-            params: {
-              clientId: client.id,
-            },
-            queries: {
-              page,
-              take: 200,
-            },
-          });
+      const temporaryContacts: WhatsappContactMessageDb[] = [];
 
-          data.items.forEach((item) => temporaryContacts.push(item));
+      const findWhatsappContactsByPage = async (page: number) => {
+        const data = await whatsappService.findAllContactMessages({
+          params: {
+            clientId: client.id,
+          },
+          queries: {
+            page,
+            take: 200,
+          },
+        });
 
-          setLoadingData({ value: page, total: Math.ceil(data.total / 200) });
+        data.items.forEach((item) =>
+          temporaryContacts.push({
+            ...item,
+            updatedAt: new Date().getTime(),
+          }),
+        );
 
-          await new Promise((resolve) => setTimeout(resolve, 100));
+        setLoadingData({ value: page, total: Math.ceil(data.total / 200) });
 
-          if (!data.canNextPage) return;
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
-          await findWhatsappContactsByPage(page + 1);
-        };
+        if (!data.canNextPage) return;
 
-        await findWhatsappContactsByPage(1);
+        await findWhatsappContactsByPage(page + 1);
+      };
 
-        return temporaryContacts;
-      }
+      await findWhatsappContactsByPage(1);
+
+      return temporaryContacts;
     },
   });
 
   async function changeContacts(contacts: WhatsappContactMessage[]) {
-    await saveContacts(contacts);
+    const contactsDb: WhatsappContactMessageDb[] = contacts.map((contact) => ({
+      ...contact,
+      updatedAt: new Date().getTime(),
+    }));
+
+    const contactsFilteredToLastUpdated = contactsDb.filter((contact) => {
+      const contactFromDb = contactsQuery.data?.find((c) => c.id === contact.id);
+      if (!contactFromDb) return true;
+      return contact.updatedAt > contactFromDb.updatedAt;
+    });
+
+    await saveContacts(contactsFilteredToLastUpdated);
 
     contactsQuery.refetch();
   }
