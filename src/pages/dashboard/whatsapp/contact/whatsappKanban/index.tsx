@@ -10,6 +10,9 @@ type WhatsappKanbanProps = {
 
 function orderContactsByLastMessage(contacts: WhatsappContactMessage[]) {
   return [...contacts].sort((a, b) => {
+    if (!a.messageCreatedAt) console.log(a.id);
+    if (!b.messageCreatedAt) console.log(b.id);
+
     const dateA = a.messageCreatedAt ? new Date(a.messageCreatedAt).getTime() : 0;
     const dateB = b.messageCreatedAt ? new Date(b.messageCreatedAt).getTime() : 0;
 
@@ -48,7 +51,7 @@ export const WhatsappKanban: FC<WhatsappKanbanProps> = ({ filterCategories, filt
   );
   const otherContacts = orderContactsByLastMessage(
     filteredContacts.filter((contact) => !contact.awaitService && !contact.serviceUserServiceId),
-  ).slice(0, 10);
+  );
 
   return (
     <ul className="grid grid-cols-4 space-x-2">
