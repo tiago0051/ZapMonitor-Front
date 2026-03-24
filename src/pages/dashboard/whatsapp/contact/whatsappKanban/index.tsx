@@ -50,8 +50,6 @@ export const WhatsappKanban: FC<WhatsappKanbanProps> = ({ filterCategories, filt
     filteredContacts.filter((contact) => !contact.awaitService && !contact.serviceUserServiceId),
   ).slice(0, 10);
 
-  console.log(awaitingServiceContacts.findIndex((c) => c.name == "Alexandro Moraes"));
-
   return (
     <ul className="grid grid-cols-4 space-x-2">
       <WhatsappKanbanColumn contacts={awaitingServiceContacts} title="Aguardando atendimento" />
