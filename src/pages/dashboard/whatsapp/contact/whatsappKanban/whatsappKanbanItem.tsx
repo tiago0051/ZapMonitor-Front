@@ -4,7 +4,7 @@ import { type DetailedHTMLProps, type FC } from "react";
 import { WhatsappChatContactMessage } from "../../components/whatsappChatContactMessage";
 import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { differenceInHours, format } from "date-fns";
 
 type WhatsappKanbanItemProps = DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement> & {
   isSelected: boolean;
@@ -21,11 +21,16 @@ export const WhatsappKanbanItem: FC<WhatsappKanbanItemProps> = ({
   ...props
 }) => {
   const isIncoming = contactMessage.messageType === WhatsappMessageType.INCOMING;
+  const expiredAt = contactMessage.replyTimeExpiredAt;
+  const isExpired = expiredAt ? new Date(expiredAt) < new Date() : false;
+  const isNearExpiration = !isExpired && expiredAt && differenceInHours(new Date(expiredAt), new Date()) <= 10;
 
   return (
     <div
-      className={cn(className, "bg-background cursor-pointer gap-4 overflow-hidden border-b py-2 pr-2 hover:brightness-125", {
+      className={cn(className, "bg-background cursor-pointer gap-4 overflow-hidden border-b p-2 py-2 pr-2 hover:brightness-125", {
         "bg-primary/15": isSelected,
+        "bg-destructive/10": isExpired,
+        "bg-yellow-500/10": isNearExpiration,
       })}
       onClick={onClick}
       {...props}

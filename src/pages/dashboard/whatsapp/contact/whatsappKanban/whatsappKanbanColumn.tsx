@@ -22,8 +22,8 @@ export const WhatsappKanbanColumn: FC<WhatsappKanbanColumnProps> = ({ contacts, 
   });
 
   return (
-    <li className="rounded border p-2">
-      <h3>{title}</h3>
+    <li className="rounded border">
+      <h3 className="p-2">{title}</h3>
 
       <List
         rowComponent={RowComponent}

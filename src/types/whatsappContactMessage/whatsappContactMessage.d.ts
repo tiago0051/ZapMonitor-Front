@@ -14,4 +14,5 @@ type WhatsappContactMessage = {
   serviceUserServiceId: string | null;
   serviceUserServiceName: string | null;
   awaitService: boolean;
+  replyTimeExpiredAt: string;
 };
