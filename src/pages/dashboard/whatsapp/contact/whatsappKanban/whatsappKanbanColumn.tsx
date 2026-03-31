@@ -2,10 +2,12 @@ import type { FC } from "react";
 import { List, useDynamicRowHeight, type RowComponentProps } from "react-window";
 import { WhatsappKanbanItem } from "./whatsappKanbanItem";
 import { useWhatsappContext } from "@/context/WhatsappContext/whatsappContext";
+import { cn } from "@/lib/utils";
 
 type WhatsappKanbanColumnProps = {
   contacts: WhatsappContactMessage[];
   title: string;
+  color: "blue" | "green" | "yellow" | "gray";
 };
 
 type RowWhatsappContact = WhatsappContactMessage & {
@@ -14,7 +16,7 @@ type RowWhatsappContact = WhatsappContactMessage & {
   usersInContacts: User[];
 };
 
-export const WhatsappKanbanColumn: FC<WhatsappKanbanColumnProps> = ({ contacts, title }) => {
+export const WhatsappKanbanColumn: FC<WhatsappKanbanColumnProps> = ({ contacts, title, color }) => {
   const { setContactSelected, usersInContacts, contactSelected } = useWhatsappContext();
 
   const rowHeight = useDynamicRowHeight({
@@ -22,8 +24,31 @@ export const WhatsappKanbanColumn: FC<WhatsappKanbanColumnProps> = ({ contacts, 
   });
 
   return (
-    <li className="rounded border p-2">
-      <h3>{title}</h3>
+    <li className={`rounded-t-xl border`}>
+      <div
+        className={cn("flex items-center justify-between overflow-hidden rounded-t-xl p-3", {
+          "bg-blue-700": color === "blue",
+          "border-blue-700": color === "blue",
+          "bg-green-700": color === "green",
+          "border-green-700": color === "green",
+          "bg-yellow-700": color === "yellow",
+          "border-yellow-700": color === "yellow",
+          "bg-gray-700": color === "gray",
+          "border-gray-700": color === "gray",
+        })}
+      >
+        <h3 className="text-xl font-semibold text-white">{title}</h3>
+        <span
+          className={cn(`rounded-full px-2 py-1 text-xs text-white`, {
+            "bg-blue-500": color === "blue",
+            "bg-green-500": color === "green",
+            "bg-yellow-500": color === "yellow",
+            "bg-gray-500": color === "gray",
+          })}
+        >
+          {contacts.length}
+        </span>
+      </div>
 
       <List
         rowComponent={RowComponent}
@@ -37,7 +62,7 @@ export const WhatsappKanbanColumn: FC<WhatsappKanbanColumnProps> = ({ contacts, 
             usersInContacts: usersInContacts[contact.id] || [],
           })),
         }}
-        className={"h-[calc(100dvh-210px)]"}
+        className={"bg-accent/40 h-[calc(100dvh-220px)]"}
       />
     </li>
   );
@@ -55,7 +80,6 @@ function RowComponent({
   return (
     <WhatsappKanbanItem
       contactMessage={contactMessage}
-      isSelected={contactMessage.isSelected}
       onClick={contactMessage.onClick}
       usersInContact={contactMessage.usersInContacts}
       style={style}

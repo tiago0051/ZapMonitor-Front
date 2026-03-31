@@ -2,13 +2,14 @@ import { type FC } from "react";
 import { useWhatsappContext } from "@/context/WhatsappContext/whatsappContext";
 import { useUserContext } from "@/context/UserContext/userContext";
 import { WhatsappKanbanColumn } from "./whatsappKanbanColumn";
+import { isBefore } from "date-fns";
 
 type WhatsappKanbanProps = {
   filterCategories: WhatsappMessageCategory[];
   filterText: string;
 };
 
-function orderContactsByLastMessage(contacts: WhatsappContactMessage[]) {
+function orderContactsByLastMessage(contacts: WhatsappContactMessage[], order: "asc" | "desc" = "desc") {
   return [...contacts].sort((a, b) => {
     if (!a.messageCreatedAt) console.log(a.id);
     if (!b.messageCreatedAt) console.log(b.id);
@@ -19,7 +20,7 @@ function orderContactsByLastMessage(contacts: WhatsappContactMessage[]) {
     const timeA = isNaN(dateA) ? 0 : dateA;
     const timeB = isNaN(dateB) ? 0 : dateB;
 
-    return timeB - timeA;
+    return order === "desc" ? timeB - timeA : timeA - timeB;
   });
 }
 
@@ -44,21 +45,30 @@ export const WhatsappKanban: FC<WhatsappKanbanProps> = ({ filterCategories, filt
     return matchesCategories && matchesText;
   });
 
-  const awaitingServiceContacts = orderContactsByLastMessage(filteredContacts.filter((contact) => contact.awaitService));
+  const awaitingServiceContacts = orderContactsByLastMessage(
+    filteredContacts.filter(
+      (contact) => contact.awaitService && contact.replyTimeExpiredAt && isBefore(new Date(), new Date(contact.replyTimeExpiredAt)),
+    ),
+    "asc",
+  );
   const mySevicesContacts = orderContactsByLastMessage(filteredContacts.filter((contact) => contact.serviceUserServiceId === user?.id));
   const otherSevicesContacts = orderContactsByLastMessage(
     filteredContacts.filter((contact) => contact.serviceUserServiceId && contact.serviceUserServiceId !== user?.id),
   );
   const otherContacts = orderContactsByLastMessage(
-    filteredContacts.filter((contact) => !contact.awaitService && !contact.serviceUserServiceId),
+    filteredContacts.filter(
+      (contact) =>
+        !(contact.awaitService && contact.replyTimeExpiredAt && isBefore(new Date(), new Date(contact.replyTimeExpiredAt))) &&
+        !contact.serviceUserServiceId,
+    ),
   );
 
   return (
     <ul className="grid grid-cols-4 space-x-2">
-      <WhatsappKanbanColumn contacts={awaitingServiceContacts} title="Aguardando atendimento" />
-      <WhatsappKanbanColumn contacts={mySevicesContacts} title="Meus atendimento" />
-      <WhatsappKanbanColumn contacts={otherSevicesContacts} title="Em atendimento" />
-      <WhatsappKanbanColumn contacts={otherContacts} title="Todos" />
+      <WhatsappKanbanColumn color="blue" contacts={awaitingServiceContacts} title="Aguardando atendimento" />
+      <WhatsappKanbanColumn color="green" contacts={mySevicesContacts} title="Meus atendimento" />
+      <WhatsappKanbanColumn color="yellow" contacts={otherSevicesContacts} title="Em atendimento" />
+      <WhatsappKanbanColumn color="gray" contacts={otherContacts} title="Todos" />
     </ul>
   );
 };
