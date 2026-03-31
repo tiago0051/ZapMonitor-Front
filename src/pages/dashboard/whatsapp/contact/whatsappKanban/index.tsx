@@ -55,10 +55,10 @@ export const WhatsappKanban: FC<WhatsappKanbanProps> = ({ filterCategories, filt
 
   return (
     <ul className="grid grid-cols-4 space-x-2">
-      <WhatsappKanbanColumn contacts={awaitingServiceContacts} title="Aguardando atendimento" />
-      <WhatsappKanbanColumn contacts={mySevicesContacts} title="Meus atendimento" />
-      <WhatsappKanbanColumn contacts={otherSevicesContacts} title="Em atendimento" />
-      <WhatsappKanbanColumn contacts={otherContacts} title="Todos" />
+      <WhatsappKanbanColumn color="blue" contacts={awaitingServiceContacts} title="Aguardando atendimento" />
+      <WhatsappKanbanColumn color="green" contacts={mySevicesContacts} title="Meus atendimento" />
+      <WhatsappKanbanColumn color="yellow" contacts={otherSevicesContacts} title="Em atendimento" />
+      <WhatsappKanbanColumn color="gray" contacts={otherContacts} title="Todos" />
     </ul>
   );
 };
