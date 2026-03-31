@@ -1,10 +1,10 @@
 import { Badge } from "@/components/ui/badge";
 import { formatAcronym } from "@/utils/formatString";
-import { type DetailedHTMLProps, type FC } from "react";
+import { useEffect, useState, type DetailedHTMLProps, type FC } from "react";
 import { WhatsappChatContactMessage } from "../../components/whatsappChatContactMessage";
 import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
 import { cn } from "@/lib/utils";
-import { differenceInHours, format } from "date-fns";
+import { differenceInHours, differenceInMinutes, format } from "date-fns";
 import parsePhoneNumberFromString from "libphonenumber-js";
 import { FiClock } from "react-icons/fi";
 import { AlertCircle } from "lucide-react";
@@ -15,23 +15,33 @@ type WhatsappKanbanItemProps = DetailedHTMLProps<React.HTMLAttributes<HTMLDivEle
 };
 
 export const WhatsappKanbanItem: FC<WhatsappKanbanItemProps> = ({ onClick, usersInContact, contactMessage, className, ...props }) => {
+  const [expirationStatus, setExpirationStatus] = useState<{
+    color: string;
+    icon: string;
+    label: string;
+    urgent: boolean;
+  } | null>(null);
+
   const getExpirationStatus = () => {
-    if (!contactMessage.replyTimeExpiredAt) {
-      return null;
-    }
+    if (!contactMessage.replyTimeExpiredAt) return null;
 
     const hours = differenceInHours(new Date(contactMessage.replyTimeExpiredAt), new Date());
 
-    console.log("hours", hours, new Date(contactMessage.replyTimeExpiredAt), new Date());
+    if (hours < 0) {
+      return null;
+    }
 
     if (hours < 2) {
+      const minutes = differenceInMinutes(new Date(contactMessage.replyTimeExpiredAt), new Date());
       return {
         color: "bg-red-100 text-red-800 border-red-300",
         icon: "text-red-600",
-        label: `${Math.round(hours * 60)}min`,
+        label: `${minutes}min`,
         urgent: true,
       };
-    } else if (hours < 6) {
+    }
+
+    if (hours < 6) {
       return {
         color: "bg-orange-100 text-orange-800 border-orange-300",
         icon: "text-orange-600",
@@ -48,10 +58,22 @@ export const WhatsappKanbanItem: FC<WhatsappKanbanItemProps> = ({ onClick, users
     };
   };
 
+  useEffect(() => {
+    setExpirationStatus(getExpirationStatus());
+
+    const timerId =
+      contactMessage.replyTimeExpiredAt &&
+      setTimeout(() => {
+        setExpirationStatus(getExpirationStatus());
+      }, 1000 * 60);
+    return () => {
+      if (timerId) clearTimeout(timerId);
+    };
+  }, []);
+
   const isIncoming = contactMessage.messageType === WhatsappMessageType.INCOMING;
 
   const parsedPhoneNumber = parsePhoneNumberFromString(contactMessage.phoneNumber);
-  const expirationStatus = getExpirationStatus();
 
   return (
     <div className="py-[6px] pr-8 pl-4 first:pt-3" {...props}>

@@ -2,6 +2,7 @@ import { type FC } from "react";
 import { useWhatsappContext } from "@/context/WhatsappContext/whatsappContext";
 import { useUserContext } from "@/context/UserContext/userContext";
 import { WhatsappKanbanColumn } from "./whatsappKanbanColumn";
+import { isBefore } from "date-fns";
 
 type WhatsappKanbanProps = {
   filterCategories: WhatsappMessageCategory[];
@@ -45,7 +46,9 @@ export const WhatsappKanban: FC<WhatsappKanbanProps> = ({ filterCategories, filt
   });
 
   const awaitingServiceContacts = orderContactsByLastMessage(
-    filteredContacts.filter((contact) => contact.awaitService && contact.canReply),
+    filteredContacts.filter(
+      (contact) => contact.awaitService && contact.replyTimeExpiredAt && isBefore(new Date(), new Date(contact.replyTimeExpiredAt)),
+    ),
     "asc",
   );
   const mySevicesContacts = orderContactsByLastMessage(filteredContacts.filter((contact) => contact.serviceUserServiceId === user?.id));
@@ -53,7 +56,11 @@ export const WhatsappKanban: FC<WhatsappKanbanProps> = ({ filterCategories, filt
     filteredContacts.filter((contact) => contact.serviceUserServiceId && contact.serviceUserServiceId !== user?.id),
   );
   const otherContacts = orderContactsByLastMessage(
-    filteredContacts.filter((contact) => !(contact.awaitService && contact.canReply) && !contact.serviceUserServiceId),
+    filteredContacts.filter(
+      (contact) =>
+        !(contact.awaitService && contact.replyTimeExpiredAt && isBefore(new Date(), new Date(contact.replyTimeExpiredAt))) &&
+        !contact.serviceUserServiceId,
+    ),
   );
 
   return (
