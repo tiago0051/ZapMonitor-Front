@@ -22,6 +22,6 @@ export const WhatsappChatContactMessage: FC<WhatsappChatContactMessageProps> = (
     {messageContentType === WhatsappMessageContentType.VIDEO && <FiVideo />}
     {messageContentType === WhatsappMessageContentType.TEMPLATE && <FaRobot />}
 
-    <p className="col-start-2 text-sm font-light group-data-[incoming=true]:font-normal">{children}</p>
+    <p className="col-start-2 line-clamp-2 text-sm font-light group-data-[incoming=true]:font-normal">{children}</p>
   </div>
 );
