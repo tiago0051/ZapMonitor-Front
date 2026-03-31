@@ -8,7 +8,7 @@ type WhatsappKanbanProps = {
   filterText: string;
 };
 
-function orderContactsByLastMessage(contacts: WhatsappContactMessage[]) {
+function orderContactsByLastMessage(contacts: WhatsappContactMessage[], order: "asc" | "desc" = "desc") {
   return [...contacts].sort((a, b) => {
     if (!a.messageCreatedAt) console.log(a.id);
     if (!b.messageCreatedAt) console.log(b.id);
@@ -19,7 +19,7 @@ function orderContactsByLastMessage(contacts: WhatsappContactMessage[]) {
     const timeA = isNaN(dateA) ? 0 : dateA;
     const timeB = isNaN(dateB) ? 0 : dateB;
 
-    return timeB - timeA;
+    return order === "desc" ? timeB - timeA : timeA - timeB;
   });
 }
 
@@ -44,13 +44,16 @@ export const WhatsappKanban: FC<WhatsappKanbanProps> = ({ filterCategories, filt
     return matchesCategories && matchesText;
   });
 
-  const awaitingServiceContacts = orderContactsByLastMessage(filteredContacts.filter((contact) => contact.awaitService));
+  const awaitingServiceContacts = orderContactsByLastMessage(
+    filteredContacts.filter((contact) => contact.awaitService && contact.canReply),
+    "asc",
+  );
   const mySevicesContacts = orderContactsByLastMessage(filteredContacts.filter((contact) => contact.serviceUserServiceId === user?.id));
   const otherSevicesContacts = orderContactsByLastMessage(
     filteredContacts.filter((contact) => contact.serviceUserServiceId && contact.serviceUserServiceId !== user?.id),
   );
   const otherContacts = orderContactsByLastMessage(
-    filteredContacts.filter((contact) => !contact.awaitService && !contact.serviceUserServiceId),
+    filteredContacts.filter((contact) => !(contact.awaitService && contact.canReply) && !contact.serviceUserServiceId),
   );
 
   return (
