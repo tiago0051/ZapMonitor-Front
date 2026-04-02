@@ -12,7 +12,7 @@ type WhatsappContactMessage = {
   categories: WhatsappMessageCategory[];
   clientId: string;
   serviceUserServiceId: string | null;
-  serviceUserServiceName: string | null;
+  serviceRepresentative: string | null;
   awaitService: boolean;
   replyTimeExpiredAt: string;
 };

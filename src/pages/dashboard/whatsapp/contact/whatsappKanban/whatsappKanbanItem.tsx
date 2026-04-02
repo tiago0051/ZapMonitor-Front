@@ -108,11 +108,9 @@ export const WhatsappKanbanItem: FC<WhatsappKanbanItemProps> = ({ onClick, users
           ))}
         </div>
 
-        {(contactMessage.serviceUserServiceName || usersInContact.length > 0) && (
+        {(contactMessage.serviceRepresentative || usersInContact.length > 0) && (
           <div className="mt-3 grid grid-cols-[auto_44px]">
-            {contactMessage.serviceUserServiceName && (
-              <p className="text-xs">Em atendimento por: {contactMessage.serviceUserServiceName}</p>
-            )}
+            {contactMessage.serviceRepresentative && <p className="text-xs">Em atendimento por: {contactMessage.serviceRepresentative}</p>}
             <div className="col-start-2 flex flex-wrap justify-end gap-1">
               {usersInContact.map((user) => (
                 <div
