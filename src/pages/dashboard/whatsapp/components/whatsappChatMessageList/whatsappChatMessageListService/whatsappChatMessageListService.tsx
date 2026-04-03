@@ -2,24 +2,20 @@ import { Button } from "@/components/ui/button";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useSocketContext } from "@/context/SocketContext/socketContext";
 import { useUserContext } from "@/context/UserContext/userContext";
-import { cn } from "@/lib/utils";
 import { whatsappService } from "@/services/api/whatsappService";
-import { formatShortId } from "@/utils/formatString";
 import { requestErrorHandling } from "@/utils/request";
 import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
 import { useEffect, type FC } from "react";
+import { ListServiceItem } from "./listServiceItem";
+import { formatBoldText } from "@/utils/formatString";
+import { Bot } from "lucide-react";
 
 type WhatsappChatMessageListServiceProps = {
-  className?: string;
   contactService: WhatsappContactService;
   refetchContactService: () => void;
 };
 
-export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServiceProps> = ({
-  className,
-  contactService,
-  refetchContactService,
-}) => {
+export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServiceProps> = ({ contactService, refetchContactService }) => {
   const { isConnected, socket } = useSocketContext();
   const { user } = useUserContext();
   const { client } = useClientContext();
@@ -62,90 +58,92 @@ export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServicePr
   }, [isConnected]);
 
   const loading = findAllServicesHistoryByContact.isFetching;
+  const services = findAllServicesHistoryByContact.data?.pages.flatMap((page) => page.items) || [];
+  const afterService = services[1];
+  const nowService = services[0];
+
+  const hasAiResume = afterService?.aiResume || nowService?.aiResume;
 
   return (
-    <div className={cn(className, "grid grid-rows-[min-content_auto_min-content] gap-2 overflow-hidden")}>
-      <h3>Histórico</h3>
-
-      <ul className="flex flex-col-reverse overflow-scroll">
-        {findAllServicesHistoryByContact.data?.pages.map((page) =>
-          page.items.map((service) => (
-            <li key={service.id} className="mb-4 rounded border p-2">
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-sm">Protocolo: {formatShortId(service.id)}</p>
-                <span
-                  className={`rounded px-2 py-1 text-xs font-medium ${
-                    service.finished ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
-                  }`}
-                >
-                  {service.finished ? "Finalizado" : "Em andamento"}
-                </span>
+    <div data-has-ai-resume={hasAiResume} className="grid max-h-full overflow-hidden data-[has-ai-resume=true]:grid-rows-2">
+      {hasAiResume && (
+        <div className="grid grid-rows-2 gap-2 overflow-hidden">
+          {afterService?.aiResume && (
+            <div className="border-primary/20 bg-primary/5 overflow-auto rounded border p-3">
+              <div className="text-primary mb-2 flex items-center gap-2 font-medium">
+                <Bot className="h-4 w-4" />
+                <span className="text-sm">Último atendimento</span>
               </div>
-              <div className="flex flex-col-reverse gap-2">
-                {service.actions.map((action) => (
-                  <div
-                    key={action.id}
-                    data-type={action.type}
-                    className="rounded border p-2 data-[type='1']:bg-blue-50 data-[type='2']:bg-yellow-50 data-[type='3']:bg-green-50"
-                  >
-                    <div className="mb-1 flex items-center justify-between">
-                      <span className="text-foreground/50 text-sm">{new Date(action.createdAt).toLocaleString()}</span>
-                    </div>
-                    <p className="text-sm">{action.annotation}</p>
-                  </div>
-                ))}
+              <pre className="text-foreground/80 font-sans text-sm whitespace-pre-wrap">{formatBoldText(afterService.aiResume)}</pre>
+            </div>
+          )}
+          {nowService?.aiResume && (
+            <div className="border-primary/20 bg-primary/5 overflow-auto rounded border p-3">
+              <div className="text-primary mb-2 flex items-center gap-2 font-medium">
+                <Bot className="h-4 w-4" />
+                <span className="text-sm">Resumo da IA</span>
               </div>
-            </li>
-          )),
-        )}
-        {findAllServicesHistoryByContact.isFetchingNextPage && <div>Carregando mais históricos...</div>}
-        {findAllServicesHistoryByContact.data?.pages.length === 0 && <div>Nenhum histórico de atendimento encontrado.</div>}
-      </ul>
+              <pre className="text-foreground/80 font-sans text-sm whitespace-pre-wrap">{formatBoldText(nowService.aiResume)}</pre>
+            </div>
+          )}
+        </div>
+      )}
+      <div className={"grid grid-rows-[min-content_auto_min-content] gap-2 overflow-hidden"}>
+        <h3>Histórico</h3>
 
-      <div className="flex flex-col gap-2 [&>button]:w-full">
-        {contactService.canBeServiceEnded && (
-          <Button
-            disabled={loading}
-            onClick={() =>
-              endServiceMutation.mutate({
-                params: { contactId: contactService.id, clientId: client.id },
-              })
-            }
-          >
-            Finalizar atendimento
-          </Button>
-        )}
-        {contactService.canBeServiceStarted && (
-          <Button
-            disabled={loading}
-            onClick={() =>
-              startServiceMutation.mutate({
-                params: {
-                  contactId: contactService.id,
-                  clientId: client.id,
-                },
-              })
-            }
-          >
-            Iniciar atendimento
-          </Button>
-        )}
-        {contactService.canBeServiceTransferred && (
-          <Button
-            disabled={loading}
-            onClick={() =>
-              transferServiceMutation.mutate({
-                params: {
-                  contactId: contactService.id,
-                  userId: user!.id,
-                  clientId: client.id,
-                },
-              })
-            }
-          >
-            Assumir atendimento
-          </Button>
-        )}
+        <ul className="flex flex-col-reverse overflow-scroll">
+          {services.map((service) => (
+            <ListServiceItem key={service.id} service={service} />
+          ))}
+          {findAllServicesHistoryByContact.isFetchingNextPage && <div>Carregando mais históricos...</div>}
+          {findAllServicesHistoryByContact.data?.pages.length === 0 && <div>Nenhum histórico de atendimento encontrado.</div>}
+        </ul>
+
+        <div className="flex flex-col gap-2 [&>button]:w-full">
+          {contactService.canBeServiceEnded && (
+            <Button
+              disabled={loading}
+              onClick={() =>
+                endServiceMutation.mutate({
+                  params: { contactId: contactService.id, clientId: client.id },
+                })
+              }
+            >
+              Finalizar atendimento
+            </Button>
+          )}
+          {contactService.canBeServiceStarted && (
+            <Button
+              disabled={loading}
+              onClick={() =>
+                startServiceMutation.mutate({
+                  params: {
+                    contactId: contactService.id,
+                    clientId: client.id,
+                  },
+                })
+              }
+            >
+              Iniciar atendimento
+            </Button>
+          )}
+          {contactService.canBeServiceTransferred && (
+            <Button
+              disabled={loading}
+              onClick={() =>
+                transferServiceMutation.mutate({
+                  params: {
+                    contactId: contactService.id,
+                    userId: user!.id,
+                    clientId: client.id,
+                  },
+                })
+              }
+            >
+              Assumir atendimento
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

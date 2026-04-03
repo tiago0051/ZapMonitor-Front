@@ -3,4 +3,5 @@ type WhatsappServiceHistory = {
   finished: boolean;
   createdAt: string;
   actions: WhatsappServiceAction[];
+  aiResume?: string | null;
 };

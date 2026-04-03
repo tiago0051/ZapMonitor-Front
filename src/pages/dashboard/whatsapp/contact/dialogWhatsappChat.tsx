@@ -4,7 +4,7 @@ import { WhatsappChatMessageHeader } from "../components/whatsappChatMessageList
 import { WhatsappChatMessageList } from "../components/whatsappChatMessageList";
 import { WhatsappChatMessageListService } from "../components/whatsappChatMessageList/whatsappChatMessageListService/whatsappChatMessageListService";
 import { useClientContext } from "@/context/ClientContext/clientContext";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useWhatsappContext } from "@/context/WhatsappContext/whatsappContext";
 
 type DialogWhatsappChatProps = {
@@ -30,14 +30,9 @@ export const DialogWhatsappChat = ({ contactMessage }: DialogWhatsappChatProps) 
 
   return (
     <Dialog defaultOpen onOpenChange={() => setContactSelected(null)}>
-      <DialogContent className="grid max-h-dvh grid-cols-3 grid-rows-[min-content_1fr] overflow-hidden md:max-w-4xl">
-        <DialogHeader className="col-span-3">
-          <DialogTitle>Chat</DialogTitle>
-          <DialogDescription>Converse com o cliente</DialogDescription>
-        </DialogHeader>
+      <DialogContent className="grid max-h-[90dvh] grid-cols-3 grid-rows-[min-content_1fr] overflow-hidden md:max-w-4xl">
+        <WhatsappChatMessageHeader contactMessage={contactMessage} className="md:col-span-4" />
         <div className="col-span-2 grid max-h-full grid-rows-[min-content-1fr] overflow-hidden">
-          <WhatsappChatMessageHeader contactMessage={contactMessage} className="md:col-span-4" />
-
           <WhatsappChatMessageList
             className="md:col-span-3"
             contactService={contactService}
@@ -46,7 +41,6 @@ export const DialogWhatsappChat = ({ contactMessage }: DialogWhatsappChatProps) 
         </div>
 
         <WhatsappChatMessageListService
-          className="max-h-full"
           contactService={contactService}
           refetchContactService={() => findContactServiceByContact.refetch()}
         />

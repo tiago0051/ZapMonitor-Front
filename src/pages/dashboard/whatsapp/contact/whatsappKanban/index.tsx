@@ -3,6 +3,7 @@ import { useWhatsappContext } from "@/context/WhatsappContext/whatsappContext";
 import { useUserContext } from "@/context/UserContext/userContext";
 import { WhatsappKanbanColumn } from "./whatsappKanbanColumn";
 import { isBefore } from "date-fns";
+import { useClientContext } from "@/context/ClientContext/clientContext";
 
 type WhatsappKanbanProps = {
   filterCategories: WhatsappMessageCategory[];
@@ -26,6 +27,7 @@ function orderContactsByLastMessage(contacts: WhatsappContactMessage[], order: "
 
 export const WhatsappKanban: FC<WhatsappKanbanProps> = ({ filterCategories, filterText }) => {
   const { user } = useUserContext();
+  const { client } = useClientContext();
   const { allContacts } = useWhatsappContext();
 
   const filteredContacts = allContacts.filter((contact) => {
@@ -45,6 +47,11 @@ export const WhatsappKanban: FC<WhatsappKanbanProps> = ({ filterCategories, filt
     return matchesCategories && matchesText;
   });
 
+  const aiServiceContacts = orderContactsByLastMessage(
+    filteredContacts.filter((contact) => contact.serviceRepresentative === "IA"),
+    "asc",
+  );
+
   const awaitingServiceContacts = orderContactsByLastMessage(
     filteredContacts.filter(
       (contact) => contact.awaitService && contact.replyTimeExpiredAt && isBefore(new Date(), new Date(contact.replyTimeExpiredAt)),
@@ -59,13 +66,14 @@ export const WhatsappKanban: FC<WhatsappKanbanProps> = ({ filterCategories, filt
     filteredContacts.filter(
       (contact) =>
         !(contact.awaitService && contact.replyTimeExpiredAt && isBefore(new Date(), new Date(contact.replyTimeExpiredAt))) &&
-        !contact.serviceUserServiceId,
+        !contact.serviceRepresentative,
     ),
   );
 
   return (
-    <ul className="grid grid-cols-4 space-x-2">
-      <WhatsappKanbanColumn color="blue" contacts={awaitingServiceContacts} title="Aguardando atendimento" />
+    <ul className="flex gap-2">
+      {client.hasAiConfig && <WhatsappKanbanColumn color="gray" contacts={aiServiceContacts} title="Atendimentos da IA" />}
+      <WhatsappKanbanColumn color="blue" contacts={awaitingServiceContacts} title="Aguardando atendente" />
       <WhatsappKanbanColumn color="green" contacts={mySevicesContacts} title="Meus atendimento" />
       <WhatsappKanbanColumn color="yellow" contacts={otherSevicesContacts} title="Em atendimento" />
       <WhatsappKanbanColumn color="gray" contacts={otherContacts} title="Todos" />
