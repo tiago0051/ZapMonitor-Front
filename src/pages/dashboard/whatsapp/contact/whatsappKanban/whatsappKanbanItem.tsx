@@ -25,9 +25,10 @@ export const WhatsappKanbanItem: FC<WhatsappKanbanItemProps> = ({ onClick, users
   const getExpirationStatus = () => {
     if (!contactMessage.replyTimeExpiredAt) return null;
 
+    const minutes = differenceInMinutes(new Date(contactMessage.replyTimeExpiredAt), new Date());
     const hours = differenceInHours(new Date(contactMessage.replyTimeExpiredAt), new Date());
 
-    if (hours < 0) {
+    if (minutes < 0) {
       return null;
     }
 
