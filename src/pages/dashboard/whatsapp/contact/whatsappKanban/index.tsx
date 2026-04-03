@@ -66,17 +66,17 @@ export const WhatsappKanban: FC<WhatsappKanbanProps> = ({ filterCategories, filt
     filteredContacts.filter(
       (contact) =>
         !(contact.awaitService && contact.replyTimeExpiredAt && isBefore(new Date(), new Date(contact.replyTimeExpiredAt))) &&
-        !contact.serviceUserServiceId,
+        !contact.serviceRepresentative,
     ),
   );
 
   return (
-    <ul className="grid grid-cols-4 space-x-2">
+    <ul className="flex gap-2">
       {client.hasAiConfig && <WhatsappKanbanColumn color="gray" contacts={aiServiceContacts} title="Atendimentos da IA" />}
       <WhatsappKanbanColumn color="blue" contacts={awaitingServiceContacts} title="Aguardando atendente" />
       <WhatsappKanbanColumn color="green" contacts={mySevicesContacts} title="Meus atendimento" />
       <WhatsappKanbanColumn color="yellow" contacts={otherSevicesContacts} title="Em atendimento" />
-      {!client.hasAiConfig && <WhatsappKanbanColumn color="gray" contacts={otherContacts} title="Todos" />}
+      <WhatsappKanbanColumn color="gray" contacts={otherContacts} title="Todos" />
     </ul>
   );
 };

@@ -24,7 +24,7 @@ export const WhatsappKanbanColumn: FC<WhatsappKanbanColumnProps> = ({ contacts, 
   });
 
   return (
-    <li className={`rounded-t-xl border`}>
+    <li className={`min-w-[320px] rounded-t-xl border`}>
       <div
         className={cn("flex items-center justify-between overflow-hidden rounded-t-xl p-3", {
           "bg-blue-700": color === "blue",

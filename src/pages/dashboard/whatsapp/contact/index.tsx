@@ -22,7 +22,9 @@ export const WhatsappContacts = () => {
           onChangeFilterCategories={setFilterCategories}
           onChangeFilterText={setFilterText}
         />
-        <WhatsappKanban filterCategories={filterCategories} filterText={filterText} />
+        <div className="overflow-x-auto">
+          <WhatsappKanban filterCategories={filterCategories} filterText={filterText} />
+        </div>
       </div>
 
       {hasContactSelected && <DialogWhatsappChat contactMessage={contactSelected!} />}
