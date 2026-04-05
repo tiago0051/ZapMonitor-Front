@@ -62,7 +62,7 @@ export const WhatsappKanbanColumn: FC<WhatsappKanbanColumnProps> = ({ contacts, 
             usersInContacts: usersInContacts[contact.id] || [],
           })),
         }}
-        className={"bg-accent/40 h-[calc(100dvh-220px)]"}
+        className={"bg-accent/40 h-[calc(100dvh-270px)]"}
       />
     </li>
   );

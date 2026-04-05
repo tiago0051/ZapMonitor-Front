@@ -14,20 +14,18 @@ export const WhatsappContacts = () => {
   const [filterText, setFilterText] = useDebounceValue("", globalContants.DEBOUNCE_DELAY);
 
   return (
-    <>
+    <div className="mx-auto space-y-8">
       <Header title="Lista de contatos" />
-      <div className={"space-y-6"}>
-        <WhatsappContactFilters
-          filterCategories={filterCategories}
-          onChangeFilterCategories={setFilterCategories}
-          onChangeFilterText={setFilterText}
-        />
-        <div className="overflow-x-auto">
-          <WhatsappKanban filterCategories={filterCategories} filterText={filterText} />
-        </div>
+      <WhatsappContactFilters
+        filterCategories={filterCategories}
+        onChangeFilterCategories={setFilterCategories}
+        onChangeFilterText={setFilterText}
+      />
+      <div className="overflow-x-auto">
+        <WhatsappKanban filterCategories={filterCategories} filterText={filterText} />
       </div>
 
       {hasContactSelected && <DialogWhatsappChat contactMessage={contactSelected!} />}
-    </>
+    </div>
   );
 };
