@@ -92,8 +92,8 @@ export function Reports() {
       <div className="mb-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="mb-2 text-3xl">Service Dashboard</h1>
-            <p className="text-gray-600">Monthly messages and contacts overview</p>
+            <h1 className="mb-2 text-3xl">Dashboard de atendimentos</h1>
+            <p className="text-gray-600">Visualização de mensagens e contatos do mês</p>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">
@@ -105,7 +105,7 @@ export function Reports() {
                 onChange={(e) => setUserSelected(e.target.value)}
                 className="rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               >
-                <option value="">All attendants</option>
+                <option value="">Todos</option>
                 {atendentes.map((user) => (
                   <option key={user.id} value={user.id}>
                     {user.name}
@@ -150,7 +150,7 @@ export function Reports() {
         <div className="rounded-lg bg-white p-6 shadow">
           <div className="mb-4 flex items-start justify-between">
             <div>
-              <p className="mb-1 text-sm text-gray-600">Sent Messages</p>
+              <p className="mb-1 text-sm text-gray-600">Mensagens Enviadas</p>
               {isLoadingReport ? (
                 <Skeleton className="h-9 w-24" />
               ) : (
@@ -177,7 +177,7 @@ export function Reports() {
         <div className="rounded-lg bg-white p-6 shadow">
           <div className="mb-4 flex items-start justify-between">
             <div>
-              <p className="mb-1 text-sm text-gray-600">Received Messages</p>
+              <p className="mb-1 text-sm text-gray-600">Mensagens Recebidas</p>
               {isLoadingReport ? (
                 <Skeleton className="h-9 w-24" />
               ) : (
@@ -204,7 +204,7 @@ export function Reports() {
         <div className="rounded-lg bg-white p-6 shadow">
           <div className="mb-4 flex items-start justify-between">
             <div>
-              <p className="mb-1 text-sm text-gray-600">Human Services</p>
+              <p className="mb-1 text-sm text-gray-600">Serviços com Atendimento Humano</p>
               {isLoadingReport ? (
                 <Skeleton className="h-9 w-24" />
               ) : (
