@@ -5,6 +5,7 @@ import { formatNumber, formatPercentage } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { reportService } from "@/services/api/reportService";
+import { clientService } from "@/services/api/clientService";
 import { useState } from "react";
 
 export function Reports() {
@@ -17,6 +18,14 @@ export function Reports() {
   // State para mês e ano selecionados
   const [mesSelecionado, setMesSelecionado] = useState(month);
   const [anoSelecionado, setAnoSelecionado] = useState(year);
+  const [userSelected, setUserSelected] = useState<string>("");
+
+  const usersQuery = useQuery({
+    queryKey: ["users", client.id],
+    queryFn: () => clientService.findUsers({ params: { clientId: client.id } }),
+  });
+
+  const atendentes = usersQuery.data ?? [];
 
   // Lista de meses
   const meses = [
@@ -54,13 +63,21 @@ export function Reports() {
   };
 
   const monthlyReportQuery = useQuery({
-    queryKey: ["monthlyReport", client.id, anoSelecionado, mesSelecionado],
-    queryFn: () => reportService.findMonthlyReport(client.id, anoSelecionado, mesSelecionado + 1),
+    queryKey: ["monthlyReport", client.id, anoSelecionado, mesSelecionado, userSelected],
+    queryFn: () =>
+      reportService.findMonthlyReport({
+        params: { clientId: client.id },
+        queries: { year: anoSelecionado, month: mesSelecionado + 1, userId: userSelected || undefined },
+      }),
   });
 
   const dailyMessagesQuery = useQuery({
-    queryKey: ["dailyMessages", client.id, anoSelecionado, mesSelecionado],
-    queryFn: () => reportService.findDailyMessages(client.id, anoSelecionado, mesSelecionado + 1),
+    queryKey: ["dailyMessages", client.id, anoSelecionado, mesSelecionado, userSelected],
+    queryFn: () =>
+      reportService.findDailyMessages({
+        params: { clientId: client.id },
+        queries: { year: anoSelecionado, month: mesSelecionado + 1, userId: userSelected || undefined },
+      }),
   });
 
   const mensagensData = dailyMessagesQuery.data ?? [];
@@ -71,50 +88,69 @@ export function Reports() {
 
   return (
     <div>
-      {/* Cabeçalho */}
+      {/* Header */}
       <div className="mb-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="mb-2 text-3xl">Dashboard de Atendimento</h1>
-            <p className="text-gray-600">Visualização de mensagens e contatos do mês</p>
+            <h1 className="mb-2 text-3xl">Service Dashboard</h1>
+            <p className="text-gray-600">Monthly messages and contacts overview</p>
           </div>
 
-          {/* Seletor de Mês e Ano */}
-          <div className="flex items-center gap-3 rounded-lg bg-white p-4 shadow">
-            <Calendar className="text-gray-600" size={20} />
-            <select
-              value={mesSelecionado}
-              onChange={(e) => setMesSelecionado(Number(e.target.value))}
-              className="rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            >
-              {meses.map((mes, index) => (
-                <option key={index} value={index} disabled={!isMesValido(index, anoSelecionado)}>
-                  {mes}
-                </option>
-              ))}
-            </select>
-            <select
-              value={anoSelecionado}
-              onChange={(e) => handleAnoChange(Number(e.target.value))}
-              className="rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            >
-              {anos.map((ano) => (
-                <option key={ano} value={ano}>
-                  {ano}
-                </option>
-              ))}
-            </select>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            {/* Attendant Filter */}
+            <div className="flex items-center gap-3 rounded-lg bg-white p-4 shadow">
+              <Users className="text-gray-600" size={20} />
+              <select
+                value={userSelected}
+                onChange={(e) => setUserSelected(e.target.value)}
+                className="rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              >
+                <option value="">All attendants</option>
+                {atendentes.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Month and Year Selector */}
+            <div className="flex items-center gap-3 rounded-lg bg-white p-4 shadow">
+              <Calendar className="text-gray-600" size={20} />
+              <select
+                value={mesSelecionado}
+                onChange={(e) => setMesSelecionado(Number(e.target.value))}
+                className="rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              >
+                {meses.map((mes, index) => (
+                  <option key={index} value={index} disabled={!isMesValido(index, anoSelecionado)}>
+                    {mes}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={anoSelecionado}
+                onChange={(e) => handleAnoChange(Number(e.target.value))}
+                className="rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              >
+                {anos.map((ano) => (
+                  <option key={ano} value={ano}>
+                    {ano}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Cards de Resumo */}
+      {/* Summary Cards */}
       <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
-        {/* Card Mensagens Enviadas */}
+        {/* Sent Messages Card */}
         <div className="rounded-lg bg-white p-6 shadow">
           <div className="mb-4 flex items-start justify-between">
             <div>
-              <p className="mb-1 text-sm text-gray-600">Mensagens Enviadas</p>
+              <p className="mb-1 text-sm text-gray-600">Sent Messages</p>
               {isLoadingReport ? (
                 <Skeleton className="h-9 w-24" />
               ) : (
@@ -132,16 +168,16 @@ export function Reports() {
               <span className={(monthlyReport?.variation.totalMessagesSentPercentage ?? 0) >= 0 ? "text-green-600" : "text-red-600"}>
                 {formatPercentage(monthlyReport?.variation.totalMessagesSentPercentage)}
               </span>
-              <span className="text-gray-600">vs. mês anterior</span>
+              <span className="text-gray-600">vs. previous month</span>
             </div>
           )}
         </div>
 
-        {/* Card Mensagens Recebidas */}
+        {/* Received Messages Card */}
         <div className="rounded-lg bg-white p-6 shadow">
           <div className="mb-4 flex items-start justify-between">
             <div>
-              <p className="mb-1 text-sm text-gray-600">Mensagens Recebidas</p>
+              <p className="mb-1 text-sm text-gray-600">Received Messages</p>
               {isLoadingReport ? (
                 <Skeleton className="h-9 w-24" />
               ) : (
@@ -159,16 +195,16 @@ export function Reports() {
               <span className={(monthlyReport?.variation.totalMessagesReceivedPercentage ?? 0) >= 0 ? "text-green-600" : "text-red-600"}>
                 {formatPercentage(monthlyReport?.variation.totalMessagesReceivedPercentage)}
               </span>
-              <span className="text-gray-600">vs. mês anterior</span>
+              <span className="text-gray-600">vs. previous month</span>
             </div>
           )}
         </div>
 
-        {/* Card Atendimentos */}
+        {/* Services Card */}
         <div className="rounded-lg bg-white p-6 shadow">
           <div className="mb-4 flex items-start justify-between">
             <div>
-              <p className="mb-1 text-sm text-gray-600">Atendimentos Humanos</p>
+              <p className="mb-1 text-sm text-gray-600">Human Services</p>
               {isLoadingReport ? (
                 <Skeleton className="h-9 w-24" />
               ) : (
@@ -184,35 +220,35 @@ export function Reports() {
           ) : (
             <div className="flex items-center gap-2 text-sm">
               <span className="text-purple-600">{formatPercentage(monthlyReport?.current.humanAttendancePercentage)}</span>
-              <span className="text-gray-600">de {formatNumber(monthlyReport?.current.totalServices)} atendimentos</span>
+              <span className="text-gray-600">of {formatNumber(monthlyReport?.current.totalServices)} services</span>
             </div>
           )}
         </div>
       </div>
 
-      {/* Gráfico de Mensagens */}
+      {/* Messages Chart */}
       <div className="rounded-lg bg-white p-6 shadow">
-        <h2 className="mb-6 text-xl">Mensagens Enviadas vs Recebidas</h2>
+        <h2 className="mb-6 text-xl">Sent vs Received Messages</h2>
         {isLoadingDailyMessages ? (
           <Skeleton className="h-[300px] w-full" />
         ) : (
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={mensagensData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="day" label={{ value: "Dia do Mês", position: "insideBottom", offset: -5 }} />
+              <XAxis dataKey="day" label={{ value: "Day of Month", position: "insideBottom", offset: -5 }} />
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar key="bar-enviadas" dataKey="sent" fill="#3b82f6" name="Enviadas" />
-              <Bar key="bar-recebidas" dataKey="received" fill="#10b981" name="Recebidas" />
+              <Bar key="bar-enviadas" dataKey="sent" fill="#3b82f6" name="Sent" />
+              <Bar key="bar-recebidas" dataKey="received" fill="#10b981" name="Received" />
             </BarChart>
           </ResponsiveContainer>
         )}
       </div>
 
-      {/* Gráfico Combinado */}
+      {/* Combined Chart */}
       <div className="mt-6 rounded-lg bg-white p-6 shadow">
-        <h2 className="mb-6 text-xl">Visão Geral do Mês</h2>
+        <h2 className="mb-6 text-xl">Monthly Overview</h2>
         {isLoadingDailyMessages ? (
           <Skeleton className="h-[400px] w-full" />
         ) : (
@@ -226,12 +262,12 @@ export function Reports() {
               }))}
             >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="day" label={{ value: "Dia do Mês", position: "insideBottom", offset: -5 }} />
+              <XAxis dataKey="day" label={{ value: "Day of Month", position: "insideBottom", offset: -5 }} />
               <YAxis />
               <Tooltip />
               <Legend />
-              <Line key="line-enviadas" type="monotone" dataKey="sent" stroke="#3b82f6" strokeWidth={2} name="Enviadas" />
-              <Line key="line-recebidas" type="monotone" dataKey="received" stroke="#10b981" strokeWidth={2} name="Recebidas" />
+              <Line key="line-enviadas" type="monotone" dataKey="sent" stroke="#3b82f6" strokeWidth={2} name="Sent" />
+              <Line key="line-recebidas" type="monotone" dataKey="received" stroke="#10b981" strokeWidth={2} name="Received" />
             </LineChart>
           </ResponsiveContainer>
         )}
