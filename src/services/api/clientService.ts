@@ -10,16 +10,16 @@ export const clientService = {
     const response = await api.get(`/client/${params.clientId}`);
     return response.data;
   },
-  create: async ({
-    body,
-  }: CreateClientRequestData): Promise<CreateClientResponseData> => {
+  create: async ({ body }: CreateClientRequestData): Promise<CreateClientResponseData> => {
     const response = await api.post("/client", body);
     return response.data;
   },
-  generateNewSecret: async ({
-    params,
-  }: GenerateNewSecretRequestData): Promise<string> => {
+  generateNewSecret: async ({ params }: GenerateNewSecretRequestData): Promise<string> => {
     const response = await api.put(`/client/${params.clientId}/secret`);
+    return response.data;
+  },
+  findUsers: async ({ params }: FindUsersRequestData): Promise<User[]> => {
+    const response = await api.get<User[]>(`/client/${params.clientId}/users`);
     return response.data;
   },
 };
