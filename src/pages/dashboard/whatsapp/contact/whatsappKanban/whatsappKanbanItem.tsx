@@ -84,7 +84,7 @@ export const WhatsappKanbanItem: FC<WhatsappKanbanItemProps> = ({ onClick, users
       >
         <div className="mb-2">
           <div className="flex w-full items-center justify-between">
-            <h3 className="font-bold">{contactMessage.surname || contactMessage.name}</h3>
+            <h3 className="truncate font-bold">{contactMessage.surname || contactMessage.name}</h3>
             <div className="flex items-center gap-2">
               {expirationStatus && (
                 <Badge variant="outline" className={cn("flex items-center gap-1 text-xs", expirationStatus.color)}>

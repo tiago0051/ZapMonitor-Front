@@ -61,37 +61,28 @@ export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServicePr
   const services = findAllServicesHistoryByContact.data?.pages.flatMap((page) => page.items) || [];
   const afterService = services[1];
   const nowService = services[0];
-
-  const hasAiResume = afterService?.aiResume || nowService?.aiResume;
+  const presentationService = nowService || afterService;
 
   return (
-    <div data-has-ai-resume={hasAiResume} className="grid max-h-full overflow-hidden data-[has-ai-resume=true]:grid-rows-2">
-      {hasAiResume && (
-        <div className="grid grid-rows-2 gap-2 overflow-hidden">
-          {afterService?.aiResume && (
-            <div className="border-primary/20 bg-primary/5 overflow-auto rounded border p-3">
-              <div className="text-primary mb-2 flex items-center gap-2 font-medium">
-                <Bot className="h-4 w-4" />
-                <span className="text-sm">Último atendimento</span>
-              </div>
-              <pre className="text-foreground/80 font-sans text-sm whitespace-pre-wrap">{formatBoldText(afterService.aiResume)}</pre>
-            </div>
-          )}
-          {nowService?.aiResume && (
-            <div className="border-primary/20 bg-primary/5 overflow-auto rounded border p-3">
-              <div className="text-primary mb-2 flex items-center gap-2 font-medium">
-                <Bot className="h-4 w-4" />
-                <span className="text-sm">Resumo da IA</span>
-              </div>
-              <pre className="text-foreground/80 font-sans text-sm whitespace-pre-wrap">{formatBoldText(nowService.aiResume)}</pre>
-            </div>
-          )}
+    <div
+      data-has-ai-resume={!!presentationService}
+      className="grid max-h-full gap-[24px] overflow-hidden data-[has-ai-resume=true]:grid-rows-2"
+    >
+      {!!presentationService && (
+        <div className="border-primary/20 bg-primary/5 overflow-auto rounded border p-3">
+          <div className="text-primary mb-2 flex items-center gap-2 font-medium">
+            <Bot className="h-4 w-4" />
+            <span className="text-sm">Resumo da IA</span>
+          </div>
+          <pre className="text-foreground/80 font-sans text-sm whitespace-pre-wrap">
+            {formatBoldText(presentationService.aiResume || "")}
+          </pre>
         </div>
       )}
       <div className={"grid grid-rows-[min-content_auto_min-content] gap-2 overflow-hidden"}>
         <h3>Histórico</h3>
 
-        <ul className="flex flex-col-reverse overflow-scroll">
+        <ul className="flex flex-col-reverse justify-end overflow-scroll">
           {services.map((service) => (
             <ListServiceItem key={service.id} service={service} />
           ))}
