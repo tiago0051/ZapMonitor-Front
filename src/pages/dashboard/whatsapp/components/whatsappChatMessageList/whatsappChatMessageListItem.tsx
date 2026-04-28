@@ -7,37 +7,39 @@ import { format } from "date-fns";
 import { useEffect, useState, type FC } from "react";
 import { FiDownload } from "react-icons/fi";
 import { IoCheckmarkDoneOutline, IoCheckmarkOutline, IoTimeOutline } from "react-icons/io5";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type MessageFileContent = { url: string; filename: string };
 
 const MessageText = ({ message }: { message: WhatsappMessage<string> }) => <p className="whitespace-pre-wrap">{message.content}</p>;
-const MessageAudio = ({ message }: { message: WhatsappMessage<MessageFileContent> }) => (
+const MessageAudio = ({ content }: { content: MessageFileContent }) => (
   <div>
-    {message.content && <audio controls src={message.content.url} className="w-full" />}
-    {!message.content && <p className="text-xs">Baixando...</p>}
+    {content && <audio controls src={content.url} className="w-full" />}
+    {!content && <p className="text-xs">Baixando...</p>}
   </div>
 );
-const MessageImage = ({ message }: { message: WhatsappMessage<MessageFileContent> }) => (
+const MessageImage = ({ content }: { content: MessageFileContent }) => (
   <div>
-    {message.content && <img src={message.content.url} alt="Imagem" className="w-full" />}
-    {!message.content && <p className="text-xs">Baixando...</p>}
+    {content && <img src={content.url} alt="Imagem" className="w-full" />}
+    {!content && <p className="text-xs">Baixando...</p>}
   </div>
 );
-const MessageVideo = ({ message }: { message: WhatsappMessage<MessageFileContent> }) => (
+const MessageVideo = ({ content }: { content: MessageFileContent }) => (
   <div>
-    {message.content && <video src={message.content.url} controls className="w-full" />}
-    {!message.content && <p className="text-xs">Baixando...</p>}
+    {content && <video src={content.url} controls className="w-full" />}
+    {!content && <p className="text-xs">Baixando...</p>}
   </div>
 );
-const MessageDocument = ({ message }: { message: WhatsappMessage<MessageFileContent> }) => (
+const MessageDocument = ({ content }: { content: MessageFileContent }) => (
   <div>
-    {message.content && (
-      <a href={message.content.url} target="_blank" download className="text-primary flex items-center justify-between gap-2">
-        <p className="overflow-hidden break-words">{message.content.filename}</p>
+    {content && (
+      <a href={content.url} target="_blank" download className="text-primary flex items-center justify-between gap-2">
+        <p className="overflow-hidden break-words">{content.filename}</p>
         <FiDownload className="shrink-0" size={20} />
       </a>
     )}
-    {!message.content && <p className="text-xs">Baixando...</p>}
+    {!content && <p className="text-xs">Baixando...</p>}
   </div>
 );
 const MessageContact = ({ message }: { message: WhatsappMessage<string> }) => <p className="whitespace-pre-wrap">{message.content}</p>;
@@ -52,12 +54,13 @@ export const WhatsappChatMessageListItem: FC<WhatsappChatMessageListItemProps> =
   const { socket, isConnected } = useSocketContext();
 
   const [status, setStatus] = useState(message.status);
+  const [content, setContent] = useState<string | MessageFileContent>(message.content as string | MessageFileContent);
+  const [isTranscriptionOpen, setIsTranscriptionOpen] = useState(false);
 
   useEffect(() => {
-    if (message.status === WhatsappMessageStatus.READ || message.type === WhatsappMessageType.INCOMING) return;
-
-    socket.on(`contact:${contactService.id}:message:${message.id}`, (data: { status: number }) => {
+    socket.on(`contact:${contactService.id}:message:${message.id}`, (data: { status: number; content: string }) => {
       setStatus(data.status);
+      setContent(data.content);
     });
 
     return () => {
@@ -72,22 +75,34 @@ export const WhatsappChatMessageListItem: FC<WhatsappChatMessageListItemProps> =
       className="bg-secondary text-secondary-foreground relative max-w-[50%] min-w-[250px] rounded p-2 pt-8 pb-5 data-[type=1]:self-end"
     >
       {message.contentType === WhatsappMessageContentType.TEXT && <MessageText message={message as WhatsappMessage<string>} />}
-      {message.contentType === WhatsappMessageContentType.AUDIO && (
-        <MessageAudio message={message as WhatsappMessage<MessageFileContent>} />
-      )}
-      {message.contentType === WhatsappMessageContentType.IMAGE && (
-        <MessageImage message={message as WhatsappMessage<MessageFileContent>} />
-      )}
-      {message.contentType === WhatsappMessageContentType.VIDEO && (
-        <MessageVideo message={message as WhatsappMessage<MessageFileContent>} />
-      )}
-      {message.contentType === WhatsappMessageContentType.DOCUMENT && (
-        <MessageDocument message={message as WhatsappMessage<MessageFileContent>} />
-      )}
+      {message.contentType === WhatsappMessageContentType.AUDIO && <MessageAudio content={content as MessageFileContent} />}
+      {message.contentType === WhatsappMessageContentType.IMAGE && <MessageImage content={content as MessageFileContent} />}
+      {message.contentType === WhatsappMessageContentType.VIDEO && <MessageVideo content={content as MessageFileContent} />}
+      {message.contentType === WhatsappMessageContentType.DOCUMENT && <MessageDocument content={content as MessageFileContent} />}
 
       {message.contentType === WhatsappMessageContentType.CONTACTS && <MessageContact message={message as WhatsappMessage<string>} />}
 
       {message.contentType === WhatsappMessageContentType.TEMPLATE && <MessageTemplate message={message as WhatsappMessage<string>} />}
+
+      {message.transcribedContent && (
+        <div className="mt-2 border-t pt-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsTranscriptionOpen(!isTranscriptionOpen)}
+            className="flex w-full items-center justify-between p-0 text-xs hover:bg-transparent"
+          >
+            <span className="font-medium">Transcrição</span>
+            {isTranscriptionOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+          </Button>
+          {isTranscriptionOpen && (
+            <div className="max-h-[200px] overflow-y-auto">
+              <p className="text-muted-foreground mt-2 text-xs whitespace-pre-wrap">{message.transcribedContent}</p>
+            </div>
+          )}
+        </div>
+      )}
+
       <span className="absolute top-2 right-2 text-xs">{format(message.createdAt, "dd/MM/yyyy HH:mm")}</span>
       <span className="absolute right-2 bottom-1 text-xs [&>svg]:size-5">
         {message.type === WhatsappMessageType.OUTGOING && (
