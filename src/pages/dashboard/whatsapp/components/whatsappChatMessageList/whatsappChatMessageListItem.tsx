@@ -55,12 +55,14 @@ export const WhatsappChatMessageListItem: FC<WhatsappChatMessageListItemProps> =
 
   const [status, setStatus] = useState(message.status);
   const [content, setContent] = useState<string | MessageFileContent>(message.content as string | MessageFileContent);
+  const [transcribedContent, setTranscribedContent] = useState<string | null | undefined>(message.transcribedContent);
   const [isTranscriptionOpen, setIsTranscriptionOpen] = useState(false);
 
   useEffect(() => {
-    socket.on(`contact:${contactService.id}:message:${message.id}`, (data: { status: number; content: string }) => {
+    socket.on(`contact:${contactService.id}:message:${message.id}`, (data: WhatsappMessage) => {
       setStatus(data.status);
-      setContent(data.content);
+      setContent(data.content as string | MessageFileContent);
+      setTranscribedContent(data.transcribedContent);
     });
 
     return () => {
@@ -84,7 +86,7 @@ export const WhatsappChatMessageListItem: FC<WhatsappChatMessageListItemProps> =
 
       {message.contentType === WhatsappMessageContentType.TEMPLATE && <MessageTemplate message={message as WhatsappMessage<string>} />}
 
-      {message.transcribedContent && (
+      {transcribedContent && (
         <div className="mt-2 border-t pt-2">
           <Button
             variant="ghost"
@@ -97,7 +99,7 @@ export const WhatsappChatMessageListItem: FC<WhatsappChatMessageListItemProps> =
           </Button>
           {isTranscriptionOpen && (
             <div className="max-h-[200px] overflow-y-auto">
-              <p className="text-muted-foreground mt-2 text-xs whitespace-pre-wrap">{message.transcribedContent}</p>
+              <p className="text-muted-foreground mt-2 text-xs whitespace-pre-wrap">{transcribedContent}</p>
             </div>
           )}
         </div>
