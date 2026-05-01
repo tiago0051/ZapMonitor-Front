@@ -14,7 +14,7 @@ export const WhatsappContacts = () => {
   const [filterText, setFilterText] = useDebounceValue("", globalContants.DEBOUNCE_DELAY);
 
   return (
-    <div className="mx-auto space-y-8">
+    <div className="mx-auto grid max-w-full space-y-8 overflow-hidden">
       <Header title="Lista de contatos" />
       <WhatsappContactFilters
         filterCategories={filterCategories}
