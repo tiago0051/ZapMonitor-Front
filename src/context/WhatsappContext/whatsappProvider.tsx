@@ -8,6 +8,7 @@ import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
 import { useSocketContext } from "../SocketContext/socketContext";
 import { useEventsContext } from "../EventsContext/eventsContext";
 import { Progress } from "@/components/ui/progress";
+import { useUserContext } from "../UserContext/userContext";
 
 type WhatsappProviderProps = {
   children: React.ReactNode;
@@ -16,6 +17,7 @@ type WhatsappProviderProps = {
 export const WhatsappProvider: FC<WhatsappProviderProps> = ({ children }) => {
   const { isConnected, socket } = useSocketContext();
   const { client } = useClientContext();
+  const { user } = useUserContext();
   const { eventsToExecute, changeEventExecutedStatus } = useEventsContext();
   const contactEventsToExecute = eventsToExecute.filter((item) => item.eventType === WhatsappEventType.UpdateContactMessage);
 
@@ -53,7 +55,11 @@ export const WhatsappProvider: FC<WhatsappProviderProps> = ({ children }) => {
 
         contactsToChangeRecord[payloadParsed.contact.id] = payloadParsed.contact;
 
-        if (payloadParsed.isNewMessage && payloadParsed.contact.messageType === WhatsappMessageType.INCOMING) playSound();
+        const isMessageIncomming = payloadParsed.contact.messageType === WhatsappMessageType.INCOMING;
+        const isMyService = payloadParsed.contact.serviceUserServiceId === user?.id;
+        const isAwaitingService = payloadParsed.contact.awaitService;
+
+        if (payloadParsed.isNewMessage && isMessageIncomming && (isMyService || isAwaitingService)) playSound();
 
         changeEventExecutedStatus(event);
       });
