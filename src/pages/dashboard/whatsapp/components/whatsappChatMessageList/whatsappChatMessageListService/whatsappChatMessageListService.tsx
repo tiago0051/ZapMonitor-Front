@@ -7,8 +7,7 @@ import { requestErrorHandling } from "@/utils/request";
 import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
 import { useEffect, type FC } from "react";
 import { ListServiceItem } from "./listServiceItem";
-import { formatBoldText } from "@/utils/formatString";
-import { Bot } from "lucide-react";
+import { AiResumeBox } from "@/components/ui/ai-resume-box";
 
 type WhatsappChatMessageListServiceProps = {
   contactService: WhatsappContactService;
@@ -64,25 +63,12 @@ export const WhatsappChatMessageListService: FC<WhatsappChatMessageListServicePr
   const presentationService = nowService || afterService;
 
   return (
-    <div
-      data-has-ai-resume={!!presentationService}
-      className="grid max-h-full gap-[24px] overflow-hidden data-[has-ai-resume=true]:grid-rows-2"
-    >
-      {!!presentationService && (
-        <div className="border-primary/20 bg-primary/5 overflow-auto rounded border p-3">
-          <div className="text-primary mb-2 flex items-center gap-2 font-medium">
-            <Bot className="h-4 w-4" />
-            <span className="text-sm">Resumo da IA</span>
-          </div>
-          <pre className="text-foreground/80 font-sans text-sm whitespace-pre-wrap">
-            {formatBoldText(presentationService.aiResume || "")}
-          </pre>
-        </div>
-      )}
-      <div className={"grid grid-rows-[min-content_auto_min-content] gap-2 overflow-hidden"}>
+    <div data-has-ai-resume={!!presentationService} className="flex flex-col gap-2 overflow-hidden">
+      {!!presentationService && <AiResumeBox className="h-1/3" aiResume={presentationService.aiResume || ""} title="Resumo da IA" />}
+      <div className={"grid h-2/3 grid-rows-[min-content_auto_min-content] gap-2 overflow-hidden"}>
         <h3>Histórico</h3>
 
-        <ul className="flex flex-col-reverse justify-end overflow-scroll">
+        <ul className="flex max-h-full flex-col-reverse justify-end overflow-y-auto">
           {services.map((service) => (
             <ListServiceItem key={service.id} service={service} />
           ))}
