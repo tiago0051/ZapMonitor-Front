@@ -74,7 +74,7 @@ export const WhatsappChatMessageListItem: FC<WhatsappChatMessageListItemProps> =
     <div
       key={message.id}
       data-type={message.type}
-      className="bg-secondary text-secondary-foreground relative max-w-[80%] min-w-[300px] rounded p-2 pt-8 pb-6 data-[type=1]:self-end data-[type=1]:bg-green-100/50"
+      className="bg-secondary text-secondary-foreground relative max-w-[85%] min-w-[300px] rounded p-2 pt-2 pb-6 data-[type=1]:self-end data-[type=1]:bg-green-100/50"
     >
       {message.contentType === WhatsappMessageContentType.TEXT && <MessageText message={message as WhatsappMessage<string>} />}
       {message.contentType === WhatsappMessageContentType.AUDIO && <MessageAudio content={content as MessageFileContent} />}
