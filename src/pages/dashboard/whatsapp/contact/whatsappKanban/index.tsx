@@ -58,7 +58,7 @@ export const WhatsappKanban: FC<WhatsappKanbanProps> = ({ filterCategories, filt
         (contact.awaitService && contact.replyTimeExpiredAt && isBefore(new Date(), new Date(contact.replyTimeExpiredAt))) ||
         contact.serviceRepresentative === "IA",
     ),
-    "desc",
+    "asc",
   );
   const mySevicesContacts = orderContacts(
     filteredContacts.filter((contact) => contact.serviceUserServiceId === user?.id),
