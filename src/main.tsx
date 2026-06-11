@@ -5,6 +5,10 @@ import { Router } from "./routes/router";
 import "@/style/globalStyle.css";
 import { Toaster } from "./components/ui/sonner";
 import Clarity from "@microsoft/clarity";
+import { setDefaultOptions } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+setDefaultOptions({ locale: ptBR });
 
 const projectId = import.meta.env.VITE_CLARITY;
 

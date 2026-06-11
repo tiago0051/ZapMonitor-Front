@@ -74,7 +74,7 @@ export const WhatsappChatMessageListItem: FC<WhatsappChatMessageListItemProps> =
     <div
       key={message.id}
       data-type={message.type}
-      className="bg-secondary text-secondary-foreground relative max-w-[50%] min-w-[250px] rounded p-2 pt-8 pb-5 data-[type=1]:self-end"
+      className="bg-secondary text-secondary-foreground relative max-w-[85%] min-w-[300px] rounded p-2 pt-2 pb-6 data-[type=1]:self-end data-[type=1]:bg-green-100/50"
     >
       {message.contentType === WhatsappMessageContentType.TEXT && <MessageText message={message as WhatsappMessage<string>} />}
       {message.contentType === WhatsappMessageContentType.AUDIO && <MessageAudio content={content as MessageFileContent} />}
@@ -105,19 +105,20 @@ export const WhatsappChatMessageListItem: FC<WhatsappChatMessageListItemProps> =
         </div>
       )}
 
-      <span className="absolute top-2 right-2 text-xs">{format(message.createdAt, "dd/MM/yyyy HH:mm")}</span>
-      <span className="absolute right-2 bottom-1 text-xs [&>svg]:size-5">
-        {message.type === WhatsappMessageType.OUTGOING && (
-          <>
-            {status === WhatsappMessageStatus.UNKNOWN || (status === WhatsappMessageStatus.EXECUTED && <IoTimeOutline />)}
-            {status === WhatsappMessageStatus.SENT && <IoCheckmarkOutline />}
-            {status === WhatsappMessageStatus.DELIVERED && <IoCheckmarkDoneOutline />}
-            {status === WhatsappMessageStatus.READ && <IoCheckmarkDoneOutline className="text-blue-500" />}
-          </>
-        )}
+      <span className="absolute right-0 bottom-1 left-0 flex w-full items-center justify-between gap-4 px-2 text-xs [&>svg]:size-5">
+        <div className="grid">{message.userName && <span className="truncate">{formatShortName(message.userName)}</span>}</div>
+        <div className="flex items-center gap-4 text-lg">
+          <span className="text-xs">{format(message.createdAt, "PPp")}</span>
+          {message.type === WhatsappMessageType.OUTGOING && (
+            <>
+              {status === WhatsappMessageStatus.UNKNOWN || (status === WhatsappMessageStatus.EXECUTED && <IoTimeOutline />)}
+              {status === WhatsappMessageStatus.SENT && <IoCheckmarkOutline />}
+              {status === WhatsappMessageStatus.DELIVERED && <IoCheckmarkDoneOutline />}
+              {status === WhatsappMessageStatus.READ && <IoCheckmarkDoneOutline className="text-blue-500" />}
+            </>
+          )}
+        </div>
       </span>
-
-      {message.userName && <span className="absolute top-2 left-2 text-xs">{formatShortName(message.userName)}</span>}
     </div>
   );
 };

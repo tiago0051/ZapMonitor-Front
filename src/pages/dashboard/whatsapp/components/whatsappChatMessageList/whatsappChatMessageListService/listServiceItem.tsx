@@ -1,7 +1,8 @@
-import { formatBoldText, formatShortId } from "@/utils/formatString";
+import { formatShortId } from "@/utils/formatString";
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Bot } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { useClientContext } from "@/context/ClientContext/clientContext";
+import { AiResumeBox } from "@/components/ui/ai-resume-box";
 
 interface ListServiceItemProps {
   service: WhatsappServiceHistory;
@@ -43,15 +44,7 @@ export const ListServiceItem: React.FC<ListServiceItemProps> = ({ service }) => 
               <p className="text-sm">{action.annotation}</p>
             </div>
           ))}
-          {client?.hasAiConfig && service.aiResume && (
-            <div className="border-primary/20 bg-primary/5 rounded border p-3">
-              <div className="text-primary mb-2 flex items-center gap-2 font-medium">
-                <Bot className="h-4 w-4" />
-                <span className="text-sm">Resumo da IA</span>
-              </div>
-              <pre className="text-foreground/80 font-sans text-sm whitespace-pre-wrap">{formatBoldText(service.aiResume)}</pre>
-            </div>
-          )}
+          {client?.hasAiConfig && service.aiResume && <AiResumeBox aiResume={service.aiResume || ""} title="Resumo da IA" />}
         </div>
       )}
     </li>
