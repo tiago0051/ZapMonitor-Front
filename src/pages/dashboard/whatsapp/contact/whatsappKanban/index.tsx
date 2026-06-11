@@ -9,10 +9,14 @@ type WhatsappKanbanProps = {
   filterText: string;
 };
 
-function orderContacts(contacts: WhatsappContactMessage[], order: "asc" | "desc" = "desc") {
+function orderContacts(
+  contacts: WhatsappContactMessage[],
+  order: "asc" | "desc" = "desc",
+  by: "serviceCreatedAt" | "messageCreatedAt" = "serviceCreatedAt",
+) {
   return [...contacts].sort((a, b) => {
-    const aDate = a.serviceCreatedAt || a.messageCreatedAt;
-    const bDate = b.serviceCreatedAt || b.messageCreatedAt;
+    const aDate = a[by] || a.messageCreatedAt;
+    const bDate = b[by] || b.messageCreatedAt;
 
     if (!aDate) console.log(a.id);
     if (!bDate) console.log(b.id);
@@ -54,9 +58,13 @@ export const WhatsappKanban: FC<WhatsappKanbanProps> = ({ filterCategories, filt
         (contact.awaitService && contact.replyTimeExpiredAt && isBefore(new Date(), new Date(contact.replyTimeExpiredAt))) ||
         contact.serviceRepresentative === "IA",
     ),
-    "asc",
+    "desc",
   );
-  const mySevicesContacts = orderContacts(filteredContacts.filter((contact) => contact.serviceUserServiceId === user?.id));
+  const mySevicesContacts = orderContacts(
+    filteredContacts.filter((contact) => contact.serviceUserServiceId === user?.id),
+    "desc",
+    "messageCreatedAt",
+  );
   const otherSevicesContacts = orderContacts(
     filteredContacts.filter((contact) => contact.serviceUserServiceId && contact.serviceUserServiceId !== user?.id),
   );
