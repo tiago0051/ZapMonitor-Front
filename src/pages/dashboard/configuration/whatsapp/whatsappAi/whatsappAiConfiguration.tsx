@@ -6,6 +6,8 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useParams } from "react-router";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DialogCreateAiConfig } from "./components/dialogCreateAiConfig";
+import { DialogEditAiConfig } from "./components/dialogEditAiConfig";
+import { formatShortId } from "@/utils/formatString";
 
 export const WhatsappAiConfiguration = () => {
   const { clientId } = useParams();
@@ -26,7 +28,7 @@ export const WhatsappAiConfiguration = () => {
     return new Date(date).toLocaleString("pt-BR");
   };
 
-  const hasNoConfig = !aiConfig;
+  const hasNoConfig = getClientAiConfigQuery.isError;
 
   return (
     <Card>
@@ -50,6 +52,11 @@ export const WhatsappAiConfiguration = () => {
         )}
         {aiConfig && (
           <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div />
+              <DialogEditAiConfig clientId={clientId!} aiConfig={aiConfig} />
+            </div>
+
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="space-y-2">
                 <Label className="text-muted-foreground text-sm font-semibold">Status</Label>
@@ -70,7 +77,7 @@ export const WhatsappAiConfiguration = () => {
 
               <div className="space-y-2">
                 <Label className="text-muted-foreground text-sm font-semibold">ID da Configuração</Label>
-                <p className="font-mono text-sm break-all">{aiConfig.id}</p>
+                <p className="font-mono text-sm break-all">{formatShortId(aiConfig.id)}</p>
               </div>
             </div>
 

@@ -21,3 +21,17 @@ type CreateAiConfigRequestBody = {
   model: string;
   temperature: number;
 };
+
+type UpdateAiConfigRequestData = {
+  params: UpdateAiConfigRequestParams;
+  body: UpdateAiConfigRequestBody;
+};
+
+type UpdateAiConfigRequestParams = {
+  clientId: string;
+};
+
+type UpdateAiConfigRequestBody = {
+  apiKey?: string;
+  systemPrompt: string;
+};

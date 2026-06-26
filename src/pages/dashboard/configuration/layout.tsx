@@ -18,14 +18,16 @@ export const EditClientLayout = () => {
 
   return (
     <>
-      <div className="flex justify-between">
+      <div className="mb-4 flex justify-between">
         <h1 className="text-2xl">{client?.name}</h1>
       </div>
 
       <Tabs defaultValue="whatsapp">
         <TabsList className="mb-4">
           <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
-          <TabsTrigger value="integration">Integração</TabsTrigger>
+          <TabsTrigger value="integration" disabled>
+            Integração
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="whatsapp" className="space-y-5">
           <WhatsappCategory />

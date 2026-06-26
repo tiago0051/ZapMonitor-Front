@@ -9,4 +9,8 @@ export const aiService = {
     const response = await api.post(`/client/${params.clientId}/ai/config`, body);
     return response.data;
   },
+  updateClientAiConfig: async ({ params, body }: UpdateAiConfigRequestData): Promise<AiConfig> => {
+    const response = await api.put(`/client/${params.clientId}/ai/config`, body);
+    return response.data;
+  },
 };
