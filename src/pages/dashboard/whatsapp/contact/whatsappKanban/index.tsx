@@ -3,20 +3,26 @@ import { useWhatsappContext } from "@/context/WhatsappContext/whatsappContext";
 import { useUserContext } from "@/context/UserContext/userContext";
 import { WhatsappKanbanColumn } from "./whatsappKanbanColumn";
 import { isBefore } from "date-fns";
-import { useClientContext } from "@/context/ClientContext/clientContext";
 
 type WhatsappKanbanProps = {
   filterCategories: WhatsappMessageCategory[];
   filterText: string;
 };
 
-function orderContactsByLastMessage(contacts: WhatsappContactMessage[], order: "asc" | "desc" = "desc") {
+function orderContacts(
+  contacts: WhatsappContactMessage[],
+  order: "asc" | "desc" = "desc",
+  by: "serviceCreatedAt" | "messageCreatedAt" = "serviceCreatedAt",
+) {
   return [...contacts].sort((a, b) => {
-    if (!a.messageCreatedAt) console.log(a.id);
-    if (!b.messageCreatedAt) console.log(b.id);
+    const aDate = a[by] || a.messageCreatedAt;
+    const bDate = b[by] || b.messageCreatedAt;
 
-    const dateA = a.messageCreatedAt ? new Date(a.messageCreatedAt).getTime() : 0;
-    const dateB = b.messageCreatedAt ? new Date(b.messageCreatedAt).getTime() : 0;
+    if (!aDate) console.log(a.id);
+    if (!bDate) console.log(b.id);
+
+    const dateA = aDate ? new Date(aDate).getTime() : 0;
+    const dateB = bDate ? new Date(bDate).getTime() : 0;
 
     const timeA = isNaN(dateA) ? 0 : dateA;
     const timeB = isNaN(dateB) ? 0 : dateB;
@@ -27,7 +33,6 @@ function orderContactsByLastMessage(contacts: WhatsappContactMessage[], order: "
 
 export const WhatsappKanban: FC<WhatsappKanbanProps> = ({ filterCategories, filterText }) => {
   const { user } = useUserContext();
-  const { client } = useClientContext();
   const { allContacts } = useWhatsappContext();
 
   const filteredContacts = allContacts.filter((contact) => {
@@ -47,22 +52,23 @@ export const WhatsappKanban: FC<WhatsappKanbanProps> = ({ filterCategories, filt
     return matchesCategories && matchesText;
   });
 
-  const aiServiceContacts = orderContactsByLastMessage(
-    filteredContacts.filter((contact) => contact.serviceRepresentative === "IA"),
-    "asc",
-  );
-
-  const awaitingServiceContacts = orderContactsByLastMessage(
+  const awaitingServiceContacts = orderContacts(
     filteredContacts.filter(
-      (contact) => contact.awaitService && contact.replyTimeExpiredAt && isBefore(new Date(), new Date(contact.replyTimeExpiredAt)),
+      (contact) =>
+        (contact.awaitService && contact.replyTimeExpiredAt && isBefore(new Date(), new Date(contact.replyTimeExpiredAt))) ||
+        contact.serviceRepresentative === "IA",
     ),
     "asc",
   );
-  const mySevicesContacts = orderContactsByLastMessage(filteredContacts.filter((contact) => contact.serviceUserServiceId === user?.id));
-  const otherSevicesContacts = orderContactsByLastMessage(
+  const mySevicesContacts = orderContacts(
+    filteredContacts.filter((contact) => contact.serviceUserServiceId === user?.id),
+    "desc",
+    "messageCreatedAt",
+  );
+  const otherSevicesContacts = orderContacts(
     filteredContacts.filter((contact) => contact.serviceUserServiceId && contact.serviceUserServiceId !== user?.id),
   );
-  const otherContacts = orderContactsByLastMessage(
+  const otherContacts = orderContacts(
     filteredContacts.filter(
       (contact) =>
         !(contact.awaitService && contact.replyTimeExpiredAt && isBefore(new Date(), new Date(contact.replyTimeExpiredAt))) &&
@@ -72,7 +78,6 @@ export const WhatsappKanban: FC<WhatsappKanbanProps> = ({ filterCategories, filt
 
   return (
     <ul className="flex gap-2">
-      {client.hasAiConfig && <WhatsappKanbanColumn color="gray" contacts={aiServiceContacts} title="Atendimentos da IA" />}
       <WhatsappKanbanColumn color="blue" contacts={awaitingServiceContacts} title="Aguardando atendente" />
       <WhatsappKanbanColumn color="green" contacts={mySevicesContacts} title="Meus atendimento" />
       <WhatsappKanbanColumn color="yellow" contacts={otherSevicesContacts} title="Em atendimento" />
