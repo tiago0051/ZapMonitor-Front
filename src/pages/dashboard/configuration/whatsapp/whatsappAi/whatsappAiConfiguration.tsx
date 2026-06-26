@@ -5,6 +5,7 @@ import { aiService } from "@/services/api/aiService";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useParams } from "react-router";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DialogCreateAiConfig } from "./components/dialogCreateAiConfig";
 
 export const WhatsappAiConfiguration = () => {
   const { clientId } = useParams();
@@ -25,6 +26,8 @@ export const WhatsappAiConfiguration = () => {
     return new Date(date).toLocaleString("pt-BR");
   };
 
+  const hasNoConfig = !aiConfig;
+
   return (
     <Card>
       <CardHeader>
@@ -39,7 +42,12 @@ export const WhatsappAiConfiguration = () => {
             <Skeleton className="h-6 w-full" />
           </div>
         )}
-        {getClientAiConfigQuery.isError && <p className="text-red-500">Erro ao carregar configurações de IA</p>}
+        {hasNoConfig && (
+          <div className="space-y-4">
+            <p className="text-muted-foreground">Nenhuma configuração de IA encontrada para este cliente.</p>
+            <DialogCreateAiConfig clientId={clientId!} />
+          </div>
+        )}
         {aiConfig && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
