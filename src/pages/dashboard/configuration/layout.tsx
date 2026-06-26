@@ -1,9 +1,10 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { clientService } from "@/services/api/clientService";
 import { useQuery } from "@tanstack/react-query";
-import { Outlet, useParams } from "react-router";
+import { useParams } from "react-router";
 import { WhatsappConfiguration } from "./whatsapp/whatsappConfiguration/whatsappConfiguration";
 import { WhatsappCategory } from "./whatsapp/whatsappCategory/whatsappCategory";
+import { WhatsappAiConfiguration } from "./whatsapp/whatsappAi/whatsappAiConfiguration";
 
 export const EditClientLayout = () => {
   const { clientId } = useParams();
@@ -24,16 +25,15 @@ export const EditClientLayout = () => {
       <Tabs defaultValue="whatsapp">
         <TabsList className="mb-4">
           <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
-          <TabsTrigger value="password">Password</TabsTrigger>
+          <TabsTrigger value="integration">Integração</TabsTrigger>
         </TabsList>
         <TabsContent value="whatsapp" className="space-y-5">
           <WhatsappCategory />
           <WhatsappConfiguration />
+          <WhatsappAiConfiguration />
         </TabsContent>
-        <TabsContent value="password">Change your password here.</TabsContent>
+        <TabsContent value="integration">Integration settings here.</TabsContent>
       </Tabs>
-
-      <Outlet />
     </>
   );
 };
