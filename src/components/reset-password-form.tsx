@@ -8,85 +8,69 @@ import { useMutation } from "@tanstack/react-query";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form";
 import { userService } from "@/services/api/userSevice";
 import { requestErrorHandling } from "@/utils/request";
-import { useUserContext } from "@/context/UserContext/userContext";
-import { Link, Navigate } from "react-router";
+import { Link } from "react-router";
+import { toast } from "sonner";
 
-const FormSchema = z.object({
-  email: z.email(),
-  password: z.string().min(8).max(100),
-});
+const FormSchema = z
+  .object({
+    newPassword: z.string().min(8, "A senha precisa ter pelo menos 8 caracteres").max(100),
+    confirmPassword: z.string().min(8, "Confirme sua senha"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "As senhas precisam ser iguais",
+  });
 
 type FormSchemaType = z.infer<typeof FormSchema>;
 
-type LoginFormProps = React.ComponentProps<"form"> & {
-  onLoginSuccess?: () => void;
+type ResetPasswordFormProps = React.ComponentProps<"form"> & {
+  token: string;
+  onResetSuccess?: () => void;
 };
 
-export function LoginForm({ className, onLoginSuccess, ...props }: LoginFormProps) {
-  const { login, isLogged } = useUserContext();
-
-  const loginRequestMutation = useMutation({
-    mutationFn: userService.login,
+export function ResetPasswordForm({ className, token, onResetSuccess, ...props }: ResetPasswordFormProps) {
+  const resetPasswordMutation = useMutation({
+    mutationFn: userService.resetPassword,
     onSuccess: () => {
-      login();
-      onLoginSuccess?.();
+      toast.success("Senha redefinida com sucesso.");
+      onResetSuccess?.();
     },
     onError: requestErrorHandling,
   });
 
   const form = useForm<FormSchemaType>({
     resolver: zodResolver(FormSchema),
-    disabled: loginRequestMutation.isPending,
+    disabled: resetPasswordMutation.isPending,
     defaultValues: {
-      email: "",
-      password: "",
+      newPassword: "",
+      confirmPassword: "",
     },
   });
 
   const handleSubmit = (data: FormSchemaType) => {
-    loginRequestMutation.mutate({
+    resetPasswordMutation.mutate({
       body: {
-        email: data.email,
-        password: data.password,
+        token,
+        newPassword: data.newPassword,
       },
     });
   };
-
-  if (isLogged) return <Navigate to="/auth/select_client" />;
 
   return (
     <Form {...form}>
       <form className={cn("flex flex-col gap-6", className)} onSubmit={form.handleSubmit(handleSubmit)} {...props}>
         <div className="flex flex-col items-center gap-2 text-center">
-          <h1 className="text-2xl font-bold">Entre na sua conta</h1>
-          <p className="text-muted-foreground text-sm text-balance">Insira seu email abaixo para fazer login na sua conta</p>
+          <h1 className="text-2xl font-bold">Redefinir senha</h1>
+          <p className="text-muted-foreground text-sm text-balance">Defina uma nova senha para acessar sua conta</p>
         </div>
-        <div className="grid gap-6">
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input placeholder="m@exemplo.com" type="email" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
 
+        <div className="grid gap-4">
           <FormField
             control={form.control}
-            name="password"
+            name="newPassword"
             render={({ field }) => (
               <FormItem>
-                <div className="flex items-center justify-between">
-                  <FormLabel>Senha</FormLabel>
-                  <Link to="/auth/forgot-password" className="text-muted-foreground text-xs underline underline-offset-4">
-                    Esqueci minha senha
-                  </Link>
-                </div>
+                <FormLabel>Nova senha</FormLabel>
                 <FormControl>
                   <Input type="password" {...field} />
                 </FormControl>
@@ -95,15 +79,28 @@ export function LoginForm({ className, onLoginSuccess, ...props }: LoginFormProp
             )}
           />
 
-          <Button type="submit" disabled={loginRequestMutation.isPending} className="w-full">
-            Entrar
+          <FormField
+            control={form.control}
+            name="confirmPassword"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Confirmar nova senha</FormLabel>
+                <FormControl>
+                  <Input type="password" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <Button type="submit" disabled={resetPasswordMutation.isPending} className="w-full">
+            Redefinir senha
           </Button>
         </div>
 
         <div className="text-center text-sm">
-          Ainda não tem conta?{" "}
-          <Link to="/auth/register" className="underline underline-offset-4">
-            Criar conta
+          <Link to="/auth/login" className="underline underline-offset-4">
+            Voltar ao login
           </Link>
         </div>
       </form>

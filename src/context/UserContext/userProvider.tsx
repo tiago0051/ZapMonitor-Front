@@ -11,11 +11,12 @@ type UserProviderProps = {
 export const UserProvider: FC<UserProviderProps> = ({ children }) => {
   const [user, setUser] = useSessionStorage<User | null>("User", null);
   const [isLogged, setIsLogged] = useLocalStorage("isLogged", false);
+  const isPublicAuthRoute = window.location.pathname.includes("/auth");
 
   const getsMeQuery = useQuery({
     queryKey: ["me"],
     queryFn: userService.me,
-    enabled: !window.location.pathname.includes("/auth"),
+    enabled: !isPublicAuthRoute,
   });
 
   useEffect(() => {
