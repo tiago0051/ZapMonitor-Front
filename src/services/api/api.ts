@@ -14,7 +14,10 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response.status === 401 && window.location.pathname !== "/auth/login" && !originalRequest._retry) {
+    const pathName = window.location.pathname;
+    const isPublicAuthPath = pathName.startsWith("/auth");
+
+    if (error.response?.status === 401 && !isPublicAuthPath && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
         await axios.post("/user/auth/refresh", undefined, { withCredentials: true, baseURL: baseApiUrl });

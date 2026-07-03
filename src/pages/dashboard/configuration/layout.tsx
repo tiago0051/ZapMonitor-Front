@@ -5,6 +5,7 @@ import { useParams } from "react-router";
 import { WhatsappConfiguration } from "./whatsapp/whatsappConfiguration/whatsappConfiguration";
 import { WhatsappCategory } from "./whatsapp/whatsappCategory/whatsappCategory";
 import { WhatsappAiConfiguration } from "./whatsapp/whatsappAi/whatsappAiConfiguration";
+import { ChangePasswordForm } from "@/components/change-password-form";
 
 export const EditClientLayout = () => {
   const { clientId } = useParams();
@@ -25,6 +26,7 @@ export const EditClientLayout = () => {
       <Tabs defaultValue="whatsapp">
         <TabsList className="mb-4">
           <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
+          <TabsTrigger value="account">Conta</TabsTrigger>
           <TabsTrigger value="integration" disabled>
             Integração
           </TabsTrigger>
@@ -33,6 +35,9 @@ export const EditClientLayout = () => {
           <WhatsappCategory />
           <WhatsappConfiguration />
           <WhatsappAiConfiguration />
+        </TabsContent>
+        <TabsContent value="account">
+          <ChangePasswordForm />
         </TabsContent>
         <TabsContent value="integration">Integration settings here.</TabsContent>
       </Tabs>
