@@ -6,6 +6,7 @@ import { WhatsappConfiguration } from "./whatsapp/whatsappConfiguration/whatsapp
 import { WhatsappCategory } from "./whatsapp/whatsappCategory/whatsappCategory";
 import { WhatsappAiConfiguration } from "./whatsapp/whatsappAi/whatsappAiConfiguration";
 import { ChangePasswordForm } from "@/components/change-password-form";
+import { WhatsappTemplate } from "./whatsapp/whatsappTemplate/whatsappTemplate";
 
 export const EditClientLayout = () => {
   const { clientId } = useParams();
@@ -35,6 +36,7 @@ export const EditClientLayout = () => {
           <WhatsappCategory />
           <WhatsappConfiguration />
           <WhatsappAiConfiguration />
+          <WhatsappTemplate/>
         </TabsContent>
         <TabsContent value="account">
           <ChangePasswordForm />

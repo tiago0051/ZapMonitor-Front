@@ -1,0 +1,61 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { templateService } from "@/services/api/templateService";
+import { formatShortId } from "@/utils/formatString";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { FileText, Plus } from "lucide-react";
+import { useParams } from "react-router";
+
+export const WhatsappTemplate = () => {
+  const { clientId } = useParams();
+
+  const findAllWhatsappTemplatesQuery = useSuspenseQuery({
+    queryKey: ["whatsappTemplates", clientId],
+    queryFn: () => templateService.findAll({ params: { clientId: clientId! } }),
+  });
+
+  const templates = findAllWhatsappTemplatesQuery.data;
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <div>
+          <CardTitle>Templates</CardTitle>
+          <CardDescription>Gerencie os templates do WhatsApp para este cliente.</CardDescription>
+        </div>
+        <Button>
+          <Plus className="mr-2 h-4 w-4" />
+          Novo template
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {findAllWhatsappTemplatesQuery.isLoading && <p>Carregando...</p>}
+        {findAllWhatsappTemplatesQuery.isError && <p>Erro ao buscar templates.</p>}
+
+        {templates && templates.length === 0 && <p className="text-muted-foreground text-sm">Nenhum template encontrado.</p>}
+
+        {templates && templates.length > 0 && (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {templates.map((template) => (
+              <div key={template.id} className="flex flex-col justify-between rounded-lg border p-4 shadow-sm">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <FileText className="text-primary h-5 w-5 shrink-0" />
+                    <h3 className="truncate text-base font-semibold">{template.name}</h3>
+                  </div>
+                  <p className="text-muted-foreground mt-1 text-sm">{template.description}</p>
+                </div>
+
+                <div className="text-muted-foreground mt-4 flex items-center justify-between border-t pt-2 text-xs">
+                  <span>ID: {formatShortId(template.id)}</span>
+                  <span>{format(new Date(template.createdAt), "dd/MM/yyyy HH:mm")}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
