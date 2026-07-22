@@ -1,21 +1,7 @@
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { templateService } from "@/services/api/templateService";
 import { requestErrorHandling } from "@/utils/request";
@@ -38,9 +24,7 @@ const schema = z.object({
 
 type SchemaType = z.infer<typeof schema>;
 
-export const DialogCreateWhatsappTemplate: FC<
-  DialogCreateWhatsappTemplateProps
-> = ({ clientId, className }) => {
+export const DialogCreateWhatsappTemplate: FC<DialogCreateWhatsappTemplateProps> = ({ clientId}) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
   const queryClient = useQueryClient();
@@ -87,22 +71,19 @@ export const DialogCreateWhatsappTemplate: FC<
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className={className}>Novo nome de template</Button>
+        <Button>
+          <Plus className="mr-2 h-4 w-4" />
+          Novo template
+        </Button>
       </DialogTrigger>
 
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Novo nome de template</DialogTitle>
-          <DialogDescription>
-            Cadastre um nome de template do WhatsApp para este cliente.
-          </DialogDescription>
+          <DialogTitle>Novo template</DialogTitle>
+          <DialogDescription>Cadastre um nome de template do WhatsApp para este cliente.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(handleSubmit)}
-            className="grid gap-4"
-            id="form"
-          >
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="grid gap-4" id="form">
             <FormField
               control={form.control}
               name="name"
@@ -124,10 +105,7 @@ export const DialogCreateWhatsappTemplate: FC<
                 <FormItem>
                   <FormLabel>Descrição</FormLabel>
                   <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="Descrição (opcional)"
-                    />
+                    <Input {...field} placeholder="Descrição (opcional)" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -137,11 +115,7 @@ export const DialogCreateWhatsappTemplate: FC<
         </Form>
 
         <DialogFooter>
-          <Button
-            type="submit"
-            form="form"
-            disabled={createWhatsappTemplate.isPending}
-          >
+          <Button type="submit" form="form" disabled={createWhatsappTemplate.isPending}>
             Salvar
           </Button>
         </DialogFooter>

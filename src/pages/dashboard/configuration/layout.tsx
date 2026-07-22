@@ -34,7 +34,6 @@ export const EditClientLayout = () => {
         </TabsList>
         <TabsContent value="whatsapp" className="space-y-5">
           <WhatsappCategory />
-          <WhatsappTemplate />
           <WhatsappConfiguration />
           <WhatsappAiConfiguration />
           <WhatsappTemplate/>

@@ -1,11 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { templateService } from "@/services/api/templateService";
 import { formatShortId } from "@/utils/formatString";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { FileText, Plus } from "lucide-react";
+import { FileText} from "lucide-react";
 import { useParams } from "react-router";
+import { DialogCreateWhatsappTemplate } from "./components/dialogCreateWhatsappTemplate";
 
 export const WhatsappTemplate = () => {
   const { clientId } = useParams();
@@ -24,10 +24,7 @@ export const WhatsappTemplate = () => {
           <CardTitle>Templates</CardTitle>
           <CardDescription>Gerencie os templates do WhatsApp para este cliente.</CardDescription>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo template
-        </Button>
+        <DialogCreateWhatsappTemplate clientId={clientId!}/>
       </CardHeader>
       <CardContent>
         {findAllWhatsappTemplatesQuery.isLoading && <p>Carregando...</p>}
