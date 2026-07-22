@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { templateService } from "@/services/api/templateService";
 import { requestErrorHandling } from "@/utils/request";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type FC } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { toast } from "sonner";
@@ -43,10 +43,15 @@ export const DialogCreateWhatsappTemplate: FC<
 > = ({ clientId, className }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
+  const queryClient = useQueryClient();
+
   const createWhatsappTemplate = useMutation({
     mutationFn: templateService.create,
     onError: requestErrorHandling,
     onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["whatsappTemplates", clientId],
+      });
       toast.success("Nome de template criado com sucesso");
       setIsOpen(false);
     },
@@ -96,7 +101,7 @@ export const DialogCreateWhatsappTemplate: FC<
           <form
             onSubmit={form.handleSubmit(handleSubmit)}
             className="grid gap-4"
-            id="form-create-whatsapp-template"
+            id="form"
           >
             <FormField
               control={form.control}
@@ -134,7 +139,7 @@ export const DialogCreateWhatsappTemplate: FC<
         <DialogFooter>
           <Button
             type="submit"
-            form="form-create-whatsapp-template"
+            form="form"
             disabled={createWhatsappTemplate.isPending}
           >
             Salvar
