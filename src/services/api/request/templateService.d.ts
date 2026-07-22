@@ -1,3 +1,4 @@
+
 type CreateWhatsappTemplateRequestData = {
   params: CreateWhatsappTemplateRequestParams;
   body: CreateWhatsappTemplateRequestBody;
@@ -11,3 +12,12 @@ type CreateWhatsappTemplateRequestBody = {
 type CreateWhatsappTemplateRequestParams = {
   clientId: string;
 };
+
+type FindClientByIdRequestParams = {
+  clientId: string;
+};
+
+type FindClientByIdRequestData = {
+  params: FindClientByIdRequestParams;
+};
+

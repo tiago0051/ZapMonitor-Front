@@ -37,6 +37,7 @@ export const EditClientLayout = () => {
           <WhatsappTemplate />
           <WhatsappConfiguration />
           <WhatsappAiConfiguration />
+          <WhatsappTemplate/>
         </TabsContent>
         <TabsContent value="account">
           <ChangePasswordForm />
