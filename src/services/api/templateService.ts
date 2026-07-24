@@ -10,4 +10,9 @@ export const templateService = {
     const response = await api.get<WhatsappTemplate[]>(`/client/${params.clientId}/template`);
     return response.data;
   },
+
+  delete: async ({ params }: DeleteWhatsappTemplateRequestData): Promise<void> => {
+    const response = await api.delete(`/client/${params.clientId}/template/template/${params.templateId}`);
+    return response.data;
+  },
 };

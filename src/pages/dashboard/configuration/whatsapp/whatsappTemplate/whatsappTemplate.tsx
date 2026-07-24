@@ -3,9 +3,10 @@ import { templateService } from "@/services/api/templateService";
 import { formatShortId } from "@/utils/formatString";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { FileText} from "lucide-react";
+import { FileText } from "lucide-react";
 import { useParams } from "react-router";
 import { DialogCreateWhatsappTemplate } from "./components/dialogCreateWhatsappTemplate";
+import { DialogDeleteWhatsappTemplate } from "./components/dialogDeleteWhatsappTemplate";
 
 export const WhatsappTemplate = () => {
   const { clientId } = useParams();
@@ -35,11 +36,14 @@ export const WhatsappTemplate = () => {
         {templates && templates.length > 0 && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {templates.map((template) => (
-              <div key={template.id} className="flex flex-col justify-between rounded-lg border p-4 shadow-sm">
+              <div key={template.id} className="bg-card text-card-foreground flex flex-col justify-between rounded-xl border p-4 shadow-xs">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <FileText className="text-primary h-5 w-5 shrink-0" />
-                    <h3 className="truncate text-base font-semibold">{template.name}</h3>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <FileText className="text-primary h-5 w-5 shrink-0" />
+                      <h3 className="truncate text-base font-semibold">{template.name}</h3>
+                    </div>
+                    <DialogDeleteWhatsappTemplate clientId={clientId!} templateId={template.id} />
                   </div>
                   <p className="text-muted-foreground mt-1 text-sm">{template.description}</p>
                 </div>
