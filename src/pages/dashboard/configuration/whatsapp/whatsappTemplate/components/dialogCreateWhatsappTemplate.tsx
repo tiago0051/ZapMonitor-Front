@@ -24,7 +24,7 @@ const schema = z.object({
 
 type SchemaType = z.infer<typeof schema>;
 
-export const DialogCreateWhatsappTemplate: FC<DialogCreateWhatsappTemplateProps> = ({ clientId}) => {
+export const DialogCreateWhatsappTemplate: FC<DialogCreateWhatsappTemplateProps> = ({ clientId }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
   const queryClient = useQueryClient();
@@ -36,7 +36,7 @@ export const DialogCreateWhatsappTemplate: FC<DialogCreateWhatsappTemplateProps>
       queryClient.invalidateQueries({
         queryKey: ["whatsappTemplates", clientId],
       });
-      toast.success("Nome de template criado com sucesso");
+      toast.success("Template cadastrado com sucesso!");
       setIsOpen(false);
     },
   });
@@ -51,13 +51,8 @@ export const DialogCreateWhatsappTemplate: FC<DialogCreateWhatsappTemplateProps>
   });
 
   const handleSubmit: SubmitHandler<SchemaType> = (data) => {
-    const description = data.description?.trim();
-
     createWhatsappTemplate.mutate({
-      body: {
-        name: data.name.trim(),
-        ...(description ? { description } : {}),
-      },
+      body: data,
       params: { clientId },
     });
   };
