@@ -100,14 +100,14 @@ export const WhatsappChatMessageList = ({
           ))}
       </div>
 
-      {isReplyTimeExpired ? (
+      {contactService.canBeSentMessage && (
+        <WhatsappChatCreateMessageBar contactService={contactService} whatsappConfigurationId={whatsappConfigurationId} />
+      )}
+
+      {isReplyTimeExpired && !contactService.canBeSentMessage && (
         <div className="w-full pt-2">
           <DialogSendTemplate contactService={contactService} whatsappConfigurationId={whatsappConfigurationId} />
         </div>
-      ) : (
-        contactService.canBeSentMessage && (
-          <WhatsappChatCreateMessageBar contactService={contactService} whatsappConfigurationId={whatsappConfigurationId} />
-        )
       )}
     </div>
   );
