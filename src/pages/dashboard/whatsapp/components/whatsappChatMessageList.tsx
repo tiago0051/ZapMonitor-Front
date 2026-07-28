@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { WhatsappChatCreateMessageBar } from "./whatsappChatCreateMessageBar";
 import { useSocketContext } from "@/context/SocketContext/socketContext";
+import { isBefore } from "date-fns";
+import { DialogSendTemplate } from "./dialogSendTemplate";
 
 type WhatsappChatMessageListProps = {
   contactService: WhatsappContactService;
@@ -77,6 +79,8 @@ export const WhatsappChatMessageList = ({
     setNewMessagesList([]);
   }, [findAllWhatsappMessagesByContact.data]);
 
+  const isReplyTimeExpired = replyTimeExpiredAt ? isBefore(new Date(replyTimeExpiredAt), new Date()) : false;
+
   return (
     <div className={cn(className, "grid h-full grid-rows-[auto_min-content] overflow-hidden pt-4")}>
       <div onScroll={onScrollChat} className="flex max-h-full flex-col-reverse gap-2 overflow-auto px-4">
@@ -96,12 +100,14 @@ export const WhatsappChatMessageList = ({
           ))}
       </div>
 
-      {contactService.canBeSentMessage || replyTimeExpiredAt && (
-        <WhatsappChatCreateMessageBar
-          contactService={contactService}
-          whatsappConfigurationId={whatsappConfigurationId}
-          replyTimeExpiredAt={replyTimeExpiredAt}
-        />
+      {isReplyTimeExpired ? (
+        <div className="w-full pt-2">
+          <DialogSendTemplate contactService={contactService} whatsappConfigurationId={whatsappConfigurationId} />
+        </div>
+      ) : (
+        contactService.canBeSentMessage && (
+          <WhatsappChatCreateMessageBar contactService={contactService} whatsappConfigurationId={whatsappConfigurationId} />
+        )
       )}
     </div>
   );
