@@ -123,11 +123,4 @@ export const whatsappService = {
     const response = await api.put(`/client/${params.clientId}/whatsapp/contact/${params.contactId}`, body);
     return response.data;
   },
-  sendTemplate: async ({ params, body }: SendTemplateRequestData) => {
-    const response = await api.post(
-      `/client/${params.clientId}/whatsapp/contact/${params.contactId}/configuration/${params.configurationId}/template`,
-      body,
-    );
-    return response.data;
-  },
 };

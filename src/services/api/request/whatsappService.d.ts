@@ -252,21 +252,3 @@ type UpdateContactRequestBody = {
   surname: string;
 };
 //#endregion
-
-//#region Send Template
-type SendTemplateRequestData = {
-  params: SendTemplateRequestParams;
-  body: SendTemplateRequestBody;
-};
-
-type SendTemplateRequestParams = {
-  clientId: string;
-  contactId: string;
-  configurationId: string;
-};
-
-type SendTemplateRequestBody = {
-  templateId: string;
-};
-
-//#endregion
