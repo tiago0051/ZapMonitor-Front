@@ -13,16 +13,10 @@ import { useSocketContext } from "@/context/SocketContext/socketContext";
 type WhatsappChatMessageListProps = {
   contactService: WhatsappContactService;
   whatsappConfigurationId: string;
-  replyTimeExpiredAt: string;
   className?: string;
 };
 
-export const WhatsappChatMessageList = ({
-  contactService,
-  whatsappConfigurationId,
-  replyTimeExpiredAt,
-  className,
-}: WhatsappChatMessageListProps) => {
+export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationId, className }: WhatsappChatMessageListProps) => {
   const { socket, isConnected } = useSocketContext();
   const { user } = useUserContext();
   const { client } = useClientContext();
@@ -96,12 +90,8 @@ export const WhatsappChatMessageList = ({
           ))}
       </div>
 
-      {contactService.canBeSentMessage || replyTimeExpiredAt && (
-        <WhatsappChatCreateMessageBar
-          contactService={contactService}
-          whatsappConfigurationId={whatsappConfigurationId}
-          replyTimeExpiredAt={replyTimeExpiredAt}
-        />
+      {contactService.canBeSentMessage && (
+        <WhatsappChatCreateMessageBar contactService={contactService} whatsappConfigurationId={whatsappConfigurationId} />
       )}
     </div>
   );
