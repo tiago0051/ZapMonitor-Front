@@ -9,14 +9,22 @@ import { cn } from "@/lib/utils";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { WhatsappChatCreateMessageBar } from "./whatsappChatCreateMessageBar";
 import { useSocketContext } from "@/context/SocketContext/socketContext";
+import { isBefore } from "date-fns";
+import { DialogSendTemplate } from "./dialogSendTemplate";
 
 type WhatsappChatMessageListProps = {
   contactService: WhatsappContactService;
   whatsappConfigurationId: string;
+  replyTimeExpiredAt: string;
   className?: string;
 };
 
-export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationId, className }: WhatsappChatMessageListProps) => {
+export const WhatsappChatMessageList = ({
+  contactService,
+  whatsappConfigurationId,
+  replyTimeExpiredAt,
+  className,
+}: WhatsappChatMessageListProps) => {
   const { socket, isConnected } = useSocketContext();
   const { user } = useUserContext();
   const { client } = useClientContext();
@@ -71,6 +79,8 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
     setNewMessagesList([]);
   }, [findAllWhatsappMessagesByContact.data]);
 
+  const isReplyTimeExpired = replyTimeExpiredAt ? isBefore(new Date(replyTimeExpiredAt), new Date()) : false;
+
   return (
     <div className={cn(className, "grid h-full grid-rows-[auto_min-content] overflow-hidden pt-4")}>
       <div onScroll={onScrollChat} className="flex max-h-full flex-col-reverse gap-2 overflow-auto px-4">
@@ -92,6 +102,12 @@ export const WhatsappChatMessageList = ({ contactService, whatsappConfigurationI
 
       {contactService.canBeSentMessage && (
         <WhatsappChatCreateMessageBar contactService={contactService} whatsappConfigurationId={whatsappConfigurationId} />
+      )}
+
+      {isReplyTimeExpired && !contactService.canBeSentMessage && (
+        <div className="w-full pt-2">
+          <DialogSendTemplate contactService={contactService} whatsappConfigurationId={whatsappConfigurationId} />
+        </div>
       )}
     </div>
   );
