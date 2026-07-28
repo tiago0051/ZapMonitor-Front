@@ -5,7 +5,7 @@ import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
 import { formatShortName } from "@/utils/formatString";
 import { format } from "date-fns";
 import { useEffect, useState, type FC } from "react";
-import { FiDownload } from "react-icons/fi";
+import { FiAlertTriangle, FiDownload } from "react-icons/fi";
 import { IoCheckmarkDoneOutline, IoCheckmarkOutline, IoTimeOutline } from "react-icons/io5";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -115,6 +115,9 @@ export const WhatsappChatMessageListItem: FC<WhatsappChatMessageListItemProps> =
               {status === WhatsappMessageStatus.SENT && <IoCheckmarkOutline />}
               {status === WhatsappMessageStatus.DELIVERED && <IoCheckmarkDoneOutline />}
               {status === WhatsappMessageStatus.READ && <IoCheckmarkDoneOutline className="text-blue-500" />}
+              {(status === WhatsappMessageStatus.SENDING_ERROR || status === WhatsappMessageStatus.FAILED) && (
+                <FiAlertTriangle className="text-red-500" />
+              )}
             </>
           )}
         </div>
