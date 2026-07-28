@@ -12,16 +12,25 @@ import { type ChangeEvent, type FC, useEffect, useRef, useState } from "react";
 import { FiFile, FiImage, FiMic, FiPaperclip, FiSend, FiStopCircle, FiX } from "react-icons/fi";
 import { useReactMediaRecorder } from "react-media-recorder";
 import { toast } from "sonner";
+import { isBefore } from "date-fns";
+import { DialogSendTemplate } from "./dialogSendTemplate";
 
 type WhatsappChatCreateMessageBarProps = {
   contactService: WhatsappContactService;
   whatsappConfigurationId: string;
+  replyTimeExpiredAt?: string;
 };
 
-export const WhatsappChatCreateMessageBar: FC<WhatsappChatCreateMessageBarProps> = ({ contactService, whatsappConfigurationId }) => {
+export const WhatsappChatCreateMessageBar: FC<WhatsappChatCreateMessageBarProps> = ({
+  contactService,
+  whatsappConfigurationId,
+  replyTimeExpiredAt,
+}) => {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const { client } = useClientContext();
+
+  const isReplyTimeExpired = replyTimeExpiredAt ? isBefore(new Date(replyTimeExpiredAt), new Date()) : false;
 
   const defaultMessage = {
     type: WhatsappMessageContentType.TEXT,
@@ -195,6 +204,14 @@ export const WhatsappChatCreateMessageBar: FC<WhatsappChatCreateMessageBarProps>
     }
   }, [error]);
 
+  if (isReplyTimeExpired) {
+    return (
+      <div className="w-full pt-2">
+        <DialogSendTemplate contactService={contactService} whatsappConfigurationId={whatsappConfigurationId} />
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center gap-2 pt-2">
       {!isRecording && messageIsText && (
@@ -239,48 +256,47 @@ export const WhatsappChatCreateMessageBar: FC<WhatsappChatCreateMessageBarProps>
           <p className="text-destructive">Gravando áudio...</p>
         </div>
       )}
-      <div className="flex gap-1">
-        {!isRecording && (
-          <Button type="button" onClick={handleSendMessage} disabled={disableButtonSendMessage} aria-label="Enviar mensagem" size={"icon"}>
-            <FiSend />
-          </Button>
-        )}
-        {messageIsText && (
-          <Button
-            type="button"
-            onClick={() => (isRecording ? stopRecording() : startRecording())}
-            disabled={disabledMessage}
-            variant={isRecording ? "destructive" : "outline"}
-            aria-label="Enviar áudio"
-            size={"icon"}
-          >
-            {!isRecording && <FiMic />}
-            {isRecording && <FiStopCircle />}
-          </Button>
-        )}
-        {!isRecording && messageIsText && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild disabled={isRecording}>
-              <Button variant={"outline"} size={"icon"} disabled={disabledMessage}>
-                <FiPaperclip />
-              </Button>
-            </DropdownMenuTrigger>
 
-            <DropdownMenuContent>
-              <DropdownMenuItem
-                onClick={() => selectMediaMessageClick(WhatsappMessageContentType.DOCUMENT, whatsappContants.DOCUMENT_TYPES)}
-              >
-                <FiFile />
-                Documento
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => selectMediaMessageClick(WhatsappMessageContentType.IMAGE, whatsappContants.IMAGE_TYPES)}>
-                <FiImage />
-                Imagem
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </div>
+      {!isRecording && (
+        <Button type="button" onClick={handleSendMessage} disabled={disableButtonSendMessage} aria-label="Enviar mensagem" size={"icon"}>
+          <FiSend />
+        </Button>
+      )}
+
+      {messageIsText && (
+        <Button
+          type="button"
+          onClick={() => (isRecording ? stopRecording() : startRecording())}
+          disabled={disabledMessage}
+          variant={isRecording ? "destructive" : "outline"}
+          aria-label="Enviar áudio"
+          size={"icon"}
+        >
+          {!isRecording && <FiMic />}
+          {isRecording && <FiStopCircle />}
+        </Button>
+      )}
+
+      {!isRecording && messageIsText && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild disabled={isRecording}>
+            <Button variant={"outline"} size={"icon"} disabled={disabledMessage}>
+              <FiPaperclip />
+            </Button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => selectMediaMessageClick(WhatsappMessageContentType.DOCUMENT, whatsappContants.DOCUMENT_TYPES)}>
+              <FiFile />
+              Documento
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => selectMediaMessageClick(WhatsappMessageContentType.IMAGE, whatsappContants.IMAGE_TYPES)}>
+              <FiImage />
+              Imagem
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
   );
 };
