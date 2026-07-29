@@ -5,4 +5,5 @@ export enum WhatsappMessageStatus {
   DELIVERED = 3,
   READ = 4,
   FAILED = 5,
+  SENDING_ERROR = 6,
 }

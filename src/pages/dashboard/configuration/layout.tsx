@@ -5,6 +5,7 @@ import { useParams } from "react-router";
 import { WhatsappConfiguration } from "./whatsapp/whatsappConfiguration/whatsappConfiguration";
 import { WhatsappCategory } from "./whatsapp/whatsappCategory/whatsappCategory";
 import { WhatsappAiConfiguration } from "./whatsapp/whatsappAi/whatsappAiConfiguration";
+import { WhatsappTemplate } from "./whatsapp/whatsappTemplate/whatsappTemplate";
 import { ChangePasswordForm } from "@/components/change-password-form";
 
 export const EditClientLayout = () => {
@@ -35,6 +36,7 @@ export const EditClientLayout = () => {
           <WhatsappCategory />
           <WhatsappConfiguration />
           <WhatsappAiConfiguration />
+          <WhatsappTemplate/>
         </TabsContent>
         <TabsContent value="account">
           <ChangePasswordForm />

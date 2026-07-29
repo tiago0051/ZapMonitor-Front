@@ -35,6 +35,7 @@ export const DialogWhatsappChat = ({ contactMessage }: DialogWhatsappChatProps) 
         <WhatsappChatMessageList
           className="col-span-2"
           contactService={contactService}
+          replyTimeExpiredAt={contactMessage.replyTimeExpiredAt}
           whatsappConfigurationId={contactMessage.whatsappConfigurationId}
         />
 
