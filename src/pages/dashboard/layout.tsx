@@ -22,9 +22,7 @@ export const DashboardLayout = () => {
           </div>
         )}
         {!isConnected && <div className="absolute w-full bg-yellow-300 p-2">Desconectado</div>}
-        <div className="flex size-full flex-col overflow-hidden bg-gray-50 p-6">
-          <Outlet />
-        </div>
+        <Outlet />
       </SidebarInset>
     </SidebarProvider>
   );

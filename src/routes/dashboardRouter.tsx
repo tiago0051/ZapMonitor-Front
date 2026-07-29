@@ -3,7 +3,6 @@ import { Navigate, Route, Routes, useParams } from "react-router";
 import { HomePage } from "../pages/dashboard/home/home";
 import { DashboardLayout } from "@/pages/dashboard/layout";
 import { ClientProvider } from "@/context/ClientContext/clientProvider";
-import { EventsProvider } from "@/context/EventsContext/eventsProvider";
 import { SocketProvider } from "@/context/SocketContext/socketProvider";
 
 const WhatsappRouter = lazy(() => import("./whatsappRouter"));
@@ -19,13 +18,11 @@ export const DashboardRouter: FC = () => {
     <Routes>
       <Route element={<SocketProvider />}>
         <Route element={<ClientProvider />}>
-          <Route element={<EventsProvider />}>
-            <Route element={<DashboardLayout />}>
-              <Route index element={<HomePage />} />
-              <Route path="configuration/*" element={<ConfigurationRouter />} />
-              <Route path="email/*" element={<EmailRouter />} />
-              <Route path="whatsapp/*" element={<WhatsappRouter />} />
-            </Route>
+          <Route element={<DashboardLayout />}>
+            <Route index element={<HomePage />} />
+            <Route path="configuration/*" element={<ConfigurationRouter />} />
+            <Route path="email/*" element={<EmailRouter />} />
+            <Route path="whatsapp/*" element={<WhatsappRouter />} />
           </Route>
         </Route>
       </Route>

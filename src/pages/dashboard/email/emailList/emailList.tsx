@@ -30,13 +30,13 @@ export const EmailList = () => {
   const columns = getColumns();
 
   return (
-    <>
+    <div className="p-6">
       <div className="flex justify-between">
         <h1>Lista de emails</h1>
       </div>
       {findAllClientQuery.isLoading && <p>Loading...</p>}
       {findAllClientQuery.isError && <p>Error fetching emails</p>}
       {emailsList && <DataTablePaginate columns={columns} data={emailsList} onPaginationChange={setPagination} pagination={pagination} />}
-    </>
+    </div>
   );
 };
