@@ -83,12 +83,17 @@ type FindAllWhatsappMessageCategoryRequestParams = {
 
 //#region findAllContactMessagesByUser
 type FindAllWhatsappContactMessagesRequestData = {
-  queries: PaginateRequestQuery;
+  queries: FindAllWhatsappContactMessagesRequestQuery;
   params: FindAllWhatsappContactMessagesRequestParams;
 };
 
 type FindAllWhatsappContactMessagesRequestParams = {
   clientId: string;
+};
+
+type FindAllWhatsappContactMessagesRequestQuery = PaginateRequestQuery & {
+  text: string;
+  tab: "queue" | "mine" | "all";
 };
 //#endregion
 
