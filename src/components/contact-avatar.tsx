@@ -27,7 +27,7 @@ const getAvatarColorByInitial = (initial: string) => {
 };
 
 export const ContactAvatar: FC<ContactAvatarProps> = ({ contact, size, className }) => {
-  const contactInitial = useMemo(() => formatAcronym(contact.surname || contact.name || ""), [contact.surname, contact.name]);
+  const contactInitial = useMemo(() => formatAcronym(contact.surname || contact.name || "") || "SN", [contact.surname, contact.name]);
   const avatarColor = useMemo(() => getAvatarColorByInitial(contactInitial), [contactInitial]);
 
   const sz = size === "sm" ? "w-8 h-8 text-xs" : "w-10 h-10 text-sm";

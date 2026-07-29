@@ -52,8 +52,9 @@ export const ContactCard: FC<ContactCardProps> = ({ contact, active, onClick }) 
 
   const expirationStatus = useMemo(() => getExpirationStatus(), [getExpirationStatus]);
   const isIncoming = contact.messageType === WhatsappMessageType.INCOMING;
-  const messageCreatedAt =
-    typeof contact.messageCreatedAt === "string" ? contact.messageCreatedAt : format(contact.messageCreatedAt, "dd/MM/yy HH:mm");
+  const messageCreatedAt = format(contact.messageCreatedAt, "dd/MM/yy HH:mm");
+
+  const nameToPresentation = contact.surname.trim() || contact.name.trim() || "Sem nome";
 
   return (
     <button
@@ -66,7 +67,7 @@ export const ContactCard: FC<ContactCardProps> = ({ contact, active, onClick }) 
         <ContactAvatar contact={contact} />
         <div className="min-w-0 flex-1">
           <div className="mb-0.5 flex items-center justify-between gap-1">
-            <span className="text-foreground truncate text-sm font-semibold">{contact.name || "Sem nome"}</span>
+            <span className="text-foreground truncate text-sm font-semibold">{nameToPresentation}</span>
             <span className="text-muted-foreground flex-shrink-0 text-[11px]">{messageCreatedAt}</span>
           </div>
           <Message isIncoming={isIncoming} messageContentType={contact.messageContentType}>

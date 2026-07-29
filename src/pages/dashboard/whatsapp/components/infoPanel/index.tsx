@@ -1,6 +1,6 @@
 import { ContactAvatar } from "@/components/contact-avatar";
 import { Bot, FileText, Tag } from "lucide-react";
-import { formatPhoneNumber } from "@/utils/formatString";
+import { formatBoldText, formatPhoneNumber, formatShortId } from "@/utils/formatString";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { whatsappService } from "@/services/api/whatsappService";
 import { useClientContext } from "@/context/ClientContext/clientContext";
@@ -88,7 +88,9 @@ export function InfoPanel({
               <span className="text-foreground text-xs font-semibold">Análise automática</span>
             </div>
             {aiSummary ? (
-              <p className="text-muted-foreground bg-muted rounded-xl p-3 text-xs leading-relaxed">{aiSummary}</p>
+              <pre className="text-muted-foreground bg-muted rounded-xl p-3 text-xs leading-relaxed hyphens-auto whitespace-pre-wrap">
+                {formatBoldText(aiSummary)}
+              </pre>
             ) : (
               <p className="text-muted-foreground text-xs">Sem resumo disponível.</p>
             )}
@@ -119,13 +121,17 @@ export function InfoPanel({
                 {services.map((p) => (
                   <div key={p.id} className="border-border bg-card rounded-xl border p-3">
                     <div className="mb-1.5 flex items-center justify-between">
-                      <span className="text-foreground text-xs font-semibold">{p.id}</span>
+                      <span className="text-foreground text-xs font-semibold uppercase">P-{formatShortId(p.id)}</span>
                       <div className="flex items-center gap-1">
                         <StatusDot status={p.finished ? "resolved" : "open"} />
                         <span className="text-muted-foreground text-[10px]">{p.finished ? "Resolvido" : "Aberto"}</span>
                       </div>
                     </div>
-                    {p?.aiResume && <p className="text-muted-foreground mb-2 text-[11px] leading-relaxed">{p.aiResume}</p>}
+                    {p?.aiResume && (
+                      <pre className="text-muted-foreground mb-2 text-[11px] leading-relaxed hyphens-auto whitespace-pre-wrap">
+                        {formatBoldText(p.aiResume)}
+                      </pre>
+                    )}
 
                     {p.actions.map((action) => (
                       <div
