@@ -26,15 +26,25 @@ function ContactListPanel({
 }) {
   const { client } = useClientContext();
 
+  const contactsStatsQuery = useQuery({
+    queryFn: async () =>
+      whatsappService.findContactsStats({
+        params: {
+          clientId: client.id,
+        },
+      }),
+    queryKey: ["whatsapp", "contactsStats"],
+  });
+
   const contactsMessageQuery = useQuery({
     queryFn: async () =>
-      whatsappService.findAllContactMessages({
+      whatsappService.findAllContacts({
         params: {
           clientId: client.id,
         },
         queries: {
           page: 1,
-          take: 10,
+          take: -1,
           tab,
           text: search,
         },
@@ -42,8 +52,8 @@ function ContactListPanel({
     queryKey: ["whatsapp", "contacts"],
   });
 
-  const queueContactsLength = 0;
-  const myContactsLength = 0;
+  const queueContactsLength = contactsStatsQuery.data?.queueCount ?? 0;
+  const myContactsLength = contactsStatsQuery.data?.myCount ?? 0;
 
   const contacts = contactsMessageQuery.data?.items ?? [];
 

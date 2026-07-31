@@ -41,13 +41,23 @@ export const whatsappService = {
     });
     return response.data;
   },
-  findAllContactMessages: async ({
+  findAllContacts: async ({
     queries,
     params,
   }: FindAllWhatsappContactMessagesRequestData): Promise<PaginatedResponse<WhatsappContactMessage>> => {
-    const response = await api.get(`/client/${params.clientId}/whatsapp/message`, {
+    const response = await api.get(`/client/${params.clientId}/whatsapp/contact`, {
       params: queries,
     });
+
+    return response.data;
+  },
+  findContactsStats: async ({
+    params,
+  }: FindAllWhatsappContactMessagesStatsRequestData): Promise<{
+    queueCount: number;
+    myCount: number;
+  }> => {
+    const response = await api.get(`/client/${params.clientId}/whatsapp/contact/stats`);
 
     return response.data;
   },

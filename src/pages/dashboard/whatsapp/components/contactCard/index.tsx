@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { useCallback, useMemo, type DetailedHTMLProps, type FC } from "react";
 import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
 import { cn } from "@/lib/utils";
-import { differenceInHours, differenceInMinutes, format } from "date-fns";
+import { differenceInHours, differenceInMinutes } from "date-fns";
 import { AlertCircle } from "lucide-react";
 import { Message } from "./components/message";
 import { ContactAvatar } from "@/components/contact-avatar";
@@ -52,9 +52,8 @@ export const ContactCard: FC<ContactCardProps> = ({ contact, active, onClick }) 
 
   const expirationStatus = useMemo(() => getExpirationStatus(), [getExpirationStatus]);
   const isIncoming = contact.messageType === WhatsappMessageType.INCOMING;
-  const messageCreatedAt = format(contact.messageCreatedAt, "dd/MM/yy HH:mm");
 
-  const nameToPresentation = contact.surname.trim() || contact.name.trim() || "Sem nome";
+  const nameToPresentation = contact.surname?.trim() || contact.name?.trim() || "Sem nome";
 
   return (
     <button
@@ -68,7 +67,12 @@ export const ContactCard: FC<ContactCardProps> = ({ contact, active, onClick }) 
         <div className="min-w-0 flex-1">
           <div className="mb-0.5 flex items-center justify-between gap-1">
             <span className="text-foreground truncate text-sm font-semibold">{nameToPresentation}</span>
-            <span className="text-muted-foreground flex-shrink-0 text-[11px]">{messageCreatedAt}</span>
+            {expirationStatus && (
+              <Badge variant="outline" className={cn("flex items-center gap-1 text-xs", expirationStatus.color)}>
+                <AlertCircle className={cn("h-3 w-3", expirationStatus.icon)} />
+                {expirationStatus.label}
+              </Badge>
+            )}
           </div>
           <Message isIncoming={isIncoming} messageContentType={contact.messageContentType}>
             {contact.messageContent}
@@ -87,12 +91,6 @@ export const ContactCard: FC<ContactCardProps> = ({ contact, active, onClick }) 
               <span className="text-muted-foreground bg-muted rounded px-1.5 py-0.5 text-[10px] leading-none font-semibold">
                 +{contact.categories.length - 2}
               </span>
-            )}
-            {expirationStatus && (
-              <Badge variant="outline" className={cn("flex items-center gap-1 text-xs", expirationStatus.color)}>
-                <AlertCircle className={cn("h-3 w-3", expirationStatus.icon)} />
-                {expirationStatus.label}
-              </Badge>
             )}
             {!contact.isRead && (
               <span className="ml-auto flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-green-500 text-[10px] font-bold text-white">

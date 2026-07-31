@@ -81,7 +81,7 @@ type FindAllWhatsappMessageCategoryRequestParams = {
   clientId: string;
 };
 
-//#region findAllContactMessagesByUser
+//#region findAllContacts
 type FindAllWhatsappContactMessagesRequestData = {
   queries: FindAllWhatsappContactMessagesRequestQuery;
   params: FindAllWhatsappContactMessagesRequestParams;
@@ -94,6 +94,16 @@ type FindAllWhatsappContactMessagesRequestParams = {
 type FindAllWhatsappContactMessagesRequestQuery = PaginateRequestQuery & {
   text: string;
   tab: "queue" | "mine" | "all";
+};
+//#endregion
+
+//#region findAllContactsStats
+type FindAllWhatsappContactMessagesStatsRequestData = {
+  params: FindAllWhatsappContactMessagesStatsRequestParams;
+};
+
+type FindAllWhatsappContactMessagesStatsRequestParams = {
+  clientId: string;
 };
 //#endregion
 
