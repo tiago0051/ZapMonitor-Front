@@ -79,7 +79,7 @@ export const WhatsappChatMessageList = ({
     setNewMessagesList([]);
   }, [findAllWhatsappMessagesByContact.data]);
 
-  const isReplyTimeExpired = replyTimeExpiredAt ? isBefore(new Date(replyTimeExpiredAt), new Date()) : false;
+  const isReplyTimeExpired = replyTimeExpiredAt ? isBefore(new Date(replyTimeExpiredAt), new Date()) : true;
 
   return (
     <div className={cn(className, "grid h-full grid-rows-[auto_min-content] overflow-hidden pt-4")}>
