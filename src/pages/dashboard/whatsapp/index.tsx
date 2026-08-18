@@ -1,13 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MessageSquare, Search, X, ArrowLeft } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { whatsappService } from "@/services/api/whatsappService";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { ContactCard } from "./components/contactCard";
 import { InfoPanel } from "./components/infoPanel";
 import { ChatView } from "./components/chatView";
+import { useSocketContext } from "@/context/SocketContext/socketContext";
+import type { ContactUpdate } from "./types/contactUpdate";
 
 // ── Shared sub-panels ────────────────────────────────────────────────────────
+
+const takeItems = 10;
 
 function ContactListPanel({
   tab,
@@ -24,7 +28,10 @@ function ContactListPanel({
   selected: WhatsappContactMessage | null;
   onSelectContact: (contact: WhatsappContactMessage) => void;
 }) {
+  const { socket, isConnected } = useSocketContext();
   const { client } = useClientContext();
+
+  const queryClient = useQueryClient();
 
   const contactsStatsQuery = useQuery({
     queryFn: async () =>
@@ -44,13 +51,39 @@ function ContactListPanel({
         },
         queries: {
           page: 1,
-          take: -1,
+          take: takeItems,
           tab,
           text: search,
         },
       }),
     queryKey: ["whatsapp", "contacts"],
   });
+
+  useEffect(() => {
+    if (isConnected) {
+      socket.on("contacts:update", ({ contact, isNewMessage }: ContactUpdate) => {
+        contactsStatsQuery.refetch();
+
+        queryClient.setQueryData(["whatsapp", "contacts"], ({ items, ...old }: PaginatedResponse<WhatsappContactMessage>) => {
+          const hasContact = items.some((item) => item.id === contact.id);
+
+          if (hasContact)
+            return {
+              ...old,
+              items: items.map((item) => (item.id === contact.id ? contact : item)),
+            };
+
+          const hasPageFull = items.length === takeItems;
+
+          if (!hasContact && !old.canNextPage && !hasPageFull) return { ...old, items: [...items, contact] };
+        });
+      });
+    }
+
+    return () => {
+      socket.off("contacts:update");
+    };
+  }, [isConnected, socket]);
 
   const queueContactsLength = contactsStatsQuery.data?.queueCount ?? 0;
   const myContactsLength = contactsStatsQuery.data?.myCount ?? 0;
@@ -124,6 +157,8 @@ function ContactListPanel({
 type MobileView = "list" | "chat" | "info";
 
 export function Whatsapp() {
+  const { isConnected } = useSocketContext();
+
   const [tab, setTab] = useState<Tab>("queue");
   const [selected, setSelected] = useState<WhatsappContactMessage | null>(null);
   const [rightPanel, setRightPanel] = useState<"summary" | "history">("summary");
@@ -136,47 +171,13 @@ export function Whatsapp() {
   };
 
   return (
-    <div className="bg-background flex h-screen overflow-hidden" style={{ fontFamily: "Inter, sans-serif" }}>
-      {/* ════ DESKTOP LAYOUT (md+) ════ */}
-      <div className="hidden h-full w-full md:flex">
-        {/* Contact list */}
-        <aside className="border-border flex w-80 flex-shrink-0 flex-col border-r">
-          <ContactListPanel
-            tab={tab}
-            setTab={setTab}
-            search={search}
-            setSearch={setSearch}
-            selected={selected}
-            onSelectContact={handleSelectContact}
-          />
-        </aside>
-
-        {/* Conversation + right panel */}
-        {selected ? (
-          <div className="flex min-w-0 flex-1 overflow-hidden">
-            <div className="flex min-w-0 flex-1 flex-col">
-              <ChatView contact={selected} />
-            </div>
-            <aside className="border-border w-72 flex-shrink-0 border-l">
-              <InfoPanel selected={selected} rightPanel={rightPanel} setRightPanel={setRightPanel} />
-            </aside>
-          </div>
-        ) : (
-          <div className="bg-background flex flex-1 items-center justify-center">
-            <div className="text-center">
-              <MessageSquare className="text-muted-foreground mx-auto mb-3 h-10 w-10 opacity-40" />
-              <p className="text-muted-foreground text-sm">Selecione um contato para iniciar</p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ════ MOBILE LAYOUT (<md) ════ */}
-      <div className="flex h-full w-full flex-col md:hidden">
-        {/* Views */}
-        <div className="min-h-0 flex-1 overflow-hidden">
-          {/* List view */}
-          <div className={`h-full ${mobileView === "list" ? "block" : "hidden"}`}>
+    <>
+      {!isConnected && <div className="w-full bg-yellow-300 p-2">Desconectado</div>}
+      <div className="bg-background flex h-screen overflow-hidden" style={{ fontFamily: "Inter, sans-serif" }}>
+        {/* ════ DESKTOP LAYOUT (md+) ════ */}
+        <div className="hidden h-full w-full md:flex">
+          {/* Contact list */}
+          <aside className="border-border flex w-80 flex-shrink-0 flex-col border-r">
             <ContactListPanel
               tab={tab}
               setTab={setTab}
@@ -185,35 +186,72 @@ export function Whatsapp() {
               selected={selected}
               onSelectContact={handleSelectContact}
             />
-          </div>
+          </aside>
 
-          {/* Chat view */}
-          <div className={`h-full ${mobileView === "chat" ? "block" : "hidden"}`}>
-            {!selected && (
-              <div className="flex h-full items-center justify-center">
-                <p className="text-muted-foreground text-sm">Nenhum contato selecionado</p>
+          {/* Conversation + right panel */}
+          {selected ? (
+            <div className="flex min-w-0 flex-1 overflow-hidden">
+              <div className="flex min-w-0 flex-1 flex-col">
+                <ChatView contact={selected} />
               </div>
-            )}
-          </div>
-
-          {/* Info view */}
-          <div className={`flex h-full flex-col ${mobileView === "info" ? "flex" : "hidden"}`}>
-            {/* Back to chat */}
-            <div className="border-border bg-card flex flex-shrink-0 items-center gap-2 border-b px-4 py-3">
-              <button
-                className="hover:bg-muted text-muted-foreground flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
-                onClick={() => setMobileView("chat")}
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </button>
-              <span className="text-foreground text-sm font-semibold">Informações</span>
+              <aside className="border-border w-72 flex-shrink-0 border-l">
+                <InfoPanel selected={selected} rightPanel={rightPanel} setRightPanel={setRightPanel} />
+              </aside>
             </div>
-            <div className="min-h-0 flex-1">
-              {selected ? <InfoPanel selected={selected} rightPanel={rightPanel} setRightPanel={setRightPanel} /> : null}
+          ) : (
+            <div className="bg-background flex flex-1 items-center justify-center">
+              <div className="text-center">
+                <MessageSquare className="text-muted-foreground mx-auto mb-3 h-10 w-10 opacity-40" />
+                <p className="text-muted-foreground text-sm">Selecione um contato para iniciar</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ════ MOBILE LAYOUT (<md) ════ */}
+        <div className="flex h-full w-full flex-col md:hidden">
+          {/* Views */}
+          <div className="min-h-0 flex-1 overflow-hidden">
+            {/* List view */}
+            <div className={`h-full ${mobileView === "list" ? "block" : "hidden"}`}>
+              <ContactListPanel
+                tab={tab}
+                setTab={setTab}
+                search={search}
+                setSearch={setSearch}
+                selected={selected}
+                onSelectContact={handleSelectContact}
+              />
+            </div>
+
+            {/* Chat view */}
+            <div className={`h-full ${mobileView === "chat" ? "block" : "hidden"}`}>
+              {!selected && (
+                <div className="flex h-full items-center justify-center">
+                  <p className="text-muted-foreground text-sm">Nenhum contato selecionado</p>
+                </div>
+              )}
+            </div>
+
+            {/* Info view */}
+            <div className={`flex h-full flex-col ${mobileView === "info" ? "flex" : "hidden"}`}>
+              {/* Back to chat */}
+              <div className="border-border bg-card flex flex-shrink-0 items-center gap-2 border-b px-4 py-3">
+                <button
+                  className="hover:bg-muted text-muted-foreground flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
+                  onClick={() => setMobileView("chat")}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </button>
+                <span className="text-foreground text-sm font-semibold">Informações</span>
+              </div>
+              <div className="min-h-0 flex-1">
+                {selected ? <InfoPanel selected={selected} rightPanel={rightPanel} setRightPanel={setRightPanel} /> : null}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
