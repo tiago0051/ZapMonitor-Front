@@ -56,7 +56,7 @@ function ContactListPanel({
           text: search,
         },
       }),
-    queryKey: ["whatsapp", "contacts"],
+    queryKey: ["whatsapp", "contacts", tab, search],
   });
 
   useEffect(() => {
