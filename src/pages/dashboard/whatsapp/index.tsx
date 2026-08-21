@@ -64,7 +64,11 @@ function ContactListPanel({
       socket.on("contacts:update", ({ contact, isNewMessage }: ContactUpdate) => {
         contactsStatsQuery.refetch();
 
-        queryClient.setQueryData(["whatsapp", "contacts"], ({ items, ...old }: PaginatedResponse<WhatsappContactMessage>) => {
+        queryClient.setQueryData(["whatsapp", "contacts"], (data: PaginatedResponse<WhatsappContactMessage>) => {
+          if (!data) return;
+
+          const { items, ...old } = data;
+
           const hasContact = items.some((item) => item.id === contact.id);
 
           if (hasContact)
@@ -231,6 +235,8 @@ export function Whatsapp() {
                   <p className="text-muted-foreground text-sm">Nenhum contato selecionado</p>
                 </div>
               )}
+
+              {selected && <ChatView contact={selected} />}
             </div>
 
             {/* Info view */}
