@@ -177,7 +177,7 @@ export function Whatsapp() {
   return (
     <>
       {!isConnected && <div className="w-full bg-yellow-300 p-2">Desconectado</div>}
-      <div className="bg-background flex h-screen overflow-hidden" style={{ fontFamily: "Inter, sans-serif" }}>
+      <div className="bg-background flex overflow-hidden" style={{ fontFamily: "Inter, sans-serif" }}>
         {/* ════ DESKTOP LAYOUT (md+) ════ */}
         <div className="hidden h-full w-full md:flex">
           {/* Contact list */}
@@ -229,15 +229,7 @@ export function Whatsapp() {
             </div>
 
             {/* Chat view */}
-            <div className={`h-full ${mobileView === "chat" ? "block" : "hidden"}`}>
-              {!selected && (
-                <div className="flex h-full items-center justify-center">
-                  <p className="text-muted-foreground text-sm">Nenhum contato selecionado</p>
-                </div>
-              )}
-
-              {selected && <ChatView contact={selected} />}
-            </div>
+            <div className={`h-full ${mobileView === "chat" ? "block" : "hidden"}`}>{selected && <ChatView contact={selected} />}</div>
 
             {/* Info view */}
             <div className={`flex h-full flex-col ${mobileView === "info" ? "flex" : "hidden"}`}>
