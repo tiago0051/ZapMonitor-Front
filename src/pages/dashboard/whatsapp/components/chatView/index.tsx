@@ -3,14 +3,18 @@ import { useEffect } from "react";
 import { useSocketContext } from "@/context/SocketContext/socketContext";
 import { Header } from "./components/header";
 import { MessageList } from "./components/messageList";
+import { CreateMessageBar } from "./components/createMessageBar";
+import { useContactService } from "./hooks/useContactService";
 
 type ChatViewProps = {
   contact: WhatsappContactMessage;
+  onServiceAssumed?: () => void;
 };
 
-export const ChatView = ({ contact }: ChatViewProps) => {
+export const ChatView = ({ contact, onServiceAssumed }: ChatViewProps) => {
   const { socket, isConnected } = useSocketContext();
   const { user } = useUserContext();
+  const { contactService } = useContactService({ contactId: contact.id });
 
   useEffect(() => {
     if (user && isConnected) {
@@ -23,16 +27,14 @@ export const ChatView = ({ contact }: ChatViewProps) => {
 
   return (
     <div className={"flex h-full flex-col overflow-hidden"}>
-      <Header contact={contact} />
+      <Header contact={contact} contactService={contactService} onServiceAssumed={onServiceAssumed} />
       <MessageList contact={contact} />
 
-      {/* {contactService.canBeSentMessage && <CreateMessageBar contact={contact} />}
-
-      {isReplyTimeExpired && !contactService.canBeSentMessage && (
-        <div className="w-full pt-2">
-          <DialogSendTemplate contactService={contactService} whatsappConfigurationId={whatsappConfigurationId} />
+      {contactService?.canBeSentMessage && (
+        <div className="px-4 pb-3">
+          <CreateMessageBar contact={contact} />
         </div>
-      )} */}
+      )}
     </div>
   );
 };

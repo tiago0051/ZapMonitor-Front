@@ -4,6 +4,8 @@ import { formatBoldText, formatPhoneNumber, formatShortId } from "@/utils/format
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { whatsappService } from "@/services/api/whatsappService";
 import { useClientContext } from "@/context/ClientContext/clientContext";
+import { useSocketContext } from "@/context/SocketContext/socketContext";
+import { useEffect } from "react";
 
 function StatusDot({ status }: { status: ProtocolStatus }) {
   const colors: Record<ProtocolStatus, string> = {
@@ -24,6 +26,7 @@ export function InfoPanel({
   setRightPanel: (p: "summary" | "history") => void;
 }) {
   const { client } = useClientContext();
+  const { socket, isConnected } = useSocketContext();
 
   const findAllServicesHistoryByContact = useInfiniteQuery({
     queryKey: [`contact-${selected.id}`, "findAllServiceHistoryByContact", { contactId: selected.id }, client.id],
@@ -35,6 +38,18 @@ export function InfoPanel({
     getNextPageParam: (lastPage, allPages) => (lastPage.canNextPage ? allPages.length + 1 : undefined),
     initialPageParam: 1,
   });
+
+  useEffect(() => {
+    const handleServiceUpdate = () => {
+      findAllServicesHistoryByContact.refetch();
+    };
+
+    socket.on(`contact:${selected.id}:service:update`, handleServiceUpdate);
+
+    return () => {
+      socket.off(`contact:${selected.id}:service:update`, handleServiceUpdate);
+    };
+  }, [selected.id, isConnected, socket]);
 
   const services = findAllServicesHistoryByContact.data?.pages.flatMap((page) => page.items) || [];
   const afterService = services[1];

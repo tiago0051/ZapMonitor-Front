@@ -198,7 +198,9 @@ export function Whatsapp() {
             {/* Conversation + right panel */}
             {selected ? (
               <div className="flex min-w-0 flex-1 overflow-hidden">
-                <div className="flex min-w-0 flex-1 flex-col">{<ChatView contact={selected} />}</div>
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <ChatView contact={selected} onServiceAssumed={() => setTab("mine")} />
+                </div>
                 <aside className="border-border w-72 flex-shrink-0 border-l">
                   <InfoPanel selected={selected} rightPanel={rightPanel} setRightPanel={setRightPanel} />
                 </aside>
@@ -232,7 +234,9 @@ export function Whatsapp() {
               </div>
 
               {/* Chat view */}
-              <div className={`h-full ${mobileView === "chat" ? "block" : "hidden"}`}>{selected && <ChatView contact={selected} />}</div>
+              <div className={`h-full ${mobileView === "chat" ? "block" : "hidden"}`}>
+                {selected && <ChatView contact={selected} onServiceAssumed={() => setTab("mine")} />}
+              </div>
 
               {/* Info view */}
               <div className={`flex h-full flex-col ${mobileView === "info" ? "flex" : "hidden"}`}>
