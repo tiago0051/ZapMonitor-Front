@@ -1,10 +1,9 @@
-import { useSocketContext } from "@/context/SocketContext/socketContext";
 import { WhatsappMessageContentType } from "@/enums/whatsappMessageContentType.enum";
 import { WhatsappMessageStatus } from "@/enums/whatsappMessageStatus.enum";
 import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
 import { formatShortName } from "@/utils/formatString";
 import { format } from "date-fns";
-import { useEffect, useState, type FC } from "react";
+import { useState, type FC } from "react";
 import { FiAlertTriangle, FiDownload } from "react-icons/fi";
 import { IoCheckmarkDoneOutline, IoCheckmarkOutline, IoTimeOutline } from "react-icons/io5";
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -46,29 +45,15 @@ const MessageContact = ({ message }: { message: WhatsappMessage<string> }) => <p
 const MessageTemplate = ({ message }: { message: WhatsappMessage<string> }) => <p className="whitespace-pre-wrap">{message.content}</p>;
 
 type MessageItemProps = {
-  contact: WhatsappContactMessage;
   message: WhatsappMessage;
 };
 
-export const MessageItem: FC<MessageItemProps> = ({ message, contact }) => {
-  const { socket, isConnected } = useSocketContext();
-
-  const [status, setStatus] = useState(message.status);
-  const [content, setContent] = useState<string | MessageFileContent>(message.content as string | MessageFileContent);
-  const [transcribedContent, setTranscribedContent] = useState<string | null | undefined>(message.transcribedContent);
+export const MessageItem: FC<MessageItemProps> = ({ message }) => {
   const [isTranscriptionOpen, setIsTranscriptionOpen] = useState(false);
 
-  useEffect(() => {
-    socket.on(`contact:${contact.id}:message:${message.id}`, (data: WhatsappMessage) => {
-      setStatus(data.status);
-      setContent(data.content as string | MessageFileContent);
-      setTranscribedContent(data.transcribedContent);
-    });
-
-    return () => {
-      socket.off(`contact:${contact.id}:message:${message.id}`);
-    };
-  }, [contact.id, message.id, message.type, message.status, isConnected]);
+  const status = message.status;
+  const content = message.content as string | MessageFileContent;
+  const transcribedContent = message.transcribedContent;
 
   return (
     <div
