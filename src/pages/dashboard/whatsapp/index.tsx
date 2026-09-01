@@ -62,7 +62,7 @@ function ContactListPanel({
 
   useEffect(() => {
     if (isConnected) {
-      socket.on("contacts:update", ({ contact, isNewMessage }: ContactUpdate) => {
+      socket.on("contacts:update", ({ contact }: ContactUpdate) => {
         contactsStatsQuery.refetch();
 
         queryClient.setQueryData(["whatsapp", "contacts", tab, search], (data: PaginatedResponse<WhatsappContactMessage>) => {
