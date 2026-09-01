@@ -1,13 +1,10 @@
 "use client";
 
 import {
-  type ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
   type OnChangeFn,
   type PaginationState,
-  useReactTable,
+  type RowData,
+  useTable,
 } from "@tanstack/react-table";
 
 import {
@@ -19,6 +16,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  dataTablePaginateFeatures,
+  type DataTablePaginateColumnDef,
+} from "@/components/ui/dataTablePaginateFeatures";
+import {
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -26,24 +27,23 @@ import {
   PaginationPrevious,
 } from "./pagination";
 
-interface DataTablePaginateProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
+interface DataTablePaginateProps<TData extends RowData> {
+  columns: DataTablePaginateColumnDef<TData>[];
   data: PaginatedResponse<TData>;
   pagination: PaginationState;
   onPaginationChange: OnChangeFn<PaginationState>;
 }
 
-export function DataTablePaginate<TData, TValue>({
+export function DataTablePaginate<TData extends RowData>({
   columns,
   data,
   pagination,
   onPaginationChange,
-}: DataTablePaginateProps<TData, TValue>) {
-  const table = useReactTable({
+}: DataTablePaginateProps<TData>) {
+  const table = useTable({
+    features: dataTablePaginateFeatures,
     data: data.items,
     columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     manualPagination: true,
     rowCount: data.total,
     onPaginationChange,
@@ -61,12 +61,9 @@ export function DataTablePaginate<TData, TValue>({
               {headerGroup.headers.map((header) => {
                 return (
                   <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                    {header.isPlaceholder ? null : (
+                      <table.FlexRender header={header} />
+                    )}
                   </TableHead>
                 );
               })}
@@ -80,9 +77,9 @@ export function DataTablePaginate<TData, TValue>({
                 key={row.id}
                 data-state={row.getIsSelected() && "selected"}
               >
-                {row.getVisibleCells().map((cell) => (
+                {row.getAllCells().map((cell) => (
                   <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    <table.FlexRender cell={cell} />
                   </TableCell>
                 ))}
               </TableRow>

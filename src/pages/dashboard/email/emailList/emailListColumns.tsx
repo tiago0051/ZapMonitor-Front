@@ -1,8 +1,8 @@
-import { type ColumnDef } from "@tanstack/react-table";
+import { type DataTablePaginateColumnDef } from "@/components/ui/dataTablePaginateFeatures";
 import { format } from "date-fns";
 
 export const getColumns = () => {
-  const columns: ColumnDef<EmailMessage>[] = [
+  const columns: DataTablePaginateColumnDef<EmailMessage>[] = [
     {
       accessorKey: "emailTo",
       header: "Enviado para",

@@ -1,8 +1,8 @@
-import { type ColumnDef } from "@tanstack/react-table";
+import { type DataTableColumnDef } from "@/components/ui/dataTableFeatures";
 import { Link } from "react-router";
 
 export const getColumns = () => {
-  const columns: ColumnDef<Client>[] = [
+  const columns: DataTableColumnDef<Client>[] = [
     {
       accessorKey: "name",
       header: "Nome",

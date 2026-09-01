@@ -1,11 +1,11 @@
+import { type DataTablePaginateColumnDef } from "@/components/ui/dataTablePaginateFeatures";
 import { formatShortId } from "@/utils/formatString";
-import { type ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import parsePhoneNumber from "libphonenumber-js";
 import { DialogEditWhatsappConfiguration } from "./components/dialogEditWhatsappConfiguration";
 
 export const getColumns = () => {
-  const columns: ColumnDef<WhatsappConfiguration>[] = [
+  const columns: DataTablePaginateColumnDef<WhatsappConfiguration>[] = [
     {
       accessorKey: "id",
       header: "ID",
