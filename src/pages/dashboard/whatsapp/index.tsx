@@ -167,7 +167,7 @@ export function Whatsapp() {
 
   const [tab, setTab] = useState<Tab>("queue");
   const [selected, setSelected] = useState<WhatsappContactMessage | null>(null);
-  const [rightPanel, setRightPanel] = useState<"summary" | "history">("summary");
+  const [rightPanel, setRightPanel] = useState<"summary" | "history" | "files">("summary");
   const [search, setSearch] = useState("");
   const [mobileView, setMobileView] = useState<MobileView>("list");
 
@@ -179,7 +179,7 @@ export function Whatsapp() {
   return (
     <>
       {!isConnected && <div className="w-full bg-yellow-300 p-2">Desconectado</div>}
-      <div className="bg-background flex overflow-hidden" style={{ fontFamily: "Inter, sans-serif" }}>
+      <div className="flex overflow-hidden" style={{ fontFamily: "Inter, sans-serif" }}>
         {/* ════ DESKTOP LAYOUT (md+) ════ */}
         {!isMobile && (
           <div className="flex h-full w-full">

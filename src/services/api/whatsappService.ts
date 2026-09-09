@@ -140,4 +140,13 @@ export const whatsappService = {
     );
     return response.data;
   },
+  findAllFilesByContact: async ({
+    params,
+    queries,
+  }: FindAllWhatsappFilesByContactRequestData): Promise<PaginatedResponse<WhatsappMessage>> => {
+    const response = await api.get(`/client/${params.clientId}/whatsapp/contact/${params.contactId}/file`, {
+      params: queries,
+    });
+    return response.data;
+  },
 };

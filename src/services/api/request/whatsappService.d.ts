@@ -285,3 +285,15 @@ type SendTemplateRequestBody = {
 };
 
 //#endregion
+
+//#region findAllFilesByContact
+type FindAllWhatsappFilesByContactRequestData = {
+  params: FindAllWhatsappFilesByContactRequestParams;
+  queries: PaginateRequestQuery;
+};
+
+type FindAllWhatsappFilesByContactRequestParams = {
+  contactId: string;
+  clientId: string;
+};
+//#endregion
