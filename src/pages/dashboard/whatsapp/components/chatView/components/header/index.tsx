@@ -12,9 +12,11 @@ interface HeaderProps {
   contact: WhatsappContactMessage;
   contactService?: WhatsappContactService;
   onServiceAssumed?: () => void;
+  onBack?: () => void;
+  onShowInfo?: () => void;
 }
 
-export const Header: FC<HeaderProps> = ({ contact, contactService, onServiceAssumed }) => {
+export const Header: FC<HeaderProps> = ({ contact, contactService, onServiceAssumed, onBack, onShowInfo }) => {
   const { client } = useClientContext();
   const { user } = useUserContext();
   const queryClient = useQueryClient();
@@ -68,11 +70,11 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, onServiceAssu
   const assumeServicePending = startServiceMutation.isPending || transferServiceMutation.isPending;
 
   return (
-    <header className="bg-card border-border flex flex-shrink-0 items-center gap-2 border-b px-3 py-3 md:px-5">
+    <header className="bg-card border-border flex flex-shrink-0 items-center gap-1.5 border-b px-2 py-2.5 sm:gap-2 sm:px-3 sm:py-3 md:px-5">
       {/* Back button — mobile only */}
       <button
         className="hover:bg-muted text-muted-foreground flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-colors md:hidden"
-        // onClick={() => setMobileView("list")}
+        onClick={onBack}
       >
         <ArrowLeft className="h-4 w-4" />
       </button>
@@ -81,12 +83,12 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, onServiceAssu
         <p className="text-foreground truncate text-sm font-semibold">{contact.name}</p>
         <p className="text-muted-foreground text-xs">{formatPhoneNumber(contact.phoneNumber)}</p>
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex flex-shrink-0 items-center gap-1">
         {canAssumeService && (
           <button
             onClick={handleAssumeService}
             disabled={assumeServicePending}
-            className="hidden rounded-lg bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 transition-colors hover:bg-green-100 disabled:opacity-50 sm:block"
+            className="rounded-lg bg-green-50 px-2 py-1.5 text-xs font-medium whitespace-nowrap text-green-700 transition-colors hover:bg-green-100 disabled:opacity-50 sm:px-3"
           >
             Assumir
           </button>
@@ -95,19 +97,19 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, onServiceAssu
           <button
             onClick={handleEndService}
             disabled={endServiceMutation.isPending}
-            className="hidden rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50 sm:block"
+            className="rounded-lg bg-red-50 px-2 py-1.5 text-xs font-medium whitespace-nowrap text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50 sm:px-3"
           >
             Encerrar
           </button>
         )}
         {/* Info button — mobile only */}
         <button
-          className="hover:bg-muted text-muted-foreground flex h-8 w-8 items-center justify-center rounded-lg transition-colors md:hidden"
-          //   onClick={() => setMobileView("info")}
+          className="hover:bg-muted text-muted-foreground flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-colors md:hidden"
+          onClick={onShowInfo}
         >
           <Info className="h-4 w-4" />
         </button>
-        <button className="hover:bg-muted text-muted-foreground flex h-8 w-8 items-center justify-center rounded-lg transition-colors">
+        <button className="hover:bg-muted text-muted-foreground hidden h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-colors md:flex">
           <MoreHorizontal className="h-4 w-4" />
         </button>
       </div>

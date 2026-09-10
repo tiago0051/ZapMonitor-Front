@@ -9,9 +9,11 @@ import { useContactService } from "./hooks/useContactService";
 type ChatViewProps = {
   contact: WhatsappContactMessage;
   onServiceAssumed?: () => void;
+  onBack?: () => void;
+  onShowInfo?: () => void;
 };
 
-export const ChatView = ({ contact, onServiceAssumed }: ChatViewProps) => {
+export const ChatView = ({ contact, onServiceAssumed, onBack, onShowInfo }: ChatViewProps) => {
   const { socket, isConnected } = useSocketContext();
   const { user } = useUserContext();
   const { contactService } = useContactService({ contactId: contact.id });
@@ -27,7 +29,13 @@ export const ChatView = ({ contact, onServiceAssumed }: ChatViewProps) => {
 
   return (
     <div className={"flex h-full flex-col overflow-hidden"}>
-      <Header contact={contact} contactService={contactService} onServiceAssumed={onServiceAssumed} />
+      <Header
+        contact={contact}
+        contactService={contactService}
+        onServiceAssumed={onServiceAssumed}
+        onBack={onBack}
+        onShowInfo={onShowInfo}
+      />
       <MessageList contact={contact} />
 
       {contactService?.canBeSentMessage && (

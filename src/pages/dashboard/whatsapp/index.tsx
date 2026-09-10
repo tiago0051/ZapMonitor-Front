@@ -235,7 +235,14 @@ export function Whatsapp() {
 
               {/* Chat view */}
               <div className={`h-full ${mobileView === "chat" ? "block" : "hidden"}`}>
-                {selected && <ChatView contact={selected} onServiceAssumed={() => setTab("mine")} />}
+                {selected && (
+                  <ChatView
+                    contact={selected}
+                    onServiceAssumed={() => setTab("mine")}
+                    onBack={() => setMobileView("list")}
+                    onShowInfo={() => setMobileView("info")}
+                  />
+                )}
               </div>
 
               {/* Info view */}
