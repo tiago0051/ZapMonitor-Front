@@ -61,6 +61,8 @@ function ContactListPanel({
   });
 
   useEffect(() => {
+    const isTabQueue = tab === "queue";
+
     if (isConnected) {
       socket.on("contacts:update", ({ contact }: ContactUpdate) => {
         contactsStatsQuery.refetch();
@@ -80,7 +82,7 @@ function ContactListPanel({
 
           const hasPageFull = items.length === takeItems;
 
-          if (!hasContact && !old.canNextPage && !hasPageFull) return { ...old, items: [...items, contact] };
+          if (isTabQueue && !hasContact && !old.canNextPage && !hasPageFull) return { ...old, items: [...items, contact] };
         });
       });
     }
@@ -88,7 +90,7 @@ function ContactListPanel({
     return () => {
       socket.off("contacts:update");
     };
-  }, [isConnected, socket]);
+  }, [isConnected, socket, tab]);
 
   const queueContactsLength = contactsStatsQuery.data?.queueCount ?? 0;
   const myContactsLength = contactsStatsQuery.data?.myCount ?? 0;
