@@ -15,6 +15,12 @@ export const useContactMessages = ({ contact }: UseContactMessagesProps) => {
   const queryClient = useQueryClient();
 
   const [newMessagesList, setNewMessagesList] = useState<WhatsappMessage[]>([]);
+  const [prevContactId, setPrevContactId] = useState(contact.id);
+
+  if (contact.id !== prevContactId) {
+    setPrevContactId(contact.id);
+    setNewMessagesList([]);
+  }
 
   const findAllWhatsappMessagesByContact = useInfiniteQuery({
     queryKey: [`contact-${contact.id}`, "findAllWhatsappMessagesByContact", contact.id],
