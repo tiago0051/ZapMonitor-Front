@@ -20,7 +20,7 @@ export const ChatView = ({ contact, onServiceAssumed, onBack, onShowInfo }: Chat
 
   useEffect(() => {
     if (user && isConnected) {
-      socket.emit("chat:subscribe", user.id, contact.id);
+      socket.emit("chat:subscribe", contact.id);
     }
     return () => {
       if (isConnected) socket.emit("chat:unsubscribe", contact.id);

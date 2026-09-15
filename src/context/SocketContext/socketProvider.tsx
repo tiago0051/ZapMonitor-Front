@@ -16,6 +16,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     () =>
       io(URL, {
         reconnection: true,
+        withCredentials: true,
       }),
     [],
   );
