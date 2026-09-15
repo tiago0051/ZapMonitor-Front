@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { whatsappService } from "@/services/api/whatsappService";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { ContactCard } from "./components/contactCard";
+import { ContactCardSkeleton } from "./components/contactCard/skeleton";
 import { InfoPanel } from "./components/infoPanel";
 import { ChatView } from "./components/chatView";
 import { useSocketContext } from "@/context/SocketContext/socketContext";
@@ -98,6 +99,7 @@ function ContactListPanel({
   const myContactsLength = contactsStatsQuery.data?.myCount ?? 0;
 
   const contacts = contactsMessageQuery.data?.items ?? [];
+  const isLoadingContacts = contactsMessageQuery.isLoading;
 
   return (
     <div className="bg-card flex h-full flex-col">
@@ -165,7 +167,9 @@ function ContactListPanel({
           transition={{ duration: 0.15, ease: "easeOut" }}
           className="scrollbar-hide flex-1 overflow-y-auto"
         >
-          {contacts.length === 0 ? (
+          {isLoadingContacts ? (
+            Array.from({ length: 6 }).map((_, index) => <ContactCardSkeleton key={index} />)
+          ) : contacts.length === 0 ? (
             <div className="text-muted-foreground py-12 text-center text-sm">Nenhum contato encontrado</div>
           ) : (
             contacts.map((c) => <ContactCard key={c.id} contact={c} active={selected?.id === c.id} onClick={() => onSelectContact(c)} />)

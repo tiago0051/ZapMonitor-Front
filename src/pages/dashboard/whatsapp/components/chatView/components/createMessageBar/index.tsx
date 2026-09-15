@@ -240,7 +240,14 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact }) => {
       )}
       <div className="flex gap-1">
         {!isRecording && (
-          <Button type="button" onClick={handleSendMessage} disabled={disableButtonSendMessage} aria-label="Enviar mensagem" size={"icon"}>
+          <Button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={handleSendMessage}
+            disabled={disableButtonSendMessage}
+            aria-label="Enviar mensagem"
+            size={"icon"}
+          >
             <FiSend />
           </Button>
         )}
