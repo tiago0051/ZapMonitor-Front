@@ -9,6 +9,8 @@ import { ChatView } from "./components/chatView";
 import { useSocketContext } from "@/context/SocketContext/socketContext";
 import type { ContactUpdate } from "./types/contactUpdate";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useDebounceValue } from "usehooks-ts";
+import { globalContants } from "@/contants/globalContants";
 
 // ── Shared sub-panels ────────────────────────────────────────────────────────
 
@@ -17,20 +19,19 @@ const takeItems = 10;
 function ContactListPanel({
   tab,
   setTab,
-  search,
-  setSearch,
   selected,
   onSelectContact,
 }: {
   tab: Tab;
   setTab: (t: Tab) => void;
-  search: string;
-  setSearch: (s: string) => void;
   selected: WhatsappContactMessage | null;
   onSelectContact: (contact: WhatsappContactMessage) => void;
 }) {
   const { socket, isConnected } = useSocketContext();
   const { client } = useClientContext();
+
+  const [search, setSearch] = useState("");
+  const [searchDebounced] = useDebounceValue(search, globalContants.DEBOUNCE_DELAY);
 
   const queryClient = useQueryClient();
 
@@ -54,10 +55,10 @@ function ContactListPanel({
           page: 1,
           take: takeItems,
           tab,
-          text: search,
+          text: searchDebounced,
         },
       }),
-    queryKey: ["whatsapp", "contacts", tab, search],
+    queryKey: ["whatsapp", "contacts", tab, searchDebounced],
   });
 
   useEffect(() => {
@@ -67,7 +68,7 @@ function ContactListPanel({
       socket.on("contacts:update", ({ contact }: ContactUpdate) => {
         contactsStatsQuery.refetch();
 
-        queryClient.setQueryData(["whatsapp", "contacts", tab, search], (data: PaginatedResponse<WhatsappContactMessage>) => {
+        queryClient.setQueryData(["whatsapp", "contacts", tab, searchDebounced], (data: PaginatedResponse<WhatsappContactMessage>) => {
           if (!data) return;
 
           const { items, ...old } = data;
@@ -170,7 +171,6 @@ export function Whatsapp() {
   const [tab, setTab] = useState<Tab>("queue");
   const [selected, setSelected] = useState<WhatsappContactMessage | null>(null);
   const [rightPanel, setRightPanel] = useState<"summary" | "history" | "files">("summary");
-  const [search, setSearch] = useState("");
   const [mobileView, setMobileView] = useState<MobileView>("list");
 
   const handleSelectContact = (contact: WhatsappContactMessage) => {
@@ -187,14 +187,7 @@ export function Whatsapp() {
           <div className="flex h-full w-full">
             {/* Contact list */}
             <aside className="border-border flex w-80 flex-shrink-0 flex-col border-r">
-              <ContactListPanel
-                tab={tab}
-                setTab={setTab}
-                search={search}
-                setSearch={setSearch}
-                selected={selected}
-                onSelectContact={handleSelectContact}
-              />
+              <ContactListPanel tab={tab} setTab={setTab} selected={selected} onSelectContact={handleSelectContact} />
             </aside>
 
             {/* Conversation + right panel */}
@@ -225,14 +218,7 @@ export function Whatsapp() {
             <div className="min-h-0 flex-1 overflow-hidden">
               {/* List view */}
               <div className={`h-full ${mobileView === "list" ? "block" : "hidden"}`}>
-                <ContactListPanel
-                  tab={tab}
-                  setTab={setTab}
-                  search={search}
-                  setSearch={setSearch}
-                  selected={selected}
-                  onSelectContact={handleSelectContact}
-                />
+                <ContactListPanel tab={tab} setTab={setTab} selected={selected} onSelectContact={handleSelectContact} />
               </div>
 
               {/* Chat view */}
