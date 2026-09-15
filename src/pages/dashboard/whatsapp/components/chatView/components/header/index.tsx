@@ -21,8 +21,10 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, onServiceAssu
   const { user } = useUserContext();
   const queryClient = useQueryClient();
 
+  const contactServiceQueryKey = [`contact-${contact.id}`, "findContactServiceByContact", contact.id];
+
   const invalidateContactService = () => {
-    queryClient.invalidateQueries({ queryKey: [`contact-${contact.id}`, "findContactServiceByContact", contact.id] });
+    queryClient.invalidateQueries({ queryKey: contactServiceQueryKey });
     queryClient.invalidateQueries({ queryKey: [`contact-${contact.id}`, "findAllServiceHistoryByContact"] });
     queryClient.invalidateQueries({ queryKey: ["whatsapp", "contactsStats"] });
     queryClient.invalidateQueries({ queryKey: ["whatsapp", "contacts"] });
@@ -33,22 +35,65 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, onServiceAssu
     onServiceAssumed?.();
   };
 
+  type OptimisticContext = { previousContactService?: WhatsappContactService };
+
+  const applyOptimisticContactService = (update: Partial<WhatsappContactService>): OptimisticContext => {
+    const previousContactService = queryClient.getQueryData<WhatsappContactService>(contactServiceQueryKey);
+
+    if (previousContactService) {
+      queryClient.setQueryData<WhatsappContactService>(contactServiceQueryKey, { ...previousContactService, ...update });
+    }
+
+    return { previousContactService };
+  };
+
+  const rollbackContactService = (error: unknown, _variables: unknown, context?: OptimisticContext) => {
+    if (context?.previousContactService) {
+      queryClient.setQueryData(contactServiceQueryKey, context.previousContactService);
+    }
+    requestErrorHandling(error);
+  };
+
   const startServiceMutation = useMutation({
     mutationFn: whatsappService.startService,
+    onMutate: () =>
+      applyOptimisticContactService({
+        canBeServiceStarted: false,
+        canBeServiceTransferred: false,
+        canBeServiceEnded: true,
+        isInService: true,
+        canBeSentMessage: true,
+      }),
     onSuccess: handleServiceAssumedSuccess,
-    onError: requestErrorHandling,
+    onError: rollbackContactService,
   });
 
   const transferServiceMutation = useMutation({
     mutationFn: whatsappService.transferService,
+    onMutate: () =>
+      applyOptimisticContactService({
+        canBeServiceStarted: false,
+        canBeServiceTransferred: false,
+        canBeServiceEnded: true,
+        isInService: true,
+        canBeSentMessage: true,
+      }),
     onSuccess: handleServiceAssumedSuccess,
-    onError: requestErrorHandling,
+    onError: rollbackContactService,
   });
 
   const endServiceMutation = useMutation({
     mutationFn: whatsappService.endService,
+    onMutate: () =>
+      applyOptimisticContactService({
+        canBeServiceStarted: true,
+        canBeServiceTransferred: false,
+        canBeServiceEnded: false,
+        isInService: false,
+        canBeSentMessage: false,
+      }),
     onSuccess: invalidateContactService,
-    onError: requestErrorHandling,
+    onError: rollbackContactService,
   });
 
   function handleAssumeService() {
@@ -67,7 +112,7 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, onServiceAssu
   }
 
   const canAssumeService = contactService?.canBeServiceStarted || contactService?.canBeServiceTransferred;
-  const assumeServicePending = startServiceMutation.isPending || transferServiceMutation.isPending;
+  const isServiceMutationPending = startServiceMutation.isPending || transferServiceMutation.isPending || endServiceMutation.isPending;
 
   return (
     <header className="bg-card border-border flex flex-shrink-0 items-center gap-1.5 border-b px-2 py-2.5 sm:gap-2 sm:px-3 sm:py-3 md:px-5">
@@ -87,7 +132,7 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, onServiceAssu
         {canAssumeService && (
           <button
             onClick={handleAssumeService}
-            disabled={assumeServicePending}
+            disabled={isServiceMutationPending}
             className="rounded-lg bg-green-50 px-2 py-1.5 text-xs font-medium whitespace-nowrap text-green-700 transition-colors hover:bg-green-100 disabled:opacity-50 sm:px-3"
           >
             Assumir
@@ -96,7 +141,7 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, onServiceAssu
         {contactService?.canBeServiceEnded && (
           <button
             onClick={handleEndService}
-            disabled={endServiceMutation.isPending}
+            disabled={isServiceMutationPending}
             className="rounded-lg bg-red-50 px-2 py-1.5 text-xs font-medium whitespace-nowrap text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50 sm:px-3"
           >
             Encerrar
