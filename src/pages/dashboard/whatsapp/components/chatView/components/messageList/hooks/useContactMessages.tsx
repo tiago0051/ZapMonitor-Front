@@ -3,7 +3,7 @@ import { useSocketContext } from "@/context/SocketContext/socketContext";
 import { whatsappService } from "@/services/api/whatsappService";
 import { IsTopScrolled } from "@/utils/scroll";
 import { useInfiniteQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface UseContactMessagesProps {
   contact: WhatsappContactMessage;
@@ -38,10 +38,6 @@ export const useContactMessages = ({ contact }: UseContactMessagesProps) => {
     getNextPageParam: (lastPage, allPages) => (lastPage.canNextPage ? allPages.length + 1 : undefined),
     initialPageParam: 1,
   });
-
-  if (findAllWhatsappMessagesByContact.isFetching) {
-    setNewMessagesList([]);
-  }
 
   function onScrollChat(event: React.UIEvent<HTMLDivElement, UIEvent>) {
     const isTopScrolled = IsTopScrolled(event.currentTarget);
@@ -90,9 +86,23 @@ export const useContactMessages = ({ contact }: UseContactMessagesProps) => {
     };
   }, [contact.id, isConnected, socket, queryClient]);
 
+  const messages = useMemo(() => {
+    const fetchedMessages = findAllWhatsappMessagesByContact.data?.pages.flatMap((page) => page.items) ?? [];
+    const combined = [...newMessagesList, ...fetchedMessages];
+
+    const seenIds = new Set<string>();
+
+    return combined.filter((message) => {
+      if (seenIds.has(message.id)) return false;
+
+      seenIds.add(message.id);
+      return true;
+    });
+  }, [newMessagesList, findAllWhatsappMessagesByContact.data]);
+
   return {
     onScrollChat,
     isFetching: findAllWhatsappMessagesByContact.isFetching,
-    messages: [...newMessagesList, ...(findAllWhatsappMessagesByContact.data?.pages.flatMap((page) => page.items) ?? [])],
+    messages,
   };
 };
