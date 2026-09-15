@@ -1,4 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { AnimatePresence } from "motion/react";
 import { MessageItem } from "./components/messageItem";
 import { useContactMessages } from "./hooks/useContactMessages";
 
@@ -14,9 +15,11 @@ export const MessageList = ({ contact }: MessageListProps) => {
   return (
     <div className={"grid h-full grid-rows-[auto_min-content] overflow-hidden pt-4"}>
       <div onScroll={onScrollChat} className="flex max-h-full flex-col-reverse gap-2 overflow-auto px-4">
-        {messages.map((message) => (
-          <MessageItem message={message} key={message.id} />
-        ))}
+        <AnimatePresence initial={false}>
+          {messages.map((message) => (
+            <MessageItem message={message} key={message.id} />
+          ))}
+        </AnimatePresence>
 
         {isFetching &&
           new Array(3).fill({}).map((_v, index) => (

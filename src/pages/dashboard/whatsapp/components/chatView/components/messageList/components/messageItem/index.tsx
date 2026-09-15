@@ -8,6 +8,7 @@ import { FiAlertTriangle, FiDownload } from "react-icons/fi";
 import { IoCheckmarkDoneOutline, IoCheckmarkOutline, IoTimeOutline } from "react-icons/io5";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { motion } from "motion/react";
 
 type MessageFileContent = { url: string; filename: string };
 
@@ -56,8 +57,12 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
   const transcribedContent = message.transcribedContent;
 
   return (
-    <div
-      key={message.id}
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 16, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      transition={{ duration: 0.22, ease: "easeOut" }}
       data-type={message.type}
       className="bg-secondary text-secondary-foreground relative max-w-[85%] min-w-[300px] rounded p-2 pt-2 pb-6 data-[type=1]:self-end data-[type=1]:bg-green-100/50"
     >
@@ -107,6 +112,6 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
           )}
         </div>
       </span>
-    </div>
+    </motion.div>
   );
 };

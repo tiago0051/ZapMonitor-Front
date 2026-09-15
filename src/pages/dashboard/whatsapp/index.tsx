@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { MessageSquare, Search, X, ArrowLeft } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { whatsappService } from "@/services/api/whatsappService";
 import { useClientContext } from "@/context/ClientContext/clientContext";
@@ -127,7 +128,13 @@ function ContactListPanel({
             >
               {labels[t]}
               {badges[t]}
-              {tab === t && <span className="absolute right-0 bottom-0 left-0 h-0.5 rounded-full bg-green-500" />}
+              {tab === t && (
+                <motion.span
+                  layoutId="contact-tab-indicator"
+                  className="absolute right-0 bottom-0 left-0 h-0.5 rounded-full bg-green-500"
+                  transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                />
+              )}
             </button>
           );
         })}
@@ -149,13 +156,22 @@ function ContactListPanel({
           )}
         </div>
       </div>
-      <div className="scrollbar-hide flex-1 overflow-y-auto">
-        {contacts.length === 0 ? (
-          <div className="text-muted-foreground py-12 text-center text-sm">Nenhum contato encontrado</div>
-        ) : (
-          contacts.map((c) => <ContactCard key={c.id} contact={c} active={selected?.id === c.id} onClick={() => onSelectContact(c)} />)
-        )}
-      </div>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={tab}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15, ease: "easeOut" }}
+          className="scrollbar-hide flex-1 overflow-y-auto"
+        >
+          {contacts.length === 0 ? (
+            <div className="text-muted-foreground py-12 text-center text-sm">Nenhum contato encontrado</div>
+          ) : (
+            contacts.map((c) => <ContactCard key={c.id} contact={c} active={selected?.id === c.id} onClick={() => onSelectContact(c)} />)
+          )}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }
@@ -164,6 +180,14 @@ function ContactListPanel({
 
 type MobileView = "list" | "chat" | "info";
 
+const mobileViewIndex: Record<MobileView, number> = { list: 0, chat: 1, info: 2 };
+
+const mobileViewSlideVariants = {
+  enter: (direction: number) => ({ x: direction > 0 ? "100%" : "-100%" }),
+  center: { x: 0 },
+  exit: (direction: number) => ({ x: direction > 0 ? "-100%" : "100%" }),
+};
+
 export function Whatsapp() {
   const { isConnected } = useSocketContext();
   const isMobile = useIsMobile();
@@ -171,16 +195,20 @@ export function Whatsapp() {
   const [tab, setTab] = useState<Tab>("queue");
   const [selected, setSelected] = useState<WhatsappContactMessage | null>(null);
   const [rightPanel, setRightPanel] = useState<"summary" | "history" | "files">("summary");
-  const [mobileView, setMobileView] = useState<MobileView>("list");
+  const [[mobileView, mobileViewDirection], setMobileViewState] = useState<[MobileView, number]>(["list", 0]);
+
+  const goToMobileView = (view: MobileView) => {
+    setMobileViewState(([current]) => [view, mobileViewIndex[view] > mobileViewIndex[current] ? 1 : -1]);
+  };
 
   const handleSelectContact = (contact: WhatsappContactMessage) => {
     setSelected(contact);
-    setMobileView("chat");
+    goToMobileView("chat");
   };
 
   return (
     <>
-      {!isConnected && <div className="w-full bg-yellow-300 p-2">Desconectado</div>}
+      {!isConnected && <div className="max-h-10 w-full bg-yellow-300 p-2">Desconectado</div>}
       <div className="flex overflow-hidden" style={{ fontFamily: "Inter, sans-serif" }}>
         {/* ════ DESKTOP LAYOUT (md+) ════ */}
         {!isMobile && (
@@ -215,40 +243,50 @@ export function Whatsapp() {
         {isMobile && (
           <div className="flex h-full w-full flex-col md:hidden">
             {/* Views */}
-            <div className="min-h-0 flex-1 overflow-hidden">
-              {/* List view */}
-              <div className={`h-full ${mobileView === "list" ? "block" : "hidden"}`}>
-                <ContactListPanel tab={tab} setTab={setTab} selected={selected} onSelectContact={handleSelectContact} />
-              </div>
+            <div className="relative min-h-0 flex-1 overflow-hidden">
+              <AnimatePresence initial={false} custom={mobileViewDirection}>
+                <motion.div
+                  key={mobileView}
+                  custom={mobileViewDirection}
+                  variants={mobileViewSlideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.28, ease: "easeInOut" }}
+                  className="absolute inset-0 h-full w-full"
+                >
+                  {mobileView === "list" && (
+                    <ContactListPanel tab={tab} setTab={setTab} selected={selected} onSelectContact={handleSelectContact} />
+                  )}
 
-              {/* Chat view */}
-              <div className={`h-full ${mobileView === "chat" ? "block" : "hidden"}`}>
-                {selected && (
-                  <ChatView
-                    contact={selected}
-                    onServiceAssumed={() => setTab("mine")}
-                    onBack={() => setMobileView("list")}
-                    onShowInfo={() => setMobileView("info")}
-                  />
-                )}
-              </div>
+                  {mobileView === "chat" && selected && (
+                    <ChatView
+                      contact={selected}
+                      onServiceAssumed={() => setTab("mine")}
+                      onBack={() => goToMobileView("list")}
+                      onShowInfo={() => goToMobileView("info")}
+                    />
+                  )}
 
-              {/* Info view */}
-              <div className={`flex h-full flex-col ${mobileView === "info" ? "flex" : "hidden"}`}>
-                {/* Back to chat */}
-                <div className="border-border bg-card flex flex-shrink-0 items-center gap-2 border-b px-4 py-3">
-                  <button
-                    className="hover:bg-muted text-muted-foreground flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
-                    onClick={() => setMobileView("chat")}
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                  </button>
-                  <span className="text-foreground text-sm font-semibold">Informações</span>
-                </div>
-                <div className="min-h-0 flex-1">
-                  {selected ? <InfoPanel selected={selected} rightPanel={rightPanel} setRightPanel={setRightPanel} /> : null}
-                </div>
-              </div>
+                  {mobileView === "info" && (
+                    <div className="flex h-full flex-col">
+                      {/* Back to chat */}
+                      <div className="border-border bg-card flex flex-shrink-0 items-center gap-2 border-b px-4 py-3">
+                        <button
+                          className="hover:bg-muted text-muted-foreground flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
+                          onClick={() => goToMobileView("chat")}
+                        >
+                          <ArrowLeft className="h-4 w-4" />
+                        </button>
+                        <span className="text-foreground text-sm font-semibold">Informações</span>
+                      </div>
+                      <div className="min-h-0 flex-1">
+                        {selected ? <InfoPanel selected={selected} rightPanel={rightPanel} setRightPanel={setRightPanel} /> : null}
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              </AnimatePresence>
             </div>
           </div>
         )}

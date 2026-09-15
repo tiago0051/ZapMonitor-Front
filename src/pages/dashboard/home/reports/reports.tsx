@@ -99,11 +99,11 @@ export function Reports() {
           <div className="flex flex-col gap-3 sm:flex-row">
             {/* Attendant Filter */}
             <div className="flex items-center gap-3 rounded-lg bg-white p-4 shadow">
-              <Users className="text-gray-600" size={20} />
+              <Users className="shrink-0 text-gray-600" size={20} />
               <select
                 value={userSelected}
                 onChange={(e) => setUserSelected(e.target.value)}
-                className="rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-[calc(100%-20px)] rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               >
                 <option value="">Todos</option>
                 {atendentes.map((user) => (
