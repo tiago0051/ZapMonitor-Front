@@ -39,6 +39,10 @@ export const useContactMessages = ({ contact }: UseContactMessagesProps) => {
     initialPageParam: 1,
   });
 
+  if (findAllWhatsappMessagesByContact.isFetching) {
+    setNewMessagesList([]);
+  }
+
   function onScrollChat(event: React.UIEvent<HTMLDivElement, UIEvent>) {
     const isTopScrolled = IsTopScrolled(event.currentTarget);
 
