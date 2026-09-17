@@ -50,3 +50,26 @@ type ResetPasswordRequestBody = {
   token: string;
   newPassword: string;
 };
+
+type CheckInvitationRequestData = {
+  queries: CheckInvitationRequestQuery;
+};
+
+type CheckInvitationRequestQuery = {
+  token: string;
+};
+
+type CheckInvitationResponseData = {
+  valid: boolean;
+  hasAccount?: boolean;
+};
+
+type AcceptInvitationRequestData = {
+  body: AcceptInvitationRequestBody;
+};
+
+type AcceptInvitationRequestBody = {
+  token: string;
+  name?: string;
+  password?: string;
+};

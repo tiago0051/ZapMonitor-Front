@@ -8,6 +8,7 @@ import { Register } from "@/pages/auth/register/register";
 import { VerifyEmail } from "@/pages/auth/verifyEmail/verifyEmail";
 import { ForgotPassword } from "@/pages/auth/forgotPassword/forgotPassword";
 import { ResetPassword } from "@/pages/auth/resetPassword/resetPassword";
+import { AcceptInvitation } from "@/pages/auth/acceptInvitation/acceptInvitation";
 
 export const LoginRouter: FC = () => {
   return (
@@ -18,6 +19,7 @@ export const LoginRouter: FC = () => {
         <Route path="verify-email" element={<VerifyEmail />} />
         <Route path="forgot-password" element={<ForgotPassword />} />
         <Route path="reset-password" element={<ResetPassword />} />
+        <Route path="accept-invitation" element={<AcceptInvitation />} />
         <Route path="logout" element={<Logout />} />
         <Route path="select_client" element={<ClientList />} />
       </Route>
