@@ -7,6 +7,7 @@ import { ClientProvider } from "@/context/ClientContext/clientProvider";
 const WhatsappRouter = lazy(() => import("./whatsappRouter"));
 const ConfigurationRouter = lazy(() => import("./clientRouter"));
 const EmailRouter = lazy(() => import("./emailRouter"));
+const MembersRouter = lazy(() => import("./membersRouter"));
 
 export const DashboardRouter: FC = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -21,6 +22,7 @@ export const DashboardRouter: FC = () => {
           <Route path="configuration/*" element={<ConfigurationRouter />} />
           <Route path="email/*" element={<EmailRouter />} />
           <Route path="whatsapp/*" element={<WhatsappRouter />} />
+          <Route path="members/*" element={<MembersRouter />} />
         </Route>
       </Route>
     </Routes>

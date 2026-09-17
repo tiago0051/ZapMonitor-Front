@@ -29,4 +29,11 @@ export const userService = {
   logout: async (): Promise<void> => {
     await api.post("/user/auth/logout");
   },
+  checkInvitation: async ({ queries }: CheckInvitationRequestData): Promise<CheckInvitationResponseData> => {
+    const response = await api.get("/user/accept-invitation", { params: queries });
+    return response.data;
+  },
+  acceptInvitation: async ({ body }: AcceptInvitationRequestData): Promise<void> => {
+    await api.post("/user/accept-invitation", body);
+  },
 };

@@ -18,8 +18,4 @@ export const clientService = {
     const response = await api.put(`/client/${params.clientId}/secret`);
     return response.data;
   },
-  findUsers: async ({ params }: FindUsersRequestData): Promise<User[]> => {
-    const response = await api.get<User[]>(`/client/${params.clientId}/users`);
-    return response.data;
-  },
 };
