@@ -1,17 +1,22 @@
-type WhatsappContactMessage = {
+export interface ContactUpdate {
+  contact: Contact;
+  isNewMessage: boolean;
+}
+
+export interface Contact {
   id: string;
   phoneNumber: string;
   name: string;
   surname: string;
   messageContent: string;
   messageContentType: string;
-  messageCreatedAt: string;
   messageType: number;
+  messageCreatedAt: string;
   isRead: boolean;
   whatsappConfigurationId: string;
   categories: WhatsappMessageCategory[];
   clientId: string;
-  serviceRepresentative: string | null;
-  serviceCreatedAt: string | null;
+  serviceRepresentative: string;
+  serviceCreatedAt: string;
   replyTimeExpiredAt: string;
-};
+}

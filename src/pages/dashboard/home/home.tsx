@@ -9,7 +9,7 @@ export const HomePage: FC = () => {
   const navigate = useNavigate();
   const baseUrl = useBaseUrl();
   return (
-    <div className="mx-auto size-full max-w-7xl overflow-auto">
+    <div className="mx-auto size-full max-w-7xl overflow-auto px-4">
       <div className="mx-auto space-y-8">
         {/* Seção de Atalhos Rápidos */}
         <div>

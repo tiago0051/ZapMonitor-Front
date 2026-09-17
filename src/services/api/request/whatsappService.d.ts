@@ -81,13 +81,28 @@ type FindAllWhatsappMessageCategoryRequestParams = {
   clientId: string;
 };
 
-//#region findAllContactMessagesByUser
+//#region findAllContacts
 type FindAllWhatsappContactMessagesRequestData = {
-  queries: PaginateRequestQuery;
+  queries: FindAllWhatsappContactMessagesRequestQuery;
   params: FindAllWhatsappContactMessagesRequestParams;
 };
 
 type FindAllWhatsappContactMessagesRequestParams = {
+  clientId: string;
+};
+
+type FindAllWhatsappContactMessagesRequestQuery = PaginateRequestQuery & {
+  text: string;
+  tab: "queue" | "mine" | "all";
+};
+//#endregion
+
+//#region findAllContactsStats
+type FindAllWhatsappContactMessagesStatsRequestData = {
+  params: FindAllWhatsappContactMessagesStatsRequestParams;
+};
+
+type FindAllWhatsappContactMessagesStatsRequestParams = {
   clientId: string;
 };
 //#endregion
@@ -269,4 +284,16 @@ type SendTemplateRequestBody = {
   templateId: string;
 };
 
+//#endregion
+
+//#region findAllFilesByContact
+type FindAllWhatsappFilesByContactRequestData = {
+  params: FindAllWhatsappFilesByContactRequestParams;
+  queries: PaginateRequestQuery;
+};
+
+type FindAllWhatsappFilesByContactRequestParams = {
+  contactId: string;
+  clientId: string;
+};
 //#endregion

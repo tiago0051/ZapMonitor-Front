@@ -1,3 +1,5 @@
+import { parsePhoneNumber } from "libphonenumber-js";
+
 export function formatShortId(id: string) {
   return id.split("-")[0];
 }
@@ -33,3 +35,8 @@ export const formatBoldText = (text: string) => {
     return <span key={index}>{part}</span>;
   });
 };
+
+export function formatPhoneNumber(phone: string) {
+  const phoneNumberParsed = parsePhoneNumber(phone, "BR");
+  return phoneNumberParsed ? phoneNumberParsed.formatInternational() : phone;
+}

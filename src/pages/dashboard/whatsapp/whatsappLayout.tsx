@@ -1,8 +1,8 @@
-import { WhatsappProvider } from "@/context/WhatsappContext/whatsappProvider";
+import { SocketProvider } from "@/context/SocketContext/socketProvider";
 import { Outlet } from "react-router";
 
 export const WhatsappLayout = () => (
-  <WhatsappProvider>
+  <SocketProvider>
     <Outlet />
-  </WhatsappProvider>
+  </SocketProvider>
 );

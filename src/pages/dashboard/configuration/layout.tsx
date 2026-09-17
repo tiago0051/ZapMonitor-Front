@@ -19,7 +19,7 @@ export const EditClientLayout = () => {
   const client = findClientByIdQuery.data;
 
   return (
-    <>
+    <div className="p-6">
       <div className="mb-4 flex justify-between">
         <h1 className="text-2xl">{client?.name}</h1>
       </div>
@@ -36,13 +36,13 @@ export const EditClientLayout = () => {
           <WhatsappCategory />
           <WhatsappConfiguration />
           <WhatsappAiConfiguration />
-          <WhatsappTemplate/>
+          <WhatsappTemplate />
         </TabsContent>
         <TabsContent value="account">
           <ChangePasswordForm />
         </TabsContent>
         <TabsContent value="integration">Integration settings here.</TabsContent>
       </Tabs>
-    </>
+    </div>
   );
 };

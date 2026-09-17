@@ -1,15 +1,22 @@
 import { SocketContext } from "./socketContext";
 import { useEffect, useMemo, useState } from "react";
-import { Outlet } from "react-router";
 import { io } from "socket.io-client";
+import { useClientContext } from "../ClientContext/clientContext";
 
-export const SocketProvider: React.FC = () => {
+interface SocketProviderProps {
+  children: React.ReactNode;
+}
+
+export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   const URL = import.meta.env.VITE_API_URL;
+
+  const { client } = useClientContext();
 
   const socket = useMemo(
     () =>
       io(URL, {
         reconnection: true,
+        withCredentials: true,
       }),
     [],
   );
@@ -33,9 +40,12 @@ export const SocketProvider: React.FC = () => {
       socket.off("disconnect", onDisconnect);
     };
   }, []);
-  return (
-    <SocketContext.Provider value={{ isConnected, socket }}>
-      <Outlet />
-    </SocketContext.Provider>
-  );
+
+  useEffect(() => {
+    if (isConnected) {
+      socket.emit("chat:start", client.id);
+    }
+  }, [isConnected, socket, client]);
+
+  return <SocketContext.Provider value={{ isConnected, socket }}>{children}</SocketContext.Provider>;
 };

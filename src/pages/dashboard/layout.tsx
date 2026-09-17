@@ -1,11 +1,9 @@
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { useSocketContext } from "@/context/SocketContext/socketContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Outlet } from "react-router";
 
 export const DashboardLayout = () => {
-  const { isConnected } = useSocketContext();
   const isMobile = useIsMobile();
 
   return (
@@ -21,8 +19,7 @@ export const DashboardLayout = () => {
             <div></div>
           </div>
         )}
-        {!isConnected && <div className="absolute w-full bg-yellow-300 p-2">Desconectado</div>}
-        <div className="flex size-full flex-col overflow-hidden bg-gray-50 p-6">
+        <div className="grid h-[calc(100dvh-40px)] flex-col overflow-hidden">
           <Outlet />
         </div>
       </SidebarInset>
