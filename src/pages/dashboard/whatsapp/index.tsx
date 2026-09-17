@@ -1,22 +1,15 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { MessageSquare, Search, X, ArrowLeft } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { whatsappService } from "@/services/api/whatsappService";
-import { useClientContext } from "@/context/ClientContext/clientContext";
 import { ContactCard } from "./components/contactCard";
 import { ContactCardSkeleton } from "./components/contactCard/skeleton";
 import { InfoPanel } from "./components/infoPanel";
 import { ChatView } from "./components/chatView";
 import { useSocketContext } from "@/context/SocketContext/socketContext";
-import type { ContactUpdate } from "./types/contactUpdate";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useDebounceValue } from "usehooks-ts";
-import { globalContants } from "@/contants/globalContants";
+import { useContactsListService } from "./useContactsListService";
 
 // ── Shared sub-panels ────────────────────────────────────────────────────────
-
-const takeItems = 10;
 
 function ContactListPanel({
   tab,
@@ -29,77 +22,18 @@ function ContactListPanel({
   selected: WhatsappContactMessage | null;
   onSelectContact: (contact: WhatsappContactMessage) => void;
 }) {
-  const { socket, isConnected } = useSocketContext();
-  const { client } = useClientContext();
-
   const [search, setSearch] = useState("");
-  const [searchDebounced] = useDebounceValue(search, globalContants.DEBOUNCE_DELAY);
 
-  const queryClient = useQueryClient();
+  const { contacts, stats } = useContactsListService({ search, tab });
 
-  const contactsStatsQuery = useQuery({
-    queryFn: async () =>
-      whatsappService.findContactsStats({
-        params: {
-          clientId: client.id,
-        },
-      }),
-    queryKey: ["whatsapp", "contactsStats"],
-  });
+  function renderContactsList() {
+    if (contacts.isLoading) return Array.from({ length: 6 }).map((_, index) => <ContactCardSkeleton key={index} />);
+    if (contacts.isEmpty) return <div className="text-muted-foreground py-12 text-center text-sm">Nenhum contato encontrado</div>;
 
-  const contactsMessageQuery = useQuery({
-    queryFn: async () =>
-      whatsappService.findAllContacts({
-        params: {
-          clientId: client.id,
-        },
-        queries: {
-          page: 1,
-          take: takeItems,
-          tab,
-          text: searchDebounced,
-        },
-      }),
-    queryKey: ["whatsapp", "contacts", tab, searchDebounced],
-  });
-
-  useEffect(() => {
-    const isTabQueue = tab === "queue";
-
-    if (isConnected) {
-      socket.on("contacts:update", ({ contact }: ContactUpdate) => {
-        contactsStatsQuery.refetch();
-
-        queryClient.setQueryData(["whatsapp", "contacts", tab, searchDebounced], (data: PaginatedResponse<WhatsappContactMessage>) => {
-          if (!data) return;
-
-          const { items, ...old } = data;
-
-          const hasContact = items.some((item) => item.id === contact.id);
-
-          if (hasContact)
-            return {
-              ...old,
-              items: items.map((item) => (item.id === contact.id ? contact : item)),
-            };
-
-          const hasPageFull = items.length === takeItems;
-
-          if (isTabQueue && !hasContact && !old.canNextPage && !hasPageFull) return { ...old, items: [...items, contact] };
-        });
-      });
-    }
-
-    return () => {
-      socket.off("contacts:update");
-    };
-  }, [isConnected, socket, tab]);
-
-  const queueContactsLength = contactsStatsQuery.data?.queueCount ?? 0;
-  const myContactsLength = contactsStatsQuery.data?.myCount ?? 0;
-
-  const contacts = contactsMessageQuery.data?.items ?? [];
-  const isLoadingContacts = contactsMessageQuery.isLoading;
+    return contacts.items.map((c) => (
+      <ContactCard key={c.id} contact={c} active={selected?.id === c.id} onClick={() => onSelectContact(c)} />
+    ));
+  }
 
   return (
     <div className="bg-card flex h-full flex-col">
@@ -110,12 +44,12 @@ function ContactListPanel({
           const badges: Record<Tab, React.ReactNode> = {
             queue: (
               <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
-                {queueContactsLength}
+                {stats.queueLength}
               </span>
             ),
             mine: (
               <span className="ml-1.5 rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-semibold text-green-700">
-                {myContactsLength}
+                {stats.mineLength}
               </span>
             ),
             all: null,
@@ -129,7 +63,7 @@ function ContactListPanel({
               }`}
             >
               {labels[t]}
-              {badges[t]}
+              {!stats.isLoading && badges[t]}
               {tab === t && (
                 <motion.span
                   layoutId="contact-tab-indicator"
@@ -167,13 +101,7 @@ function ContactListPanel({
           transition={{ duration: 0.15, ease: "easeOut" }}
           className="scrollbar-hide flex-1 overflow-y-auto"
         >
-          {isLoadingContacts ? (
-            Array.from({ length: 6 }).map((_, index) => <ContactCardSkeleton key={index} />)
-          ) : contacts.length === 0 ? (
-            <div className="text-muted-foreground py-12 text-center text-sm">Nenhum contato encontrado</div>
-          ) : (
-            contacts.map((c) => <ContactCard key={c.id} contact={c} active={selected?.id === c.id} onClick={() => onSelectContact(c)} />)
-          )}
+          {renderContactsList()}
         </motion.div>
       </AnimatePresence>
     </div>
