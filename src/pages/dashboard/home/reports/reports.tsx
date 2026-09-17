@@ -5,7 +5,7 @@ import { formatNumber, formatPercentage } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { reportService } from "@/services/api/reportService";
-import { clientService } from "@/services/api/clientService";
+import { memberService } from "@/services/api/memberService";
 import { useState } from "react";
 
 export function Reports() {
@@ -21,11 +21,15 @@ export function Reports() {
   const [userSelected, setUserSelected] = useState<string>("");
 
   const usersQuery = useQuery({
-    queryKey: ["users", client.id],
-    queryFn: () => clientService.findUsers({ params: { clientId: client.id } }),
+    queryKey: ["members", client.id, "active-list"],
+    queryFn: () =>
+      memberService.findAll({
+        params: { clientId: client.id },
+        queries: { page: 1, take: 100, status: "ACTIVE" },
+      }),
   });
 
-  const atendentes = usersQuery.data ?? [];
+  const atendentes = usersQuery.data?.items ?? [];
 
   // Lista de meses
   const meses = [

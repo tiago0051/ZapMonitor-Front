@@ -21,11 +21,3 @@ type GenerateNewSecretRequestData = {
 type GenerateNewSecretRequestParams = {
   clientId: string;
 };
-
-type FindUsersRequestData = {
-  params: FindUsersRequestParams;
-};
-
-type FindUsersRequestParams = {
-  clientId: string;
-};

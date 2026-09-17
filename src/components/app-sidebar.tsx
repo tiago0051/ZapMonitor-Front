@@ -12,7 +12,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useUserContext } from "@/context/UserContext/userContext";
-import { FiLogOut, FiMail, FiSettings } from "react-icons/fi";
+import { FiLogOut, FiMail, FiSettings, FiUsers } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
 import { PanelLeftIcon } from "lucide-react";
 import { Link } from "react-router";
@@ -30,6 +30,11 @@ const data = {
       title: "WhatsApp",
       icon: FaWhatsapp,
       url: "whatsapp",
+    },
+    {
+      title: "Usuários",
+      icon: FiUsers,
+      url: "members",
     },
     {
       title: "Clientes",
