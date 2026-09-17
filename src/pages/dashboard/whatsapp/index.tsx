@@ -141,7 +141,7 @@ export function Whatsapp() {
   return (
     <>
       {!isConnected && <div className="max-h-10 w-full bg-yellow-300 p-2">Desconectado</div>}
-      <div className="flex overflow-hidden" style={{ fontFamily: "Inter, sans-serif" }}>
+      <div className="flex h-full overflow-hidden" style={{ fontFamily: "Inter, sans-serif" }}>
         {/* ════ DESKTOP LAYOUT (md+) ════ */}
         {!isMobile && (
           <div className="flex h-full w-full">

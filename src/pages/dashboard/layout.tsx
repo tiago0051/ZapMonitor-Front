@@ -19,7 +19,7 @@ export const DashboardLayout = () => {
             <div></div>
           </div>
         )}
-        <div className="grid h-[calc(100dvh-40px)] flex-col overflow-hidden">
+        <div className="flex h-[calc(100dvh-40px)] flex-col overflow-hidden">
           <Outlet />
         </div>
       </SidebarInset>
