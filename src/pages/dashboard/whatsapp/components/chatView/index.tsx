@@ -5,6 +5,8 @@ import { Header } from "./components/header";
 import { MessageList } from "./components/messageList";
 import { CreateMessageBar } from "./components/createMessageBar";
 import { useContactService } from "./hooks/useContactService";
+import { isBefore } from "date-fns";
+import { DialogSendTemplate } from "./components/dialogSendTemplate";
 
 type ChatViewProps = {
   contact: WhatsappContactMessage;
@@ -27,6 +29,8 @@ export const ChatView = ({ contact, onServiceAssumed, onBack, onShowInfo }: Chat
     };
   }, [user, contact, isConnected, socket]);
 
+  const isReplyTimeExpired = contact.replyTimeExpiredAt ? isBefore(new Date(contact.replyTimeExpiredAt), new Date()) : false;
+
   return (
     <div className={"flex h-full flex-col overflow-hidden"}>
       <Header
@@ -38,9 +42,14 @@ export const ChatView = ({ contact, onServiceAssumed, onBack, onShowInfo }: Chat
       />
       <MessageList contact={contact} />
 
-      {contactService?.canBeSentMessage && (
+      {contactService?.canBeSentMessage && !isReplyTimeExpired && (
         <div className="px-4 pb-3">
           <CreateMessageBar contact={contact} />
+        </div>
+      )}
+      {contactService && !contactService?.canBeSentMessage && isReplyTimeExpired && (
+        <div className="w-full pt-2">
+          <DialogSendTemplate contactService={contactService} whatsappConfigurationId={contact.whatsappConfigurationId} />
         </div>
       )}
     </div>
