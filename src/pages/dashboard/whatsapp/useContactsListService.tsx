@@ -56,6 +56,8 @@ export const useContactsListService = ({ search, tab }: UseContactsListService) 
     const queryKey = ["whatsapp", "contacts", tab, searchDebounced];
 
     if (isConnected) {
+      if (!contactsMessageQuery.isFetching) contactsMessageQuery.refetch();
+
       socket.on("contacts:update", ({ contact }: ContactUpdate) => {
         contactsStatsQuery.refetch();
 
