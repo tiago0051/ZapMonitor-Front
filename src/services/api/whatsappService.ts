@@ -12,6 +12,10 @@ export const whatsappService = {
     const response = await api.post(`/client/${params.clientId}/whatsapp/configuration`, body);
     return response.data;
   },
+  createEmbeddedSignup: async ({ body, params }: CreateWhatsappEmbeddedSignupRequestData): Promise<WhatsappConfiguration> => {
+    const response = await api.post(`/client/${params.clientId}/whatsapp/configuration/embedded-signup`, body);
+    return response.data;
+  },
   findAllMessageCategoriesByClient: async ({
     params,
     queries,

@@ -297,3 +297,19 @@ type FindAllWhatsappFilesByContactRequestParams = {
   clientId: string;
 };
 //#endregion
+
+type CreateWhatsappEmbeddedSignupRequestData = {
+  params: CreateWhatsappEmbeddedSignupRequestParams;
+  body: CreateWhatsappEmbeddedSignupRequestBody;
+};
+
+type CreateWhatsappEmbeddedSignupRequestParams = {
+  clientId: string;
+};
+
+type CreateWhatsappEmbeddedSignupRequestBody = {
+  code: string;
+  phoneNumberId: string;
+  wabaId: string;
+  businessId?: string;
+};

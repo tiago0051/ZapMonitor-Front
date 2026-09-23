@@ -6,6 +6,7 @@ import { WhatsappConfiguration } from "./whatsapp/whatsappConfiguration/whatsapp
 import { WhatsappCategory } from "./whatsapp/whatsappCategory/whatsappCategory";
 import { WhatsappAiConfiguration } from "./whatsapp/whatsappAi/whatsappAiConfiguration";
 import { WhatsappTemplate } from "./whatsapp/whatsappTemplate/whatsappTemplate";
+import { WhatsappEmbeddedSignup } from "./whatsapp/whatsappEmbeddedSignup/whatsappEmbeddedSignup";
 import { ChangePasswordForm } from "@/components/change-password-form";
 
 export const EditClientLayout = () => {
@@ -19,7 +20,7 @@ export const EditClientLayout = () => {
   const client = findClientByIdQuery.data;
 
   return (
-    <div className="p-6">
+    <div className="flex h-full flex-col overflow-auto p-6">
       <div className="mb-4 flex justify-between">
         <h1 className="text-2xl">{client?.name}</h1>
       </div>
@@ -27,6 +28,7 @@ export const EditClientLayout = () => {
       <Tabs defaultValue="whatsapp">
         <TabsList className="mb-4">
           <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
+          <TabsTrigger value="whatsappConfiguration">Números</TabsTrigger>
           <TabsTrigger value="account">Conta</TabsTrigger>
           <TabsTrigger value="integration" disabled>
             Integração
@@ -34,9 +36,12 @@ export const EditClientLayout = () => {
         </TabsList>
         <TabsContent value="whatsapp" className="space-y-5">
           <WhatsappCategory />
-          <WhatsappConfiguration />
           <WhatsappAiConfiguration />
           <WhatsappTemplate />
+        </TabsContent>
+        <TabsContent value="whatsappConfiguration" className="space-y-5">
+          <WhatsappEmbeddedSignup />
+          <WhatsappConfiguration />
         </TabsContent>
         <TabsContent value="account">
           <ChangePasswordForm />

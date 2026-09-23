@@ -14,10 +14,17 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
   const socket = useMemo(
     () =>
-      io(URL, {
-        reconnection: true,
-        withCredentials: true,
-      }),
+      // URL relativa (ex.: "/api" via proxy do Vite): conecta na origem atual usando o prefixo como path
+      URL.startsWith("/")
+        ? io(window.location.origin, {
+            path: `${URL.replace(/\/$/, "")}/socket.io`,
+            reconnection: true,
+            withCredentials: true,
+          })
+        : io(URL, {
+            reconnection: true,
+            withCredentials: true,
+          }),
     [],
   );
 
