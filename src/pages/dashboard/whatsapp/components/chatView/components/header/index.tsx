@@ -7,6 +7,7 @@ import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Info, MoreHorizontal } from "lucide-react";
 import type { FC } from "react";
+import { toast } from "sonner";
 
 interface HeaderProps {
   contact: WhatsappContactMessage;
@@ -37,7 +38,10 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, onServiceAssu
 
   type OptimisticContext = { previousContactService?: WhatsappContactService };
 
-  const applyOptimisticContactService = (update: Partial<WhatsappContactService>): OptimisticContext => {
+  const applyOptimisticContactService = async (update: Partial<WhatsappContactService>): Promise<OptimisticContext> => {
+    // Cancela refetches em andamento (ex.: disparados pelo socket) para não sobrescreverem a atualização otimista
+    await queryClient.cancelQueries({ queryKey: contactServiceQueryKey });
+
     const previousContactService = queryClient.getQueryData<WhatsappContactService>(contactServiceQueryKey);
 
     if (previousContactService) {
@@ -102,7 +106,12 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, onServiceAssu
       return;
     }
 
-    if (contactService?.canBeServiceTransferred && user) {
+    if (contactService?.canBeServiceTransferred) {
+      if (!user) {
+        toast.error("Usuário não carregado. Recarregue a página e tente novamente.");
+        return;
+      }
+
       transferServiceMutation.mutate({ params: { contactId: contact.id, userId: user.id, clientId: client.id } });
     }
   }

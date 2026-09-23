@@ -154,7 +154,7 @@ export function Whatsapp() {
             {selected ? (
               <div className="flex min-w-0 flex-1 overflow-hidden">
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <ChatView contact={selected} onServiceAssumed={() => setTab("mine")} />
+                  <ChatView key={selected.id} contact={selected} onServiceAssumed={() => setTab("mine")} />
                 </div>
                 <aside className="border-border w-72 flex-shrink-0 border-l">
                   <InfoPanel selected={selected} rightPanel={rightPanel} setRightPanel={setRightPanel} />
@@ -193,6 +193,7 @@ export function Whatsapp() {
 
                   {mobileView === "chat" && selected && (
                     <ChatView
+                      key={selected.id}
                       contact={selected}
                       onServiceAssumed={() => setTab("mine")}
                       onBack={() => goToMobileView("list")}
