@@ -50,16 +50,24 @@ export const useContactsListService = ({ search, tab }: UseContactsListService) 
     queryKey: ["whatsapp", "contacts", tab, searchDebounced],
   });
 
+  const refetchStats = contactsStatsQuery.refetch;
+
+  // Refaz as requisições ao (re)conectar o socket
+  useEffect(() => {
+    if (!isConnected) return;
+
+    queryClient.invalidateQueries({ queryKey: ["whatsapp", "contacts"] });
+    queryClient.invalidateQueries({ queryKey: ["whatsapp", "contactsStats"] });
+  }, [isConnected, queryClient]);
+
   useEffect(() => {
     const isTabQueue = tab === "queue";
     const isTabMine = tab === "mine";
     const queryKey = ["whatsapp", "contacts", tab, searchDebounced];
 
     if (isConnected) {
-      if (!contactsMessageQuery.isFetching) contactsMessageQuery.refetch();
-
       socket.on("contacts:update", ({ contact }: ContactUpdate) => {
-        contactsStatsQuery.refetch();
+        refetchStats();
 
         const data = queryClient.getQueryData<PaginatedResponse<WhatsappContactMessage>>(queryKey);
 
@@ -94,7 +102,7 @@ export const useContactsListService = ({ search, tab }: UseContactsListService) 
     return () => {
       socket.off("contacts:update");
     };
-  }, [isConnected, socket, tab, searchDebounced, queryClient, contactsStatsQuery, user]);
+  }, [isConnected, socket, tab, searchDebounced, queryClient, refetchStats, user]);
 
   const queueContactsLength = contactsStatsQuery.data?.queueCount ?? 0;
   const mineContactsLength = contactsStatsQuery.data?.myCount ?? 0;
