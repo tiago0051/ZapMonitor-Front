@@ -11,12 +11,13 @@ type UserProviderProps = {
 export const UserProvider: FC<UserProviderProps> = ({ children }) => {
   const [user, setUser] = useSessionStorage<User | null>("User", null);
   const [isLogged, setIsLogged] = useLocalStorage("isLogged", false);
-  const isPublicAuthRoute = window.location.pathname.includes("/auth");
+
+  const isLogoutRoute = window.location.pathname.includes("/auth/logout");
 
   const getsMeQuery = useQuery({
     queryKey: ["me"],
     queryFn: userService.me,
-    enabled: !isPublicAuthRoute,
+    enabled: isLogged && !isLogoutRoute,
   });
 
   useEffect(() => {
@@ -27,6 +28,8 @@ export const UserProvider: FC<UserProviderProps> = ({ children }) => {
 
   function logout() {
     localStorage.clear();
+    setIsLogged(false);
+    setUser(null);
   }
 
   function login() {
