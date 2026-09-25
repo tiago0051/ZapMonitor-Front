@@ -42,7 +42,7 @@ export const useContactsListService = ({ search, tab }: UseContactsListService) 
         },
         queries: {
           page: 1,
-          take: tab === "mine" ? 100 : takeItems,
+          take: tab !== "all" ? 100 : takeItems,
           tab,
           text: searchDebounced,
         },
