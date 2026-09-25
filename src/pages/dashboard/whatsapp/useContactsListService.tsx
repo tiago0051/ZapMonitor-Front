@@ -96,6 +96,19 @@ export const useContactsListService = ({ search, tab }: UseContactsListService) 
           });
           return;
         }
+
+        const doAddContact =
+          contactsMessageQuery.data && !contactsMessageQuery.data?.canNextPage && contactsMessageQuery.data?.total >= takeItems;
+        const doAddContactInQueueTab = doAddContact && isTabQueue && !contact.serviceRepresentative;
+        const doAddContactInMineTab =
+          doAddContact && isTabMine && !!contact.serviceRepresentative && contact.serviceRepresentative === user?.name;
+
+        if (doAddContactInQueueTab || doAddContactInMineTab) {
+          queryClient.setQueryData(queryKey, {
+            ...old,
+            items: [...items, contact],
+          });
+        }
       });
     }
 
