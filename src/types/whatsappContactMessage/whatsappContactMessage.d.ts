@@ -5,12 +5,10 @@ type WhatsappContactMessage = {
   surname: string;
   messageContent: string;
   messageContentType: string;
-  messageCreatedAt: string;
   messageType: number;
   isRead: boolean;
   whatsappConfigurationId: string;
-  categories: WhatsappMessageCategory[];
-  clientId: string;
+  categories: WhatsappMessageCategoryShort[];
   serviceRepresentative: string | null;
   replyTimeExpiredAt: string;
 };
