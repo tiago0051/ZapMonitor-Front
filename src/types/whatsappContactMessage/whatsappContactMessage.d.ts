@@ -12,6 +12,5 @@ type WhatsappContactMessage = {
   categories: WhatsappMessageCategory[];
   clientId: string;
   serviceRepresentative: string | null;
-  serviceCreatedAt: string | null;
   replyTimeExpiredAt: string;
 };

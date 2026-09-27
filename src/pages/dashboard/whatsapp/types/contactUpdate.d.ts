@@ -17,6 +17,5 @@ export interface Contact {
   categories: WhatsappMessageCategory[];
   clientId: string;
   serviceRepresentative: string;
-  serviceCreatedAt: string;
   replyTimeExpiredAt: string;
 }
