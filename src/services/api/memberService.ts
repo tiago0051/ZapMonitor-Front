@@ -11,6 +11,9 @@ export const memberService = {
   cancelInvitation: async ({ params }: CancelInvitationRequestData): Promise<void> => {
     await api.delete(`/client/${params.clientId}/invitations/${params.invitationId}`);
   },
+  changeRole: async ({ params, body }: ChangeMemberRoleRequestData): Promise<void> => {
+    await api.put(`/client/${params.clientId}/members/${params.userId}/role`, body);
+  },
   activate: async ({ params }: ActivateMemberRequestData): Promise<void> => {
     await api.patch(`/client/${params.clientId}/members/${params.userId}/activate`);
   },

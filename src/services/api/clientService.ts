@@ -14,6 +14,10 @@ export const clientService = {
     const response = await api.post("/client", body);
     return response.data;
   },
+  findMyAccess: async ({ params }: FindClientByIdRequestData): Promise<TenantAccess> => {
+    const response = await api.get(`/client/${params.clientId}/access`);
+    return response.data;
+  },
   generateNewSecret: async ({ params }: GenerateNewSecretRequestData): Promise<string> => {
     const response = await api.put(`/client/${params.clientId}/secret`);
     return response.data;

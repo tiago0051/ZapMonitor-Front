@@ -21,8 +21,23 @@ type InviteMemberRequestParams = {
   clientId: string;
 };
 
-type InviteMemberRequestBody = {
+type MemberRoleRequestBody = {
+  role: TenantRole;
+  permissionGroupId: string | null;
+};
+
+type InviteMemberRequestBody = MemberRoleRequestBody & {
   email: string;
+};
+
+type ChangeMemberRoleRequestData = {
+  params: ChangeMemberRoleRequestParams;
+  body: MemberRoleRequestBody;
+};
+
+type ChangeMemberRoleRequestParams = {
+  clientId: string;
+  userId: string;
 };
 
 type CancelInvitationRequestData = {

@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import type { FC } from "react";
-import { memberStatusLabel, memberStatusVariant } from "../memberStatus";
+import { getMemberRoleLabel, memberStatusLabel, memberStatusVariant } from "../memberStatus";
 import { MemberRowActions } from "./memberRowActions";
 
 type MemberCardProps = {
@@ -22,6 +22,10 @@ export const MemberCard: FC<MemberCardProps> = ({ member, clientId }) => {
         <Badge variant={memberStatusVariant[member.status]} className="shrink-0">
           {memberStatusLabel[member.status]}
         </Badge>
+      </div>
+
+      <div className="mt-2">
+        <Badge variant="outline">{getMemberRoleLabel(member)}</Badge>
       </div>
 
       <p className="text-muted-foreground mt-2 text-xs">Entrou em {format(member.createdAt, "dd/MM/yyyy HH:mm")}</p>

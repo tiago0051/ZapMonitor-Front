@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { type DataTablePaginateColumnDef } from "@/components/ui/dataTablePaginateFeatures";
 import { format } from "date-fns";
 import { MemberRowActions } from "./components/memberRowActions";
-import { memberStatusLabel, memberStatusVariant } from "./memberStatus";
+import { getMemberRoleLabel, memberStatusLabel, memberStatusVariant } from "./memberStatus";
 
 export const getColumns = (clientId: string) => {
   const columns: DataTablePaginateColumnDef<Member>[] = [
@@ -17,6 +17,11 @@ export const getColumns = (clientId: string) => {
     {
       accessorKey: "email",
       header: "E-mail",
+    },
+    {
+      accessorKey: "role",
+      header: "Papel",
+      cell: ({ row }) => <Badge variant="outline">{getMemberRoleLabel(row.original)}</Badge>,
     },
     {
       accessorKey: "status",

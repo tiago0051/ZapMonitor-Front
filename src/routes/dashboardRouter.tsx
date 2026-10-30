@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useParams } from "react-router";
 import { HomePage } from "../pages/dashboard/home/home";
 import { DashboardLayout } from "@/pages/dashboard/layout";
 import { ClientProvider } from "@/context/ClientContext/clientProvider";
+import { PermissionRoute } from "@/components/permission-route";
 
 const WhatsappRouter = lazy(() => import("./whatsappRouter"));
 const ConfigurationRouter = lazy(() => import("./clientRouter"));
@@ -20,9 +21,30 @@ export const DashboardRouter: FC = () => {
         <Route element={<DashboardLayout />}>
           <Route index element={<HomePage />} />
           <Route path="configuration/*" element={<ConfigurationRouter />} />
-          <Route path="email/*" element={<EmailRouter />} />
-          <Route path="whatsapp/*" element={<WhatsappRouter />} />
-          <Route path="members/*" element={<MembersRouter />} />
+          <Route
+            path="email/*"
+            element={
+              <PermissionRoute permission="email.view">
+                <EmailRouter />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="whatsapp/*"
+            element={
+              <PermissionRoute permission="whatsapp.chat">
+                <WhatsappRouter />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="members/*"
+            element={
+              <PermissionRoute permission="members.manage">
+                <MembersRouter />
+              </PermissionRoute>
+            }
+          />
         </Route>
       </Route>
     </Routes>

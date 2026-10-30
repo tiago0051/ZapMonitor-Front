@@ -10,12 +10,19 @@ import { useEffect, useState, type FC } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
+import { MemberRoleFields } from "./memberRoleFields";
+import { memberRoleShape, refineMemberRole } from "./memberRoleSchema";
 
 type DialogInviteMemberProps = { className?: string; clientId: string };
 
-const schema = z.object({
-  email: z.email("E-mail inválido"),
-});
+const schema = z
+  .object({
+    email: z.email("E-mail inválido"),
+    ...memberRoleShape,
+  })
+  .superRefine(refineMemberRole);
+
+const defaultValues: z.infer<typeof schema> = { email: "", role: "ATTENDANT", permissionGroupId: "" };
 
 type SchemaType = z.infer<typeof schema>;
 
@@ -35,16 +42,19 @@ export const DialogInviteMember: FC<DialogInviteMemberProps> = ({ clientId, clas
 
   const form = useForm<SchemaType>({
     resolver: zodResolver(schema),
-    defaultValues: { email: "" },
+    defaultValues,
     disabled: inviteMember.isPending,
   });
 
   const handleSubmit: SubmitHandler<SchemaType> = (data) => {
-    inviteMember.mutate({ body: data, params: { clientId } });
+    inviteMember.mutate({
+      body: { ...data, permissionGroupId: data.role === "CUSTOM" ? data.permissionGroupId : null },
+      params: { clientId },
+    });
   };
 
   useEffect(() => {
-    if (!isOpen) form.reset();
+    if (!isOpen) form.reset(defaultValues);
   }, [isOpen]);
 
   return (
@@ -72,6 +82,7 @@ export const DialogInviteMember: FC<DialogInviteMemberProps> = ({ clientId, clas
                 </FormItem>
               )}
             />
+            <MemberRoleFields clientId={clientId} />
           </form>
         </Form>
         <DialogFooter>
