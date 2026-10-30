@@ -6,9 +6,10 @@ import { format } from "date-fns";
 import { useState, type FC } from "react";
 import { FiAlertTriangle, FiDownload } from "react-icons/fi";
 import { IoCheckmarkDoneOutline, IoCheckmarkOutline, IoTimeOutline } from "react-icons/io5";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Reply } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "motion/react";
+import { MessageReplyPreview } from "../../../messageReplyPreview";
 
 type MessageFileContent = { url: string; filename: string };
 
@@ -42,14 +43,33 @@ const MessageDocument = ({ content }: { content: MessageFileContent }) => (
     {!content && <p className="text-xs">Baixando...</p>}
   </div>
 );
+const MessageSticker = ({ content }: { content: MessageFileContent }) => (
+  <div>
+    {content && <img src={content.url} alt="Figurinha" className="size-36 object-contain" />}
+    {!content && <p className="text-xs">Baixando...</p>}
+  </div>
+);
 const MessageContact = ({ message }: { message: WhatsappMessage<string> }) => <p className="whitespace-pre-wrap">{message.content}</p>;
 const MessageTemplate = ({ message }: { message: WhatsappMessage<string> }) => <p className="whitespace-pre-wrap">{message.content}</p>;
 
+const supportedContentTypes: string[] = [
+  WhatsappMessageContentType.TEXT,
+  WhatsappMessageContentType.AUDIO,
+  WhatsappMessageContentType.IMAGE,
+  WhatsappMessageContentType.VIDEO,
+  WhatsappMessageContentType.DOCUMENT,
+  WhatsappMessageContentType.STICKER,
+  WhatsappMessageContentType.CONTACTS,
+  WhatsappMessageContentType.TEMPLATE,
+];
+
 type MessageItemProps = {
   message: WhatsappMessage;
+  contactName: string;
+  onReply?: (message: WhatsappMessage) => void;
 };
 
-export const MessageItem: FC<MessageItemProps> = ({ message }) => {
+export const MessageItem: FC<MessageItemProps> = ({ message, contactName, onReply }) => {
   const [isTranscriptionOpen, setIsTranscriptionOpen] = useState(false);
 
   const status = message.status;
@@ -64,17 +84,38 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
       exit={{ opacity: 0, scale: 0.96 }}
       transition={{ duration: 0.22, ease: "easeOut" }}
       data-type={message.type}
-      className="bg-secondary text-secondary-foreground relative max-w-[85%] min-w-[300px] rounded p-2 pt-2 pb-6 data-[type=1]:self-end data-[type=1]:bg-green-100/50"
+      data-reacted={!!message.contactReaction}
+      className="group bg-secondary text-secondary-foreground relative max-w-[85%] min-w-[300px] rounded p-2 pt-2 pb-6 data-[reacted=true]:mb-3 data-[type=1]:self-end data-[type=1]:bg-green-100/50"
     >
+      {onReply && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onReply(message)}
+          aria-label="Responder mensagem"
+          title="Responder"
+          className="bg-secondary/90 absolute top-1 right-1 z-10 size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+        >
+          <Reply className="size-4" />
+        </Button>
+      )}
+
+      {message.replyTo && <MessageReplyPreview replyTo={message.replyTo} contactName={contactName} className="mb-2" />}
+
       {message.contentType === WhatsappMessageContentType.TEXT && <MessageText message={message as WhatsappMessage<string>} />}
       {message.contentType === WhatsappMessageContentType.AUDIO && <MessageAudio content={content as MessageFileContent} />}
       {message.contentType === WhatsappMessageContentType.IMAGE && <MessageImage content={content as MessageFileContent} />}
       {message.contentType === WhatsappMessageContentType.VIDEO && <MessageVideo content={content as MessageFileContent} />}
       {message.contentType === WhatsappMessageContentType.DOCUMENT && <MessageDocument content={content as MessageFileContent} />}
+      {message.contentType === WhatsappMessageContentType.STICKER && <MessageSticker content={content as MessageFileContent} />}
 
       {message.contentType === WhatsappMessageContentType.CONTACTS && <MessageContact message={message as WhatsappMessage<string>} />}
 
       {message.contentType === WhatsappMessageContentType.TEMPLATE && <MessageTemplate message={message as WhatsappMessage<string>} />}
+
+      {!supportedContentTypes.includes(message.contentType) && (
+        <p className="text-muted-foreground text-sm italic">Tipo de mensagem não suportado</p>
+      )}
 
       {transcribedContent && (
         <div className="mt-2 border-t pt-2">
@@ -112,6 +153,15 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
           )}
         </div>
       </span>
+
+      {message.contactReaction && (
+        <span
+          className="bg-background absolute -bottom-3 left-2 rounded-full border px-1.5 text-sm leading-6 shadow-sm"
+          title="Reação do contato"
+        >
+          {message.contactReaction}
+        </span>
+      )}
     </motion.div>
   );
 };

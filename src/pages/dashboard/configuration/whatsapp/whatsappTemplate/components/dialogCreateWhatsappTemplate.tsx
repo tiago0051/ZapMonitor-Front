@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { whatsappContants } from "@/contants/whatsappContants";
 import { templateService } from "@/services/api/templateService";
 import { requestErrorHandling } from "@/utils/request";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,10 +20,14 @@ type DialogCreateWhatsappTemplateProps = {
 
 const schema = z.object({
   name: z.string().min(1, "O nome do template é obrigatório"),
+  language: z.string().min(1, "Selecione o idioma do template"),
   description: z.string().optional(),
 });
 
 type SchemaType = z.infer<typeof schema>;
+
+const selectClassName =
+  "border-input dark:bg-input/30 focus-visible:border-ring focus-visible:ring-ring/50 flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-base shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm";
 
 export const DialogCreateWhatsappTemplate: FC<DialogCreateWhatsappTemplateProps> = ({ clientId }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -45,6 +50,7 @@ export const DialogCreateWhatsappTemplate: FC<DialogCreateWhatsappTemplateProps>
     resolver: zodResolver(schema),
     defaultValues: {
       name: "",
+      language: whatsappContants.DEFAULT_TEMPLATE_LANGUAGE,
       description: "",
     },
     disabled: createWhatsappTemplate.isPending,
@@ -87,6 +93,26 @@ export const DialogCreateWhatsappTemplate: FC<DialogCreateWhatsappTemplateProps>
                   <FormLabel>Nome</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder="Nome do template" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="language"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Idioma</FormLabel>
+                  <FormControl>
+                    <select {...field} className={selectClassName}>
+                      {whatsappContants.TEMPLATE_LANGUAGES.map((language) => (
+                        <option key={language.code} value={language.code}>
+                          {language.label} ({language.code})
+                        </option>
+                      ))}
+                    </select>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

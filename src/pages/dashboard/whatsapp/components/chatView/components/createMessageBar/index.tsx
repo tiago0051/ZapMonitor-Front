@@ -12,12 +12,15 @@ import { type ChangeEvent, type FC, useEffect, useRef, useState } from "react";
 import { FiFile, FiImage, FiMic, FiPaperclip, FiSend, FiStopCircle, FiX } from "react-icons/fi";
 import { useReactMediaRecorder } from "react-media-recorder";
 import { toast } from "sonner";
+import { MessageReplyPreview } from "../messageReplyPreview";
 
 type CreateMessageBarProps = {
   contact: WhatsappContactMessage;
+  replyingTo?: WhatsappMessage | null;
+  onCancelReply?: () => void;
 };
 
-export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact }) => {
+export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingTo, onCancelReply }) => {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const { client } = useClientContext();
@@ -81,6 +84,8 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact }) => {
   });
 
   async function handleSendMessage() {
+    const replyToMessageId = replyingTo?.id;
+
     if (messageIsAudio) {
       const blobMp3 = await convertWavToMp3(message.value as Blob);
       const file = new File([blobMp3], new Date().getTime().toString(), { type: blobMp3.type });
@@ -99,6 +104,7 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact }) => {
         body: {
           type: message.type,
           fileId,
+          replyToMessageId,
         },
       });
     }
@@ -115,6 +121,7 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact }) => {
         body: {
           type: message.type,
           fileId,
+          replyToMessageId,
         },
       });
     }
@@ -129,6 +136,7 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact }) => {
         body: {
           type: message.type,
           text: message.value as string,
+          replyToMessageId,
         },
       });
 
@@ -138,6 +146,7 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact }) => {
     }
 
     setMessage(defaultMessage);
+    onCancelReply?.();
   }
 
   function onKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -189,103 +198,123 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact }) => {
   const showDocumentBar = !isRecording && (messageIsDocument || messageIsAudio || messageIsImage);
 
   useEffect(() => {
+    if (replyingTo) inputRef.current?.focus();
+  }, [replyingTo]);
+
+  useEffect(() => {
     if (error) {
       toast.error(error);
     }
   }, [error]);
 
+  const contactName = contact.surname?.trim() || contact.name?.trim() || "Contato";
+
   return (
-    <div className="flex items-center gap-2 pt-2">
-      {!isRecording && messageIsText && (
-        <textarea
-          className="focus:ring-primary max-h-40 w-full resize-none overflow-auto rounded border px-4 py-2 leading-5 transition focus:ring-2 focus:outline-none"
-          placeholder="Sua mensagem"
-          onKeyDown={onKeyDown}
-          onChange={onInput}
-          value={message.value as string}
-          ref={inputRef}
-          readOnly={disabledMessage}
-          aria-label="Digite sua mensagem"
-          rows={1}
-        />
-      )}
-
-      {showDocumentBar && (
-        <div className="flex w-full items-center">
-          {messageIsDocument && (
-            <div className={"flex w-full items-center gap-2"}>
-              <FiFile />
-              <p>{(message.value as File).name}</p>
-            </div>
-          )}
-
-          {messageIsAudio && <audio controls src={URL.createObjectURL(message.value as Blob)} className="w-full" />}
-
-          {messageIsImage && (
-            <div className={"w-full"}>
-              <img src={URL.createObjectURL(message.value as File)} alt={"Imagem selecioanda"} className={"h-[100px]"} />
-            </div>
-          )}
-
-          <Button variant={"ghost"} size={"icon"} onClick={() => setMessage(defaultMessage)} disabled={disabledMessage}>
+    <div className="flex flex-col gap-2 pt-2">
+      {replyingTo && (
+        <MessageReplyPreview
+          replyTo={{ id: replyingTo.id, content: replyingTo.content, contentType: replyingTo.contentType, type: replyingTo.type }}
+          contactName={contactName}
+          className="bg-secondary"
+        >
+          <Button variant="ghost" size="icon" onClick={onCancelReply} disabled={disabledMessage} aria-label="Cancelar resposta">
             <FiX />
           </Button>
-        </div>
+        </MessageReplyPreview>
       )}
 
-      {isRecording && (
-        <div className="border-destructive w-full animate-pulse rounded border px-4 py-2">
-          <p className="text-destructive">Gravando áudio...</p>
-        </div>
-      )}
-      <div className="flex gap-1">
-        {!isRecording && (
-          <Button
-            type="button"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={handleSendMessage}
-            disabled={disableButtonSendMessage}
-            aria-label="Enviar mensagem"
-            size={"icon"}
-          >
-            <FiSend />
-          </Button>
-        )}
-        {messageIsText && (
-          <Button
-            type="button"
-            onClick={() => (isRecording ? stopRecording() : startRecording())}
-            disabled={disabledMessage}
-            variant={isRecording ? "destructive" : "outline"}
-            aria-label="Enviar áudio"
-            size={"icon"}
-          >
-            {!isRecording && <FiMic />}
-            {isRecording && <FiStopCircle />}
-          </Button>
-        )}
+      <div className="flex items-center gap-2">
         {!isRecording && messageIsText && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild disabled={isRecording}>
-              <Button variant={"outline"} size={"icon"} disabled={disabledMessage}>
-                <FiPaperclip />
-              </Button>
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent>
-              <DropdownMenuItem
-                onClick={() => selectMediaMessageClick(WhatsappMessageContentType.DOCUMENT, whatsappContants.DOCUMENT_TYPES)}
-              >
-                <FiFile />
-                Documento
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => selectMediaMessageClick(WhatsappMessageContentType.IMAGE, whatsappContants.IMAGE_TYPES)}>
-                <FiImage />
-                Imagem
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <textarea
+            className="focus:ring-primary max-h-40 w-full resize-none overflow-auto rounded border px-4 py-2 leading-5 transition focus:ring-2 focus:outline-none"
+            placeholder="Sua mensagem"
+            onKeyDown={onKeyDown}
+            onChange={onInput}
+            value={message.value as string}
+            ref={inputRef}
+            readOnly={disabledMessage}
+            aria-label="Digite sua mensagem"
+            rows={1}
+          />
         )}
+
+        {showDocumentBar && (
+          <div className="flex w-full items-center">
+            {messageIsDocument && (
+              <div className={"flex w-full items-center gap-2"}>
+                <FiFile />
+                <p>{(message.value as File).name}</p>
+              </div>
+            )}
+
+            {messageIsAudio && <audio controls src={URL.createObjectURL(message.value as Blob)} className="w-full" />}
+
+            {messageIsImage && (
+              <div className={"w-full"}>
+                <img src={URL.createObjectURL(message.value as File)} alt={"Imagem selecioanda"} className={"h-[100px]"} />
+              </div>
+            )}
+
+            <Button variant={"ghost"} size={"icon"} onClick={() => setMessage(defaultMessage)} disabled={disabledMessage}>
+              <FiX />
+            </Button>
+          </div>
+        )}
+
+        {isRecording && (
+          <div className="border-destructive w-full animate-pulse rounded border px-4 py-2">
+            <p className="text-destructive">Gravando áudio...</p>
+          </div>
+        )}
+        <div className="flex gap-1">
+          {!isRecording && (
+            <Button
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={handleSendMessage}
+              disabled={disableButtonSendMessage}
+              aria-label="Enviar mensagem"
+              size={"icon"}
+            >
+              <FiSend />
+            </Button>
+          )}
+          {messageIsText && (
+            <Button
+              type="button"
+              onClick={() => (isRecording ? stopRecording() : startRecording())}
+              disabled={disabledMessage}
+              variant={isRecording ? "destructive" : "outline"}
+              aria-label="Enviar áudio"
+              size={"icon"}
+            >
+              {!isRecording && <FiMic />}
+              {isRecording && <FiStopCircle />}
+            </Button>
+          )}
+          {!isRecording && messageIsText && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild disabled={isRecording}>
+                <Button variant={"outline"} size={"icon"} disabled={disabledMessage}>
+                  <FiPaperclip />
+                </Button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent>
+                <DropdownMenuItem
+                  onClick={() => selectMediaMessageClick(WhatsappMessageContentType.DOCUMENT, whatsappContants.DOCUMENT_TYPES)}
+                >
+                  <FiFile />
+                  Documento
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => selectMediaMessageClick(WhatsappMessageContentType.IMAGE, whatsappContants.IMAGE_TYPES)}>
+                  <FiImage />
+                  Imagem
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
     </div>
   );

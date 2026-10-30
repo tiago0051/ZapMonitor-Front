@@ -144,6 +144,10 @@ export const whatsappService = {
     );
     return response.data;
   },
+  sendTemplateToNewContact: async ({ params, body }: SendTemplateToNewContactRequestData): Promise<WhatsappContactMessage> => {
+    const response = await api.post(`/client/${params.clientId}/whatsapp/contact/template`, body);
+    return response.data;
+  },
   findAllFilesByContact: async ({
     params,
     queries,

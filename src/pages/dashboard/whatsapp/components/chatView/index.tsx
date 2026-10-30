@@ -1,5 +1,5 @@
 import { useUserContext } from "@/context/UserContext/userContext";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSocketContext } from "@/context/SocketContext/socketContext";
 import { Header } from "./components/header";
 import { MessageList } from "./components/messageList";
@@ -20,6 +20,14 @@ export const ChatView = ({ contact, onServiceAssumed, onBack, onShowInfo }: Chat
   const { user } = useUserContext();
   const { contactService } = useContactService({ contactId: contact.id });
 
+  const [replyingTo, setReplyingTo] = useState<WhatsappMessage | null>(null);
+  const [prevContactId, setPrevContactId] = useState(contact.id);
+
+  if (contact.id !== prevContactId) {
+    setPrevContactId(contact.id);
+    setReplyingTo(null);
+  }
+
   useEffect(() => {
     if (user && isConnected) {
       socket.emit("chat:subscribe", contact.id);
@@ -30,6 +38,7 @@ export const ChatView = ({ contact, onServiceAssumed, onBack, onShowInfo }: Chat
   }, [user, contact, isConnected, socket]);
 
   const isReplyTimeExpired = contact.replyTimeExpiredAt ? isBefore(new Date(contact.replyTimeExpiredAt), new Date()) : false;
+  const canSendMessage = !!contactService?.canBeSentMessage && !isReplyTimeExpired;
 
   return (
     <div className={"flex h-full flex-col overflow-hidden"}>
@@ -40,11 +49,11 @@ export const ChatView = ({ contact, onServiceAssumed, onBack, onShowInfo }: Chat
         onBack={onBack}
         onShowInfo={onShowInfo}
       />
-      <MessageList contact={contact} />
+      <MessageList contact={contact} onReply={canSendMessage ? setReplyingTo : undefined} />
 
-      {contactService?.canBeSentMessage && !isReplyTimeExpired && (
+      {canSendMessage && (
         <div className="px-4 pb-3">
-          <CreateMessageBar contact={contact} />
+          <CreateMessageBar contact={contact} replyingTo={replyingTo} onCancelReply={() => setReplyingTo(null)} />
         </div>
       )}
       {contactService && !contactService?.canBeSentMessage && isReplyTimeExpired && (

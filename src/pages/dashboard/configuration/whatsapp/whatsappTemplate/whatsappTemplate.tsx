@@ -25,7 +25,7 @@ export const WhatsappTemplate = () => {
           <CardTitle>Templates</CardTitle>
           <CardDescription>Gerencie os templates do WhatsApp para este cliente.</CardDescription>
         </div>
-        <DialogCreateWhatsappTemplate clientId={clientId!}/>
+        <DialogCreateWhatsappTemplate clientId={clientId!} />
       </CardHeader>
       <CardContent>
         {findAllWhatsappTemplatesQuery.isLoading && <p>Carregando...</p>}
@@ -42,6 +42,9 @@ export const WhatsappTemplate = () => {
                     <div className="flex items-center gap-2 overflow-hidden">
                       <FileText className="text-primary h-5 w-5 shrink-0" />
                       <h3 className="truncate text-base font-semibold">{template.name}</h3>
+                      <span className="bg-muted text-muted-foreground shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium">
+                        {template.language}
+                      </span>
                     </div>
                     <DialogDeleteWhatsappTemplate clientId={clientId!} templateId={template.id} />
                   </div>

@@ -1,3 +1,10 @@
+type WhatsappMessageReplyTo = {
+  id: string;
+  content: unknown;
+  contentType: string;
+  type: number;
+};
+
 type WhatsappMessage<C = unknown> = {
   id: string;
   content: C;
@@ -6,5 +13,7 @@ type WhatsappMessage<C = unknown> = {
   type: number;
   status: number;
   userName: string;
+  contactReaction?: string | null;
+  replyTo?: WhatsappMessageReplyTo | null;
   createdAt: string;
 };

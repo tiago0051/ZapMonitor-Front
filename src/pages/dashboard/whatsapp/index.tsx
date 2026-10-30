@@ -5,6 +5,7 @@ import { ContactCard } from "./components/contactCard";
 import { ContactCardSkeleton } from "./components/contactCard/skeleton";
 import { InfoPanel } from "./components/infoPanel";
 import { ChatView } from "./components/chatView";
+import { DialogNewContactTemplate } from "./components/dialogNewContactTemplate";
 import { useSocketContext } from "@/context/SocketContext/socketContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useContactsListService } from "./useContactsListService";
@@ -76,8 +77,8 @@ function ContactListPanel({
         })}
       </div>
 
-      <div className="border-border flex-shrink-0 border-b px-3 py-2.5">
-        <div className="bg-muted flex items-center gap-2 rounded-lg px-3 py-1.5">
+      <div className="border-border flex flex-shrink-0 items-center gap-2 border-b px-3 py-2.5">
+        <div className="bg-muted flex flex-1 items-center gap-2 rounded-lg px-3 py-1.5">
           <Search className="text-muted-foreground h-3.5 w-3.5 flex-shrink-0" />
           <input
             value={search}
@@ -91,6 +92,12 @@ function ContactListPanel({
             </button>
           )}
         </div>
+        <DialogNewContactTemplate
+          onSent={(contact) => {
+            setTab("all");
+            onSelectContact(contact);
+          }}
+        />
       </div>
       <AnimatePresence mode="wait" initial={false}>
         <motion.div

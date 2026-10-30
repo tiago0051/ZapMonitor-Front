@@ -165,6 +165,7 @@ type CreateWhatsappMessageRequestBody = {
   type: string;
   text?: string;
   fileId?: string;
+  replyToMessageId?: string;
 };
 //#endregion
 
@@ -284,6 +285,24 @@ type SendTemplateRequestBody = {
   templateId: string;
 };
 
+//#endregion
+
+//#region Send Template To New Contact
+type SendTemplateToNewContactRequestData = {
+  params: SendTemplateToNewContactRequestParams;
+  body: SendTemplateToNewContactRequestBody;
+};
+
+type SendTemplateToNewContactRequestParams = {
+  clientId: string;
+};
+
+type SendTemplateToNewContactRequestBody = {
+  phoneNumber: string;
+  name?: string;
+  configurationId: string;
+  templateId: string;
+};
 //#endregion
 
 //#region findAllFilesByContact

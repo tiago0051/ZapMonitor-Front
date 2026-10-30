@@ -6,4 +6,6 @@ export enum WhatsappMessageContentType {
   VIDEO = "video",
   CONTACTS = "contacts",
   TEMPLATE = "template",
+  STICKER = "sticker",
+  REACTION = "reaction",
 }

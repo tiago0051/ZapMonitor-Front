@@ -5,19 +5,22 @@ import { useContactMessages } from "./hooks/useContactMessages";
 
 type MessageListProps = {
   contact: WhatsappContactMessage;
+  onReply?: (message: WhatsappMessage) => void;
 };
 
-export const MessageList = ({ contact }: MessageListProps) => {
+export const MessageList = ({ contact, onReply }: MessageListProps) => {
   const { onScrollChat, isFetching, messages } = useContactMessages({
     contact,
   });
+
+  const contactName = contact.surname?.trim() || contact.name?.trim() || "Contato";
 
   return (
     <div className={"grid h-full grid-rows-[auto_min-content] overflow-hidden pt-4"}>
       <div onScroll={onScrollChat} className="flex max-h-full flex-col-reverse gap-2 overflow-auto px-4">
         <AnimatePresence initial={false}>
           {messages.map((message) => (
-            <MessageItem message={message} key={message.id} />
+            <MessageItem message={message} key={message.id} contactName={contactName} onReply={onReply} />
           ))}
         </AnimatePresence>
 
