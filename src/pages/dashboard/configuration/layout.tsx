@@ -8,6 +8,7 @@ import { WhatsappAiConfiguration } from "./whatsapp/whatsappAi/whatsappAiConfigu
 import { WhatsappTemplate } from "./whatsapp/whatsappTemplate/whatsappTemplate";
 import { WhatsappEmbeddedSignup } from "./whatsapp/whatsappEmbeddedSignup/whatsappEmbeddedSignup";
 import { ChangePasswordForm } from "@/components/change-password-form";
+import { ServiceGroups } from "./serviceGroup/serviceGroup";
 
 export const EditClientLayout = () => {
   const { clientId } = useParams();
@@ -29,6 +30,7 @@ export const EditClientLayout = () => {
         <TabsList className="mb-4">
           <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
           <TabsTrigger value="whatsappConfiguration">Números</TabsTrigger>
+          <TabsTrigger value="serviceGroup">Grupos de atendimento</TabsTrigger>
           <TabsTrigger value="account">Conta</TabsTrigger>
           <TabsTrigger value="integration" disabled>
             Integração
@@ -42,6 +44,9 @@ export const EditClientLayout = () => {
         <TabsContent value="whatsappConfiguration" className="space-y-5">
           <WhatsappEmbeddedSignup />
           <WhatsappConfiguration />
+        </TabsContent>
+        <TabsContent value="serviceGroup" className="space-y-5">
+          <ServiceGroups />
         </TabsContent>
         <TabsContent value="account">
           <ChangePasswordForm />

@@ -57,11 +57,12 @@ export const whatsappService = {
   },
   findContactsStats: async ({
     params,
+    queries,
   }: FindAllWhatsappContactMessagesStatsRequestData): Promise<{
     queueCount: number;
     myCount: number;
   }> => {
-    const response = await api.get(`/client/${params.clientId}/whatsapp/contact/stats`);
+    const response = await api.get(`/client/${params.clientId}/whatsapp/contact/stats`, { params: queries });
 
     return response.data;
   },

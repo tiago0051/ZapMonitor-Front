@@ -94,12 +94,18 @@ type FindAllWhatsappContactMessagesRequestParams = {
 type FindAllWhatsappContactMessagesRequestQuery = PaginateRequestQuery & {
   text: string;
   tab: "queue" | "mine" | "all";
+  serviceGroupId?: string;
 };
 //#endregion
 
 //#region findAllContactsStats
 type FindAllWhatsappContactMessagesStatsRequestData = {
   params: FindAllWhatsappContactMessagesStatsRequestParams;
+  queries: FindAllWhatsappContactMessagesStatsRequestQuery;
+};
+
+type FindAllWhatsappContactMessagesStatsRequestQuery = {
+  serviceGroupId?: string;
 };
 
 type FindAllWhatsappContactMessagesStatsRequestParams = {

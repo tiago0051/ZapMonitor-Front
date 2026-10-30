@@ -11,11 +11,13 @@ import type { ContactUpdate } from "./types/contactUpdate";
 interface UseContactsListService {
   search: string;
   tab: Tab;
+  serviceGroupId?: string;
+  enabled?: boolean;
 }
 
 const takeItems = 10;
 
-export const useContactsListService = ({ search, tab }: UseContactsListService) => {
+export const useContactsListService = ({ search, tab, serviceGroupId, enabled = true }: UseContactsListService) => {
   const { client } = useClientContext();
   const { socket, isConnected } = useSocketContext();
   const { user } = useUserContext();
@@ -30,8 +32,12 @@ export const useContactsListService = ({ search, tab }: UseContactsListService) 
         params: {
           clientId: client.id,
         },
+        queries: {
+          serviceGroupId,
+        },
       }),
-    queryKey: ["whatsapp", "contactsStats"],
+    queryKey: ["whatsapp", "contactsStats", serviceGroupId],
+    enabled,
   });
 
   const contactsMessageQuery = useQuery({
@@ -45,9 +51,11 @@ export const useContactsListService = ({ search, tab }: UseContactsListService) 
           take: tab !== "all" ? 100 : takeItems,
           tab,
           text: searchDebounced,
+          serviceGroupId: tab === "queue" ? serviceGroupId : undefined,
         },
       }),
-    queryKey: ["whatsapp", "contacts", tab, searchDebounced],
+    queryKey: ["whatsapp", "contacts", tab, searchDebounced, serviceGroupId],
+    enabled,
   });
 
   const refetchStats = contactsStatsQuery.refetch;
@@ -63,7 +71,11 @@ export const useContactsListService = ({ search, tab }: UseContactsListService) 
   useEffect(() => {
     const isTabQueue = tab === "queue";
     const isTabMine = tab === "mine";
-    const queryKey = ["whatsapp", "contacts", tab, searchDebounced];
+    const queryKey = ["whatsapp", "contacts", tab, searchDebounced, serviceGroupId];
+
+    // Contatos sem grupo aparecem na fila de todos os grupos
+    const isInSelectedServiceGroup = (contact: WhatsappContactMessage) =>
+      !serviceGroupId || !contact.serviceGroupId || contact.serviceGroupId === serviceGroupId;
 
     if (isConnected) {
       socket.on("contacts:update", ({ contact }: ContactUpdate) => {
@@ -78,7 +90,7 @@ export const useContactsListService = ({ search, tab }: UseContactsListService) 
         const hasContact = items.some((item) => item.id === contact.id);
 
         if (hasContact) {
-          const doRemoveFromQueueTab = isTabQueue && !!contact.serviceRepresentative;
+          const doRemoveFromQueueTab = isTabQueue && (!!contact.serviceRepresentative || !isInSelectedServiceGroup(contact));
           const doRemoveFromMineTab = isTabMine && contact.serviceRepresentative !== user?.name;
 
           if (doRemoveFromQueueTab || doRemoveFromMineTab) {
@@ -97,7 +109,7 @@ export const useContactsListService = ({ search, tab }: UseContactsListService) 
           return;
         }
 
-        const doAddContactInQueueTab = isTabQueue && !contact.serviceRepresentative;
+        const doAddContactInQueueTab = isTabQueue && !contact.serviceRepresentative && isInSelectedServiceGroup(contact);
         const doAddContactInMineTab = isTabMine && !!contact.serviceRepresentative && contact.serviceRepresentative === user?.name;
 
         if (doAddContactInQueueTab || doAddContactInMineTab) {
@@ -112,7 +124,7 @@ export const useContactsListService = ({ search, tab }: UseContactsListService) 
     return () => {
       socket.off("contacts:update");
     };
-  }, [isConnected, socket, tab, searchDebounced, queryClient, refetchStats, user]);
+  }, [isConnected, socket, tab, searchDebounced, serviceGroupId, queryClient, refetchStats, user]);
 
   const queueContactsLength = contactsStatsQuery.data?.queueCount ?? 0;
   const mineContactsLength = contactsStatsQuery.data?.myCount ?? 0;
@@ -123,11 +135,11 @@ export const useContactsListService = ({ search, tab }: UseContactsListService) 
     stats: {
       queueLength: queueContactsLength,
       mineLength: mineContactsLength,
-      isLoading: contactsStatsQuery.isLoading,
+      isLoading: !enabled || contactsStatsQuery.isLoading,
     },
     contacts: {
       items: contacts,
-      isLoading: contactsMessageQuery.isLoading,
+      isLoading: !enabled || contactsMessageQuery.isLoading,
       isEmpty: contacts.length === 0,
     },
   };
