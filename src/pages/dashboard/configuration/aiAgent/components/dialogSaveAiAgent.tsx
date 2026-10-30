@@ -23,7 +23,6 @@ const schema = z.object({
   name: z.string().trim().min(1, "O nome do agente é obrigatório").max(100, "Use no máximo 100 caracteres"),
   description: z.string().max(1000, "Use no máximo 1000 caracteres"),
   systemPrompt: z.string().trim().min(1, "O system prompt é obrigatório"),
-  model: z.string(),
   temperature: z.number().min(0, "Mínimo 0").max(2, "Máximo 2"),
 });
 
@@ -61,14 +60,13 @@ export const DialogSaveAiAgent: FC<DialogSaveAiAgentProps> = ({ clientId, aiAgen
       name: "",
       description: "",
       systemPrompt: "",
-      model: "",
       temperature: 0.7,
     },
     disabled: isPending,
   });
 
   const handleSubmit: SubmitHandler<SchemaType> = (data) => {
-    const body = { ...data, description: data.description || undefined, model: data.model || undefined };
+    const body = { ...data, description: data.description || undefined };
 
     if (aiAgent) {
       updateAiAgent.mutate({ params: { clientId, aiAgentId: aiAgent.id }, body });
@@ -85,7 +83,6 @@ export const DialogSaveAiAgent: FC<DialogSaveAiAgentProps> = ({ clientId, aiAgen
       name: aiAgent?.name ?? "",
       description: aiAgent?.description ?? "",
       systemPrompt: aiAgent?.systemPrompt ?? "",
-      model: aiAgent?.model ?? "",
       temperature: aiAgent?.temperature ?? 0.7,
     });
   }, [isOpen]);
@@ -159,44 +156,20 @@ export const DialogSaveAiAgent: FC<DialogSaveAiAgentProps> = ({ clientId, aiAgen
                 )}
               />
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="model"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Modelo</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Padrão da configuração de IA" />
-                      </FormControl>
-                      <FormDescription>Deixe vazio para usar o modelo configurado no cliente.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="temperature"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Temperatura</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="number"
-                          step={0.1}
-                          min={0}
-                          max={2}
-                          onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                        />
-                      </FormControl>
-                      <FormDescription>Menor = respostas mais previsíveis.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="temperature"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Temperatura</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" step={0.1} min={0} max={2} onChange={(e) => field.onChange(e.target.valueAsNumber)} />
+                    </FormControl>
+                    <FormDescription>Menor = respostas mais previsíveis.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </form>
           </Form>
 

@@ -5,16 +5,9 @@ import { useState } from "react";
 import type { PaginationState } from "@tanstack/react-table";
 import { whatsappService } from "@/services/api/whatsappService";
 import { useParams } from "react-router";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DialogCreateWhatsappConfiguration } from "./components/dialogCreateWhatsappConfiguration";
+import { WhatsappEmbeddedSignupButton } from "../whatsappEmbeddedSignup/whatsappEmbeddedSignup";
 
 export const WhatsappConfiguration = () => {
   const { clientId } = useParams();
@@ -37,34 +30,26 @@ export const WhatsappConfiguration = () => {
 
   const listWhatsappConfigurations = findAllWhatsappConfigurationsQuery.data;
 
-  const columns = getColumns();
+  const columns = getColumns(clientId!);
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Configurações do WhatsApp</CardTitle>
-        <CardDescription>
-          Gerencie as configurações do WhatsApp para este cliente.
-        </CardDescription>
+      <CardHeader className="flex flex-col gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <CardTitle>Números de WhatsApp</CardTitle>
+          <CardDescription>
+            Conecte os números que recebem e enviam mensagens. Pela Meta, as credenciais são configuradas automaticamente.
+          </CardDescription>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <DialogCreateWhatsappConfiguration clientId={clientId!} />
+          <WhatsappEmbeddedSignupButton />
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="mb-4 grid grid-cols-6 lg:grid-cols-8 items-end gap-4">
-          <div className="col-span-2 lg:col-span-4">
-            <div className="space-y-2">
-              <Label htmlFor="search">Buscar</Label>
-              <Input name="search" placeholder="Digite o número do WhatsApp" />
-            </div>
-          </div>
-          <DialogCreateWhatsappConfiguration
-            clientId={clientId!}
-            className="col-start-5 col-span-2 lg:col-start-8"
-          />
-        </div>
-        {findAllWhatsappConfigurationsQuery.isLoading && <p>Loading...</p>}
-        {findAllWhatsappConfigurationsQuery.isError && (
-          <p>Error fetching emails</p>
-        )}
-        {listWhatsappConfigurations && (
+        {listWhatsappConfigurations.total === 0 ? (
+          <p className="text-muted-foreground text-sm">Nenhum número conectado. Comece por "Conectar com a Meta".</p>
+        ) : (
           <DataTablePaginate
             columns={columns}
             data={listWhatsappConfigurations}

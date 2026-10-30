@@ -102,21 +102,6 @@ export const DialogCreateAiConfig: FC<DialogCreateAiConfigProps> = ({ clientId, 
 
             <FormField
               control={form.control}
-              name="model"
-              disabled
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Modelo</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="gpt-4o-mini" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
               name="temperature"
               disabled
               render={({ field }) => (

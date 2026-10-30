@@ -1,29 +1,12 @@
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { whatsappService } from "@/services/api/whatsappService";
 import { requestErrorHandling } from "@/utils/request";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import parsePhoneNumberFromString, {
-  isPossiblePhoneNumber,
-} from "libphonenumber-js";
+import parsePhoneNumberFromString, { isPossiblePhoneNumber } from "libphonenumber-js";
 import { useEffect, useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { toast } from "sonner";
@@ -45,10 +28,7 @@ const schema = z.object({
 
 type SchemaType = z.infer<typeof schema>;
 
-export const DialogCreateWhatsappConfiguration = ({
-  className,
-  clientId,
-}: DialogCreateWhatsappConfigurationProps) => {
+export const DialogCreateWhatsappConfiguration = ({ className, clientId }: DialogCreateWhatsappConfigurationProps) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
   const queryClient = useQueryClient();
@@ -60,7 +40,7 @@ export const DialogCreateWhatsappConfiguration = ({
       queryClient.invalidateQueries({
         queryKey: ["whatsappConfigurations", clientId],
       });
-      toast.success("Configuração criada com sucesso");
+      toast.success("Número cadastrado com sucesso");
       setIsOpen(false);
     },
   });
@@ -98,22 +78,20 @@ export const DialogCreateWhatsappConfiguration = ({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className={className}>Nova Configuração</Button>
+        <Button variant="outline" className={className}>
+          Cadastro manual
+        </Button>
       </DialogTrigger>
 
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Nova Configuração</DialogTitle>
+          <DialogTitle>Cadastro manual de número</DialogTitle>
           <DialogDescription>
-            Crie uma nova configuração para de integração com o WhatsApp.
+            Use apenas se o número não puder ser conectado pela Meta. Os dados ficam no painel do WhatsApp Business.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(handleSubmit)}
-            className="grid gap-4"
-            id="form"
-          >
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="grid gap-4" id="form">
             <FormField
               control={form.control}
               name="phoneNumber"
@@ -121,13 +99,7 @@ export const DialogCreateWhatsappConfiguration = ({
                 <FormItem>
                   <FormLabel>Telefone</FormLabel>
                   <FormControl>
-                    <Input
-                      {...field}
-                      onChange={(e) =>
-                        onChange(onChangePhoneNumber(e.target.value))
-                      }
-                      placeholder="+55 11 11111 1111"
-                    />
+                    <Input {...field} onChange={(e) => onChange(onChangePhoneNumber(e.target.value))} placeholder="+55 11 11111 1111" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -176,11 +148,7 @@ export const DialogCreateWhatsappConfiguration = ({
         </Form>
 
         <DialogFooter>
-          <Button
-            type="submit"
-            form="form"
-            disabled={createWhatsappConfigurationMutation.isPending}
-          >
+          <Button type="submit" form="form" disabled={createWhatsappConfigurationMutation.isPending}>
             Salvar
           </Button>
         </DialogFooter>

@@ -35,3 +35,8 @@ type UpdateAiConfigRequestBody = {
   apiKey?: string;
   systemPrompt: string;
 };
+
+type ToggleAiConfigRequestData = {
+  params: GetClientAiConfigRequestParams;
+  enabled: boolean;
+};

@@ -12,6 +12,14 @@ export const whatsappService = {
     const response = await api.post(`/client/${params.clientId}/whatsapp/configuration`, body);
     return response.data;
   },
+  updateConfigurationToken: async ({ params, body }: UpdateWhatsappConfigurationTokenRequestData): Promise<WhatsappConfiguration> => {
+    const response = await api.put(`/client/${params.clientId}/whatsapp/configuration/${params.configurationId}/token`, body);
+    return response.data;
+  },
+  findConfigurationWebhook: async ({ params }: FindWhatsappConfigurationWebhookRequestData): Promise<WhatsappConfigurationWebhook> => {
+    const response = await api.get(`/client/${params.clientId}/whatsapp/configuration/${params.configurationId}/webhook`);
+    return response.data;
+  },
   createEmbeddedSignup: async ({ body, params }: CreateWhatsappEmbeddedSignupRequestData): Promise<WhatsappConfiguration> => {
     const response = await api.post(`/client/${params.clientId}/whatsapp/configuration/embedded-signup`, body);
     return response.data;

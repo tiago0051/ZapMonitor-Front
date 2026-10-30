@@ -10,7 +10,6 @@ type SaveAiAgentRequestBody = {
   name: string;
   description?: string;
   systemPrompt: string;
-  model?: string;
   temperature?: number;
 };
 

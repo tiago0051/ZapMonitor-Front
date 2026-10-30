@@ -51,9 +51,7 @@ export const AiAgents = () => {
                 <p className="bg-muted line-clamp-4 rounded-md p-2 font-mono text-xs whitespace-pre-wrap">{aiAgent.systemPrompt}</p>
 
                 <div className="text-muted-foreground mt-auto flex items-center justify-between border-t pt-2 text-xs">
-                  <span>
-                    {aiAgent.model ?? "Modelo padrão"} · temperatura {aiAgent.temperature}
-                  </span>
+                  <span>Temperatura {aiAgent.temperature}</span>
                   <span>{format(new Date(aiAgent.updatedAt), "dd/MM/yyyy HH:mm")}</span>
                 </div>
               </div>

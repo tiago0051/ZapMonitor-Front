@@ -4,7 +4,6 @@ type AiAgent = {
   name: string;
   description: string | null;
   systemPrompt: string;
-  model: string | null;
   temperature: number;
   createdAt: string;
   updatedAt: string;

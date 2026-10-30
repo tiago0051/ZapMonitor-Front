@@ -23,6 +23,20 @@ type CreateWhatsappConfigurationRequesParams = {
   clientId: string;
 };
 
+type WhatsappConfigurationRequestParams = {
+  clientId: string;
+  configurationId: string;
+};
+
+type UpdateWhatsappConfigurationTokenRequestData = {
+  params: WhatsappConfigurationRequestParams;
+  body: { authorizationToken: string };
+};
+
+type FindWhatsappConfigurationWebhookRequestData = {
+  params: WhatsappConfigurationRequestParams;
+};
+
 type CreateWhatsappMessageCategoryRequestData = {
   params: CreateWhatsappMessageCategoryRequestParams;
   body: CreateWhatsappMessageCategoryRequestBody;

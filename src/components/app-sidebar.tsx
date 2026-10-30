@@ -37,7 +37,7 @@ const data = {
       url: "members",
     },
     {
-      title: "Clientes",
+      title: "Configurações",
       icon: FiSettings,
       url: "configuration",
     },
