@@ -9,7 +9,7 @@ export type FlowCanvasNodeType = Node<FlowNodeData, FlowNodeType>;
 const handleClassName = "!h-3 !w-3 !border-2 !border-background !bg-muted-foreground";
 
 function useNodeSummary(type: FlowNodeType, data: FlowNodeData) {
-  const { serviceGroups, aiAgents } = useFlowEditorContext();
+  const { serviceGroups, aiAgents, categories, flows } = useFlowEditorContext();
 
   switch (type) {
     case "start":
@@ -23,6 +23,12 @@ function useNodeSummary(type: FlowNodeType, data: FlowNodeData) {
       return aiAgents.find((agent) => agent.id === data.aiAgentId)?.name ?? "Selecione um agente";
     case "serviceGroup":
       return serviceGroups.find((group) => group.id === data.serviceGroupId)?.name ?? "Selecione um grupo";
+    case "category": {
+      const names = (data.categoryIds ?? []).map((id) => categories.find((category) => category.id === id)?.name ?? "Categoria removida");
+      return names.length ? names.join(", ") : "Selecione as categorias";
+    }
+    case "flow":
+      return flows.find((flow) => flow.id === data.flowId)?.name ?? "Selecione um fluxo";
     case "businessHours": {
       const weekdays = [...new Set((data.intervals ?? []).map((interval) => interval.weekday))].sort();
       return weekdays.length ? weekdays.map((weekday) => WEEKDAY_LABELS[weekday].slice(0, 3)).join(", ") : "Sem horários";

@@ -29,6 +29,7 @@ type UpdateFlowRequestData = {
     name: string;
     resetAfterMinutes: number;
     definition: FlowDefinition;
+    whatsappConfigurationIds: string[];
   };
 };
 

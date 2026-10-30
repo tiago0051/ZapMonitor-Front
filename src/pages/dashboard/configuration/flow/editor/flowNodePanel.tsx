@@ -108,7 +108,7 @@ const OutputsEditor: FC<OutputsEditorProps> = ({ label, hint, outputs, withDescr
 };
 
 export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, onDelete, onClose }) => {
-  const { serviceGroups, aiAgents } = useFlowEditorContext();
+  const { serviceGroups, aiAgents, categories, flows, currentFlowId } = useFlowEditorContext();
   const config = flowNodeConfigs[type];
   const Icon = config.icon;
 
@@ -265,6 +265,55 @@ export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, on
               onChange={(outputs) => update({ outputs })}
             />
           </>
+        )}
+
+        {type === "flow" && (
+          <Field
+            label="Fluxo de destino"
+            hint="O atendimento segue a partir do Início do fluxo escolhido, que precisa estar ativo. Fluxos que levariam de volta a este não são aceitos."
+          >
+            <select className={selectClassName} value={data.flowId ?? ""} onChange={(e) => update({ flowId: e.target.value })}>
+              <option value="">Selecione...</option>
+              {flows
+                .filter((flow) => flow.id !== currentFlowId)
+                .map((flow) => (
+                  <option key={flow.id} value={flow.id}>
+                    {flow.name}
+                    {flow.active ? "" : " (inativo)"}
+                  </option>
+                ))}
+            </select>
+          </Field>
+        )}
+
+        {type === "category" && (
+          <Field
+            label="Categorias"
+            hint={
+              categories.length === 0
+                ? "Cadastre categorias na aba Categorias."
+                : "As categorias são adicionadas ao contato; as que ele já tem são mantidas."
+            }
+          >
+            <div className="max-h-64 space-y-2 overflow-y-auto rounded-md border p-3">
+              {categories.map((category) => (
+                <label key={category.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={data.categoryIds?.includes(category.id) ?? false}
+                    onCheckedChange={(checked) =>
+                      update({
+                        categoryIds:
+                          checked === true
+                            ? [...(data.categoryIds ?? []), category.id]
+                            : (data.categoryIds ?? []).filter((id) => id !== category.id),
+                      })
+                    }
+                  />
+                  <span className="truncate">{category.name}</span>
+                </label>
+              ))}
+            </div>
+          </Field>
         )}
 
         {type === "businessHours" && (

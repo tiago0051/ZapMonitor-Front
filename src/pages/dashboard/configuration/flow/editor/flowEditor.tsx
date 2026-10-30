@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { aiAgentService } from "@/services/api/aiAgentService";
 import { flowService } from "@/services/api/flowService";
 import { serviceGroupService } from "@/services/api/serviceGroupService";
+import { whatsappService } from "@/services/api/whatsappService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -21,17 +22,20 @@ import {
   type Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { AlertTriangle, ArrowLeft, Loader2, Save } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Loader2, Phone, Save } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useWhatsappConfigurations } from "../flowLinks";
 import { useCallback, useEffect, useMemo, useState, type FC } from "react";
 import { Link, useParams } from "react-router";
 import { toast } from "sonner";
 import { FlowCanvasNode, type FlowCanvasNodeType } from "./flowCanvasNode";
-import { FlowEditorContext } from "./flowEditorContext";
+import { FlowEditorContext, useFlowEditorContext } from "./flowEditorContext";
 import { createFlowId, flowNodeConfigs, getFlowNodeOutputs } from "./flowNodeConfig";
 import { FlowNodePanel } from "./flowNodePanel";
 
 const nodeTypes = Object.fromEntries(Object.keys(flowNodeConfigs).map((type) => [type, FlowCanvasNode]));
-const paletteNodeTypes: FlowNodeType[] = ["message", "condition", "aiAgent", "serviceGroup", "businessHours", "end"];
+const paletteNodeTypes: FlowNodeType[] = ["message", "condition", "aiAgent", "serviceGroup", "businessHours", "category", "flow", "end"];
 
 const toCanvasNodes = (definition: FlowDefinition): FlowCanvasNodeType[] =>
   definition.nodes.map((node) => ({
@@ -63,6 +67,9 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(toCanvasEdges(flow.definition));
   const [name, setName] = useState(flow.name);
   const [resetAfterMinutes, setResetAfterMinutes] = useState(flow.resetAfterMinutes);
+  const [whatsappConfigurationIds, setWhatsappConfigurationIds] = useState(flow.whatsappConfigurationIds);
+  const configurations = useWhatsappConfigurations(clientId);
+  const { flows } = useFlowEditorContext();
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
 
@@ -95,7 +102,7 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
   const handleSave = () => {
     updateFlow.mutate({
       params: { clientId, flowId: flow.id },
-      body: { name: name.trim(), resetAfterMinutes, definition: toDefinition(nodes, edges) },
+      body: { name: name.trim(), resetAfterMinutes, definition: toDefinition(nodes, edges), whatsappConfigurationIds },
     });
   };
 
@@ -153,6 +160,17 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [isDirty]);
 
+  // Um número só inicia um fluxo; mostra onde ele está hoje para deixar claro que será movido
+  const findOtherFlowName = (configurationId: string) =>
+    flows.find((item) => item.id !== flow.id && item.whatsappConfigurationIds.includes(configurationId))?.name;
+
+  const toggleConfiguration = (configurationId: string, checked: boolean) => {
+    setWhatsappConfigurationIds((current) =>
+      checked ? [...current, configurationId] : current.filter((item) => item !== configurationId),
+    );
+    setIsDirty(true);
+  };
+
   const isPending = updateFlow.isPending || toggleFlow.isPending;
   const canActivate = !flow.active && flow.issues.length === 0 && !isDirty;
 
@@ -192,6 +210,40 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
               setIsDirty(true);
             }}
           />
+        </div>
+
+        <div className="space-y-1">
+          <Label>Números</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-44 justify-start font-normal">
+                <Phone className="h-4 w-4" />
+                {whatsappConfigurationIds.length ? `${whatsappConfigurationIds.length} número(s)` : "Nenhum"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-80 space-y-2">
+              <p className="text-muted-foreground text-xs">
+                Novos atendimentos destes números começam neste fluxo. Sem número, o fluxo só é acionado pelo nó "Ir para fluxo".
+              </p>
+              {configurations.length === 0 && <p className="text-muted-foreground text-sm">Nenhum número cadastrado.</p>}
+              {configurations.map((configuration) => {
+                const otherFlowName = findOtherFlowName(configuration.id);
+
+                return (
+                  <label key={configuration.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={whatsappConfigurationIds.includes(configuration.id)}
+                      onCheckedChange={(checked) => toggleConfiguration(configuration.id, checked === true)}
+                    />
+                    <span>{configuration.phoneNumber}</span>
+                    {otherFlowName && !whatsappConfigurationIds.includes(configuration.id) && (
+                      <span className="text-muted-foreground truncate text-xs">(hoje inicia {otherFlowName})</span>
+                    )}
+                  </label>
+                );
+              })}
+            </PopoverContent>
+          </Popover>
         </div>
 
         <div className="flex items-center gap-2">
@@ -311,9 +363,26 @@ export const FlowEditor = () => {
     queryFn: () => aiAgentService.findAll({ params: { clientId: clientId! } }),
   });
 
+  const categoriesQuery = useQuery({
+    queryKey: ["flowCategories", clientId],
+    queryFn: () =>
+      whatsappService.findAllMessageCategoriesByClient({ params: { clientId: clientId! }, queries: { text: "", page: 1, take: 1000 } }),
+  });
+
+  const flowsQuery = useQuery({
+    queryKey: ["flows", clientId],
+    queryFn: () => flowService.findAll({ params: { clientId: clientId! } }),
+  });
+
   const contextValue = useMemo(
-    () => ({ serviceGroups: serviceGroupsQuery.data ?? [], aiAgents: aiAgentsQuery.data ?? [] }),
-    [serviceGroupsQuery.data, aiAgentsQuery.data],
+    () => ({
+      serviceGroups: serviceGroupsQuery.data ?? [],
+      aiAgents: aiAgentsQuery.data ?? [],
+      categories: categoriesQuery.data?.items ?? [],
+      flows: flowsQuery.data ?? [],
+      currentFlowId: flowId!,
+    }),
+    [serviceGroupsQuery.data, aiAgentsQuery.data, categoriesQuery.data, flowsQuery.data, flowId],
   );
 
   if (flowQuery.isLoading) {

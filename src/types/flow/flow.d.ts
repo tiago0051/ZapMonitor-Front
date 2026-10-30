@@ -1,4 +1,4 @@
-type FlowNodeType = "start" | "serviceGroup" | "aiAgent" | "condition" | "message" | "businessHours" | "end";
+type FlowNodeType = "start" | "serviceGroup" | "aiAgent" | "condition" | "message" | "businessHours" | "category" | "flow" | "end";
 
 type FlowOutput = {
   id: string;
@@ -24,6 +24,8 @@ type FlowNodeData = {
   text?: string;
   timezone?: string;
   intervals?: FlowBusinessHoursInterval[];
+  categoryIds?: string[];
+  flowId?: string;
 };
 
 type FlowDefinitionNode = {
@@ -52,6 +54,8 @@ type Flow = {
   active: boolean;
   resetAfterMinutes: number;
   definition: FlowDefinition;
+  // Números cujos novos atendimentos começam neste fluxo
+  whatsappConfigurationIds: string[];
   issues: string[];
   createdAt: string;
   updatedAt: string;
