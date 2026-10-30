@@ -17,37 +17,40 @@ import { FaWhatsapp } from "react-icons/fa";
 import { PanelLeftIcon } from "lucide-react";
 import { Link } from "react-router";
 import { useBaseUrl } from "@/hooks/use-baseUrl";
+import { useClientContext } from "@/context/ClientContext/clientContext";
 
-// This is sample data.
-const data = {
-  navMain: [
-    {
-      title: "E-mails",
-      icon: FiMail,
-      url: "email",
-    },
-    {
-      title: "WhatsApp",
-      icon: FaWhatsapp,
-      url: "whatsapp",
-    },
-    {
-      title: "Usuários",
-      icon: FiUsers,
-      url: "members",
-    },
-    {
-      title: "Configurações",
-      icon: FiSettings,
-      url: "configuration",
-    },
-  ],
-};
+// Itens sem permissão ficam visíveis para qualquer membro do cliente
+const navMain: { title: string; icon: React.ComponentType; url: string; permission?: Permission }[] = [
+  {
+    title: "E-mails",
+    icon: FiMail,
+    url: "email",
+    permission: "email.view",
+  },
+  {
+    title: "WhatsApp",
+    icon: FaWhatsapp,
+    url: "whatsapp",
+    permission: "whatsapp.chat",
+  },
+  {
+    title: "Usuários",
+    icon: FiUsers,
+    url: "members",
+    permission: "members.manage",
+  },
+  {
+    title: "Configurações",
+    icon: FiSettings,
+    url: "configuration",
+  },
+];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { logout } = useUserContext();
   const { toggleSidebar } = useSidebar();
   const baseUrl = useBaseUrl();
+  const { can } = useClientContext();
 
   return (
     <Sidebar variant="floating" collapsible="icon" {...props}>
@@ -76,16 +79,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <SidebarGroup>
           <SidebarMenu className="gap-2">
-            {data.navMain.map((item) => (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild tooltip={item.title}>
-                  <Link to={`${baseUrl}/${item.url}`} className="font-medium">
-                    <item.icon />
-                    {item.title}
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
+            {navMain
+              .filter((item) => !item.permission || can(item.permission))
+              .map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild tooltip={item.title}>
+                    <Link to={`${baseUrl}/${item.url}`} className="font-medium">
+                      <item.icon />
+                      {item.title}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>

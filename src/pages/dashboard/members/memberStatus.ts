@@ -1,3 +1,5 @@
+import { tenantRoleLabel } from "@/contants/permissionContants";
+
 export const memberStatusLabel: Record<MemberStatus, string> = {
   ACTIVE: "Ativo",
   INACTIVE: "Inativo",
@@ -9,3 +11,6 @@ export const memberStatusVariant: Record<MemberStatus, "default" | "secondary" |
   INACTIVE: "secondary",
   PENDING: "outline",
 };
+
+export const getMemberRoleLabel = (member: Member) =>
+  member.role === "CUSTOM" ? (member.permissionGroupName ?? tenantRoleLabel.CUSTOM) : tenantRoleLabel[member.role];

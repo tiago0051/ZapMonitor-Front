@@ -1,3 +1,4 @@
+import { PermissionRoute } from "@/components/permission-route";
 import { EditClientLayout } from "@/pages/dashboard/configuration/layout";
 import { lazy } from "react";
 import { Route, Routes } from "react-router";
@@ -11,7 +12,14 @@ const ConfigurationRouter = () => {
   return (
     <Routes>
       <Route index element={<EditClientLayout />} />
-      <Route path="flow/:flowId" element={<FlowEditor />} />
+      <Route
+        path="flow/:flowId"
+        element={
+          <PermissionRoute permission="flows.manage">
+            <FlowEditor />
+          </PermissionRoute>
+        }
+      />
     </Routes>
   );
 };
