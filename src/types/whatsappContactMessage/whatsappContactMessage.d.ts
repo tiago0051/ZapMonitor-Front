@@ -10,5 +10,6 @@ type WhatsappContactMessage = {
   whatsappConfigurationId: string;
   categories: WhatsappMessageCategoryShort[];
   serviceRepresentative: string | null;
+  serviceGroupId: string | null;
   replyTimeExpiredAt: string;
 };

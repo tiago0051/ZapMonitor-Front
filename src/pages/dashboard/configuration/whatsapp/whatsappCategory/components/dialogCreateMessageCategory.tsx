@@ -1,21 +1,6 @@
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { whatsappService } from "@/services/api/whatsappService";
 import { requestErrorHandling } from "@/utils/request";
@@ -36,9 +21,7 @@ const schema = z.object({
 
 type SchemaType = z.infer<typeof schema>;
 
-export const DialogCreateMessageCategory: FC<
-  DialogCreateMessageCategoryProps
-> = ({ clientId, className }) => {
+export const DialogCreateMessageCategory: FC<DialogCreateMessageCategoryProps> = ({ clientId, className }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
   const queryClient = useQueryClient();
@@ -84,17 +67,11 @@ export const DialogCreateMessageCategory: FC<
 
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Nova Configuração</DialogTitle>
-          <DialogDescription>
-            Crie uma nova configuração para de integração com o WhatsApp.
-          </DialogDescription>
+          <DialogTitle>Nova categoria</DialogTitle>
+          <DialogDescription>Crie uma etiqueta para classificar os contatos.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(handleSubmit)}
-            className="grid gap-4"
-            id="form"
-          >
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="grid gap-4" id="form">
             <FormField
               control={form.control}
               name="name"
@@ -112,11 +89,7 @@ export const DialogCreateMessageCategory: FC<
         </Form>
 
         <DialogFooter>
-          <Button
-            type="submit"
-            form="form"
-            disabled={createWhatsappMessageCategory.isPending}
-          >
+          <Button type="submit" form="form" disabled={createWhatsappMessageCategory.isPending}>
             Salvar
           </Button>
         </DialogFooter>

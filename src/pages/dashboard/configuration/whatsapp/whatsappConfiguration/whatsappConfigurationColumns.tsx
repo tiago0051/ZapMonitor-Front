@@ -1,48 +1,45 @@
+import { Badge } from "@/components/ui/badge";
 import { type DataTablePaginateColumnDef } from "@/components/ui/dataTablePaginateFeatures";
-import { formatShortId } from "@/utils/formatString";
 import { format } from "date-fns";
 import parsePhoneNumber from "libphonenumber-js";
-import { DialogEditWhatsappConfiguration } from "./components/dialogEditWhatsappConfiguration";
+import { DialogManageWhatsappConfiguration } from "./components/dialogManageWhatsappConfiguration";
 
-export const getColumns = () => {
+export const getColumns = (clientId: string) => {
   const columns: DataTablePaginateColumnDef<WhatsappConfiguration>[] = [
     {
-      accessorKey: "id",
-      header: "ID",
+      accessorKey: "phoneNumber",
+      header: "Número",
       cell: ({ row }) => {
-        const id: string = row.getValue("id");
-        return formatShortId(id);
+        const phoneNumber: string = row.getValue("phoneNumber");
+
+        return parsePhoneNumber(phoneNumber)?.format("INTERNATIONAL") ?? phoneNumber;
       },
     },
     {
-      accessorKey: "phoneNumber",
-      header: "Telefone",
+      accessorKey: "enabled",
+      header: "Status",
       cell: ({ row }) => {
-        const phoneNumber: string = row.getValue("phoneNumber");
-        const phoneNumberFormatted = parsePhoneNumber(phoneNumber);
+        const enabled: boolean = row.getValue("enabled");
 
-        return phoneNumberFormatted?.format("INTERNATIONAL");
+        return <Badge variant={enabled ? "default" : "secondary"}>{enabled ? "Ativo" : "Desativado"}</Badge>;
       },
     },
     {
       accessorKey: "createdAt",
-      header: "Data de criação",
+      header: "Conectado em",
       cell: ({ row }) => {
-        const sendAt: Date = row.getValue("createdAt");
-        return format(sendAt, "dd/MM/yyyy HH:mm");
+        const createdAt: Date = row.getValue("createdAt");
+        return format(createdAt, "dd/MM/yyyy HH:mm");
       },
     },
     {
-      header: "Ações",
-      cell: ({ row }) => {
-        return (
-          <div>
-            <DialogEditWhatsappConfiguration
-              whatsappConfiguration={row.original}
-            />
-          </div>
-        );
-      },
+      header: "",
+      id: "actions",
+      cell: ({ row }) => (
+        <div className="flex justify-end">
+          <DialogManageWhatsappConfiguration clientId={clientId} whatsappConfiguration={row.original} />
+        </div>
+      ),
     },
   ];
 

@@ -12,6 +12,14 @@ export const whatsappService = {
     const response = await api.post(`/client/${params.clientId}/whatsapp/configuration`, body);
     return response.data;
   },
+  updateConfigurationToken: async ({ params, body }: UpdateWhatsappConfigurationTokenRequestData): Promise<WhatsappConfiguration> => {
+    const response = await api.put(`/client/${params.clientId}/whatsapp/configuration/${params.configurationId}/token`, body);
+    return response.data;
+  },
+  findConfigurationWebhook: async ({ params }: FindWhatsappConfigurationWebhookRequestData): Promise<WhatsappConfigurationWebhook> => {
+    const response = await api.get(`/client/${params.clientId}/whatsapp/configuration/${params.configurationId}/webhook`);
+    return response.data;
+  },
   createEmbeddedSignup: async ({ body, params }: CreateWhatsappEmbeddedSignupRequestData): Promise<WhatsappConfiguration> => {
     const response = await api.post(`/client/${params.clientId}/whatsapp/configuration/embedded-signup`, body);
     return response.data;
@@ -57,11 +65,12 @@ export const whatsappService = {
   },
   findContactsStats: async ({
     params,
+    queries,
   }: FindAllWhatsappContactMessagesStatsRequestData): Promise<{
     queueCount: number;
     myCount: number;
   }> => {
-    const response = await api.get(`/client/${params.clientId}/whatsapp/contact/stats`);
+    const response = await api.get(`/client/${params.clientId}/whatsapp/contact/stats`, { params: queries });
 
     return response.data;
   },
@@ -128,6 +137,11 @@ export const whatsappService = {
   transferService: async ({ params }: TransferWhatsappServiceRequestData): Promise<WhatsappConfiguration> => {
     const response = await api.post(`/client/${params.clientId}/whatsapp/contact/${params.contactId}/service/transfer/${params.userId}`);
     return response.data;
+  },
+  forwardService: async ({ params }: ForwardWhatsappServiceRequestData): Promise<void> => {
+    await api.post(
+      `/client/${params.clientId}/whatsapp/contact/${params.contactId}/service/flow/forward/${encodeURIComponent(params.outputId)}`,
+    );
   },
   endService: async ({ params }: EndWhatsappServiceRequestData): Promise<WhatsappConfiguration> => {
     const response = await api.post(`/client/${params.clientId}/whatsapp/contact/${params.contactId}/service/end`);

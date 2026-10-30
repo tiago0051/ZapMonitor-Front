@@ -53,6 +53,7 @@ const MessageContact = ({ message }: { message: WhatsappMessage<string> }) => <p
 const MessageTemplate = ({ message }: { message: WhatsappMessage<string> }) => <p className="whitespace-pre-wrap">{message.content}</p>;
 
 const supportedContentTypes: string[] = [
+  WhatsappMessageContentType.INTERACTIVE,
   WhatsappMessageContentType.TEXT,
   WhatsappMessageContentType.AUDIO,
   WhatsappMessageContentType.IMAGE,
@@ -102,7 +103,9 @@ export const MessageItem: FC<MessageItemProps> = ({ message, contactName, onRepl
 
       {message.replyTo && <MessageReplyPreview replyTo={message.replyTo} contactName={contactName} className="mb-2" />}
 
-      {message.contentType === WhatsappMessageContentType.TEXT && <MessageText message={message as WhatsappMessage<string>} />}
+      {(message.contentType === WhatsappMessageContentType.TEXT || message.contentType === WhatsappMessageContentType.INTERACTIVE) && (
+        <MessageText message={message as WhatsappMessage<string>} />
+      )}
       {message.contentType === WhatsappMessageContentType.AUDIO && <MessageAudio content={content as MessageFileContent} />}
       {message.contentType === WhatsappMessageContentType.IMAGE && <MessageImage content={content as MessageFileContent} />}
       {message.contentType === WhatsappMessageContentType.VIDEO && <MessageVideo content={content as MessageFileContent} />}

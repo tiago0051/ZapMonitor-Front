@@ -13,4 +13,8 @@ export const aiService = {
     const response = await api.put(`/client/${params.clientId}/ai/config`, body);
     return response.data;
   },
+  toggleClientAiConfig: async ({ params, enabled }: ToggleAiConfigRequestData): Promise<AiConfig> => {
+    const response = await api.put(`/client/${params.clientId}/ai/config/${enabled ? "enable" : "disable"}`);
+    return response.data;
+  },
 };

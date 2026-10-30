@@ -8,4 +8,6 @@ type WhatsappContactService = {
   canBeSentMessage: boolean;
   canBeServiceStarted: boolean;
   isInService: boolean;
+  canBeForwarded: boolean;
+  flowOutputs: { id: string; label: string }[];
 };

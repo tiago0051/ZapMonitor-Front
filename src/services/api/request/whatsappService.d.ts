@@ -23,6 +23,20 @@ type CreateWhatsappConfigurationRequesParams = {
   clientId: string;
 };
 
+type WhatsappConfigurationRequestParams = {
+  clientId: string;
+  configurationId: string;
+};
+
+type UpdateWhatsappConfigurationTokenRequestData = {
+  params: WhatsappConfigurationRequestParams;
+  body: { authorizationToken: string };
+};
+
+type FindWhatsappConfigurationWebhookRequestData = {
+  params: WhatsappConfigurationRequestParams;
+};
+
 type CreateWhatsappMessageCategoryRequestData = {
   params: CreateWhatsappMessageCategoryRequestParams;
   body: CreateWhatsappMessageCategoryRequestBody;
@@ -94,12 +108,18 @@ type FindAllWhatsappContactMessagesRequestParams = {
 type FindAllWhatsappContactMessagesRequestQuery = PaginateRequestQuery & {
   text: string;
   tab: "queue" | "mine" | "all";
+  serviceGroupId?: string;
 };
 //#endregion
 
 //#region findAllContactsStats
 type FindAllWhatsappContactMessagesStatsRequestData = {
   params: FindAllWhatsappContactMessagesStatsRequestParams;
+  queries: FindAllWhatsappContactMessagesStatsRequestQuery;
+};
+
+type FindAllWhatsappContactMessagesStatsRequestQuery = {
+  serviceGroupId?: string;
 };
 
 type FindAllWhatsappContactMessagesStatsRequestParams = {
@@ -226,6 +246,18 @@ type StartWhatsappServiceRequestData = {
 
 type StartWhatsappServiceRequestParams = {
   contactId: string;
+  clientId: string;
+};
+//#endregion
+
+//#region forwardService
+type ForwardWhatsappServiceRequestData = {
+  params: ForwardWhatsappServiceRequestParams;
+};
+
+type ForwardWhatsappServiceRequestParams = {
+  contactId: string;
+  outputId: string;
   clientId: string;
 };
 //#endregion

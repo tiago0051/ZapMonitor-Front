@@ -1,10 +1,4 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { whatsappService } from "@/services/api/whatsappService";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import type { PaginationState } from "@tanstack/react-table";
@@ -25,10 +19,7 @@ export const WhatsappCategory = () => {
     pageIndex: 0,
     pageSize: 10,
   });
-  const [textSearch, setTextSearch] = useDebounceValue<string>(
-    "",
-    globalContants.DEBOUNCE_DELAY
-  );
+  const [textSearch, setTextSearch] = useDebounceValue<string>("", globalContants.DEBOUNCE_DELAY);
 
   const findAllWhatsappCategoriesQuery = useSuspenseQuery({
     queryKey: ["whatsappCategories", clientId, pagination, textSearch],
@@ -53,36 +44,22 @@ export const WhatsappCategory = () => {
     <Card>
       <CardHeader>
         <CardTitle>Categorias</CardTitle>
-        <CardDescription>
-          Gerencie as categorias do WhatsApp para este cliente.
-        </CardDescription>
+        <CardDescription>Etiquetas aplicadas aos contatos durante o atendimento para organizar e filtrar conversas.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="mb-4 grid grid-cols-6 lg:grid-cols-8 items-end gap-4">
+        <div className="mb-4 grid grid-cols-6 items-end gap-4 lg:grid-cols-8">
           <div className="col-span-2 lg:col-span-4">
             <div className="space-y-2">
               <Label htmlFor="search">Buscar</Label>
-              <Input
-                name="search"
-                placeholder="Digite o número do WhatsApp"
-                onChange={(event) => setTextSearch(event.currentTarget.value)}
-              />
+              <Input name="search" placeholder="Nome da categoria" onChange={(event) => setTextSearch(event.currentTarget.value)} />
             </div>
           </div>
-          <DialogCreateMessageCategory
-            clientId={clientId!}
-            className="col-start-5 col-span-2 lg:col-start-8"
-          />
+          <DialogCreateMessageCategory clientId={clientId!} className="col-span-2 col-start-5 lg:col-start-8" />
         </div>
-        {findAllWhatsappCategoriesQuery.isLoading && <p>Loading...</p>}
-        {findAllWhatsappCategoriesQuery.isError && <p>Error fetching emails</p>}
+        {findAllWhatsappCategoriesQuery.isLoading && <p>Carregando...</p>}
+        {findAllWhatsappCategoriesQuery.isError && <p>Erro ao buscar categorias.</p>}
         {listWhatsappCategories && (
-          <DataTablePaginate
-            columns={columns}
-            data={listWhatsappCategories}
-            onPaginationChange={setPagination}
-            pagination={pagination}
-          />
+          <DataTablePaginate columns={columns} data={listWhatsappCategories} onPaginationChange={setPagination} pagination={pagination} />
         )}
       </CardContent>
     </Card>

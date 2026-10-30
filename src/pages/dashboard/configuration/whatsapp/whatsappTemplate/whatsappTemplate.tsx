@@ -23,7 +23,9 @@ export const WhatsappTemplate = () => {
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <div>
           <CardTitle>Templates</CardTitle>
-          <CardDescription>Gerencie os templates do WhatsApp para este cliente.</CardDescription>
+          <CardDescription>
+            Modelos aprovados pela Meta para iniciar ou retomar conversas quando a janela de atendimento expirou.
+          </CardDescription>
         </div>
         <DialogCreateWhatsappTemplate clientId={clientId!} />
       </CardHeader>

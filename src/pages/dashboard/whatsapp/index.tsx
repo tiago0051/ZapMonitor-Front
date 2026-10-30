@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MessageSquare, Search, X, ArrowLeft } from "lucide-react";
+import { MessageSquare, Search, X, ArrowLeft, Users } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { ContactCard } from "./components/contactCard";
 import { ContactCardSkeleton } from "./components/contactCard/skeleton";
@@ -9,6 +9,7 @@ import { DialogNewContactTemplate } from "./components/dialogNewContactTemplate"
 import { useSocketContext } from "@/context/SocketContext/socketContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useContactsListService } from "./useContactsListService";
+import { useServiceGroupSelection } from "./useServiceGroupSelection";
 
 // ── Shared sub-panels ────────────────────────────────────────────────────────
 
@@ -25,7 +26,15 @@ function ContactListPanel({
 }) {
   const [search, setSearch] = useState("");
 
-  const { contacts, stats } = useContactsListService({ search, tab });
+  const serviceGroupSelection = useServiceGroupSelection();
+  const { serviceGroups, selectedServiceGroupId } = serviceGroupSelection;
+
+  const { contacts, stats } = useContactsListService({
+    search,
+    tab,
+    serviceGroupId: selectedServiceGroupId,
+    enabled: !serviceGroupSelection.isLoading,
+  });
 
   function renderContactsList() {
     if (contacts.isLoading) return Array.from({ length: 6 }).map((_, index) => <ContactCardSkeleton key={index} />);
@@ -38,6 +47,25 @@ function ContactListPanel({
 
   return (
     <div className="bg-card flex h-full flex-col">
+      {serviceGroups.length > 0 && (
+        <div className="border-border flex flex-shrink-0 items-center gap-2 border-b px-3 py-2">
+          <Users className="text-muted-foreground h-3.5 w-3.5 flex-shrink-0" />
+          <select
+            aria-label="Grupo de atendimento"
+            value={selectedServiceGroupId}
+            onChange={(e) => serviceGroupSelection.setSelectedServiceGroupId(e.target.value)}
+            disabled={serviceGroups.length === 1}
+            className="text-foreground flex-1 truncate bg-transparent text-sm font-medium outline-none disabled:cursor-not-allowed disabled:opacity-100"
+          >
+            {serviceGroups.map((group) => (
+              <option key={group.id} value={group.id}>
+                {group.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="border-border flex flex-shrink-0 border-b">
         {(["queue", "mine", "all"] as Tab[]).map((t) => {
