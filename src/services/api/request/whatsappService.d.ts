@@ -287,6 +287,24 @@ type SendTemplateRequestBody = {
 
 //#endregion
 
+//#region Send Template To New Contact
+type SendTemplateToNewContactRequestData = {
+  params: SendTemplateToNewContactRequestParams;
+  body: SendTemplateToNewContactRequestBody;
+};
+
+type SendTemplateToNewContactRequestParams = {
+  clientId: string;
+};
+
+type SendTemplateToNewContactRequestBody = {
+  phoneNumber: string;
+  name?: string;
+  configurationId: string;
+  templateId: string;
+};
+//#endregion
+
 //#region findAllFilesByContact
 type FindAllWhatsappFilesByContactRequestData = {
   params: FindAllWhatsappFilesByContactRequestParams;
