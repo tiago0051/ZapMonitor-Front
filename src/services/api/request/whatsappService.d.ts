@@ -165,6 +165,7 @@ type CreateWhatsappMessageRequestBody = {
   type: string;
   text?: string;
   fileId?: string;
+  replyToMessageId?: string;
 };
 //#endregion
 
