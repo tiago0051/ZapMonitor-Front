@@ -5,6 +5,7 @@ type CreateWhatsappTemplateRequestData = {
 
 type CreateWhatsappTemplateRequestBody = {
   name: string;
+  language: string;
   description?: string;
 };
 

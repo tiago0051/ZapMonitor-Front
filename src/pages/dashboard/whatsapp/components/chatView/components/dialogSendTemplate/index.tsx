@@ -76,7 +76,9 @@ export const DialogSendTemplate = ({ contactService, whatsappConfigurationId }: 
           {templates.map((template) => (
             <div key={template.id} className="hover:bg-accent/50 flex items-center justify-between rounded-lg border p-3">
               <div>
-                <p className="text-sm font-semibold">{template.name}</p>
+                <p className="text-sm font-semibold">
+                  {template.name} <span className="text-muted-foreground text-xs font-normal">({template.language})</span>
+                </p>
                 {template.description && <p className="text-muted-foreground text-xs">{template.description}</p>}
               </div>
               <Button size="sm" disabled={sendTemplateMutation.isPending} onClick={() => sendTemplateMutation.mutate(template.id)}>

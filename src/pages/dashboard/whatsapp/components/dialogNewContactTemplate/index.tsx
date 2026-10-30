@@ -177,7 +177,9 @@ export const DialogNewContactTemplate: FC<DialogNewContactTemplateProps> = ({ on
                       </option>
                       {templates.map((template) => (
                         <option key={template.id} value={template.id}>
-                          {template.description ? `${template.name} — ${template.description}` : template.name}
+                          {template.description
+                            ? `${template.name} (${template.language}) — ${template.description}`
+                            : `${template.name} (${template.language})`}
                         </option>
                       ))}
                     </select>
