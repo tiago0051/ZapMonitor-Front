@@ -130,6 +130,11 @@ export const whatsappService = {
     const response = await api.post(`/client/${params.clientId}/whatsapp/contact/${params.contactId}/service/transfer/${params.userId}`);
     return response.data;
   },
+  forwardService: async ({ params }: ForwardWhatsappServiceRequestData): Promise<void> => {
+    await api.post(
+      `/client/${params.clientId}/whatsapp/contact/${params.contactId}/service/flow/forward/${encodeURIComponent(params.outputId)}`,
+    );
+  },
   endService: async ({ params }: EndWhatsappServiceRequestData): Promise<WhatsappConfiguration> => {
     const response = await api.post(`/client/${params.clientId}/whatsapp/contact/${params.contactId}/service/end`);
     return response.data;

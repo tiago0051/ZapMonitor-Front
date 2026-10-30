@@ -5,7 +5,8 @@ import { whatsappService } from "@/services/api/whatsappService";
 import { formatPhoneNumber } from "@/utils/formatString";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Info, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, Forward, Info, MoreHorizontal } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { FC } from "react";
 import { toast } from "sonner";
 
@@ -100,6 +101,20 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, onServiceAssu
     onError: rollbackContactService,
   });
 
+  const forwardServiceMutation = useMutation({
+    mutationFn: whatsappService.forwardService,
+    onMutate: () => applyOptimisticContactService({ canBeForwarded: false, canBeSentMessage: false, canBeServiceEnded: false }),
+    onSuccess: () => {
+      toast.success("Contato encaminhado para a próxima etapa");
+      invalidateContactService();
+    },
+    onError: rollbackContactService,
+  });
+
+  function handleForwardService(outputId: string) {
+    forwardServiceMutation.mutate({ params: { contactId: contact.id, outputId, clientId: client.id } });
+  }
+
   function handleAssumeService() {
     if (contactService?.canBeServiceStarted) {
       startServiceMutation.mutate({ params: { contactId: contact.id, clientId: client.id } });
@@ -121,7 +136,8 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, onServiceAssu
   }
 
   const canAssumeService = contactService?.canBeServiceStarted || contactService?.canBeServiceTransferred;
-  const isServiceMutationPending = startServiceMutation.isPending || transferServiceMutation.isPending || endServiceMutation.isPending;
+  const isServiceMutationPending =
+    startServiceMutation.isPending || transferServiceMutation.isPending || endServiceMutation.isPending || forwardServiceMutation.isPending;
 
   return (
     <header className="bg-card border-border flex flex-shrink-0 items-center gap-1.5 border-b px-2 py-2.5 sm:gap-2 sm:px-3 sm:py-3 md:px-5">
@@ -146,6 +162,27 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, onServiceAssu
           >
             Assumir
           </button>
+        )}
+        {contactService?.canBeForwarded && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                disabled={isServiceMutationPending}
+                className="flex items-center gap-1 rounded-lg bg-blue-50 px-2 py-1.5 text-xs font-medium whitespace-nowrap text-blue-700 transition-colors hover:bg-blue-100 disabled:opacity-50 sm:px-3"
+              >
+                <Forward className="h-3.5 w-3.5" />
+                Encaminhar
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Próxima etapa do fluxo</DropdownMenuLabel>
+              {contactService.flowOutputs.map((output) => (
+                <DropdownMenuItem key={output.id} onSelect={() => handleForwardService(output.id)}>
+                  {output.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
         {contactService?.canBeServiceEnded && (
           <button

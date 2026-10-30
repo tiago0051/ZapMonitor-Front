@@ -8,4 +8,6 @@ export enum WhatsappMessageContentType {
   TEMPLATE = "template",
   STICKER = "sticker",
   REACTION = "reaction",
+  // Mensagem com botões enviada pelo fluxo; o conteúdo chega como texto formatado
+  INTERACTIVE = "interactive",
 }

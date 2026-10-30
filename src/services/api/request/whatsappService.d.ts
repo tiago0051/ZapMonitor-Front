@@ -236,6 +236,18 @@ type StartWhatsappServiceRequestParams = {
 };
 //#endregion
 
+//#region forwardService
+type ForwardWhatsappServiceRequestData = {
+  params: ForwardWhatsappServiceRequestParams;
+};
+
+type ForwardWhatsappServiceRequestParams = {
+  contactId: string;
+  outputId: string;
+  clientId: string;
+};
+//#endregion
+
 //#region transferService
 type TransferWhatsappServiceRequestData = {
   params: TransferWhatsappServiceRequestParams;
