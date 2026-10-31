@@ -1,4 +1,4 @@
-type TenantRole = "IMPLANTER" | "ADMIN" | "ATTENDANT" | "CUSTOM";
+type TenantRole = "IMPLANTER" | "ADMIN" | "SUPERVISOR" | "ATTENDANT" | "CUSTOM";
 
 type Permission =
   | "whatsapp.chat"

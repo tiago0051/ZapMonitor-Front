@@ -2,7 +2,9 @@ import { useClientContext } from "@/context/ClientContext/clientContext";
 import { permissionGroupService } from "@/services/api/permissionGroupService";
 import { useQuery } from "@tanstack/react-query";
 
-const roles: TenantRole[] = ["IMPLANTER", "ADMIN", "ATTENDANT", "CUSTOM"];
+const roles: TenantRole[] = ["IMPLANTER", "ADMIN", "SUPERVISOR", "ATTENDANT", "CUSTOM"];
+
+const supervisorPermissions: Permission[] = ["whatsapp.chat", "reports.view", "email.view", "management.view"];
 
 /**
  * Espelha a regra do backend: ninguém concede, nem altera quem tem, um acesso maior que o próprio.
@@ -22,6 +24,7 @@ export const useMemberRoleOptions = (clientId: string) => {
   const canGrantRole = (role: TenantRole) => {
     if (role === "IMPLANTER") return access.role === "IMPLANTER";
     if (role === "ADMIN") return access.role === "IMPLANTER" || access.role === "ADMIN";
+    if (role === "SUPERVISOR") return supervisorPermissions.every(can);
     if (role === "ATTENDANT") return can("whatsapp.chat");
     return true;
   };

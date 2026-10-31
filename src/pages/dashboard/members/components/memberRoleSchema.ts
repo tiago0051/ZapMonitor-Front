@@ -1,7 +1,7 @@
 import z from "zod";
 
 export const memberRoleShape = {
-  role: z.enum(["IMPLANTER", "ADMIN", "ATTENDANT", "CUSTOM"]),
+  role: z.enum(["IMPLANTER", "ADMIN", "SUPERVISOR", "ATTENDANT", "CUSTOM"]),
   permissionGroupId: z.string(),
 };
 
