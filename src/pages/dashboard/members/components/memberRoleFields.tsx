@@ -8,10 +8,21 @@ type MemberRoleFormValues = { role: TenantRole; permissionGroupId: string };
 const selectClassName =
   "border-input dark:bg-input/30 focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border bg-transparent px-3 py-1 text-base shadow-xs outline-none focus-visible:ring-[3px] md:text-sm";
 
-/** Campos de papel e grupo de permissão; precisa estar dentro de um <Form>. */
+/** Campos de papel e grupo de permissão do tenant atual; precisa estar dentro de um <Form>. */
 export const MemberRoleFields = ({ clientId }: { clientId: string }) => {
-  const { control, watch } = useFormContext<MemberRoleFormValues>();
   const { roleOptions, permissionGroupOptions } = useMemberRoleOptions(clientId);
+
+  return <MemberRoleSelectFields roleOptions={roleOptions} permissionGroupOptions={permissionGroupOptions} />;
+};
+
+type MemberRoleSelectFieldsProps = {
+  roleOptions: TenantRole[];
+  permissionGroupOptions: PermissionGroup[];
+};
+
+/** Campos com as opções já calculadas; usado também fora de um tenant, no painel do implantador. */
+export const MemberRoleSelectFields = ({ roleOptions, permissionGroupOptions }: MemberRoleSelectFieldsProps) => {
+  const { control, watch } = useFormContext<MemberRoleFormValues>();
 
   const role = watch("role");
 

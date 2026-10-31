@@ -12,7 +12,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useUserContext } from "@/context/UserContext/userContext";
-import { FiActivity, FiLogOut, FiMail, FiSettings, FiUsers } from "react-icons/fi";
+import { FiActivity, FiBriefcase, FiLogOut, FiMail, FiSettings, FiTrendingUp, FiUsers } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
 import { PanelLeftIcon } from "lucide-react";
 import { Link } from "react-router";
@@ -53,7 +53,7 @@ const navMain: { title: string; icon: React.ComponentType; url: string; permissi
 ];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { logout } = useUserContext();
+  const { logout, user } = useUserContext();
   const { toggleSidebar } = useSidebar();
   const baseUrl = useBaseUrl();
   const { can } = useClientContext();
@@ -102,6 +102,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
+          {user?.isImplanter && (
+            <SidebarMenuButton asChild tooltip={"Painel do implantador"}>
+              <Link to={`/dashboard/implanter`}>
+                <FiBriefcase />
+                Painel do implantador
+              </Link>
+            </SidebarMenuButton>
+          )}
+          {user?.isOwner && (
+            <SidebarMenuButton asChild tooltip={"Tela do dono"}>
+              <Link to={`/dashboard/owner`}>
+                <FiTrendingUp />
+                Tela do dono
+              </Link>
+            </SidebarMenuButton>
+          )}
           <SidebarMenuButton onClick={() => logout()} asChild tooltip={"Sair"}>
             <Link to={`/auth/logout`}>
               <FiLogOut />
