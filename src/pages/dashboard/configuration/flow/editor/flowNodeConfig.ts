@@ -1,4 +1,4 @@
-import { Bot, Clock, Flag, GitBranch, MessageSquareText, Play, Users, type LucideIcon } from "lucide-react";
+import { Bot, Clock, Flag, GitBranch, MessageSquareText, Play, Tags, Users, Workflow, type LucideIcon } from "lucide-react";
 
 // Espelha as saídas calculadas pelo backend (flowDefinition.entity.ts)
 export const FLOW_OUTPUT_NEXT = "next";
@@ -70,6 +70,20 @@ export const flowNodeConfigs: Record<FlowNodeType, FlowNodeConfig> = {
       intervals: [1, 2, 3, 4, 5].map((weekday) => ({ weekday, start: "08:00", end: "18:00" })),
     }),
   },
+  category: {
+    label: "Categoria",
+    description: "Adiciona categorias ao contato e segue",
+    icon: Tags,
+    colorClassName: "text-teal-600 border-teal-500/60",
+    defaultData: () => ({ categoryIds: [] }),
+  },
+  flow: {
+    label: "Ir para fluxo",
+    description: "Continua no início de outro fluxo",
+    icon: Workflow,
+    colorClassName: "text-indigo-600 border-indigo-500/60",
+    defaultData: () => ({ flowId: "" }),
+  },
   end: {
     label: "Encerrar atendimento",
     description: "Envia uma despedida e finaliza",
@@ -87,6 +101,7 @@ export function getFlowNodeOutputs(type: FlowNodeType, data: FlowNodeData): Flow
   switch (type) {
     case "start":
     case "message":
+    case "category":
       return [{ id: FLOW_OUTPUT_NEXT, label: "Próximo" }];
     case "businessHours":
       return [
@@ -99,6 +114,7 @@ export function getFlowNodeOutputs(type: FlowNodeType, data: FlowNodeData): Flow
     case "aiAgent":
       return data.outputs ?? [];
     case "end":
+    case "flow":
       return [];
   }
 }
