@@ -12,7 +12,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useUserContext } from "@/context/UserContext/userContext";
-import { FiLogOut, FiMail, FiSettings, FiUsers } from "react-icons/fi";
+import { FiActivity, FiLogOut, FiMail, FiSettings, FiUsers } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
 import { PanelLeftIcon } from "lucide-react";
 import { Link } from "react-router";
@@ -32,6 +32,12 @@ const navMain: { title: string; icon: React.ComponentType; url: string; permissi
     icon: FaWhatsapp,
     url: "whatsapp",
     permission: "whatsapp.chat",
+  },
+  {
+    title: "Gestão",
+    icon: FiActivity,
+    url: "management",
+    permission: "management.view",
   },
   {
     title: "Usuários",
