@@ -86,7 +86,11 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
     onSuccess: (savedFlow) => {
       onFlowSaved(savedFlow);
       setIsDirty(false);
-      toast.success("Fluxo salvo");
+      toast.success(
+        savedFlow.version > flow.version
+          ? `Fluxo salvo como versão ${savedFlow.version}. Atendimentos em andamento continuam na versão em que começaram.`
+          : "Fluxo salvo",
+      );
     },
   });
 
@@ -248,6 +252,11 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
 
         <div className="flex items-center gap-2">
           <Badge variant={flow.active ? "default" : "secondary"}>{flow.active ? "Ativo" : "Inativo"}</Badge>
+          {flow.version > 0 && (
+            <Badge variant="outline" title="Cada edição gera uma versão; atendimentos em andamento continuam na versão em que começaram">
+              Versão {flow.version}
+            </Badge>
+          )}
           {isDirty && <span className="text-muted-foreground text-xs">Alterações não salvas</span>}
           <Button onClick={handleSave} disabled={isPending || !name.trim() || !Number.isInteger(resetAfterMinutes)}>
             {updateFlow.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}

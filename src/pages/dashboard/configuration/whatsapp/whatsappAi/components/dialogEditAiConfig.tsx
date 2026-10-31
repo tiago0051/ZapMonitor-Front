@@ -14,17 +14,15 @@ import z from "zod";
 type DialogEditAiConfigProps = {
   className?: string;
   clientId: string;
-  aiConfig: AiConfig;
 };
 
 const schema = z.object({
-  apiKey: z.string(),
-  systemPrompt: z.string().min(1, "O prompt do sistema é obrigatório"),
+  apiKey: z.string().min(1, "Informe a nova chave de API"),
 });
 
 type SchemaType = z.infer<typeof schema>;
 
-export const DialogEditAiConfig: FC<DialogEditAiConfigProps> = ({ clientId, className, aiConfig }) => {
+export const DialogEditAiConfig: FC<DialogEditAiConfigProps> = ({ clientId, className }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
   const queryClient = useQueryClient();
@@ -45,27 +43,22 @@ export const DialogEditAiConfig: FC<DialogEditAiConfigProps> = ({ clientId, clas
     resolver: zodResolver(schema),
     defaultValues: {
       apiKey: "",
-      systemPrompt: aiConfig.systemPrompt,
     },
     disabled: updateAiConfig.isPending,
   });
 
   const handleSubmit: SubmitHandler<SchemaType> = (data) => {
-    const { apiKey, systemPrompt } = data;
     updateAiConfig.mutate({
-      body: { apiKey: apiKey || undefined, systemPrompt },
+      body: { apiKey: data.apiKey },
       params: { clientId },
     });
   };
 
   useEffect(() => {
     if (!isOpen) {
-      form.reset({
-        apiKey: "",
-        systemPrompt: aiConfig.systemPrompt,
-      });
+      form.reset({ apiKey: "" });
     }
-  }, [isOpen, form, aiConfig]);
+  }, [isOpen, form]);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -78,7 +71,7 @@ export const DialogEditAiConfig: FC<DialogEditAiConfigProps> = ({ clientId, clas
       <DialogContent className="max-h-screen overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Configuração de IA</DialogTitle>
-          <DialogDescription>Atualize os parâmetros de inteligência artificial para este cliente.</DialogDescription>
+          <DialogDescription>Troque a chave de API usada pelos agentes de IA, transcrições e resumos deste cliente.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="grid gap-4" id="form">
@@ -90,24 +83,6 @@ export const DialogEditAiConfig: FC<DialogEditAiConfigProps> = ({ clientId, clas
                   <FormLabel>Chave de API</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder="Sua chave de API" type="password" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="systemPrompt"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Prompt do Sistema</FormLabel>
-                  <FormControl>
-                    <textarea
-                      {...field}
-                      placeholder="Digite o prompt do sistema"
-                      className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-24 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

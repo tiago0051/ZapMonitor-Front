@@ -53,6 +53,8 @@ type Flow = {
   name: string;
   active: boolean;
   resetAfterMinutes: number;
+  // Cada edição do grafo gera uma versão; atendimentos seguem na versão em que começaram
+  version: number;
   definition: FlowDefinition;
   // Números cujos novos atendimentos começam neste fluxo
   whatsappConfigurationIds: string[];

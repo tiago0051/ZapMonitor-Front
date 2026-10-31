@@ -17,9 +17,6 @@ type CreateAiConfigRequestParams = {
 
 type CreateAiConfigRequestBody = {
   apiKey: string;
-  systemPrompt: string;
-  model: string;
-  temperature: number;
 };
 
 type UpdateAiConfigRequestData = {
@@ -32,8 +29,7 @@ type UpdateAiConfigRequestParams = {
 };
 
 type UpdateAiConfigRequestBody = {
-  apiKey?: string;
-  systemPrompt: string;
+  apiKey: string;
 };
 
 type ToggleAiConfigRequestData = {

@@ -47,7 +47,7 @@ export const WhatsappAiConfiguration = () => {
         </div>
         {aiConfig && (
           <div className="flex shrink-0 gap-2">
-            <DialogEditAiConfig clientId={clientId!} aiConfig={aiConfig} />
+            <DialogEditAiConfig clientId={clientId!} />
             <Button
               variant={aiConfig.enabled ? "outline" : "default"}
               size="sm"
@@ -77,20 +77,9 @@ export const WhatsappAiConfiguration = () => {
                 <Badge variant={aiConfig.enabled ? "default" : "secondary"}>{aiConfig.enabled ? "Ativada" : "Desativada"}</Badge>
                 {!aiConfig.enabled && (
                   <span className="text-muted-foreground text-xs">
-                    Agentes de IA, transcrições e resumos ficam pausados. A IA também é desativada automaticamente após falhas seguidas da
-                    chave.
+                    Agentes de IA, transcrições e resumos ficam pausados. Contatos na etapa de um agente de IA vão para a fila.
                   </span>
                 )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-muted-foreground text-sm font-semibold">Prompt para atendimentos fora de fluxo</Label>
-              <p className="text-muted-foreground text-xs">
-                Usado só quando não há fluxo ativo. Dentro de um fluxo, cada agente de IA usa o próprio prompt.
-              </p>
-              <div className="bg-muted rounded-md border p-4">
-                <p className="line-clamp-6 text-sm whitespace-pre-wrap">{aiConfig.systemPrompt}</p>
               </div>
             </div>
 

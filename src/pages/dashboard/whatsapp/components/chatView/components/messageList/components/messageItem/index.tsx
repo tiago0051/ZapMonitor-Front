@@ -112,6 +112,8 @@ export const MessageItem: FC<MessageItemProps> = ({ message, contactName, onRepl
       {message.contentType === WhatsappMessageContentType.DOCUMENT && <MessageDocument content={content as MessageFileContent} />}
       {message.contentType === WhatsappMessageContentType.STICKER && <MessageSticker content={content as MessageFileContent} />}
 
+      {message.caption && <p className="mt-1 text-sm break-words whitespace-pre-wrap">{message.caption}</p>}
+
       {message.contentType === WhatsappMessageContentType.CONTACTS && <MessageContact message={message as WhatsappMessage<string>} />}
 
       {message.contentType === WhatsappMessageContentType.TEMPLATE && <MessageTemplate message={message as WhatsappMessage<string>} />}

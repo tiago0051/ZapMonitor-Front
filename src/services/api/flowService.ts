@@ -30,8 +30,4 @@ export const flowService = {
     const response = await api.put(`/client/${params.clientId}/flow/${params.flowId}/deactivate`);
     return response.data;
   },
-
-  delete: async ({ params }: DeleteFlowRequestData): Promise<void> => {
-    await api.delete(`/client/${params.clientId}/flow/${params.flowId}`);
-  },
 };

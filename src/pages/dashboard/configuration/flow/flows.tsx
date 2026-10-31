@@ -8,7 +8,6 @@ import { AlertTriangle, ArrowRight, CornerDownRight, Pencil, Phone, Workflow } f
 import { findFlowSources, findFlowTargetIds, useWhatsappConfigurations } from "./flowLinks";
 import { Link, useParams } from "react-router";
 import { DialogCreateFlow } from "./components/dialogCreateFlow";
-import { DialogDeleteFlow } from "./components/dialogDeleteFlow";
 
 export const Flows = () => {
   const { clientId } = useParams();
@@ -54,6 +53,7 @@ export const Flows = () => {
                       <Workflow className="text-primary h-5 w-5 shrink-0" />
                       <h3 className="truncate text-base font-semibold">{flow.name}</h3>
                       <Badge variant={flow.active ? "default" : "secondary"}>{flow.active ? "Ativo" : "Inativo"}</Badge>
+                      {flow.version > 0 && <Badge variant="outline">v{flow.version}</Badge>}
                     </div>
                     <div className="flex shrink-0">
                       <Button variant="ghost" size="icon" className="text-muted-foreground h-8 w-8" asChild>
@@ -61,7 +61,6 @@ export const Flows = () => {
                           <Pencil className="h-4 w-4" />
                         </Link>
                       </Button>
-                      <DialogDeleteFlow clientId={clientId!} flow={flow} />
                     </div>
                   </div>
 

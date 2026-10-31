@@ -36,7 +36,3 @@ type UpdateFlowRequestData = {
 type ToggleFlowRequestData = {
   params: FlowRequestParams;
 };
-
-type DeleteFlowRequestData = {
-  params: FlowRequestParams;
-};
