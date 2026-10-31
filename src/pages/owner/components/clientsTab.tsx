@@ -14,6 +14,7 @@ import { useState, type FC } from "react";
 import { useDebounceValue } from "usehooks-ts";
 import { formatNumber } from "../ownerFormat";
 import { DialogChangeImplanter } from "./dialogChangeImplanter";
+import { DialogClientPlan } from "./dialogClientPlan";
 
 const WITHOUT_IMPLANTER = "none";
 
@@ -30,7 +31,15 @@ const columns: DataTablePaginateColumnDef<OwnerClient>[] = [
   { accessorKey: "activeUsers", header: "Usuários ativos", cell: ({ row }) => formatNumber(row.original.activeUsers) },
   { accessorKey: "messages", header: "Mensagens no período", cell: ({ row }) => formatNumber(row.original.messages) },
   { accessorKey: "services", header: "Atendimentos no período", cell: ({ row }) => formatNumber(row.original.services) },
-  { header: "Ações", cell: ({ row }) => <DialogChangeImplanter client={row.original} /> },
+  {
+    header: "Ações",
+    cell: ({ row }) => (
+      <div className="flex flex-wrap gap-1">
+        <DialogClientPlan client={row.original} />
+        <DialogChangeImplanter client={row.original} />
+      </div>
+    ),
+  },
 ];
 
 type ClientsTabProps = {
@@ -130,7 +139,10 @@ export const ClientsTab: FC<ClientsTabProps> = ({ period, implanters, implanterF
                     <dd className="font-semibold tabular-nums">{formatNumber(client.services)}</dd>
                   </div>
                 </dl>
-                <DialogChangeImplanter client={client} />
+                <div className="flex flex-wrap gap-1">
+                  <DialogClientPlan client={client} />
+                  <DialogChangeImplanter client={client} />
+                </div>
               </CardContent>
             </Card>
           ))}
