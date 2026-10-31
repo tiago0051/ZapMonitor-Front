@@ -5,6 +5,7 @@ type Permission =
   | "email.view"
   | "reports.view"
   | "members.manage"
+  | "management.view"
   | "permissionGroups.manage"
   | "flows.manage"
   | "serviceGroups.manage"
