@@ -36,6 +36,12 @@ type FlowNodePanelProps = {
   onClose: () => void;
 };
 
+const CATEGORY_HINTS: Partial<Record<FlowNodeType, string>> = {
+  category: "As categorias são adicionadas ao contato; as que ele já tem são mantidas.",
+  removeCategory: "As categorias são removidas do contato; as demais são mantidas.",
+  replaceCategories: "As categorias atuais do contato são trocadas pelas selecionadas.",
+};
+
 const Field: FC<{ label: string; hint?: string; children: ReactNode }> = ({ label, hint, children }) => (
   <div className="space-y-1.5">
     <Label>{label}</Label>
@@ -286,13 +292,13 @@ export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, on
           </Field>
         )}
 
-        {type === "category" && (
+        {(type === "category" || type === "removeCategory" || type === "replaceCategories") && (
           <Field
             label="Categorias"
             hint={
               categories.length === 0
                 ? "Cadastre categorias na aba Categorias."
-                : "As categorias são adicionadas ao contato; as que ele já tem são mantidas."
+                : CATEGORY_HINTS[type]
             }
           >
             <div className="max-h-64 space-y-2 overflow-y-auto rounded-md border p-3">

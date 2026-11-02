@@ -23,3 +23,11 @@ export const toPeriodQuery = (period: Period): OwnerPeriodRequestQuery | null =>
   period.start && period.end && period.start <= period.end
     ? { startDate: startOfDay(parseISO(period.start)).toISOString(), endDate: endOfDay(parseISO(period.end)).toISOString() }
     : null;
+
+const currencyFormatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+
+export const formatCurrency = (value: number) => currencyFormatter.format(value);
+
+/** Mensalidade de um plano com os preços de uma tabela. */
+export const calculateMonthlyFee = (table: PriceTable | undefined, quantities: Partial<Record<BillingResource, number>>) =>
+  table?.items.reduce((total, item) => total + (quantities[item.resource] ?? 0) * item.unitPrice, 0) ?? 0;

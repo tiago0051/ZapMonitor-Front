@@ -1,4 +1,4 @@
-type FlowNodeType = "start" | "serviceGroup" | "aiAgent" | "condition" | "message" | "businessHours" | "category" | "flow" | "end";
+type FlowNodeType = "start" | "serviceGroup" | "aiAgent" | "condition" | "message" | "businessHours" | "category" | "removeCategory" | "replaceCategories" | "flow" | "end";
 
 type FlowOutput = {
   id: string;

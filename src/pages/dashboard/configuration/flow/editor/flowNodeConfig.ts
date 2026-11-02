@@ -1,4 +1,4 @@
-import { Bot, Clock, Flag, GitBranch, MessageSquareText, Play, Tags, Users, Workflow, type LucideIcon } from "lucide-react";
+import { Bot, Clock, Flag, GitBranch, MessageSquareText, Play, Replace, Tag, Tags, Users, Workflow, type LucideIcon } from "lucide-react";
 
 // Espelha as saídas calculadas pelo backend (flowDefinition.entity.ts)
 export const FLOW_OUTPUT_NEXT = "next";
@@ -71,10 +71,24 @@ export const flowNodeConfigs: Record<FlowNodeType, FlowNodeConfig> = {
     }),
   },
   category: {
-    label: "Categoria",
+    label: "Adicionar categoria",
     description: "Adiciona categorias ao contato e segue",
     icon: Tags,
     colorClassName: "text-teal-600 border-teal-500/60",
+    defaultData: () => ({ categoryIds: [] }),
+  },
+  removeCategory: {
+    label: "Remover categoria",
+    description: "Remove categorias do contato e segue",
+    icon: Tag,
+    colorClassName: "text-red-600 border-red-500/60",
+    defaultData: () => ({ categoryIds: [] }),
+  },
+  replaceCategories: {
+    label: "Substituir categorias",
+    description: "Troca as categorias do contato e segue",
+    icon: Replace,
+    colorClassName: "text-cyan-600 border-cyan-500/60",
     defaultData: () => ({ categoryIds: [] }),
   },
   flow: {
@@ -102,6 +116,8 @@ export function getFlowNodeOutputs(type: FlowNodeType, data: FlowNodeData): Flow
     case "start":
     case "message":
     case "category":
+    case "removeCategory":
+    case "replaceCategories":
       return [{ id: FLOW_OUTPUT_NEXT, label: "Próximo" }];
     case "businessHours":
       return [
