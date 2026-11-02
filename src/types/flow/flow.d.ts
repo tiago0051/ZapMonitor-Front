@@ -47,6 +47,12 @@ type FlowDefinition = {
   edges: FlowDefinitionEdge[];
 };
 
+// Pendência de um nó (nodeId) ou do fluxo todo (sem nodeId)
+type FlowIssue = {
+  nodeId?: string;
+  message: string;
+};
+
 type Flow = {
   id: string;
   clientId: string;
@@ -58,7 +64,7 @@ type Flow = {
   definition: FlowDefinition;
   // Números cujos novos atendimentos começam neste fluxo
   whatsappConfigurationIds: string[];
-  issues: string[];
+  issues: FlowIssue[];
   createdAt: string;
   updatedAt: string;
 };

@@ -7,6 +7,7 @@ import { flowService } from "@/services/api/flowService";
 import { serviceGroupService } from "@/services/api/serviceGroupService";
 import { whatsappService } from "@/services/api/whatsappService";
 import { requestErrorHandling } from "@/utils/request";
+import { isAxiosError } from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   addEdge,
@@ -22,7 +23,7 @@ import {
   type Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { AlertTriangle, ArrowLeft, Loader2, Phone, Save } from "lucide-react";
+import { ArrowLeft, Loader2, Phone, Save } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useWhatsappConfigurations } from "../flowLinks";
@@ -30,7 +31,8 @@ import { useCallback, useEffect, useMemo, useState, type FC } from "react";
 import { Link, useParams } from "react-router";
 import { toast } from "sonner";
 import { FlowCanvasNode, type FlowCanvasNodeType } from "./flowCanvasNode";
-import { FlowEditorContext, useFlowEditorContext } from "./flowEditorContext";
+import { FlowEditorContext, FlowIssuesContext, useFlowEditorContext } from "./flowEditorContext";
+import { FlowIssuesPanel } from "./flowIssuesPanel";
 import { createFlowId, flowNodeConfigs, getFlowNodeOutputs } from "./flowNodeConfig";
 import { FlowNodePanel } from "./flowNodePanel";
 
@@ -54,6 +56,19 @@ const toDefinition = (nodes: FlowCanvasNodeType[], edges: Edge[]): FlowDefinitio
   edges: edges.map((edge) => ({ id: edge.id, source: edge.source, sourceHandle: edge.sourceHandle ?? "", target: edge.target })),
 });
 
+// Pendências que o back devolve quando recusa salvar ou ativar o fluxo
+type RejectedIssues = {
+  title: string;
+  issues: FlowIssue[];
+};
+
+const getRejectedIssues = (error: unknown): RejectedIssues | null => {
+  const data = isAxiosError(error) ? error.response?.data : undefined;
+  if (!Array.isArray(data?.issues)) return null;
+
+  return { title: data.message, issues: data.issues };
+};
+
 type FlowEditorCanvasProps = {
   clientId: string;
   flow: Flow;
@@ -61,7 +76,7 @@ type FlowEditorCanvasProps = {
 
 const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
   const queryClient = useQueryClient();
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, fitView } = useReactFlow();
 
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowCanvasNodeType>(toCanvasNodes(flow.definition));
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(toCanvasEdges(flow.definition));
@@ -72,6 +87,8 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
   const { flows } = useFlowEditorContext();
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
+  const [rejectedIssues, setRejectedIssues] = useState<RejectedIssues | null>(null);
+  const [isIssuesOpen, setIsIssuesOpen] = useState(false);
 
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) ?? null;
 
@@ -80,12 +97,22 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
     queryClient.invalidateQueries({ queryKey: ["flows", clientId] });
   };
 
+  const handleIssuesError = (error: unknown) => {
+    const rejected = getRejectedIssues(error);
+    if (!rejected) return requestErrorHandling(error);
+
+    setRejectedIssues(rejected);
+    setIsIssuesOpen(true);
+    toast.error(rejected.title, { description: "Veja as pendências listadas acima do fluxo." });
+  };
+
   const updateFlow = useMutation({
     mutationFn: flowService.update,
-    onError: requestErrorHandling,
+    onError: handleIssuesError,
     onSuccess: (savedFlow) => {
       onFlowSaved(savedFlow);
       setIsDirty(false);
+      setRejectedIssues(null);
       toast.success(
         savedFlow.version > flow.version
           ? `Fluxo salvo como versão ${savedFlow.version}. Atendimentos em andamento continuam na versão em que começaram.`
@@ -96,7 +123,7 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
 
   const toggleFlow = useMutation({
     mutationFn: flow.active ? flowService.deactivate : flowService.activate,
-    onError: requestErrorHandling,
+    onError: handleIssuesError,
     onSuccess: (savedFlow) => {
       onFlowSaved(savedFlow);
       toast.success(savedFlow.active ? "Fluxo ativado. Novos atendimentos passam por ele." : "Fluxo desativado");
@@ -148,6 +175,12 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
     setIsDirty(true);
   };
 
+  const showNode = (nodeId: string) => {
+    setNodes((currentNodes) => currentNodes.map((node) => ({ ...node, selected: node.id === nodeId })));
+    setSelectedNodeId(nodeId);
+    fitView({ nodes: [{ id: nodeId }], duration: 300, maxZoom: 1 });
+  };
+
   const deleteNode = (nodeId: string) => {
     setNodes((currentNodes) => currentNodes.filter((node) => node.id !== nodeId));
     setEdges((currentEdges) => currentEdges.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
@@ -174,6 +207,19 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
     );
     setIsDirty(true);
   };
+
+  // A recusa mais recente mostra o rascunho que o usuário tentou salvar; sem ela, vale a última versão salva
+  const issues = rejectedIssues?.issues ?? flow.issues;
+  const issuesTitle = rejectedIssues
+    ? `${rejectedIssues.title}: ${rejectedIssues.issues.length} pendência(s)`
+    : `${flow.issues.length} pendência(s) na última versão salva. Resolva para ativar o fluxo.`;
+  const issueCountByNodeId = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const issue of issues) {
+      if (issue.nodeId) counts.set(issue.nodeId, (counts.get(issue.nodeId) ?? 0) + 1);
+    }
+    return counts;
+  }, [issues]);
 
   const isPending = updateFlow.isPending || toggleFlow.isPending;
   const canActivate = !flow.active && flow.issues.length === 0 && !isDirty;
@@ -273,18 +319,15 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
         </div>
       </div>
 
-      {flow.issues.length > 0 && (
-        <details className="border-b bg-amber-50 px-4 py-2 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-          <summary className="flex cursor-pointer items-center gap-2 font-medium">
-            <AlertTriangle className="h-4 w-4" />
-            {flow.issues.length} pendência(s) na última versão salva. Resolva para ativar o fluxo.
-          </summary>
-          <ul className="mt-2 list-disc space-y-0.5 pl-6">
-            {flow.issues.map((issue) => (
-              <li key={issue}>{issue}</li>
-            ))}
-          </ul>
-        </details>
+      {issues.length > 0 && (
+        <FlowIssuesPanel
+          title={issuesTitle}
+          issues={issues}
+          nodes={nodes}
+          isOpen={isIssuesOpen}
+          onOpenChange={setIsIssuesOpen}
+          onSelectNode={showNode}
+        />
       )}
 
       <div className="flex min-h-0 flex-1">
@@ -311,30 +354,32 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
         </aside>
 
         <div className="min-w-0 flex-1">
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            nodeTypes={nodeTypes}
-            onNodesChange={(changes) => {
-              onNodesChange(changes);
-              if (changes.some((change) => change.type === "position" || change.type === "remove")) markDirty();
-            }}
-            onEdgesChange={(changes) => {
-              onEdgesChange(changes);
-              if (changes.some((change) => change.type === "remove")) markDirty();
-            }}
-            onConnect={onConnect}
-            onNodeClick={(_, node) => setSelectedNodeId(node.id)}
-            onPaneClick={() => setSelectedNodeId(null)}
-            defaultEdgeOptions={{ animated: true }}
-            colorMode="system"
-            fitView
-            deleteKeyCode={["Backspace", "Delete"]}
-          >
-            <Background />
-            <Controls />
-            <MiniMap pannable zoomable />
-          </ReactFlow>
+          <FlowIssuesContext.Provider value={issueCountByNodeId}>
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              nodeTypes={nodeTypes}
+              onNodesChange={(changes) => {
+                onNodesChange(changes);
+                if (changes.some((change) => change.type === "position" || change.type === "remove")) markDirty();
+              }}
+              onEdgesChange={(changes) => {
+                onEdgesChange(changes);
+                if (changes.some((change) => change.type === "remove")) markDirty();
+              }}
+              onConnect={onConnect}
+              onNodeClick={(_, node) => setSelectedNodeId(node.id)}
+              onPaneClick={() => setSelectedNodeId(null)}
+              defaultEdgeOptions={{ animated: true }}
+              colorMode="system"
+              fitView
+              deleteKeyCode={["Backspace", "Delete"]}
+            >
+              <Background />
+              <Controls />
+              <MiniMap pannable zoomable />
+            </ReactFlow>
+          </FlowIssuesContext.Provider>
         </div>
 
         {selectedNode && (
