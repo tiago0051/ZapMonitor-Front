@@ -35,7 +35,7 @@ import { createFlowId, flowNodeConfigs, getFlowNodeOutputs } from "./flowNodeCon
 import { FlowNodePanel } from "./flowNodePanel";
 
 const nodeTypes = Object.fromEntries(Object.keys(flowNodeConfigs).map((type) => [type, FlowCanvasNode]));
-const paletteNodeTypes: FlowNodeType[] = ["message", "condition", "aiAgent", "serviceGroup", "businessHours", "category", "flow", "end"];
+const paletteNodeTypes: FlowNodeType[] = ["message", "condition", "aiAgent", "serviceGroup", "businessHours", "category", "removeCategory", "replaceCategories", "flow", "end"];
 
 const toCanvasNodes = (definition: FlowDefinition): FlowCanvasNodeType[] =>
   definition.nodes.map((node) => ({

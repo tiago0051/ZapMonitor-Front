@@ -23,7 +23,9 @@ function useNodeSummary(type: FlowNodeType, data: FlowNodeData) {
       return aiAgents.find((agent) => agent.id === data.aiAgentId)?.name ?? "Selecione um agente";
     case "serviceGroup":
       return serviceGroups.find((group) => group.id === data.serviceGroupId)?.name ?? "Selecione um grupo";
-    case "category": {
+    case "category":
+    case "removeCategory":
+    case "replaceCategories": {
       const names = (data.categoryIds ?? []).map((id) => categories.find((category) => category.id === id)?.name ?? "Categoria removida");
       return names.length ? names.join(", ") : "Selecione as categorias";
     }
