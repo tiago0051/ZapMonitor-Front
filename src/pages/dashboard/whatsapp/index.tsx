@@ -4,7 +4,7 @@ import { MessageSquare, Search, X, ArrowLeft, Users, WifiOff } from "lucide-reac
 import { AnimatePresence, motion } from "motion/react";
 import { ContactCard } from "./components/contactCard";
 import { ContactCardSkeleton } from "./components/contactCard/skeleton";
-import { InfoPanel } from "./components/infoPanel";
+import { InfoPanel, type InfoPanelTab } from "./components/infoPanel";
 import { ChatView } from "./components/chatView";
 import { DialogNewContactTemplate } from "./components/dialogNewContactTemplate";
 import { useSocketContext } from "@/context/SocketContext/socketContext";
@@ -13,6 +13,9 @@ import { useContactsListService } from "./useContactsListService";
 import { useServiceGroupSelection } from "./useServiceGroupSelection";
 import { NotificationSettings } from "./notifications/notificationSettings";
 import { useNewContactNotifications } from "./notifications/useNewContactNotifications";
+import { useSearchParams } from "react-router";
+import { whatsappService } from "@/services/api/whatsappService";
+import { useClientContext } from "@/context/ClientContext/clientContext";
 
 // ── Shared sub-panels ────────────────────────────────────────────────────────
 
@@ -237,7 +240,7 @@ export function Whatsapp() {
 
   const [tab, setTab] = useState<Tab>("queue");
   const [selected, setSelected] = useState<WhatsappContactMessage | null>(null);
-  const [rightPanel, setRightPanel] = useState<"summary" | "history" | "files">("summary");
+  const [rightPanel, setRightPanel] = useState<InfoPanelTab>("summary");
   const [[mobileView, mobileViewDirection], setMobileViewState] = useState<[MobileView, number]>(["list", 0]);
 
   const goToMobileView = (view: MobileView) => {
@@ -248,6 +251,27 @@ export function Whatsapp() {
     setSelected(contact);
     goToMobileView("chat");
   };
+
+  // Links de fora da tela (como o card do CRM) abrem a conversa do contato pela aba Todos
+  const { client } = useClientContext();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const linkedContactId = searchParams.get("contactId");
+  const linkedPhone = searchParams.get("phone");
+
+  useEffect(() => {
+    if (!linkedContactId || !linkedPhone) return;
+
+    whatsappService
+      .findAllContacts({ params: { clientId: client.id }, queries: { page: 1, take: 10, tab: "all", text: linkedPhone } })
+      .then((response) => {
+        const contact = response.items.find((item) => item.id === linkedContactId);
+        if (!contact) return;
+
+        setTab("all");
+        handleSelectContact(contact);
+      })
+      .finally(() => setSearchParams({}, { replace: true }));
+  }, [linkedContactId, linkedPhone]);
 
   const { serviceGroups } = useServiceGroupSelection();
   useNewContactNotifications({

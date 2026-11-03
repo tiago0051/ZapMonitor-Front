@@ -6,6 +6,8 @@ type FlowEditorContextValue = {
   categories: WhatsappMessageCategory[];
   // Todos os fluxos do cliente, inclusive o que está sendo editado
   flows: Flow[];
+  // Funis ativos do CRM; vazio quando o plano não inclui o módulo
+  pipelines: Pipeline[];
   currentFlowId: string;
 };
 
@@ -14,6 +16,7 @@ export const FlowEditorContext = createContext<FlowEditorContextValue>({
   aiAgents: [],
   categories: [],
   flows: [],
+  pipelines: [],
   currentFlowId: "",
 });
 

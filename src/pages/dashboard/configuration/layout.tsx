@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Bot,
   Code2,
+  Columns3,
   KeyRound,
   MessageSquareText,
   Phone,
@@ -23,6 +24,7 @@ import { AiAgents } from "./aiAgent/aiAgents";
 import { ClientConfiguration } from "./client";
 import { Flows } from "./flow/flows";
 import { PermissionGroups } from "./permissionGroup/permissionGroups";
+import { Pipelines } from "./pipeline/pipelines";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { ServiceGroups } from "./serviceGroup/serviceGroup";
 import { WhatsappAiConfiguration } from "./whatsapp/whatsappAi/whatsappAiConfiguration";
@@ -37,6 +39,8 @@ type ConfigurationSection = {
   content: ReactNode;
   // Sem permissão, a seção fica disponível para qualquer membro
   permission?: Permission;
+  // Só aparece quando o plano inclui o módulo CRM
+  requiresCrm?: boolean;
 };
 
 // Grupos ordenados pela frequência de uso: atendimento muda toda semana; canais e integrações, só na implantação
@@ -54,6 +58,10 @@ const configurationGroups: { label: string; sections: ConfigurationSection[] }[]
       },
       { id: "aiAgent", label: "Agentes de IA", icon: Bot, content: <AiAgents />, permission: "aiAgents.manage" },
     ],
+  },
+  {
+    label: "CRM",
+    sections: [{ id: "pipeline", label: "Funis", icon: Columns3, content: <Pipelines />, permission: "crm.manage", requiresCrm: true }],
   },
   {
     label: "Mensagens",
@@ -120,10 +128,15 @@ const SectionSkeleton = () => (
 export const EditClientLayout = () => {
   const { clientId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { can } = useClientContext();
+  const { can, access } = useClientContext();
 
   const allowedGroups = configurationGroups
-    .map((group) => ({ ...group, sections: group.sections.filter((section) => !section.permission || can(section.permission)) }))
+    .map((group) => ({
+      ...group,
+      sections: group.sections.filter(
+        (section) => (!section.permission || can(section.permission)) && (!section.requiresCrm || access.crmEnabled),
+      ),
+    }))
     .filter((group) => group.sections.length > 0);
   const sections = allowedGroups.flatMap((group) => group.sections);
 

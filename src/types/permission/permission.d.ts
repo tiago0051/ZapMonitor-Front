@@ -14,7 +14,10 @@ type Permission =
   | "categories.manage"
   | "channels.manage"
   | "aiConfig.manage"
-  | "api.manage";
+  | "api.manage"
+  | "crm.view"
+  | "crm.viewAll"
+  | "crm.manage";
 
 type PermissionDefinition = {
   key: Permission;
@@ -39,4 +42,6 @@ type TenantAccess = {
   permissionGroupId: string | null;
   permissionGroupName: string | null;
   permissions: Permission[];
+  // O plano do tenant inclui o módulo CRM
+  crmEnabled: boolean;
 };

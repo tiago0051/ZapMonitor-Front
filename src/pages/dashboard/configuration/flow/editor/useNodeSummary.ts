@@ -3,7 +3,7 @@ import { WEEKDAY_LABELS } from "./flowNodeConfig";
 
 // Texto curto que descreve o que o nó faz, mostrado no canvas e na lista de pendências
 export function useNodeSummary(type: FlowNodeType, data: FlowNodeData) {
-  const { serviceGroups, aiAgents, categories, flows } = useFlowEditorContext();
+  const { serviceGroups, aiAgents, categories, flows, pipelines } = useFlowEditorContext();
 
   switch (type) {
     case "start":
@@ -22,6 +22,11 @@ export function useNodeSummary(type: FlowNodeType, data: FlowNodeData) {
     case "replaceCategories": {
       const names = (data.categoryIds ?? []).map((id) => categories.find((category) => category.id === id)?.name ?? "Categoria removida");
       return names.length ? names.join(", ") : "Selecione as categorias";
+    }
+    case "crm": {
+      const pipeline = pipelines.find((item) => item.id === data.pipelineId);
+      const stage = pipeline?.stages.find((item) => item.id === data.stageId);
+      return pipeline && stage ? `${pipeline.name} → ${stage.name}` : "Selecione o funil e a etapa";
     }
     case "flow":
       return flows.find((flow) => flow.id === data.flowId)?.name ?? "Selecione um fluxo";

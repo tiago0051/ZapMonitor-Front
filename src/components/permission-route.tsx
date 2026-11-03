@@ -4,6 +4,8 @@ import type { FC, ReactNode } from "react";
 
 type PermissionRouteProps = {
   permission: Permission;
+  // Exige também que o plano inclua o módulo CRM
+  requiresCrm?: boolean;
   children: ReactNode;
 };
 
@@ -19,10 +21,10 @@ export const NoPermission = () => (
   </div>
 );
 
-export const PermissionRoute: FC<PermissionRouteProps> = ({ permission, children }) => {
-  const { can } = useClientContext();
+export const PermissionRoute: FC<PermissionRouteProps> = ({ permission, requiresCrm, children }) => {
+  const { can, access } = useClientContext();
 
-  if (!can(permission)) return <NoPermission />;
+  if (!can(permission) || (requiresCrm && !access.crmEnabled)) return <NoPermission />;
 
   return children;
 };

@@ -1,4 +1,16 @@
-type FlowNodeType = "start" | "serviceGroup" | "aiAgent" | "condition" | "message" | "businessHours" | "category" | "removeCategory" | "replaceCategories" | "flow" | "end";
+type FlowNodeType =
+  | "start"
+  | "serviceGroup"
+  | "aiAgent"
+  | "condition"
+  | "message"
+  | "businessHours"
+  | "category"
+  | "removeCategory"
+  | "replaceCategories"
+  | "crm"
+  | "flow"
+  | "end";
 
 type FlowOutput = {
   id: string;
@@ -26,6 +38,8 @@ type FlowNodeData = {
   intervals?: FlowBusinessHoursInterval[];
   categoryIds?: string[];
   flowId?: string;
+  pipelineId?: string;
+  stageId?: string;
 };
 
 type FlowDefinitionNode = {
