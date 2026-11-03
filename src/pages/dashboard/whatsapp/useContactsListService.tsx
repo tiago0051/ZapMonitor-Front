@@ -44,6 +44,7 @@ export const useContactsListService = ({ search, tab, serviceGroupId, enabled = 
   });
 
   const contactsMessageQuery = useInfiniteQuery({
+    meta: { errorHandledInline: true },
     queryFn: async ({ pageParam }) =>
       whatsappService.findAllContacts({
         params: {
@@ -151,6 +152,9 @@ export const useContactsListService = ({ search, tab, serviceGroupId, enabled = 
       items: contacts,
       isLoading: !enabled || contactsMessageQuery.isLoading,
       isEmpty: contacts.length === 0,
+      isError: contactsMessageQuery.isError && !contactsMessageQuery.data,
+      isRefetching: contactsMessageQuery.isFetching,
+      refetch: contactsMessageQuery.refetch,
       hasNextPage: contactsMessageQuery.hasNextPage,
       isFetchingNextPage: contactsMessageQuery.isFetchingNextPage,
       fetchNextPage: contactsMessageQuery.fetchNextPage,

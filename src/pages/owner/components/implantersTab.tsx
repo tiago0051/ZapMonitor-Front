@@ -1,3 +1,4 @@
+import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -26,9 +27,10 @@ export const ImplantersTab: FC<ImplantersTabProps> = ({ query, onShowClients }) 
   const isMobile = useIsMobile();
   const implanters = query.data?.implanters ?? [];
 
-  if (query.isLoading) return <p>Carregando...</p>;
-  if (query.isError) return <p>Erro ao buscar implantadores.</p>;
-  if (implanters.length === 0) return <p className="text-muted-foreground text-sm">Nenhum implantador encontrado.</p>;
+  if (query.isLoading) return <LoadingState />;
+  if (query.isError)
+    return <ErrorState message="Não foi possível buscar os implantadores." onRetry={() => query.refetch()} isRetrying={query.isFetching} />;
+  if (implanters.length === 0) return <EmptyState title="Nenhum implantador encontrado" />;
 
   if (isMobile)
     return (

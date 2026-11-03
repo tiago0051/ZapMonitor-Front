@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/state-message";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getColumns } from "./whatsappConfigurationColumns";
 import { DataTablePaginate } from "@/components/ui/dataTablePaginate";
@@ -18,6 +19,7 @@ export const WhatsappConfiguration = () => {
   });
 
   const findAllWhatsappConfigurationsQuery = useSuspenseQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["whatsappConfigurations", clientId, pagination],
     queryFn: () =>
       whatsappService.findAllConfigurations({
@@ -48,7 +50,7 @@ export const WhatsappConfiguration = () => {
       </CardHeader>
       <CardContent>
         {listWhatsappConfigurations.total === 0 ? (
-          <p className="text-muted-foreground text-sm">Nenhum número conectado. Comece por "Conectar com a Meta".</p>
+          <EmptyState title="Nenhum número conectado" description='Comece por "Conectar com a Meta".' />
         ) : (
           <DataTablePaginate
             columns={columns}

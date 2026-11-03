@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/state-message";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { aiAgentService } from "@/services/api/aiAgentService";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -11,6 +12,7 @@ export const AiAgents = () => {
   const { clientId } = useParams();
 
   const findAllAiAgentsQuery = useSuspenseQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["aiAgents", clientId],
     queryFn: () => aiAgentService.findAll({ params: { clientId: clientId! } }),
   });
@@ -29,7 +31,9 @@ export const AiAgents = () => {
         <DialogSaveAiAgent clientId={clientId!} />
       </CardHeader>
       <CardContent>
-        {aiAgents.length === 0 && <p className="text-muted-foreground text-sm">Nenhum agente de IA cadastrado.</p>}
+        {aiAgents.length === 0 && (
+          <EmptyState title="Nenhum agente de IA cadastrado" description="Crie um agente para usar nos fluxos de atendimento." />
+        )}
 
         {aiAgents.length > 0 && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">

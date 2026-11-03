@@ -57,11 +57,7 @@ export const WhatsappCategory = () => {
           </div>
           <DialogCreateMessageCategory clientId={clientId!} className="col-span-2 col-start-5 lg:col-start-8" />
         </div>
-        {findAllWhatsappCategoriesQuery.isLoading && <p>Carregando...</p>}
-        {findAllWhatsappCategoriesQuery.isError && <p>Erro ao buscar categorias.</p>}
-        {listWhatsappCategories && (
-          <DataTablePaginate columns={columns} data={listWhatsappCategories} onPaginationChange={setPagination} pagination={pagination} />
-        )}
+        <DataTablePaginate columns={columns} data={listWhatsappCategories} onPaginationChange={setPagination} pagination={pagination} />
       </CardContent>
     </Card>
   );

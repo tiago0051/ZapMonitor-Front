@@ -1,3 +1,4 @@
+import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
 import { DataTablePaginate } from "@/components/ui/dataTablePaginate";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -85,12 +86,18 @@ export const Members = () => {
         <DialogInviteMember clientId={client.id} className="w-full self-end sm:col-span-6 sm:w-auto lg:col-span-2 lg:col-start-7" />
       </div>
 
-      {findAllMembersQuery.isLoading && <p>Carregando...</p>}
-      {findAllMembersQuery.isError && <p>Erro ao buscar usuários.</p>}
+      {findAllMembersQuery.isLoading && <LoadingState />}
+      {findAllMembersQuery.isError && (
+        <ErrorState
+          message="Não foi possível buscar os usuários."
+          onRetry={() => findAllMembersQuery.refetch()}
+          isRetrying={findAllMembersQuery.isFetching}
+        />
+      )}
 
       {members && isMobile && (
         <div className="space-y-3 overflow-auto">
-          {members.items.length === 0 && <p className="text-muted-foreground text-sm">Nenhum usuário encontrado.</p>}
+          {members.items.length === 0 && <EmptyState title="Nenhum usuário encontrado" />}
 
           {members.items.map((member) => (
             <MemberCard key={member.id} member={member} clientId={client.id} />

@@ -1,3 +1,4 @@
+import { EmptyState, ErrorState } from "@/components/state-message";
 import { useEffect, useRef, useState } from "react";
 import { MessageSquare, Search, X, ArrowLeft, Users, WifiOff } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -61,7 +62,20 @@ function ContactListPanel({
 
   function renderContactsList() {
     if (contacts.isLoading) return Array.from({ length: 6 }).map((_, index) => <ContactCardSkeleton key={index} />);
-    if (contacts.isEmpty) return <div className="text-muted-foreground py-12 text-center text-sm">Nenhum contato encontrado</div>;
+    if (contacts.isError)
+      return (
+        <ErrorState message="Não foi possível buscar os contatos." onRetry={() => contacts.refetch()} isRetrying={contacts.isRefetching} />
+      );
+    if (contacts.isEmpty) {
+      const emptyMessages: Record<Tab, { title: string; description: string }> = {
+        queue: { title: "Fila vazia", description: "Nenhum contato aguardando atendimento agora." },
+        mine: { title: "Nenhum atendimento seu", description: "Assuma um contato da fila para começar." },
+        all: { title: "Nenhum contato", description: "Os contatos aparecem aqui depois da primeira mensagem." },
+      };
+      const empty = search ? { title: "Nenhum contato encontrado", description: `Nada encontrado para "${search}".` } : emptyMessages[tab];
+
+      return <EmptyState className="m-3 border-0" icon={MessageSquare} title={empty.title} description={empty.description} />;
+    }
 
     return (
       <>

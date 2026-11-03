@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/state-message";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +14,7 @@ export const Flows = () => {
   const { clientId } = useParams();
 
   const findAllFlowsQuery = useSuspenseQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["flows", clientId],
     queryFn: () => flowService.findAll({ params: { clientId: clientId! } }),
   });
@@ -38,7 +40,9 @@ export const Flows = () => {
         <DialogCreateFlow clientId={clientId!} />
       </CardHeader>
       <CardContent>
-        {flows.length === 0 && <p className="text-muted-foreground text-sm">Nenhum fluxo cadastrado.</p>}
+        {flows.length === 0 && (
+          <EmptyState title="Nenhum fluxo cadastrado" description="Sem fluxo, os atendimentos vão direto para a fila do grupo do número." />
+        )}
 
         {flows.length > 0 && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">

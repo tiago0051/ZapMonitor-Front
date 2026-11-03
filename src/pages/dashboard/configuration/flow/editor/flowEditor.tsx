@@ -1,3 +1,4 @@
+import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -440,15 +441,35 @@ export const FlowEditor = () => {
     [serviceGroupsQuery.data, aiAgentsQuery.data, categoriesQuery.data, flowsQuery.data, flowId],
   );
 
-  if (flowQuery.isLoading) {
+  if (flowQuery.isLoading) return <LoadingState className="h-full" label="Carregando o fluxo..." />;
+
+  const isFlowNotFound = isAxiosError(flowQuery.error) && flowQuery.error.response?.status === 404;
+  if (flowQuery.isError && !flowQuery.data && !isFlowNotFound)
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
-      </div>
+      <ErrorState
+        className="h-full"
+        message="Não foi possível abrir o fluxo."
+        onRetry={() => flowQuery.refetch()}
+        isRetrying={flowQuery.isFetching}
+      />
+    );
+
+  if (!flowQuery.data) {
+    return (
+      <EmptyState
+        className="m-6"
+        title="Fluxo não encontrado"
+        description="Ele pode ter sido excluído."
+        action={
+          <Button variant="outline" asChild>
+            <Link to="../..?tab=flow" relative="path">
+              Voltar para os fluxos
+            </Link>
+          </Button>
+        }
+      />
     );
   }
-
-  if (!flowQuery.data) return <p className="text-muted-foreground p-6 text-sm">Fluxo não encontrado.</p>;
 
   return (
     <FlowEditorContext.Provider value={contextValue}>

@@ -1,3 +1,4 @@
+import { LoadingState } from "@/components/state-message";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -112,7 +113,7 @@ export const DialogClientPlan: FC<{ client: OwnerClient }> = ({ client }) => {
           </DialogDescription>
         </DialogHeader>
 
-        {(findPlanQuery.isLoading || findPriceTablesQuery.isLoading) && <p>Carregando...</p>}
+        {(findPlanQuery.isLoading || findPriceTablesQuery.isLoading) && <LoadingState />}
         {findPriceTablesQuery.isSuccess && !table && (
           <p className="text-destructive text-sm">Nenhuma tabela de preços em vigor. Cadastre uma na aba Preços.</p>
         )}

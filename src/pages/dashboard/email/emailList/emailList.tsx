@@ -1,3 +1,4 @@
+import { ErrorState, LoadingState } from "@/components/state-message";
 import { useQuery } from "@tanstack/react-query";
 import { getColumns } from "./emailListColumns";
 import { DataTablePaginate } from "@/components/ui/dataTablePaginate";
@@ -33,10 +34,16 @@ export const EmailList = () => {
   return (
     <div className="p-6">
       <div className="flex justify-between">
-        <h1>Lista de emails</h1>
+        <h1>Lista de e-mails</h1>
       </div>
-      {findAllClientQuery.isLoading && <p>Loading...</p>}
-      {findAllClientQuery.isError && <p>Error fetching emails</p>}
+      {findAllClientQuery.isLoading && <LoadingState />}
+      {findAllClientQuery.isError && (
+        <ErrorState
+          message="Não foi possível buscar os e-mails."
+          onRetry={() => findAllClientQuery.refetch()}
+          isRetrying={findAllClientQuery.isFetching}
+        />
+      )}
       {emailsList && <DataTablePaginate columns={columns} data={emailsList} onPaginationChange={setPagination} pagination={pagination} />}
     </div>
   );

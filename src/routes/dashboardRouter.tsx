@@ -1,6 +1,8 @@
 import { NotFound } from "@/components/not-found";
 import { type FC, lazy } from "react";
-import { Navigate, Route, Routes, useParams } from "react-router";
+import { Link, Navigate, Route, Routes, useParams } from "react-router";
+import { Button } from "@/components/ui/button";
+import { QueryErrorBoundary } from "@/components/query-error-boundary";
 import { HomePage } from "../pages/dashboard/home/home";
 import { DashboardLayout } from "@/pages/dashboard/layout";
 import { ClientProvider } from "@/context/ClientContext/clientProvider";
@@ -19,7 +21,20 @@ export const DashboardRouter: FC = () => {
 
   return (
     <Routes>
-      <Route element={<ClientProvider />}>
+      <Route
+        element={
+          <QueryErrorBoundary
+            message="Não foi possível abrir este cliente."
+            action={
+              <Button variant="link" asChild>
+                <Link to="/auth/select_client">Ir para meus clientes</Link>
+              </Button>
+            }
+          >
+            <ClientProvider />
+          </QueryErrorBoundary>
+        }
+      >
         <Route element={<DashboardLayout />}>
           <Route index element={<HomePage />} />
           <Route path="configuration/*" element={<ConfigurationRouter />} />

@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/state-message";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { templateService } from "@/services/api/templateService";
 import { formatShortId } from "@/utils/formatString";
@@ -31,10 +32,9 @@ export const WhatsappTemplate = () => {
         <DialogCreateWhatsappTemplate clientId={clientId!} />
       </CardHeader>
       <CardContent>
-        {findAllWhatsappTemplatesQuery.isLoading && <p>Carregando...</p>}
-        {findAllWhatsappTemplatesQuery.isError && <p>Erro ao buscar templates.</p>}
-
-        {templates && templates.length === 0 && <p className="text-muted-foreground text-sm">Nenhum template encontrado.</p>}
+        {templates.length === 0 && (
+          <EmptyState title="Nenhum template cadastrado" description="Crie um template para iniciar conversas pela Meta." />
+        )}
 
         {templates && templates.length > 0 && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">

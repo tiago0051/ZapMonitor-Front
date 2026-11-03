@@ -1,3 +1,4 @@
+import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { implanterService } from "@/services/api/implanterService";
@@ -22,8 +23,17 @@ export const ClientsTab = () => {
         <DialogCreateClient />
       </div>
 
-      {findClientsQuery.isLoading && <p>Carregando...</p>}
-      {findClientsQuery.isError && <p>Erro ao buscar tenants.</p>}
+      {findClientsQuery.isLoading && <LoadingState />}
+      {findClientsQuery.isError && (
+        <ErrorState
+          message="Não foi possível buscar os tenants."
+          onRetry={() => findClientsQuery.refetch()}
+          isRetrying={findClientsQuery.isFetching}
+        />
+      )}
+      {clients && clients.length === 0 && (
+        <EmptyState title="Nenhum tenant cadastrado" description="Crie o primeiro tenant pelo botão acima." />
+      )}
 
       {clients && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

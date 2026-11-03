@@ -1,3 +1,4 @@
+import { ErrorState } from "@/components/state-message";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -99,7 +100,13 @@ export const AttendedTab = () => {
               ))}
             </div>
           )}
-          {findSummaryQuery.isError && <p className="text-destructive p-4 text-sm">Erro ao buscar os atendimentos.</p>}
+          {findSummaryQuery.isError && (
+            <ErrorState
+              message="Não foi possível buscar os atendimentos."
+              onRetry={() => findSummaryQuery.refetch()}
+              isRetrying={findSummaryQuery.isFetching}
+            />
+          )}
 
           <ul className="divide-y">
             {attendants.map((attendant) => (

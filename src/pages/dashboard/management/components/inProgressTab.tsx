@@ -1,3 +1,4 @@
+import { ErrorState } from "@/components/state-message";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useClientContext } from "@/context/ClientContext/clientContext";
@@ -33,7 +34,14 @@ export const InProgressTab = () => {
     );
   }
 
-  if (findInProgressQuery.isError) return <p className="text-destructive text-sm">Erro ao buscar os atendimentos em andamento.</p>;
+  if (findInProgressQuery.isError)
+    return (
+      <ErrorState
+        message="Não foi possível buscar os atendimentos em andamento."
+        onRetry={() => findInProgressQuery.refetch()}
+        isRetrying={findInProgressQuery.isFetching}
+      />
+    );
 
   const attendants = findInProgressQuery.data ?? [];
   const totalServices = attendants.reduce((total, attendant) => total + attendant.services.length, 0);

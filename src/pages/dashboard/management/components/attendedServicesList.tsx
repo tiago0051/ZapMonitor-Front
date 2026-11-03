@@ -1,3 +1,4 @@
+import { EmptyState, ErrorState } from "@/components/state-message";
 import { Badge } from "@/components/ui/badge";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,8 +49,16 @@ export const AttendedServicesList: FC<AttendedServicesListProps> = ({ attendant,
           ))}
         </div>
       )}
-      {findServicesQuery.isError && <p className="text-destructive p-4 text-sm">Erro ao buscar os atendimentos.</p>}
-      {services && services.items.length === 0 && <p className="text-muted-foreground p-4 text-sm">Nenhum atendimento no período.</p>}
+      {findServicesQuery.isError && (
+        <ErrorState
+          message="Não foi possível buscar os atendimentos."
+          onRetry={() => findServicesQuery.refetch()}
+          isRetrying={findServicesQuery.isFetching}
+        />
+      )}
+      {services && services.items.length === 0 && (
+        <EmptyState className="m-4" title="Nenhum atendimento no período" description="Escolha outro período ou outro atendente." />
+      )}
 
       {services && services.items.length > 0 && (
         <>
