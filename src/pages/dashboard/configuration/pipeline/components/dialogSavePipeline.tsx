@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
 import { crmSelectClassName, stageColorOptions } from "@/pages/dashboard/crm/crmUtils";
 import { flowService } from "@/services/api/flowService";
@@ -34,12 +36,15 @@ const buildDefaultStages = (): StageDraft[] => [
 type StageRowProps = {
   stage: StageDraft;
   flows: Flow[];
+  fields: CrmField[];
   onChange: (stage: StageDraft) => void;
   disabled: boolean;
   children?: React.ReactNode;
 };
 
-const StageRow: FC<StageRowProps> = ({ stage, flows, onChange, disabled, children }) => (
+const toggleId = (ids: string[], id: string, checked: boolean) => (checked ? [...ids, id] : ids.filter((item) => item !== id));
+
+const StageRow: FC<StageRowProps> = ({ stage, flows, fields, onChange, disabled, children }) => (
   <div className="bg-muted/30 grid gap-2 rounded-lg border p-2">
     <div className="flex items-center gap-2">
       <input
@@ -78,6 +83,31 @@ const StageRow: FC<StageRowProps> = ({ stage, flows, onChange, disabled, childre
           ))}
         </select>
       </label>
+      {fields.length > 0 && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button type="button" variant="outline" size="sm" className="h-8 text-xs font-normal" disabled={disabled}>
+              {(stage.requiredFieldIds ?? []).length === 0
+                ? "Sem campos obrigatórios"
+                : `Exige ${(stage.requiredFieldIds ?? []).length} campo(s)`}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-64 space-y-2">
+            <p className="text-muted-foreground text-xs">Para mover um negócio para {stage.name || "esta etapa"}, preencha:</p>
+            {fields.map((field) => (
+              <label key={field.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                <Checkbox
+                  checked={(stage.requiredFieldIds ?? []).includes(field.id)}
+                  onCheckedChange={(checked) =>
+                    onChange({ ...stage, requiredFieldIds: toggleId(stage.requiredFieldIds ?? [], field.id, checked === true) })
+                  }
+                />
+                {field.name}
+              </label>
+            ))}
+          </PopoverContent>
+        </Popover>
+      )}
       {stage.type === "OPEN" && (
         <label className="flex items-center gap-2">
           <span className="text-muted-foreground">Esfria após</span>
@@ -115,6 +145,13 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
     enabled: isOpen,
   });
   const flows = flowsQuery.data ?? [];
+
+  const fieldsQuery = useQuery({
+    queryKey: ["crm", "fields", clientId],
+    queryFn: () => crmService.findAllCrmFields({ params: { clientId } }),
+    enabled: isOpen,
+  });
+  const fields = (fieldsQuery.data ?? []).filter((field) => field.active);
 
   const onSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ["crm", "pipelines", clientId] });
@@ -160,13 +197,15 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
 
     const body: SavePipelineRequestBody = {
       name: name.trim(),
-      stages: stages.map(({ id, name: stageName, color, type, entryFlowId, staleAfterDays }) => ({
+      stages: stages.map(({ id, name: stageName, color, type, entryFlowId, staleAfterDays, requiredFieldIds }) => ({
         id,
         name: stageName.trim(),
         color,
         type,
         entryFlowId: entryFlowId ?? null,
         staleAfterDays: type === "OPEN" ? (staleAfterDays ?? null) : null,
+        // Só campos ativos; um campo desativado depois deixa de ser exigido
+        requiredFieldIds: (requiredFieldIds ?? []).filter((fieldId) => fields.some((field) => field.id === fieldId)),
       })),
     };
 
@@ -215,7 +254,7 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
           <div className="grid gap-2">
             <Label>Etapas</Label>
             {openStages.map((stage, index) => (
-              <StageRow key={stage.key} stage={stage} flows={flows} onChange={updateStage} disabled={isPending}>
+              <StageRow key={stage.key} stage={stage} flows={flows} fields={fields} onChange={updateStage} disabled={isPending}>
                 <Button
                   type="button"
                   variant="ghost"
@@ -270,7 +309,7 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
           <div className="grid gap-2">
             <Label>Etapas finais</Label>
             {finalStages.map((stage) => (
-              <StageRow key={stage.key} stage={stage} flows={flows} onChange={updateStage} disabled={isPending}>
+              <StageRow key={stage.key} stage={stage} flows={flows} fields={fields} onChange={updateStage} disabled={isPending}>
                 <span className="text-muted-foreground w-16 shrink-0 text-xs">{stage.type === "WON" ? "Ganho" : "Perdido"}</span>
               </StageRow>
             ))}

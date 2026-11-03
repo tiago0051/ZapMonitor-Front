@@ -7,20 +7,28 @@ import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { crmTextareaClassName } from "./crmUtils";
+import { CustomFieldInput } from "./components/customFieldInput";
+import { crmTextareaClassName, missingRequiredFields, toCustomFieldsBody } from "./crmUtils";
+import { useCrmOptions } from "./useCrmOptions";
 
-type PendingLoss = { deal: Deal; stage: PipelineStage };
+type CustomFieldsBody = Record<string, string | number | null>;
+type PendingLoss = { deal: Deal; stage: PipelineStage; customFields?: CustomFieldsBody };
+type PendingFields = { deal: Deal; stage: PipelineStage; fields: CrmField[] };
 
 // Opção da lista para escrever um motivo que não está cadastrado
 const OTHER_REASON = "other";
 
 /**
- * Ações sobre negócios, compartilhadas pelo quadro, pelo detalhe e pelo painel do chat. Mover para a etapa de
- * perda pede o motivo antes; por isso o hook devolve o diálogo que precisa ser renderizado junto.
+ * Ações sobre negócios, compartilhadas pelo quadro, pelo detalhe e pelo painel do chat. Mover pode pedir antes os
+ * campos que a etapa exige e, na etapa de perda, o motivo; por isso o hook devolve os diálogos para renderizar junto.
  */
 export const useDealActions = () => {
   const { client } = useClientContext();
   const queryClient = useQueryClient();
+  const { activeFields } = useCrmOptions();
+
+  const [pendingFields, setPendingFields] = useState<PendingFields | null>(null);
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
 
   const [pendingLoss, setPendingLoss] = useState<PendingLoss | null>(null);
   const [lostReason, setLostReason] = useState("");
@@ -44,21 +52,47 @@ export const useDealActions = () => {
   const reopenDeal = useMutation({ mutationFn: crmService.reopenDeal, onError: requestErrorHandling, onSuccess });
   const createDeal = useMutation({ mutationFn: crmService.createDeal, onError: requestErrorHandling, onSuccess });
 
-  const requestMove = (deal: Deal, stage: PipelineStage) => {
-    if (deal.stageId === stage.id) return;
-
+  const move = (deal: Deal, stage: PipelineStage, customFields?: CustomFieldsBody) => {
     if (stage.type === "LOST") {
       setLostReason("");
       setLostReasonId("");
-      setPendingLoss({ deal, stage });
+      setPendingLoss({ deal, stage, customFields });
       return;
     }
 
     moveDeal.mutate(
-      { params: { clientId: client.id, dealId: deal.id }, body: { stageId: stage.id } },
-      { onSuccess: () => stage.type === "WON" && toast.success("Negócio ganho!") },
+      { params: { clientId: client.id, dealId: deal.id }, body: { stageId: stage.id, customFields } },
+      {
+        onSuccess: () => {
+          setPendingFields(null);
+          if (stage.type === "WON") toast.success("Negócio ganho!");
+        },
+      },
     );
   };
+
+  const requestMove = (deal: Deal, stage: PipelineStage) => {
+    if (deal.stageId === stage.id) return;
+
+    const missingFields = missingRequiredFields(deal, stage, activeFields);
+    if (missingFields.length > 0) {
+      setFieldValues({});
+      setPendingFields({ deal, stage, fields: missingFields });
+      return;
+    }
+
+    move(deal, stage);
+  };
+
+  const confirmFields = () => {
+    if (!pendingFields) return;
+
+    const customFields = toCustomFieldsBody(pendingFields.fields, fieldValues);
+    if (pendingFields.stage.type === "LOST") setPendingFields(null);
+    move(pendingFields.deal, pendingFields.stage, customFields);
+  };
+
+  const areFieldsFilled = !!pendingFields?.fields.every((field) => fieldValues[field.id]?.trim());
 
   const confirmLoss = () => {
     if (!pendingLoss || !canConfirmLoss) return;
@@ -66,13 +100,47 @@ export const useDealActions = () => {
     moveDeal.mutate(
       {
         params: { clientId: client.id, dealId: pendingLoss.deal.id },
-        body: isWritingReason
-          ? { stageId: pendingLoss.stage.id, lostReason: lostReason.trim() }
-          : { stageId: pendingLoss.stage.id, lostReasonId },
+        body: {
+          stageId: pendingLoss.stage.id,
+          customFields: pendingLoss.customFields,
+          ...(isWritingReason ? { lostReason: lostReason.trim() } : { lostReasonId }),
+        },
       },
       { onSuccess: () => setPendingLoss(null) },
     );
   };
+
+  const requiredFieldsDialog = (
+    <Dialog open={!!pendingFields} onOpenChange={(open) => !open && setPendingFields(null)}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Preencha para mover para {pendingFields?.stage.name}</DialogTitle>
+          <DialogDescription>Esta etapa exige os campos abaixo preenchidos no negócio.</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3">
+          {pendingFields?.fields.map((field) => (
+            <div key={field.id} className="grid gap-2">
+              <Label htmlFor={`required-field-${field.id}`}>{field.name}</Label>
+              <CustomFieldInput
+                id={`required-field-${field.id}`}
+                field={field}
+                value={fieldValues[field.id] ?? ""}
+                onChange={(value) => setFieldValues((values) => ({ ...values, [field.id]: value }))}
+              />
+            </div>
+          ))}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setPendingFields(null)}>
+            Cancelar
+          </Button>
+          <Button onClick={confirmFields} disabled={!areFieldsFilled || moveDeal.isPending}>
+            Salvar e mover
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 
   const lostReasonDialog = (
     <Dialog open={!!pendingLoss} onOpenChange={(open) => !open && setPendingLoss(null)}>
@@ -127,7 +195,12 @@ export const useDealActions = () => {
 
   return {
     requestMove,
-    lostReasonDialog,
+    dialogs: (
+      <>
+        {requiredFieldsDialog}
+        {lostReasonDialog}
+      </>
+    ),
     moveDeal,
     updateDeal,
     transferDeal,

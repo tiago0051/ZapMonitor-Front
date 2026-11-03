@@ -13,6 +13,7 @@ type SavePipelineStageRequestBody = {
   type: PipelineStageType;
   entryFlowId?: string | null;
   staleAfterDays?: number | null;
+  requiredFieldIds?: string[];
 };
 
 type SavePipelineRequestBody = {
@@ -86,6 +87,7 @@ type UpdateDealRequestBody = {
   value: number | null;
   notes: string | null;
   ownerUserId: string | null;
+  customFields?: Record<string, string | number | null>;
 };
 
 type UpdateDealRequestData = {
@@ -95,7 +97,7 @@ type UpdateDealRequestData = {
 
 type MoveDealRequestData = {
   params: DealRequestParams;
-  body: { stageId: string; lostReasonId?: string; lostReason?: string };
+  body: { stageId: string; lostReasonId?: string; lostReason?: string; customFields?: Record<string, string | number | null> };
 };
 
 type TransferDealRequestData = {
@@ -129,4 +131,63 @@ type UpdateLostReasonRequestData = {
 type SetLostReasonActiveRequestData = {
   params: LostReasonRequestParams;
   body: { active: boolean };
+};
+
+type SaveCrmFieldRequestBody = {
+  name: string;
+  type: CrmFieldType;
+  options?: string[];
+};
+
+type CreateCrmFieldRequestData = {
+  params: CrmClientRequestParams;
+  body: SaveCrmFieldRequestBody;
+};
+
+type CrmFieldRequestParams = CrmClientRequestParams & {
+  fieldId: string;
+};
+
+type UpdateCrmFieldRequestData = {
+  params: CrmFieldRequestParams;
+  body: SaveCrmFieldRequestBody;
+};
+
+type SetCrmFieldActiveRequestData = {
+  params: CrmFieldRequestParams;
+  body: { active: boolean };
+};
+
+type SaveDealTaskRequestBody = {
+  title: string;
+  dueAt: string;
+  assigneeUserId?: string | null;
+};
+
+type CreateDealTaskRequestData = {
+  params: DealRequestParams;
+  body: SaveDealTaskRequestBody;
+};
+
+type DealTaskRequestParams = CrmClientRequestParams & {
+  taskId: string;
+};
+
+type UpdateDealTaskRequestData = {
+  params: DealTaskRequestParams;
+  body: SaveDealTaskRequestBody;
+};
+
+type SetDealTaskCompletedRequestData = {
+  params: DealTaskRequestParams;
+  body: { completed: boolean };
+};
+
+type DeleteDealTaskRequestData = {
+  params: DealTaskRequestParams;
+};
+
+type FindCrmReportRequestData = {
+  params: CrmClientRequestParams;
+  queries: { pipelineId: string; startDate: string; endDate: string; serviceGroupIds?: string };
 };
