@@ -9,10 +9,12 @@ export const ClientProvider = () => {
   const [findClientQuery, findMyAccessQuery] = useSuspenseQueries({
     queries: [
       {
+        meta: { errorHandledInline: true },
         queryKey: ["client", clientId],
         queryFn: () => clientService.findById({ params: { clientId: clientId! } }),
       },
       {
+        meta: { errorHandledInline: true },
         queryKey: ["clientAccess", clientId],
         queryFn: () => clientService.findMyAccess({ params: { clientId: clientId! } }),
       },

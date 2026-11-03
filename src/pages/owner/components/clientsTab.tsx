@@ -1,3 +1,4 @@
+import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTablePaginate } from "@/components/ui/dataTablePaginate";
 import { type DataTablePaginateColumnDef } from "@/components/ui/dataTablePaginateFeatures";
@@ -64,6 +65,7 @@ export const ClientsTab: FC<ClientsTabProps> = ({ period, implanters, implanterF
   }
 
   const findClientsQuery = useQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["owner", "clients", period, pagination, search, implanterFilter],
     queryFn: () =>
       ownerService.findClients({
@@ -109,12 +111,18 @@ export const ClientsTab: FC<ClientsTabProps> = ({ period, implanters, implanterF
         </div>
       </div>
 
-      {findClientsQuery.isLoading && <p>Carregando...</p>}
-      {findClientsQuery.isError && <p>Erro ao buscar tenants.</p>}
+      {findClientsQuery.isLoading && <LoadingState />}
+      {findClientsQuery.isError && (
+        <ErrorState
+          message="Não foi possível buscar os tenants."
+          onRetry={() => findClientsQuery.refetch()}
+          isRetrying={findClientsQuery.isFetching}
+        />
+      )}
 
       {clients && isMobile && (
         <div className="space-y-3">
-          {clients.items.length === 0 && <p className="text-muted-foreground text-sm">Nenhum tenant encontrado.</p>}
+          {clients.items.length === 0 && <EmptyState title="Nenhum tenant encontrado" />}
 
           {clients.items.map((client) => (
             <Card key={client.id} className="gap-3">

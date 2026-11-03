@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/state-message";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { permissionGroupService } from "@/services/api/permissionGroupService";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -11,6 +12,7 @@ export const PermissionGroups = () => {
   const { clientId } = useParams();
 
   const findAllPermissionGroupsQuery = useSuspenseQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["permissionGroups", clientId],
     queryFn: () => permissionGroupService.findAll({ params: { clientId: clientId! } }),
   });
@@ -31,7 +33,12 @@ export const PermissionGroups = () => {
         <DialogSavePermissionGroup clientId={clientId!} />
       </CardHeader>
       <CardContent>
-        {permissionGroups.length === 0 && <p className="text-muted-foreground text-sm">Nenhum grupo de permissão cadastrado.</p>}
+        {permissionGroups.length === 0 && (
+          <EmptyState
+            title="Nenhum grupo de permissão cadastrado"
+            description="Crie um grupo para dar acessos sob medida a usuários com papel personalizado."
+          />
+        )}
 
         {permissionGroups.length > 0 && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">

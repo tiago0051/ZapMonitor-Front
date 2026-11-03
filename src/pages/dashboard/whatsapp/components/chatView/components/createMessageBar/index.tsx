@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { whatsappContants } from "@/contants/whatsappContants";
 import { useClientContext } from "@/context/ClientContext/clientContext";
@@ -30,6 +31,8 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
     value: "",
   };
 
+  // Percentual enviado do arquivo; null fora de um upload
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [message, setMessage] = useState<{ type: WhatsappMessageContentType; value: string | Blob | File }>(defaultMessage);
   const messageIsText = message.type === WhatsappMessageContentType.TEXT;
   const messageIsAudio = message.type === WhatsappMessageContentType.AUDIO;
@@ -61,14 +64,17 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
       });
 
       const blockBlob = new BlockBlobClient(url);
+      setUploadProgress(0);
       await blockBlob.uploadData(file, {
         blobHTTPHeaders: { blobContentType: file.type },
         blockSize: file.size,
+        onProgress: ({ loadedBytes }) => setUploadProgress(file.size ? Math.round((loadedBytes / file.size) * 100) : 100),
       });
 
       return fileId;
     },
     onError: requestErrorHandling,
+    onSettled: () => setUploadProgress(null),
   });
 
   const { status, startRecording, stopRecording, error } = useReactMediaRecorder({
@@ -84,6 +90,22 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
   });
 
   async function handleSendMessage() {
+    try {
+      await sendMessage();
+    } catch {
+      // O onError já avisou; a mensagem continua na caixa para o atendente tentar de novo
+      return;
+    }
+
+    setMessage(defaultMessage);
+    onCancelReply?.();
+
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+    }
+  }
+
+  async function sendMessage() {
     const replyToMessageId = replyingTo?.id;
 
     if (messageIsAudio) {
@@ -127,7 +149,7 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
     }
 
     if (messageIsText) {
-      createMessageMutate.mutate({
+      await createMessageMutate.mutateAsync({
         params: {
           contactId: contact.id,
           configurationId: contact.whatsappConfigurationId,
@@ -139,20 +161,14 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
           replyToMessageId,
         },
       });
-
-      if (inputRef.current) {
-        inputRef.current.style.height = "auto";
-      }
     }
-
-    setMessage(defaultMessage);
-    onCancelReply?.();
   }
 
   function onKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      handleSendMessage();
+      // O texto fica na caixa até o envio terminar; um segundo Enter não pode duplicar a mensagem
+      if (!disableButtonSendMessage) handleSendMessage();
     }
   }
 
@@ -221,6 +237,13 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
             <FiX />
           </Button>
         </MessageReplyPreview>
+      )}
+
+      {uploadProgress !== null && (
+        <div className="flex items-center gap-2" role="status">
+          <Progress value={uploadProgress} aria-label="Progresso do envio do arquivo" className="flex-1" />
+          <span className="text-muted-foreground w-24 shrink-0 text-right text-xs tabular-nums">Enviando {uploadProgress}%</span>
+        </div>
       )}
 
       <div className="flex items-center gap-2">

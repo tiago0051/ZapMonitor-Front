@@ -1,3 +1,4 @@
+import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTablePaginate } from "@/components/ui/dataTablePaginate";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,7 @@ export const UsersTab = () => {
   });
 
   const findUsersQuery = useQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["implanterUsers", pagination, search, clientId],
     queryFn: () =>
       implanterService.findUsers({
@@ -75,12 +77,18 @@ export const UsersTab = () => {
         </div>
       </div>
 
-      {findUsersQuery.isLoading && <p>Carregando...</p>}
-      {findUsersQuery.isError && <p>Erro ao buscar usuários.</p>}
+      {findUsersQuery.isLoading && <LoadingState />}
+      {findUsersQuery.isError && (
+        <ErrorState
+          message="Não foi possível buscar os usuários."
+          onRetry={() => findUsersQuery.refetch()}
+          isRetrying={findUsersQuery.isFetching}
+        />
+      )}
 
       {users && isMobile && (
         <div className="space-y-3 overflow-auto">
-          {users.items.length === 0 && <p className="text-muted-foreground text-sm">Nenhum usuário encontrado.</p>}
+          {users.items.length === 0 && <EmptyState title="Nenhum usuário encontrado" />}
 
           {users.items.map((user) => (
             <Card key={user.id} className="gap-3">

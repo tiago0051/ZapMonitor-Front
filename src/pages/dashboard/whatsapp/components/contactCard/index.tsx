@@ -6,6 +6,7 @@ import { differenceInHours, differenceInMinutes } from "date-fns";
 import { AlertCircle } from "lucide-react";
 import { Message } from "./components/message";
 import { ContactAvatar } from "@/components/contact-avatar";
+import { formatConversationTime } from "@/utils/formatString";
 
 type ContactCardProps = DetailedHTMLProps<React.HTMLAttributes<HTMLButtonElement>, HTMLButtonElement> & {
   contact: WhatsappContactMessage;
@@ -54,6 +55,7 @@ export const ContactCard: FC<ContactCardProps> = ({ contact, active, onClick }) 
   const isIncoming = contact.messageType === WhatsappMessageType.INCOMING;
 
   const nameToPresentation = contact.surname?.trim() || contact.name?.trim() || "Sem nome";
+  const hasUnread = contact.unreadCount > 0;
 
   return (
     <button
@@ -65,18 +67,29 @@ export const ContactCard: FC<ContactCardProps> = ({ contact, active, onClick }) 
       <div className="flex items-start gap-3">
         <ContactAvatar contact={contact} />
         <div className="min-w-0 flex-1">
-          <div className="mb-0.5 flex items-center justify-between gap-1">
+          <div className="mb-0.5 flex items-center justify-between gap-2">
             <span className="text-foreground truncate text-sm font-semibold">{nameToPresentation}</span>
-            {expirationStatus && (
-              <Badge variant="outline" className={cn("flex items-center gap-1 text-xs", expirationStatus.color)}>
-                <AlertCircle className={cn("h-3 w-3", expirationStatus.icon)} />
-                {expirationStatus.label}
-              </Badge>
+            {contact.lastMessageAt && (
+              <span className={cn("shrink-0 text-xs", hasUnread ? "font-semibold text-green-600" : "text-muted-foreground")}>
+                {formatConversationTime(contact.lastMessageAt)}
+              </span>
             )}
           </div>
-          <Message isIncoming={isIncoming} messageContentType={contact.messageContentType}>
-            {contact.messageContent}
-          </Message>
+          <div className="flex items-start gap-2">
+            <div className="min-w-0 flex-1">
+              <Message isIncoming={isIncoming} messageContentType={contact.messageContentType}>
+                {contact.messageContent}
+              </Message>
+            </div>
+            {hasUnread && (
+              <span
+                aria-label={`${contact.unreadCount} mensagem(ns) não lida(s)`}
+                className="mt-0.5 flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-green-500 px-1.5 text-[11px] font-bold text-white"
+              >
+                {contact.unreadCount > 99 ? "99+" : contact.unreadCount}
+              </span>
+            )}
+          </div>
           <div className="flex flex-wrap items-center gap-1.5">
             {contact.categories &&
               contact.categories.slice(0, 2).map((t) => (
@@ -92,10 +105,15 @@ export const ContactCard: FC<ContactCardProps> = ({ contact, active, onClick }) 
                 +{contact.categories.length - 2}
               </span>
             )}
-            {!contact.isRead && (
-              <span className="ml-auto flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-green-500 text-[10px] font-bold text-white">
-                {" "}
-              </span>
+            {expirationStatus && (
+              <Badge
+                variant="outline"
+                title="Tempo restante para responder sem template"
+                className={cn("ml-auto flex items-center gap-1 text-xs", expirationStatus.color)}
+              >
+                <AlertCircle className={cn("h-3 w-3", expirationStatus.icon)} />
+                {expirationStatus.label}
+              </Badge>
             )}
           </div>
         </div>

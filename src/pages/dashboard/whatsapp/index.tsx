@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { MessageSquare, Search, X, ArrowLeft, Users } from "lucide-react";
+import { EmptyState, ErrorState } from "@/components/state-message";
+import { useEffect, useRef, useState } from "react";
+import { MessageSquare, Search, X, ArrowLeft, Users, WifiOff } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { ContactCard } from "./components/contactCard";
 import { ContactCardSkeleton } from "./components/contactCard/skeleton";
@@ -10,8 +11,31 @@ import { useSocketContext } from "@/context/SocketContext/socketContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useContactsListService } from "./useContactsListService";
 import { useServiceGroupSelection } from "./useServiceGroupSelection";
+import { NotificationSettings } from "./notifications/notificationSettings";
+import { useNewContactNotifications } from "./notifications/useNewContactNotifications";
 
 // ── Shared sub-panels ────────────────────────────────────────────────────────
+
+// Fica no fim da lista; quando entra na área visível, pede a próxima página
+function LoadMoreSentinel({ onVisible }: { onVisible: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const onVisibleRef = useRef(onVisible);
+
+  useEffect(() => {
+    onVisibleRef.current = onVisible;
+  });
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    const observer = new IntersectionObserver(([entry]) => entry.isIntersecting && onVisibleRef.current(), { rootMargin: "200px" });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return <div ref={ref} aria-hidden className="h-px" />;
+}
 
 function ContactListPanel({
   tab,
@@ -38,11 +62,30 @@ function ContactListPanel({
 
   function renderContactsList() {
     if (contacts.isLoading) return Array.from({ length: 6 }).map((_, index) => <ContactCardSkeleton key={index} />);
-    if (contacts.isEmpty) return <div className="text-muted-foreground py-12 text-center text-sm">Nenhum contato encontrado</div>;
+    if (contacts.isError)
+      return (
+        <ErrorState message="Não foi possível buscar os contatos." onRetry={() => contacts.refetch()} isRetrying={contacts.isRefetching} />
+      );
+    if (contacts.isEmpty) {
+      const emptyMessages: Record<Tab, { title: string; description: string }> = {
+        queue: { title: "Fila vazia", description: "Nenhum contato aguardando atendimento agora." },
+        mine: { title: "Nenhum atendimento seu", description: "Assuma um contato da fila para começar." },
+        all: { title: "Nenhum contato", description: "Os contatos aparecem aqui depois da primeira mensagem." },
+      };
+      const empty = search ? { title: "Nenhum contato encontrado", description: `Nada encontrado para "${search}".` } : emptyMessages[tab];
 
-    return contacts.items.map((c) => (
-      <ContactCard key={c.id} contact={c} active={selected?.id === c.id} onClick={() => onSelectContact(c)} />
-    ));
+      return <EmptyState className="m-3 border-0" icon={MessageSquare} title={empty.title} description={empty.description} />;
+    }
+
+    return (
+      <>
+        {contacts.items.map((c) => (
+          <ContactCard key={c.id} contact={c} active={selected?.id === c.id} onClick={() => onSelectContact(c)} />
+        ))}
+        {contacts.isFetchingNextPage && Array.from({ length: 3 }).map((_, index) => <ContactCardSkeleton key={`next-${index}`} />)}
+        {contacts.hasNextPage && !contacts.isFetchingNextPage && <LoadMoreSentinel onVisible={() => contacts.fetchNextPage()} />}
+      </>
+    );
   }
 
   return (
@@ -120,6 +163,7 @@ function ContactListPanel({
             </button>
           )}
         </div>
+        <NotificationSettings />
         <DialogNewContactTemplate
           onSent={(contact) => {
             setTab("all");
@@ -139,6 +183,38 @@ function ContactListPanel({
           {renderContactsList()}
         </motion.div>
       </AnimatePresence>
+    </div>
+  );
+}
+
+// ── Connection status ────────────────────────────────────────────────────────
+
+// Espera um pouco antes de avisar: a conexão inicial e quedas rápidas não devem piscar a faixa
+const DISCONNECTED_NOTICE_DELAY = 3000;
+
+function ConnectionNotice({ isConnected }: { isConnected: boolean }) {
+  const [isDisconnectedLongEnough, setIsDisconnectedLongEnough] = useState(false);
+
+  useEffect(() => {
+    if (isConnected) return;
+
+    const timeout = setTimeout(() => setIsDisconnectedLongEnough(true), DISCONNECTED_NOTICE_DELAY);
+    return () => {
+      clearTimeout(timeout);
+      setIsDisconnectedLongEnough(false);
+    };
+  }, [isConnected]);
+
+  if (isConnected || !isDisconnectedLongEnough) return null;
+
+  return (
+    <div
+      role="status"
+      className="flex flex-shrink-0 items-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
+    >
+      <WifiOff className="h-4 w-4 flex-shrink-0" />
+      <span className="font-medium">Sem conexão em tempo real.</span>
+      <span className="text-amber-800 dark:text-amber-300">Reconectando… Novas mensagens podem demorar a aparecer.</span>
     </div>
   );
 }
@@ -173,9 +249,19 @@ export function Whatsapp() {
     goToMobileView("chat");
   };
 
+  const { serviceGroups } = useServiceGroupSelection();
+  useNewContactNotifications({
+    serviceGroupIds: serviceGroups.map((group) => group.id),
+    selectedContactId: selected?.id,
+    onOpenContact: (contact, contactTab) => {
+      setTab(contactTab);
+      handleSelectContact(contact);
+    },
+  });
+
   return (
     <>
-      {!isConnected && <div className="max-h-10 w-full bg-yellow-300 p-2">Desconectado</div>}
+      <ConnectionNotice isConnected={isConnected} />
       <div className="flex h-full overflow-hidden" style={{ fontFamily: "Inter, sans-serif" }}>
         {/* ════ DESKTOP LAYOUT (md+) ════ */}
         {!isMobile && (

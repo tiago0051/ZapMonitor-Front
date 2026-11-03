@@ -1,3 +1,4 @@
+import { LoadingState } from "@/components/state-message";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -142,7 +143,7 @@ export const DialogSavePermissionGroup: FC<DialogSavePermissionGroupProps> = ({ 
                 <FormItem>
                   <FormLabel>Permissões</FormLabel>
                   <div className="space-y-4 rounded-md border p-3">
-                    {isLoading && <p className="text-muted-foreground text-sm">Carregando...</p>}
+                    {isLoading && <LoadingState className="justify-start py-0" />}
                     {modules.map((module) => (
                       <div key={module.name} className="space-y-2">
                         <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">{module.name}</p>

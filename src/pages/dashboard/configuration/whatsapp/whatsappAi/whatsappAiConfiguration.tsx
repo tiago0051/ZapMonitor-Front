@@ -15,6 +15,7 @@ export const WhatsappAiConfiguration = () => {
   const queryClient = useQueryClient();
 
   const getClientAiConfigQuery = useSuspenseQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["aiConfig", clientId],
     queryFn: () =>
       aiService.getClientAiConfig({

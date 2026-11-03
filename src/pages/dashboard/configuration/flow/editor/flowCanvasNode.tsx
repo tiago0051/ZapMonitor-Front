@@ -1,48 +1,21 @@
 import { cn } from "@/lib/utils";
+import { AlertTriangle } from "lucide-react";
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import { memo } from "react";
-import { useFlowEditorContext } from "./flowEditorContext";
-import { flowNodeConfigs, getFlowNodeOutputs, WEEKDAY_LABELS } from "./flowNodeConfig";
+import { useFlowIssuesContext } from "./flowEditorContext";
+import { flowNodeConfigs, getFlowNodeOutputs } from "./flowNodeConfig";
+import { useNodeSummary } from "./useNodeSummary";
 
 export type FlowCanvasNodeType = Node<FlowNodeData, FlowNodeType>;
 
 const handleClassName = "!h-3 !w-3 !border-2 !border-background !bg-muted-foreground";
 
-function useNodeSummary(type: FlowNodeType, data: FlowNodeData) {
-  const { serviceGroups, aiAgents, categories, flows } = useFlowEditorContext();
-
-  switch (type) {
-    case "start":
-      return "Quando um novo atendimento começa";
-    case "message":
-    case "end":
-      return data.text?.trim() || (type === "end" ? "Finaliza sem mensagem" : "Mensagem não preenchida");
-    case "condition":
-      return data.question?.trim() || "Pergunta não preenchida";
-    case "aiAgent":
-      return aiAgents.find((agent) => agent.id === data.aiAgentId)?.name ?? "Selecione um agente";
-    case "serviceGroup":
-      return serviceGroups.find((group) => group.id === data.serviceGroupId)?.name ?? "Selecione um grupo";
-    case "category":
-    case "removeCategory":
-    case "replaceCategories": {
-      const names = (data.categoryIds ?? []).map((id) => categories.find((category) => category.id === id)?.name ?? "Categoria removida");
-      return names.length ? names.join(", ") : "Selecione as categorias";
-    }
-    case "flow":
-      return flows.find((flow) => flow.id === data.flowId)?.name ?? "Selecione um fluxo";
-    case "businessHours": {
-      const weekdays = [...new Set((data.intervals ?? []).map((interval) => interval.weekday))].sort();
-      return weekdays.length ? weekdays.map((weekday) => WEEKDAY_LABELS[weekday].slice(0, 3)).join(", ") : "Sem horários";
-    }
-  }
-}
-
-export const FlowCanvasNode = memo(({ type, data, selected }: NodeProps<FlowCanvasNodeType>) => {
+export const FlowCanvasNode = memo(({ id, type, data, selected }: NodeProps<FlowCanvasNodeType>) => {
   const config = flowNodeConfigs[type];
   const Icon = config.icon;
   const outputs = getFlowNodeOutputs(type, data);
   const summary = useNodeSummary(type, data);
+  const issueCount = useFlowIssuesContext().get(id) ?? 0;
 
   return (
     <div
@@ -50,6 +23,7 @@ export const FlowCanvasNode = memo(({ type, data, selected }: NodeProps<FlowCanv
         "bg-card text-card-foreground w-60 rounded-xl border-2 shadow-sm transition-shadow",
         config.colorClassName,
         selected && "ring-ring/60 shadow-md ring-2",
+        issueCount > 0 && !selected && "ring-2 ring-amber-400/70",
       )}
     >
       {type !== "start" && <Handle type="target" position={Position.Left} className={handleClassName} />}
@@ -57,6 +31,15 @@ export const FlowCanvasNode = memo(({ type, data, selected }: NodeProps<FlowCanv
       <div className="flex items-center gap-2 border-b px-3 py-2">
         <Icon className="h-4 w-4 shrink-0" />
         <span className="text-foreground truncate text-sm font-semibold">{config.label}</span>
+        {issueCount > 0 && (
+          <span
+            title={`${issueCount} pendência(s)`}
+            className="ml-auto flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-950 dark:text-amber-200"
+          >
+            <AlertTriangle className="h-3 w-3" />
+            {issueCount}
+          </span>
+        )}
       </div>
 
       <p className="text-muted-foreground line-clamp-3 px-3 py-2 text-xs whitespace-pre-wrap">{summary}</p>

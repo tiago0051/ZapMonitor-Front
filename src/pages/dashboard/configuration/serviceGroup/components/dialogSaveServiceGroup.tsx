@@ -1,3 +1,4 @@
+import { LoadingState } from "@/components/state-message";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -133,7 +134,7 @@ export const DialogSaveServiceGroup: FC<DialogSaveServiceGroupProps> = ({ client
                 <FormItem>
                   <FormLabel>Usuários</FormLabel>
                   <div className="max-h-48 space-y-2 overflow-y-auto rounded-md border p-3">
-                    {isLoading && <p className="text-muted-foreground text-sm">Carregando...</p>}
+                    {isLoading && <LoadingState className="justify-start py-0" />}
                     {!isLoading && members.length === 0 && <p className="text-muted-foreground text-sm">Nenhum usuário ativo.</p>}
                     {members.map((member) => (
                       <label key={member.id} className="flex cursor-pointer items-center gap-2 text-sm">
@@ -159,7 +160,7 @@ export const DialogSaveServiceGroup: FC<DialogSaveServiceGroupProps> = ({ client
                 <FormItem>
                   <FormLabel>Números de WhatsApp</FormLabel>
                   <div className="max-h-48 space-y-2 overflow-y-auto rounded-md border p-3">
-                    {isLoading && <p className="text-muted-foreground text-sm">Carregando...</p>}
+                    {isLoading && <LoadingState className="justify-start py-0" />}
                     {!isLoading && configurations.length === 0 && (
                       <p className="text-muted-foreground text-sm">Nenhum número cadastrado.</p>
                     )}

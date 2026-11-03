@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/state-message";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { serviceGroupService } from "@/services/api/serviceGroupService";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -11,6 +12,7 @@ export const ServiceGroups = () => {
   const { clientId } = useParams();
 
   const findAllServiceGroupsQuery = useSuspenseQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["serviceGroups", clientId],
     queryFn: () => serviceGroupService.findAll({ params: { clientId: clientId! } }),
   });
@@ -39,7 +41,12 @@ export const ServiceGroups = () => {
         <DialogSaveServiceGroup clientId={clientId!} serviceGroups={serviceGroups} />
       </CardHeader>
       <CardContent>
-        {serviceGroups.length === 0 && <p className="text-muted-foreground text-sm">Nenhum grupo de atendimento cadastrado.</p>}
+        {serviceGroups.length === 0 && (
+          <EmptyState
+            title="Nenhum grupo de atendimento cadastrado"
+            description="Sem grupos, todos os usuários veem a fila de todos os números."
+          />
+        )}
 
         {serviceGroups.length > 0 && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">

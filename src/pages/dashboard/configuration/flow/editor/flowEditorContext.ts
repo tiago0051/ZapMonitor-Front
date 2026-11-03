@@ -18,3 +18,8 @@ export const FlowEditorContext = createContext<FlowEditorContextValue>({
 });
 
 export const useFlowEditorContext = () => useContext(FlowEditorContext);
+
+// Quantidade de pendências por nó, para o canvas destacar onde corrigir
+export const FlowIssuesContext = createContext<Map<string, number>>(new Map());
+
+export const useFlowIssuesContext = () => useContext(FlowIssuesContext);

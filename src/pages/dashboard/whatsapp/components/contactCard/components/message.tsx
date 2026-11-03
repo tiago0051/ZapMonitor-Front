@@ -1,4 +1,5 @@
 import { WhatsappMessageContentType } from "@/enums/whatsappMessageContentType.enum";
+import { formatWhatsappText } from "@/utils/formatString";
 import type { FC } from "react";
 import { FaRobot } from "react-icons/fa";
 import { FiFile, FiImage, FiMessageCircle, FiMic, FiUser, FiVideo } from "react-icons/fi";
@@ -6,7 +7,7 @@ import { FiFile, FiImage, FiMessageCircle, FiMic, FiUser, FiVideo } from "react-
 type MessageProps = {
   messageContentType: string | undefined;
   isIncoming: boolean;
-  children: React.ReactNode;
+  children: string;
 };
 
 export const Message: FC<MessageProps> = ({ isIncoming, messageContentType, children }) => (
@@ -22,6 +23,6 @@ export const Message: FC<MessageProps> = ({ isIncoming, messageContentType, chil
     {messageContentType === WhatsappMessageContentType.VIDEO && <FiVideo />}
     {messageContentType === WhatsappMessageContentType.TEMPLATE && <FaRobot />}
 
-    <p className="col-start-2 line-clamp-2 text-sm font-light group-data-[incoming=true]:font-normal">{children}</p>
+    <p className="col-start-2 line-clamp-2 text-sm font-light group-data-[incoming=true]:font-normal">{formatWhatsappText(children)}</p>
   </div>
 );

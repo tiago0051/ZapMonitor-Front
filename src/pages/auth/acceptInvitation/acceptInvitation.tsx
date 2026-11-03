@@ -8,6 +8,7 @@ export const AcceptInvitation = () => {
   const token = searchParams.get("token") || "";
 
   const checkInvitationQuery = useQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["checkInvitation", token],
     queryFn: () => userService.checkInvitation({ queries: { token } }),
     enabled: !!token,

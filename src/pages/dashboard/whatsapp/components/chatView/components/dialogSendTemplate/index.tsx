@@ -1,3 +1,4 @@
+import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -69,9 +70,16 @@ export const DialogSendTemplate = ({ contactService, whatsappConfigurationId }: 
           <DialogTitle>Selecionar Template</DialogTitle>
         </DialogHeader>
         <div className="space-y-3 py-2">
-          {templatesQuery.isLoading && <p className="text-muted-foreground text-sm">Carregando templates...</p>}
-          {!templatesQuery.isLoading && templates.length === 0 && (
-            <p className="text-muted-foreground text-sm">Nenhum template encontrado.</p>
+          {templatesQuery.isLoading && <LoadingState label="Carregando templates..." />}
+          {templatesQuery.isError && (
+            <ErrorState
+              message="Não foi possível buscar os templates."
+              onRetry={() => templatesQuery.refetch()}
+              isRetrying={templatesQuery.isFetching}
+            />
+          )}
+          {templatesQuery.isSuccess && templates.length === 0 && (
+            <EmptyState title="Nenhum template cadastrado" description="Cadastre templates em Configurações › Templates." />
           )}
           {templates.map((template) => (
             <div key={template.id} className="hover:bg-accent/50 flex items-center justify-between rounded-lg border p-3">

@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import { Route, Routes } from "react-router";
+import { Navigate, Route, Routes } from "react-router";
 import { Login } from "../pages/auth/login/login";
 import { LoginLayout } from "@/pages/auth/layout";
 import { ClientList } from "@/pages/auth/clientList/clientList";
@@ -22,6 +22,7 @@ export const LoginRouter: FC = () => {
         <Route path="accept-invitation" element={<AcceptInvitation />} />
         <Route path="logout" element={<Logout />} />
         <Route path="select_client" element={<ClientList />} />
+        <Route path="*" element={<Navigate to="/auth/login" replace />} />
       </Route>
     </Routes>
   );

@@ -1,3 +1,4 @@
+import { ErrorState, LoadingState } from "@/components/state-message";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useUserContext } from "@/context/UserContext/userContext";
@@ -10,6 +11,7 @@ import { Link, Navigate } from "react-router";
 export const ClientList = () => {
   const { user } = useUserContext();
   const findAllClientQuery = useQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["clients"],
     queryFn: () => clientService.findAll(),
   });
@@ -41,8 +43,14 @@ export const ClientList = () => {
         )}
       </CardHeader>
       <CardContent>
-        {findAllClientQuery.isLoading && <p>Loading...</p>}
-        {findAllClientQuery.isError && <p>Error fetching clients</p>}
+        {findAllClientQuery.isLoading && <LoadingState />}
+        {findAllClientQuery.isError && (
+          <ErrorState
+            message="Não foi possível buscar seus clientes."
+            onRetry={() => findAllClientQuery.refetch()}
+            isRetrying={findAllClientQuery.isFetching}
+          />
+        )}
         {clientsList && <DataTable columns={columns} data={clientsList} />}
       </CardContent>
     </Card>

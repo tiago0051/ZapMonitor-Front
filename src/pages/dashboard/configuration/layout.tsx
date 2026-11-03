@@ -1,3 +1,4 @@
+import { QueryErrorBoundary } from "@/components/query-error-boundary";
 import { ChangePasswordForm } from "@/components/change-password-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -193,7 +194,10 @@ export const EditClientLayout = () => {
         </nav>
 
         <main className="min-w-0 flex-1 space-y-5">
-          <Suspense fallback={<SectionSkeleton />}>{activeSection.content}</Suspense>
+          {/* A key recria o boundary ao trocar de seção, limpando o erro da anterior */}
+          <QueryErrorBoundary key={activeSection.id} message={`Não foi possível carregar a seção ${activeSection.label}.`}>
+            <Suspense fallback={<SectionSkeleton />}>{activeSection.content}</Suspense>
+          </QueryErrorBoundary>
         </main>
       </div>
     </div>

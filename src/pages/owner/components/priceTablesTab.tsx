@@ -1,3 +1,4 @@
+import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -101,6 +102,7 @@ export const PriceTablesTab = () => {
   const [showPast, setShowPast] = useState<boolean>(false);
 
   const findPriceTablesQuery = useQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["owner", "priceTables"],
     queryFn: billingService.findPriceTables,
   });
@@ -126,10 +128,16 @@ export const PriceTablesTab = () => {
         />
       </div>
 
-      {findPriceTablesQuery.isLoading && <p>Carregando...</p>}
-      {findPriceTablesQuery.isError && <p>Erro ao buscar as tabelas de preços.</p>}
+      {findPriceTablesQuery.isLoading && <LoadingState />}
+      {findPriceTablesQuery.isError && (
+        <ErrorState
+          message="Não foi possível buscar as tabelas de preços."
+          onRetry={() => findPriceTablesQuery.refetch()}
+          isRetrying={findPriceTablesQuery.isFetching}
+        />
+      )}
       {findPriceTablesQuery.isSuccess && tables.length === 0 && (
-        <p className="text-muted-foreground text-sm">Nenhuma tabela cadastrada. Agende a primeira para poder definir planos.</p>
+        <EmptyState title="Nenhuma tabela cadastrada" description="Agende a primeira para poder definir planos." />
       )}
 
       {visibleTables.map((table) => (

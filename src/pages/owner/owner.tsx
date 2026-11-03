@@ -20,6 +20,7 @@ export const Owner = () => {
   const usesPeriod = tab === "implanters" || tab === "clients";
 
   const findImplantersQuery = useQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["owner", "implanters", periodQuery],
     queryFn: () => ownerService.findImplanters({ queries: periodQuery! }),
     enabled: !!periodQuery,

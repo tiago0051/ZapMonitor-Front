@@ -1,3 +1,4 @@
+import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -33,6 +34,7 @@ export const FinanceTab = () => {
   const periodQuery = monthStart ? { startDate: monthStart.toISOString(), endDate: endOfMonth(monthStart).toISOString() } : null;
 
   const findFinanceQuery = useQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["owner", "finance", periodQuery],
     queryFn: () => billingService.findMonthFinance({ queries: periodQuery! }),
     enabled: !!periodQuery,
@@ -74,8 +76,14 @@ export const FinanceTab = () => {
         )}
       </div>
 
-      {findFinanceQuery.isLoading && <p>Carregando...</p>}
-      {findFinanceQuery.isError && <p>Erro ao calcular o mês.</p>}
+      {findFinanceQuery.isLoading && <LoadingState />}
+      {findFinanceQuery.isError && (
+        <ErrorState
+          message="Não foi possível calcular o mês."
+          onRetry={() => findFinanceQuery.refetch()}
+          isRetrying={findFinanceQuery.isFetching}
+        />
+      )}
 
       {finance && (
         <>
@@ -97,7 +105,7 @@ export const FinanceTab = () => {
             description="Comissão de venda (CAC), comissão recorrente e o lucro que os tenants de cada um deixam no mês."
           >
             {finance.implanters.length === 0 ? (
-              <p className="text-muted-foreground text-sm">Nenhum tenant com responsável e plano ativo neste mês.</p>
+              <EmptyState title="Nenhum tenant com responsável e plano ativo neste mês" />
             ) : (
               <Table>
                 <TableHeader>
@@ -177,7 +185,7 @@ export const FinanceTab = () => {
 
           <Section title="Tenants" description="Mensalidade, custos rateados, comissões e lucro de cada tenant com plano ativo no mês.">
             {finance.clients.length === 0 ? (
-              <p className="text-muted-foreground text-sm">Nenhum tenant com plano ativo neste mês.</p>
+              <EmptyState title="Nenhum tenant com plano ativo neste mês" />
             ) : (
               <Table>
                 <TableHeader>
