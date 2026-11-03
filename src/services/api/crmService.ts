@@ -21,6 +21,26 @@ export const crmService = {
     return response.data;
   },
 
+  findAllLostReasons: async ({ params }: FindAllLostReasonsRequestData): Promise<LostReason[]> => {
+    const response = await api.get<LostReason[]>(`/client/${params.clientId}/crm/lost-reason`);
+    return response.data;
+  },
+
+  createLostReason: async ({ params, body }: CreateLostReasonRequestData): Promise<LostReason> => {
+    const response = await api.post(`/client/${params.clientId}/crm/lost-reason`, body);
+    return response.data;
+  },
+
+  updateLostReason: async ({ params, body }: UpdateLostReasonRequestData): Promise<LostReason> => {
+    const response = await api.put(`/client/${params.clientId}/crm/lost-reason/${params.lostReasonId}`, body);
+    return response.data;
+  },
+
+  setLostReasonActive: async ({ params, body }: SetLostReasonActiveRequestData): Promise<LostReason> => {
+    const response = await api.put(`/client/${params.clientId}/crm/lost-reason/${params.lostReasonId}/active`, body);
+    return response.data;
+  },
+
   findBoard: async ({ params, queries }: FindDealBoardRequestData): Promise<Deal[]> => {
     const response = await api.get<Deal[]>(`/client/${params.clientId}/crm/deal`, { params: queries });
     return response.data;

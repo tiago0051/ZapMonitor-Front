@@ -11,6 +11,8 @@ type SavePipelineStageRequestBody = {
   name: string;
   color: string;
   type: PipelineStageType;
+  entryFlowId?: string | null;
+  staleAfterDays?: number | null;
 };
 
 type SavePipelineRequestBody = {
@@ -93,7 +95,7 @@ type UpdateDealRequestData = {
 
 type MoveDealRequestData = {
   params: DealRequestParams;
-  body: { stageId: string; lostReason?: string };
+  body: { stageId: string; lostReasonId?: string; lostReason?: string };
 };
 
 type TransferDealRequestData = {
@@ -104,4 +106,27 @@ type TransferDealRequestData = {
 type ReopenDealRequestData = {
   params: DealRequestParams;
   body: { stageId?: string };
+};
+
+type FindAllLostReasonsRequestData = {
+  params: CrmClientRequestParams;
+};
+
+type CreateLostReasonRequestData = {
+  params: CrmClientRequestParams;
+  body: { name: string };
+};
+
+type LostReasonRequestParams = CrmClientRequestParams & {
+  lostReasonId: string;
+};
+
+type UpdateLostReasonRequestData = {
+  params: LostReasonRequestParams;
+  body: { name: string };
+};
+
+type SetLostReasonActiveRequestData = {
+  params: LostReasonRequestParams;
+  body: { active: boolean };
 };

@@ -6,6 +6,7 @@ import { clientService } from "@/services/api/clientService";
 import { useQuery } from "@tanstack/react-query";
 import {
   Bot,
+  CircleSlash,
   Code2,
   Columns3,
   KeyRound,
@@ -25,6 +26,7 @@ import { ClientConfiguration } from "./client";
 import { Flows } from "./flow/flows";
 import { PermissionGroups } from "./permissionGroup/permissionGroups";
 import { Pipelines } from "./pipeline/pipelines";
+import { LostReasons } from "./lostReason/lostReasons";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { ServiceGroups } from "./serviceGroup/serviceGroup";
 import { WhatsappAiConfiguration } from "./whatsapp/whatsappAi/whatsappAiConfiguration";
@@ -61,7 +63,17 @@ const configurationGroups: { label: string; sections: ConfigurationSection[] }[]
   },
   {
     label: "CRM",
-    sections: [{ id: "pipeline", label: "Funis", icon: Columns3, content: <Pipelines />, permission: "crm.manage", requiresCrm: true }],
+    sections: [
+      { id: "pipeline", label: "Funis", icon: Columns3, content: <Pipelines />, permission: "crm.manage", requiresCrm: true },
+      {
+        id: "lostReason",
+        label: "Motivos de perda",
+        icon: CircleSlash,
+        content: <LostReasons />,
+        permission: "crm.manage",
+        requiresCrm: true,
+      },
+    ],
   },
   {
     label: "Mensagens",

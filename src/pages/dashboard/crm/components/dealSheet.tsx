@@ -22,6 +22,7 @@ import {
   dealContactName,
   dealStatusLabel,
   findPipelineStage,
+  stageFlowResultLabel,
 } from "../crmUtils";
 import { useCrmOptions } from "../useCrmOptions";
 import { useDealActions } from "../useDealActions";
@@ -45,6 +46,8 @@ const describeEvent = (event: DealEvent) => {
       return `Transferiu de ${payload.fromServiceGroupName ?? "sem grupo"} para ${payload.serviceGroupName ?? "sem grupo"}`;
     case "REOPENED":
       return `Reabriu o negócio em ${payload.stageName}`;
+    case "FLOW_TRIGGERED":
+      return `Fluxo da etapa ${payload.flowName ? `"${payload.flowName}" ` : ""}${stageFlowResultLabel[payload.result as StageFlowResult] ?? ""}`;
     case "UPDATED":
       return `Alterou ${((payload.fields as string[]) ?? []).map((field) => fieldLabel[field] ?? field).join(", ")}`;
   }

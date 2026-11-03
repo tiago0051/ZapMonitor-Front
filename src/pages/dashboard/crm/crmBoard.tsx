@@ -18,7 +18,7 @@ import { Link } from "react-router";
 import { useLocalStorage } from "usehooks-ts";
 import { DEAL_DRAG_TYPE, DealCard } from "./components/dealCard";
 import { DealSheet } from "./components/dealSheet";
-import { crmSelectClassName, formatCurrency, sumDealValues } from "./crmUtils";
+import { crmSelectClassName, formatCurrency, staleDays, sumDealValues } from "./crmUtils";
 import { useCrmOptions } from "./useCrmOptions";
 import { useDealActions } from "./useDealActions";
 
@@ -264,6 +264,7 @@ export const CrmBoard = () => {
           {pipeline?.stages.map((stage) => {
             const stageDeals = deals.filter((deal) => deal.stageId === stage.id);
             const total = sumDealValues(stageDeals);
+            const staleCount = stageDeals.filter((deal) => staleDays(deal, stage) !== null).length;
 
             return (
               <div
@@ -288,13 +289,22 @@ export const CrmBoard = () => {
                     <p className="truncate text-sm font-semibold">{stage.name}</p>
                     <span className="text-muted-foreground bg-background rounded-full px-2 text-xs">{stageDeals.length}</span>
                   </div>
-                  <p className="text-muted-foreground text-xs">{formatCurrency(total)}</p>
+                  <p className="text-muted-foreground text-xs">
+                    {formatCurrency(total)}
+                    {staleCount > 0 && <span className="text-sky-700 dark:text-sky-300"> · {staleCount} esfriando</span>}
+                  </p>
                 </div>
 
                 <div className="flex-1 space-y-2 overflow-y-auto p-2">
                   {boardQuery.isLoading && <LoadingState className="py-4" />}
                   {stageDeals.map((deal) => (
-                    <DealCard key={deal.id} deal={deal} draggable={deal.status === "OPEN"} onOpen={(item) => setOpenDealId(item.id)} />
+                    <DealCard
+                      key={deal.id}
+                      deal={deal}
+                      stage={stage}
+                      draggable={deal.status === "OPEN"}
+                      onOpen={(item) => setOpenDealId(item.id)}
+                    />
                   ))}
                 </div>
               </div>

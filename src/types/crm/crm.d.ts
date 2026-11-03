@@ -2,7 +2,9 @@ type PipelineStageType = "OPEN" | "WON" | "LOST";
 
 type DealStatus = "OPEN" | "WON" | "LOST";
 
-type DealEventType = "CREATED" | "UPDATED" | "STAGE_CHANGED" | "GROUP_CHANGED" | "REOPENED";
+type DealEventType = "CREATED" | "UPDATED" | "STAGE_CHANGED" | "GROUP_CHANGED" | "REOPENED" | "FLOW_TRIGGERED";
+
+type StageFlowResult = "STARTED" | "FLOW_INACTIVE" | "OUTSIDE_WINDOW" | "SERVICE_LIMIT" | "FAILED";
 
 type PipelineStage = {
   id: string;
@@ -10,6 +12,10 @@ type PipelineStage = {
   color: string;
   order: number;
   type: PipelineStageType;
+  // Fluxo que roda quando alguém move um negócio para a etapa
+  entryFlowId: string | null;
+  // Dias sem atividade para um negócio aberto aparecer como esfriando
+  staleAfterDays: number | null;
 };
 
 type Pipeline = {
@@ -46,6 +52,9 @@ type Deal = {
   notes: string | null;
   status: DealStatus;
   lostReason: string | null;
+  lostReasonId: string | null;
+  // Última mudança no negócio ou mensagem trocada com o contato
+  lastActivityAt: string;
   stageEnteredAt: string;
   closedAt: string | null;
   createdAt: string;
@@ -60,4 +69,10 @@ type DealEvent = {
   toStageId: string | null;
   payload: Record<string, unknown> | null;
   createdAt: string;
+};
+
+type LostReason = {
+  id: string;
+  name: string;
+  active: boolean;
 };

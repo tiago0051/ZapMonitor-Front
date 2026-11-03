@@ -1,4 +1,5 @@
 import { formatPhoneNumber } from "@/utils/formatString";
+import { differenceInDays } from "date-fns";
 
 export const crmSelectClassName =
   "border-input dark:bg-input/30 focus-visible:border-ring focus-visible:ring-ring/50 flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:opacity-50";
@@ -30,3 +31,20 @@ export const findPipelineStage = (pipeline: Pipeline | undefined, stageId: strin
 // Link para a conversa do contato na tela de atendimento
 export const contactChatPath = (baseUrl: string, contact: DealContact) =>
   `${baseUrl}/whatsapp?contactId=${contact.id}&phone=${encodeURIComponent(contact.phoneNumber)}`;
+
+/** Dias sem atividade de um negócio aberto que passou do prazo da etapa; nulo quando não está esfriando. */
+export const staleDays = (deal: Deal, stage: PipelineStage | undefined) => {
+  if (deal.status !== "OPEN" || !stage?.staleAfterDays) return null;
+
+  const days = differenceInDays(new Date(), new Date(deal.lastActivityAt));
+
+  return days >= stage.staleAfterDays ? days : null;
+};
+
+export const stageFlowResultLabel: Record<StageFlowResult, string> = {
+  STARTED: "iniciado",
+  FLOW_INACTIVE: "não rodou porque o fluxo está desativado",
+  OUTSIDE_WINDOW: "não rodou porque o contato não escreveu nas últimas 24h",
+  SERVICE_LIMIT: "não rodou porque o plano atingiu o limite de atendimentos",
+  FAILED: "falhou ao rodar",
+};

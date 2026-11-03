@@ -1,20 +1,22 @@
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Tag, UserRound, Users } from "lucide-react";
+import { Snowflake, Tag, UserRound, Users } from "lucide-react";
 import type { FC } from "react";
-import { dealContactName, formatCurrency } from "../crmUtils";
+import { dealContactName, formatCurrency, staleDays } from "../crmUtils";
 
 type DealCardProps = {
   deal: Deal;
+  stage?: PipelineStage;
   onOpen: (deal: Deal) => void;
   draggable: boolean;
 };
 
 export const DEAL_DRAG_TYPE = "application/x-zapmonitor-deal";
 
-export const DealCard: FC<DealCardProps> = ({ deal, onOpen, draggable }) => {
+export const DealCard: FC<DealCardProps> = ({ deal, stage, onOpen, draggable }) => {
   const contactName = dealContactName(deal.contact);
+  const daysStale = staleDays(deal, stage);
 
   return (
     <button
@@ -28,8 +30,15 @@ export const DealCard: FC<DealCardProps> = ({ deal, onOpen, draggable }) => {
       className={cn(
         "bg-card hover:border-primary/40 w-full space-y-2 rounded-lg border p-3 text-left shadow-xs transition-colors",
         draggable && "cursor-grab active:cursor-grabbing",
+        daysStale !== null && "border-sky-400 bg-sky-50/60 dark:border-sky-500/70 dark:bg-sky-950/30",
       )}
     >
+      {daysStale !== null && (
+        <p className="flex items-center gap-1 text-[11px] font-medium text-sky-700 dark:text-sky-300">
+          <Snowflake className="h-3 w-3" />
+          Esfriando: {daysStale} {daysStale === 1 ? "dia" : "dias"} sem atividade
+        </p>
+      )}
       <div className="flex items-start justify-between gap-2">
         <p className="line-clamp-2 text-sm font-medium">{deal.title}</p>
         {deal.value !== null && <span className="shrink-0 text-xs font-semibold text-green-700">{formatCurrency(deal.value)}</span>}

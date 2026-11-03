@@ -2,10 +2,11 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { stageColorOptions } from "@/pages/dashboard/crm/crmUtils";
+import { crmSelectClassName, stageColorOptions } from "@/pages/dashboard/crm/crmUtils";
+import { flowService } from "@/services/api/flowService";
 import { crmService } from "@/services/api/crmService";
 import { requestErrorHandling } from "@/utils/request";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState, type FC } from "react";
 import { toast } from "sonner";
@@ -30,29 +31,73 @@ const buildDefaultStages = (): StageDraft[] => [
   { key: newKey(), name: "Perdido", color: "#ef4444", type: "LOST" },
 ];
 
-const StageRow: FC<{ stage: StageDraft; onChange: (stage: StageDraft) => void; disabled: boolean; children?: React.ReactNode }> = ({
-  stage,
-  onChange,
-  disabled,
-  children,
-}) => (
-  <div className="flex items-center gap-2">
-    <input
-      type="color"
-      aria-label={`Cor da etapa ${stage.name}`}
-      value={stage.color}
-      disabled={disabled}
-      onChange={(event) => onChange({ ...stage, color: event.target.value })}
-      className="h-9 w-9 shrink-0 cursor-pointer rounded-md border bg-transparent p-1"
-    />
-    <Input
-      aria-label="Nome da etapa"
-      value={stage.name}
-      maxLength={60}
-      disabled={disabled}
-      onChange={(event) => onChange({ ...stage, name: event.target.value })}
-    />
-    {children}
+type StageRowProps = {
+  stage: StageDraft;
+  flows: Flow[];
+  onChange: (stage: StageDraft) => void;
+  disabled: boolean;
+  children?: React.ReactNode;
+};
+
+const StageRow: FC<StageRowProps> = ({ stage, flows, onChange, disabled, children }) => (
+  <div className="bg-muted/30 grid gap-2 rounded-lg border p-2">
+    <div className="flex items-center gap-2">
+      <input
+        type="color"
+        aria-label={`Cor da etapa ${stage.name}`}
+        value={stage.color}
+        disabled={disabled}
+        onChange={(event) => onChange({ ...stage, color: event.target.value })}
+        className="h-9 w-9 shrink-0 cursor-pointer rounded-md border bg-transparent p-1"
+      />
+      <Input
+        aria-label="Nome da etapa"
+        value={stage.name}
+        maxLength={60}
+        disabled={disabled}
+        onChange={(event) => onChange({ ...stage, name: event.target.value })}
+      />
+      {children}
+    </div>
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pl-11 text-xs">
+      <label className="flex min-w-0 flex-1 items-center gap-2">
+        <span className="text-muted-foreground shrink-0">Ao entrar, rodar</span>
+        <select
+          aria-label={`Fluxo da etapa ${stage.name}`}
+          value={stage.entryFlowId ?? ""}
+          disabled={disabled}
+          onChange={(event) => onChange({ ...stage, entryFlowId: event.target.value || null })}
+          className={`${crmSelectClassName} h-8 min-w-0 text-xs`}
+        >
+          <option value="">Nenhum fluxo</option>
+          {flows.map((flow) => (
+            <option key={flow.id} value={flow.id}>
+              {flow.name}
+              {flow.active ? "" : " (inativo)"}
+            </option>
+          ))}
+        </select>
+      </label>
+      {stage.type === "OPEN" && (
+        <label className="flex items-center gap-2">
+          <span className="text-muted-foreground">Esfria após</span>
+          <Input
+            type="number"
+            min={1}
+            max={365}
+            aria-label={`Dias para a etapa ${stage.name} esfriar`}
+            value={stage.staleAfterDays ?? ""}
+            disabled={disabled}
+            placeholder="—"
+            onChange={(event) =>
+              onChange({ ...stage, staleAfterDays: Number.isNaN(event.target.valueAsNumber) ? null : event.target.valueAsNumber })
+            }
+            className="h-8 w-16 text-xs"
+          />
+          <span className="text-muted-foreground">dias</span>
+        </label>
+      )}
+    </div>
   </div>
 );
 
@@ -63,6 +108,13 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
   const isEditing = !!pipeline;
 
   const queryClient = useQueryClient();
+
+  const flowsQuery = useQuery({
+    queryKey: ["flows", clientId],
+    queryFn: () => flowService.findAll({ params: { clientId } }),
+    enabled: isOpen,
+  });
+  const flows = flowsQuery.data ?? [];
 
   const onSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ["crm", "pipelines", clientId] });
@@ -85,7 +137,8 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
 
   const openStages = stages.filter((stage) => stage.type === "OPEN");
   const finalStages = stages.filter((stage) => stage.type !== "OPEN");
-  const isValid = name.trim() !== "" && openStages.length > 0 && stages.every((stage) => stage.name.trim() !== "");
+  const isStaleValid = (stage: StageDraft) => stage.staleAfterDays == null || (stage.staleAfterDays >= 1 && stage.staleAfterDays <= 365);
+  const isValid = name.trim() !== "" && openStages.length > 0 && stages.every((stage) => stage.name.trim() !== "" && isStaleValid(stage));
 
   const updateStage = (updated: StageDraft) => setStages((items) => items.map((item) => (item.key === updated.key ? updated : item)));
 
@@ -107,7 +160,14 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
 
     const body: SavePipelineRequestBody = {
       name: name.trim(),
-      stages: stages.map(({ id, name: stageName, color, type }) => ({ id, name: stageName.trim(), color, type })),
+      stages: stages.map(({ id, name: stageName, color, type, entryFlowId, staleAfterDays }) => ({
+        id,
+        name: stageName.trim(),
+        color,
+        type,
+        entryFlowId: entryFlowId ?? null,
+        staleAfterDays: type === "OPEN" ? (staleAfterDays ?? null) : null,
+      })),
     };
 
     if (pipeline) {
@@ -130,11 +190,12 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
         )}
       </DialogTrigger>
 
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar funil" : "Novo funil"}</DialogTitle>
           <DialogDescription>
-            As etapas aparecem como colunas do quadro, na ordem abaixo. Ganho e Perdido encerram o negócio e ficam sempre no fim.
+            As etapas aparecem como colunas do quadro, na ordem abaixo. Ganho e Perdido encerram o negócio e ficam sempre no fim. O fluxo da
+            etapa roda quando alguém move um negócio para ela, desde que o contato tenha escrito nas últimas 24h.
           </DialogDescription>
         </DialogHeader>
 
@@ -154,7 +215,7 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
           <div className="grid gap-2">
             <Label>Etapas</Label>
             {openStages.map((stage, index) => (
-              <StageRow key={stage.key} stage={stage} onChange={updateStage} disabled={isPending}>
+              <StageRow key={stage.key} stage={stage} flows={flows} onChange={updateStage} disabled={isPending}>
                 <Button
                   type="button"
                   variant="ghost"
@@ -209,7 +270,7 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
           <div className="grid gap-2">
             <Label>Etapas finais</Label>
             {finalStages.map((stage) => (
-              <StageRow key={stage.key} stage={stage} onChange={updateStage} disabled={isPending}>
+              <StageRow key={stage.key} stage={stage} flows={flows} onChange={updateStage} disabled={isPending}>
                 <span className="text-muted-foreground w-16 shrink-0 text-xs">{stage.type === "WON" ? "Ganho" : "Perdido"}</span>
               </StageRow>
             ))}
