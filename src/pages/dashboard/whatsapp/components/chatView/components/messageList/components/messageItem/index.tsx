@@ -1,7 +1,7 @@
 import { WhatsappMessageContentType } from "@/enums/whatsappMessageContentType.enum";
 import { WhatsappMessageStatus } from "@/enums/whatsappMessageStatus.enum";
 import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
-import { formatShortName } from "@/utils/formatString";
+import { formatShortName, formatWhatsappText } from "@/utils/formatString";
 import { format } from "date-fns";
 import { useState, type FC } from "react";
 import { FiAlertTriangle, FiDownload } from "react-icons/fi";
@@ -13,7 +13,9 @@ import { MessageReplyPreview } from "../../../messageReplyPreview";
 
 type MessageFileContent = { url: string; filename: string };
 
-const MessageText = ({ message }: { message: WhatsappMessage<string> }) => <p className="whitespace-pre-wrap">{message.content}</p>;
+const MessageText = ({ message }: { message: WhatsappMessage<string> }) => (
+  <p className="whitespace-pre-wrap">{formatWhatsappText(message.content)}</p>
+);
 const MessageAudio = ({ content }: { content: MessageFileContent }) => (
   <div>
     {content && <audio controls src={content.url} className="w-full" />}
@@ -50,7 +52,9 @@ const MessageSticker = ({ content }: { content: MessageFileContent }) => (
   </div>
 );
 const MessageContact = ({ message }: { message: WhatsappMessage<string> }) => <p className="whitespace-pre-wrap">{message.content}</p>;
-const MessageTemplate = ({ message }: { message: WhatsappMessage<string> }) => <p className="whitespace-pre-wrap">{message.content}</p>;
+const MessageTemplate = ({ message }: { message: WhatsappMessage<string> }) => (
+  <p className="whitespace-pre-wrap">{formatWhatsappText(message.content)}</p>
+);
 
 const supportedContentTypes: string[] = [
   WhatsappMessageContentType.INTERACTIVE,

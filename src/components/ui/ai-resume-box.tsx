@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { formatBoldText } from "@/utils/formatString";
+import { formatWhatsappText } from "@/utils/formatString";
 import { Bot } from "lucide-react";
 
 interface AiResumeBoxProps {
@@ -15,7 +15,7 @@ export const AiResumeBox = ({ aiResume, title, className }: AiResumeBoxProps) =>
         <Bot className="h-4 w-4" />
         <span className="text-sm">{title}</span>
       </div>
-      <pre className="text-foreground/80 font-sans text-sm hyphens-auto whitespace-pre-wrap">{formatBoldText(aiResume)}</pre>
+      <pre className="text-foreground/80 font-sans text-sm hyphens-auto whitespace-pre-wrap">{formatWhatsappText(aiResume)}</pre>
     </div>
   );
 };

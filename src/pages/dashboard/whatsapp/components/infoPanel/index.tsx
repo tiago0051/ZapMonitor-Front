@@ -1,6 +1,6 @@
 import { ContactAvatar } from "@/components/contact-avatar";
 import { Bot, FileAudio, FileText, Film, Image as ImageIcon, Paperclip, Tag } from "lucide-react";
-import { formatBoldText, formatPhoneNumber, formatShortId } from "@/utils/formatString";
+import { formatWhatsappText, formatPhoneNumber, formatShortId } from "@/utils/formatString";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { whatsappService } from "@/services/api/whatsappService";
 import { useClientContext } from "@/context/ClientContext/clientContext";
@@ -174,7 +174,7 @@ export function InfoPanel({
             </div>
             {aiSummary ? (
               <pre className="text-muted-foreground bg-muted rounded-xl p-3 text-xs leading-relaxed hyphens-auto whitespace-pre-wrap">
-                {formatBoldText(aiSummary)}
+                {formatWhatsappText(aiSummary)}
               </pre>
             ) : (
               <p className="text-muted-foreground text-xs">Sem resumo disponível.</p>
@@ -214,7 +214,7 @@ export function InfoPanel({
                     </div>
                     {p?.aiResume && (
                       <pre className="text-muted-foreground mb-2 text-[11px] leading-relaxed hyphens-auto whitespace-pre-wrap">
-                        {formatBoldText(p.aiResume)}
+                        {formatWhatsappText(p.aiResume)}
                       </pre>
                     )}
 
