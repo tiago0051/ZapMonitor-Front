@@ -17,6 +17,7 @@ export const InProgressTab = () => {
   const { client } = useClientContext();
 
   const findInProgressQuery = useQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["management", "inProgress", client.id],
     queryFn: () => managementService.findInProgress({ params: { clientId: client.id } }),
     refetchInterval: REFRESH_INTERVAL_MS,

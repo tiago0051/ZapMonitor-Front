@@ -30,6 +30,7 @@ export const UsersTab = () => {
   });
 
   const findUsersQuery = useQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["implanterUsers", pagination, search, clientId],
     queryFn: () =>
       implanterService.findUsers({

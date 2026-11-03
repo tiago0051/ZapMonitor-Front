@@ -24,6 +24,7 @@ export const DialogManageWhatsappConfiguration: FC<DialogManageWhatsappConfigura
   const params = { clientId, configurationId: whatsappConfiguration.id };
 
   const webhookQuery = useQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["whatsappConfigurationWebhook", clientId, whatsappConfiguration.id],
     queryFn: () => whatsappService.findConfigurationWebhook({ params }),
     enabled: isOpen,

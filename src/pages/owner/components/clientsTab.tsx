@@ -64,6 +64,7 @@ export const ClientsTab: FC<ClientsTabProps> = ({ period, implanters, implanterF
   }
 
   const findClientsQuery = useQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["owner", "clients", period, pagination, search, implanterFilter],
     queryFn: () =>
       ownerService.findClients({

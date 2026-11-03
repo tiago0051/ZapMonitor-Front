@@ -23,6 +23,7 @@ export const AttendedServicesList: FC<AttendedServicesListProps> = ({ attendant,
   const [page, setPage] = useState(1);
 
   const findServicesQuery = useQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["management", "attendedServices", client.id, attendant.userId, period, page],
     queryFn: () =>
       managementService.findAttendedServices({

@@ -41,6 +41,7 @@ export const AttendedTab = () => {
     : null;
 
   const findSummaryQuery = useQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["management", "attended", client.id, periodQuery],
     queryFn: () => managementService.findAttendedSummary({ params: { clientId: client.id }, queries: periodQuery! }),
     enabled: !!periodQuery,

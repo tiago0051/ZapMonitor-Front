@@ -403,6 +403,7 @@ export const FlowEditor = () => {
   const { clientId, flowId } = useParams();
 
   const flowQuery = useQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["flow", clientId, flowId],
     queryFn: () => flowService.findById({ params: { clientId: clientId!, flowId: flowId! } }),
   });

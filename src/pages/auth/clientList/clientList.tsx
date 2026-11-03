@@ -10,6 +10,7 @@ import { Link, Navigate } from "react-router";
 export const ClientList = () => {
   const { user } = useUserContext();
   const findAllClientQuery = useQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["clients"],
     queryFn: () => clientService.findAll(),
   });

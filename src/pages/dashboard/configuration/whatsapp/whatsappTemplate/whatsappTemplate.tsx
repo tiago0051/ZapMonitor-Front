@@ -12,6 +12,7 @@ export const WhatsappTemplate = () => {
   const { clientId } = useParams();
 
   const findAllWhatsappTemplatesQuery = useSuspenseQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["whatsappTemplates", clientId],
     queryFn: () => templateService.findAll({ params: { clientId: clientId! } }),
   });

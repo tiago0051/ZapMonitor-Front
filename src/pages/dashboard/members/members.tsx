@@ -30,6 +30,7 @@ export const Members = () => {
   const [status, setStatus] = useState<"" | MemberStatus>("");
 
   const findAllMembersQuery = useQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["members", client.id, pagination, search, status],
     queryFn: () =>
       memberService.findAll({

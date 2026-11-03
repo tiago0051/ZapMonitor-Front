@@ -8,6 +8,7 @@ import { DialogCreateClient } from "./dialogCreateClient";
 
 export const ClientsTab = () => {
   const findClientsQuery = useQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["implanterClients"],
     queryFn: implanterService.findClients,
   });

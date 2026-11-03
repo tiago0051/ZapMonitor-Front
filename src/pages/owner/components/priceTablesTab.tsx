@@ -101,6 +101,7 @@ export const PriceTablesTab = () => {
   const [showPast, setShowPast] = useState<boolean>(false);
 
   const findPriceTablesQuery = useQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["owner", "priceTables"],
     queryFn: billingService.findPriceTables,
   });

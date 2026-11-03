@@ -33,6 +33,7 @@ export const FinanceTab = () => {
   const periodQuery = monthStart ? { startDate: monthStart.toISOString(), endDate: endOfMonth(monthStart).toISOString() } : null;
 
   const findFinanceQuery = useQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["owner", "finance", periodQuery],
     queryFn: () => billingService.findMonthFinance({ queries: periodQuery! }),
     enabled: !!periodQuery,

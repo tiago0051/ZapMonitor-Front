@@ -22,6 +22,7 @@ export const WhatsappCategory = () => {
   const [textSearch, setTextSearch] = useDebounceValue<string>("", globalContants.DEBOUNCE_DELAY);
 
   const findAllWhatsappCategoriesQuery = useSuspenseQuery({
+    meta: { errorHandledInline: true },
     queryKey: ["whatsappCategories", clientId, pagination, textSearch],
     queryFn: () =>
       whatsappService.findAllMessageCategoriesByClient({
