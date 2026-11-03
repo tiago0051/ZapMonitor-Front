@@ -41,6 +41,11 @@ export const crmService = {
     return response.data;
   },
 
+  analyzeDeal: async ({ params }: FindDealRequestData): Promise<Deal> => {
+    const response = await api.post(`/client/${params.clientId}/crm/deal/${params.dealId}/ai-insight`);
+    return response.data;
+  },
+
   findDealTasks: async ({ params }: FindDealRequestData): Promise<DealTask[]> => {
     const response = await api.get<DealTask[]>(`/client/${params.clientId}/crm/deal/${params.dealId}/task`);
     return response.data;

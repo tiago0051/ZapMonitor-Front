@@ -65,6 +65,9 @@ type Deal = {
   // Tarefa aberta com o prazo mais próximo
   nextTask: { id: string; title: string; dueAt: string } | null;
   openTaskCount: number;
+  // Nota de 0 a 100 da última análise de IA
+  aiScore: number | null;
+  aiInsight: DealAiInsight | null;
   stageEnteredAt: string;
   closedAt: string | null;
   createdAt: string;
@@ -112,4 +115,12 @@ type CrmReport = {
   winRate: number | null;
   stages: { stageId: string; reached: number; conversion: number; averageHours: number | null }[];
   lostReasons: { reason: string; count: number }[];
+};
+
+type DealAiInsight = {
+  scoreReason: string;
+  // Nula quando a IA sugere manter o negócio onde está
+  suggestedStageId: string | null;
+  nextStep: string;
+  analyzedAt: string;
 };

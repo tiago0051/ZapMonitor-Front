@@ -83,3 +83,6 @@ export const toCustomFieldsBody = (fields: CrmField[], values: Record<string, st
 
 export const toCustomFieldsForm = (fields: CrmField[], customFields: Deal["customFields"]) =>
   Object.fromEntries(fields.map((field) => [field.id, customFields[field.id] === undefined ? "" : String(customFields[field.id])]));
+
+// Faixas da nota de IA; descrevem a chance de ganho, não um estado de alerta
+export const aiScoreLabel = (score: number) => (score >= 70 ? "Quente" : score >= 40 ? "Morno" : "Frio");

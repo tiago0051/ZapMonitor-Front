@@ -40,6 +40,8 @@ type FlowNodeData = {
   flowId?: string;
   pipelineId?: string;
   stageId?: string;
+  // Nó de agente: etapas e campos do CRM que o agente pode mudar no negócio do contato
+  crm?: { pipelineId: string; stageIds: string[]; fieldIds: string[] } | null;
 };
 
 type FlowDefinitionNode = {

@@ -6,7 +6,7 @@ import { ArrowDown, ArrowUp, Snowflake } from "lucide-react";
 import { useState, type FC } from "react";
 import { dealContactName, dealStatusLabel, findPipelineStage, formatCurrency, staleDays } from "../crmUtils";
 
-type SortKey = "title" | "stage" | "value" | "lastActivityAt" | "createdAt";
+type SortKey = "title" | "stage" | "value" | "aiScore" | "lastActivityAt" | "createdAt";
 
 type DealListProps = {
   deals: Deal[];
@@ -19,6 +19,7 @@ const compareBy: Record<SortKey, (first: Deal, second: Deal, pipeline: Pipeline)
   stage: (first, second, pipeline) =>
     (findPipelineStage(pipeline, first.stageId)?.order ?? 0) - (findPipelineStage(pipeline, second.stageId)?.order ?? 0),
   value: (first, second) => (first.value ?? -1) - (second.value ?? -1),
+  aiScore: (first, second) => (first.aiScore ?? -1) - (second.aiScore ?? -1),
   lastActivityAt: (first, second) => first.lastActivityAt.localeCompare(second.lastActivityAt),
   createdAt: (first, second) => first.createdAt.localeCompare(second.createdAt),
 };
@@ -61,6 +62,7 @@ export const DealList: FC<DealListProps> = ({ deals, pipeline, onOpen }) => {
               {sortableHead("Negócio", "title")}
               {sortableHead("Etapa", "stage")}
               {sortableHead("Valor", "value", "text-right")}
+              {sortableHead("Nota IA", "aiScore", "text-right")}
               <TableHead>Responsável</TableHead>
               <TableHead>Grupo</TableHead>
               <TableHead>Próxima tarefa</TableHead>
@@ -89,6 +91,9 @@ export const DealList: FC<DealListProps> = ({ deals, pipeline, onOpen }) => {
                   </TableCell>
                   <TableCell className="text-right whitespace-nowrap tabular-nums">
                     {deal.value === null ? "—" : formatCurrency(deal.value)}
+                  </TableCell>
+                  <TableCell className="text-right whitespace-nowrap tabular-nums" title={deal.aiInsight?.scoreReason}>
+                    {deal.aiScore ?? "—"}
                   </TableCell>
                   <TableCell className="whitespace-nowrap">{deal.owner?.name ?? "—"}</TableCell>
                   <TableCell className="whitespace-nowrap">{deal.serviceGroup?.name ?? "—"}</TableCell>

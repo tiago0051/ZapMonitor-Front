@@ -29,6 +29,7 @@ import {
 import { useCrmOptions } from "../useCrmOptions";
 import { CustomFieldInput } from "./customFieldInput";
 import { DealTasks } from "./dealTasks";
+import { DealAiInsight } from "./dealAiInsight";
 import { useDealActions } from "../useDealActions";
 
 type DealSheetProps = {
@@ -277,6 +278,8 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
                 <p className="text-muted-foreground text-xs">O grupo define quem vê o negócio.</p>
               </div>
             </section>
+
+            <DealAiInsight deal={deal} pipeline={pipeline} onMove={(stage) => actions.requestMove(deal, stage)} />
 
             <DealDetailsForm key={`${deal.id}-${deal.updatedAt}`} deal={deal} />
 

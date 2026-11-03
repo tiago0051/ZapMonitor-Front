@@ -113,8 +113,88 @@ const OutputsEditor: FC<OutputsEditorProps> = ({ label, hint, outputs, withDescr
   );
 };
 
+const toggleId = (ids: string[], id: string, checked: boolean) => (checked ? [...ids, id] : ids.filter((item) => item !== id));
+
+// Etapas e campos que o agente pode mudar no negócio do contato enquanto conversa
+const AgentCrmSettings: FC<{
+  data: FlowNodeData;
+  pipelines: Pipeline[];
+  crmFields: CrmField[];
+  update: (changes: Partial<FlowNodeData>) => void;
+}> = ({ data, pipelines, crmFields, update }) => {
+  const crm = data.crm ?? null;
+  const pipeline = pipelines.find((item) => item.id === crm?.pipelineId);
+
+  return (
+    <div className="space-y-3 rounded-lg border p-3">
+      <label className="flex cursor-pointer items-center gap-2 text-sm font-medium">
+        <Checkbox
+          checked={!!crm}
+          onCheckedChange={(checked) =>
+            update({ crm: checked === true ? { pipelineId: pipelines[0].id, stageIds: [], fieldIds: [] } : null })
+          }
+        />
+        Atualizar o CRM durante a conversa
+      </label>
+      <p className="text-muted-foreground text-xs">
+        O agente move o negócio do contato para as etapas liberadas e preenche os campos liberados com o que ouvir na conversa. Sem negócio
+        aberto no funil, ele cria um.
+      </p>
+
+      {crm && (
+        <>
+          <Field label="Funil">
+            <select
+              className={selectClassName}
+              value={crm.pipelineId}
+              onChange={(e) => update({ crm: { pipelineId: e.target.value, stageIds: [], fieldIds: crm.fieldIds } })}
+            >
+              {pipelines.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Etapas que o agente pode usar">
+            <div className="space-y-1.5">
+              {pipeline?.stages.map((stage) => (
+                <label key={stage.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={crm.stageIds.includes(stage.id)}
+                    onCheckedChange={(checked) => update({ crm: { ...crm, stageIds: toggleId(crm.stageIds, stage.id, checked === true) } })}
+                  />
+                  {stage.name}
+                </label>
+              ))}
+            </div>
+          </Field>
+
+          <Field
+            label="Campos que o agente pode preencher"
+            hint={crmFields.length === 0 ? "Cadastre campos na aba Campos do negócio." : undefined}
+          >
+            <div className="space-y-1.5">
+              {crmFields.map((field) => (
+                <label key={field.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={crm.fieldIds.includes(field.id)}
+                    onCheckedChange={(checked) => update({ crm: { ...crm, fieldIds: toggleId(crm.fieldIds, field.id, checked === true) } })}
+                  />
+                  {field.name}
+                </label>
+              ))}
+            </div>
+          </Field>
+        </>
+      )}
+    </div>
+  );
+};
+
 export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, onDelete, onClose }) => {
-  const { serviceGroups, aiAgents, categories, flows, pipelines, currentFlowId } = useFlowEditorContext();
+  const { serviceGroups, aiAgents, categories, flows, pipelines, crmFields, currentFlowId } = useFlowEditorContext();
   const config = flowNodeConfigs[type];
   const Icon = config.icon;
 
@@ -243,6 +323,8 @@ export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, on
               minItems={1}
               onChange={(outputs) => update({ outputs })}
             />
+
+            {pipelines.length > 0 && <AgentCrmSettings data={data} pipelines={pipelines} crmFields={crmFields} update={update} />}
           </>
         )}
 
