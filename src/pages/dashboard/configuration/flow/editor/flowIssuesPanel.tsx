@@ -1,4 +1,4 @@
-import { AlertTriangle, ChevronDown, ChevronRight, Workflow } from "lucide-react";
+import { AlertTriangle, ChevronRight, Minus, Workflow } from "lucide-react";
 import type { FC } from "react";
 import type { FlowCanvasNodeType } from "./flowCanvasNode";
 import { flowNodeConfigs } from "./flowNodeConfig";
@@ -6,6 +6,7 @@ import { useNodeSummary } from "./useNodeSummary";
 
 type FlowIssuesPanelProps = {
   title: string;
+  description: string;
   issues: FlowIssue[];
   nodes: FlowCanvasNodeType[];
   isOpen: boolean;
@@ -14,9 +15,10 @@ type FlowIssuesPanelProps = {
 };
 
 const IssueMessages: FC<{ messages: string[] }> = ({ messages }) => (
-  <ul className="list-disc space-y-0.5 pl-5">
+  <ul className="space-y-1 pl-6">
     {messages.map((message, index) => (
-      <li key={`${index}-${message}`} className="first-letter:uppercase">
+      <li key={`${index}-${message}`} className="relative text-sm leading-snug first-letter:uppercase">
+        <span aria-hidden className="absolute top-[0.45em] -left-3 h-1.5 w-1.5 rounded-full bg-amber-500" />
         {message}
       </li>
     ))}
@@ -29,25 +31,29 @@ const NodeIssues: FC<{ node: FlowCanvasNodeType; messages: string[]; onSelect: (
   const summary = useNodeSummary(node.type as FlowNodeType, node.data);
 
   return (
-    <div className="bg-card text-card-foreground rounded-lg border p-2.5">
+    <li>
       <button
         type="button"
         onClick={onSelect}
-        title="Mostrar no fluxo"
-        className="hover:text-foreground mb-1.5 flex w-full min-w-0 items-center gap-2 text-left"
+        className="hover:bg-muted group flex w-full flex-col gap-1.5 rounded-lg px-3 py-2.5 text-left transition-colors"
       >
-        <Icon className={`h-4 w-4 shrink-0 ${config.colorClassName}`} />
-        <span className="shrink-0 font-semibold">{config.label}</span>
-        <span className="text-muted-foreground truncate text-xs">{summary}</span>
-        <ChevronRight className="text-muted-foreground ml-auto h-4 w-4 shrink-0" />
+        <span className="flex w-full min-w-0 items-center gap-2">
+          <Icon className={`h-4 w-4 shrink-0 ${config.colorClassName}`} />
+          <span className="shrink-0 text-sm font-semibold">{config.label}</span>
+          <span className="text-muted-foreground min-w-0 truncate text-xs">{summary}</span>
+          <span className="text-muted-foreground group-hover:text-foreground ml-auto flex shrink-0 items-center gap-0.5 text-xs">
+            Ver no fluxo
+            <ChevronRight className="h-3.5 w-3.5" />
+          </span>
+        </span>
+        <IssueMessages messages={messages} />
       </button>
-      <IssueMessages messages={messages} />
-    </div>
+    </li>
   );
 };
 
-/** Lista as pendências agrupadas por nó; clicar no nó leva até ele no canvas. */
-export const FlowIssuesPanel: FC<FlowIssuesPanelProps> = ({ title, issues, nodes, isOpen, onOpenChange, onSelectNode }) => {
+/** Lista flutuante sobre o canvas com as pendências agrupadas por nó; clicar em um nó leva até ele. */
+export const FlowIssuesPanel: FC<FlowIssuesPanelProps> = ({ title, description, issues, nodes, isOpen, onOpenChange, onSelectNode }) => {
   const nodesById = new Map(nodes.map((node) => [node.id, node]));
 
   // Pendências de nós que já saíram do canvas também valem para o fluxo todo
@@ -56,35 +62,56 @@ export const FlowIssuesPanel: FC<FlowIssuesPanelProps> = ({ title, issues, nodes
     .map((node) => ({ node, messages: issues.filter((issue) => issue.nodeId === node.id).map((issue) => issue.message) }))
     .filter((group) => group.messages.length > 0);
 
-  return (
-    <div className="border-b bg-amber-50 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+  if (!isOpen) {
+    return (
       <button
         type="button"
-        onClick={() => onOpenChange(!isOpen)}
-        aria-expanded={isOpen}
-        className="flex w-full items-center gap-2 px-4 py-2 text-left font-medium"
+        onClick={() => onOpenChange(true)}
+        className="absolute top-3 left-3 z-10 flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-900 shadow-md transition-colors hover:bg-amber-100"
       >
-        <AlertTriangle className="h-4 w-4 shrink-0" />
-        <span className="flex-1">{title}</span>
-        <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        <AlertTriangle className="h-4 w-4" />
+        {issues.length} pendência(s)
+        <span className="text-amber-700">· Mostrar</span>
       </button>
+    );
+  }
 
-      {isOpen && (
-        <div className="grid max-h-64 gap-2 overflow-y-auto px-4 pb-3 md:grid-cols-2 xl:grid-cols-3">
-          {flowMessages.length > 0 && (
-            <div className="bg-card text-card-foreground rounded-lg border p-2.5">
-              <p className="mb-1.5 flex items-center gap-2 font-semibold">
-                <Workflow className="text-muted-foreground h-4 w-4 shrink-0" />
-                Fluxo
-              </p>
-              <IssueMessages messages={flowMessages} />
-            </div>
-          )}
-          {nodeGroups.map((group) => (
-            <NodeIssues key={group.node.id} node={group.node} messages={group.messages} onSelect={() => onSelectNode(group.node.id)} />
-          ))}
+  return (
+    <section
+      aria-label="Pendências do fluxo"
+      className="bg-card text-card-foreground absolute top-3 left-3 z-10 flex max-h-[calc(100%-1.5rem)] w-[min(28rem,calc(100%-1.5rem))] flex-col overflow-hidden rounded-xl border border-amber-300 shadow-lg"
+    >
+      <header className="flex items-start gap-3 border-b border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
+        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold">{title}</p>
+          <p className="text-xs text-amber-800">{description}</p>
         </div>
-      )}
-    </div>
+        <button
+          type="button"
+          onClick={() => onOpenChange(false)}
+          aria-label="Minimizar pendências"
+          title="Minimizar"
+          className="-mt-0.5 -mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-amber-800 transition-colors hover:bg-amber-100"
+        >
+          <Minus className="h-4 w-4" />
+        </button>
+      </header>
+
+      <ul className="divide-y overflow-y-auto p-1.5">
+        {flowMessages.length > 0 && (
+          <li className="flex flex-col gap-1.5 px-3 py-2.5">
+            <span className="flex items-center gap-2">
+              <Workflow className="text-muted-foreground h-4 w-4 shrink-0" />
+              <span className="text-sm font-semibold">Fluxo</span>
+            </span>
+            <IssueMessages messages={flowMessages} />
+          </li>
+        )}
+        {nodeGroups.map((group) => (
+          <NodeIssues key={group.node.id} node={group.node} messages={group.messages} onSelect={() => onSelectNode(group.node.id)} />
+        ))}
+      </ul>
+    </section>
   );
 };

@@ -104,7 +104,7 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
 
     setRejectedIssues(rejected);
     setIsIssuesOpen(true);
-    toast.error(rejected.title, { description: "Veja as pendências listadas acima do fluxo." });
+    toast.error("Fluxo não salvo", { description: `Corrija as ${rejected.issues.length} pendência(s) listadas sobre o fluxo.` });
   };
 
   const updateFlow = useMutation({
@@ -212,8 +212,11 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
   // A recusa mais recente mostra o rascunho que o usuário tentou salvar; sem ela, vale a última versão salva
   const issues = rejectedIssues?.issues ?? flow.issues;
   const issuesTitle = rejectedIssues
-    ? `${rejectedIssues.title}: ${rejectedIssues.issues.length} pendência(s)`
-    : `${flow.issues.length} pendência(s) na última versão salva. Resolva para ativar o fluxo.`;
+    ? `Fluxo não salvo: ${rejectedIssues.issues.length} pendência(s)`
+    : `${flow.issues.length} pendência(s) na última versão salva`;
+  const issuesDescription = rejectedIssues
+    ? `${rejectedIssues.title}. Clique em um item para ir até o nó.`
+    : "Resolva para poder ativar o fluxo. Clique em um item para ir até o nó.";
   const issueCountByNodeId = useMemo(() => {
     const counts = new Map<string, number>();
     for (const issue of issues) {
@@ -320,17 +323,6 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
         </div>
       </div>
 
-      {issues.length > 0 && (
-        <FlowIssuesPanel
-          title={issuesTitle}
-          issues={issues}
-          nodes={nodes}
-          isOpen={isIssuesOpen}
-          onOpenChange={setIsIssuesOpen}
-          onSelectNode={showNode}
-        />
-      )}
-
       <div className="flex min-h-0 flex-1">
         <aside className="bg-card w-56 shrink-0 space-y-2 overflow-y-auto border-r p-3">
           <p className="text-muted-foreground text-xs font-semibold uppercase">Adicionar nó</p>
@@ -354,7 +346,18 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
           })}
         </aside>
 
-        <div className="min-w-0 flex-1">
+        <div className="relative min-w-0 flex-1">
+          {issues.length > 0 && (
+            <FlowIssuesPanel
+              title={issuesTitle}
+              description={issuesDescription}
+              issues={issues}
+              nodes={nodes}
+              isOpen={isIssuesOpen}
+              onOpenChange={setIsIssuesOpen}
+              onSelectNode={showNode}
+            />
+          )}
           <FlowIssuesContext.Provider value={issueCountByNodeId}>
             <ReactFlow
               nodes={nodes}
