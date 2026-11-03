@@ -17,7 +17,10 @@ type Permission =
   | "api.manage"
   | "crm.view"
   | "crm.viewAll"
-  | "crm.manage";
+  | "crm.manage"
+  | "ads.view"
+  | "ads.manage"
+  | "ads.approve";
 
 type PermissionDefinition = {
   key: Permission;
@@ -44,4 +47,6 @@ type TenantAccess = {
   permissions: Permission[];
   // O plano do tenant inclui o módulo CRM
   crmEnabled: boolean;
+  // O plano do tenant inclui o módulo de anúncios
+  adsEnabled: boolean;
 };

@@ -6,6 +6,8 @@ type PermissionRouteProps = {
   permission: Permission;
   // Exige também que o plano inclua o módulo CRM
   requiresCrm?: boolean;
+  // Exige também que o plano inclua o módulo de anúncios
+  requiresAds?: boolean;
   children: ReactNode;
 };
 
@@ -21,10 +23,10 @@ export const NoPermission = () => (
   </div>
 );
 
-export const PermissionRoute: FC<PermissionRouteProps> = ({ permission, requiresCrm, children }) => {
+export const PermissionRoute: FC<PermissionRouteProps> = ({ permission, requiresCrm, requiresAds, children }) => {
   const { can, access } = useClientContext();
 
-  if (!can(permission) || (requiresCrm && !access.crmEnabled)) return <NoPermission />;
+  if (!can(permission) || (requiresCrm && !access.crmEnabled) || (requiresAds && !access.adsEnabled)) return <NoPermission />;
 
   return children;
 };

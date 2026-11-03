@@ -10,6 +10,7 @@ import {
   Code2,
   Columns3,
   KeyRound,
+  Megaphone,
   MessageSquareText,
   Phone,
   ShieldCheck,
@@ -29,6 +30,7 @@ import { PermissionGroups } from "./permissionGroup/permissionGroups";
 import { Pipelines } from "./pipeline/pipelines";
 import { LostReasons } from "./lostReason/lostReasons";
 import { CrmFields } from "./crmField/crmFields";
+import { MetaAdsSettings } from "./metaAds/metaAdsSettings";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { ServiceGroups } from "./serviceGroup/serviceGroup";
 import { WhatsappAiConfiguration } from "./whatsapp/whatsappAi/whatsappAiConfiguration";
@@ -45,6 +47,8 @@ type ConfigurationSection = {
   permission?: Permission;
   // Só aparece quando o plano inclui o módulo CRM
   requiresCrm?: boolean;
+  // Só aparece quando o plano inclui o módulo de anúncios
+  requiresAds?: boolean;
 };
 
 // Grupos ordenados pela frequência de uso: atendimento muda toda semana; canais e integrações, só na implantação
@@ -102,6 +106,14 @@ const configurationGroups: { label: string; sections: ConfigurationSection[] }[]
     label: "Canais e integrações",
     sections: [
       {
+        id: "metaAds",
+        label: "Anúncios da Meta",
+        icon: Megaphone,
+        content: <MetaAdsSettings />,
+        permission: "ads.manage",
+        requiresAds: true,
+      },
+      {
         id: "numbers",
         label: "Números de WhatsApp",
         icon: Phone,
@@ -156,7 +168,10 @@ export const EditClientLayout = () => {
     .map((group) => ({
       ...group,
       sections: group.sections.filter(
-        (section) => (!section.permission || can(section.permission)) && (!section.requiresCrm || access.crmEnabled),
+        (section) =>
+          (!section.permission || can(section.permission)) &&
+          (!section.requiresCrm || access.crmEnabled) &&
+          (!section.requiresAds || access.adsEnabled),
       ),
     }))
     .filter((group) => group.sections.length > 0);
