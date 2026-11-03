@@ -4,6 +4,7 @@ import { whatsappService } from "@/services/api/whatsappService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { markSelfAssigned } from "../../../notifications/selfAssignedContacts";
 
 interface UseServiceActionsProps {
   contact: WhatsappContactMessage;
@@ -110,6 +111,8 @@ export const useServiceActions = ({ contact, contactService, onServiceAssumed }:
   }
 
   function assumeService() {
+    markSelfAssigned(contact.id);
+
     if (contactService?.canBeServiceStarted) {
       startServiceMutation.mutate({ params: { contactId: contact.id, clientId: client.id } });
       return;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MessageSquare, Search, X, ArrowLeft, Users, WifiOff } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { ContactCard } from "./components/contactCard";
@@ -10,8 +10,31 @@ import { useSocketContext } from "@/context/SocketContext/socketContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useContactsListService } from "./useContactsListService";
 import { useServiceGroupSelection } from "./useServiceGroupSelection";
+import { NotificationSettings } from "./notifications/notificationSettings";
+import { useNewContactNotifications } from "./notifications/useNewContactNotifications";
 
 // ── Shared sub-panels ────────────────────────────────────────────────────────
+
+// Fica no fim da lista; quando entra na área visível, pede a próxima página
+function LoadMoreSentinel({ onVisible }: { onVisible: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const onVisibleRef = useRef(onVisible);
+
+  useEffect(() => {
+    onVisibleRef.current = onVisible;
+  });
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    const observer = new IntersectionObserver(([entry]) => entry.isIntersecting && onVisibleRef.current(), { rootMargin: "200px" });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return <div ref={ref} aria-hidden className="h-px" />;
+}
 
 function ContactListPanel({
   tab,
@@ -40,9 +63,15 @@ function ContactListPanel({
     if (contacts.isLoading) return Array.from({ length: 6 }).map((_, index) => <ContactCardSkeleton key={index} />);
     if (contacts.isEmpty) return <div className="text-muted-foreground py-12 text-center text-sm">Nenhum contato encontrado</div>;
 
-    return contacts.items.map((c) => (
-      <ContactCard key={c.id} contact={c} active={selected?.id === c.id} onClick={() => onSelectContact(c)} />
-    ));
+    return (
+      <>
+        {contacts.items.map((c) => (
+          <ContactCard key={c.id} contact={c} active={selected?.id === c.id} onClick={() => onSelectContact(c)} />
+        ))}
+        {contacts.isFetchingNextPage && Array.from({ length: 3 }).map((_, index) => <ContactCardSkeleton key={`next-${index}`} />)}
+        {contacts.hasNextPage && !contacts.isFetchingNextPage && <LoadMoreSentinel onVisible={() => contacts.fetchNextPage()} />}
+      </>
+    );
   }
 
   return (
@@ -120,6 +149,7 @@ function ContactListPanel({
             </button>
           )}
         </div>
+        <NotificationSettings />
         <DialogNewContactTemplate
           onSent={(contact) => {
             setTab("all");
@@ -204,6 +234,16 @@ export function Whatsapp() {
     setSelected(contact);
     goToMobileView("chat");
   };
+
+  const { serviceGroups } = useServiceGroupSelection();
+  useNewContactNotifications({
+    serviceGroupIds: serviceGroups.map((group) => group.id),
+    selectedContactId: selected?.id,
+    onOpenContact: (contact, contactTab) => {
+      setTab(contactTab);
+      handleSelectContact(contact);
+    },
+  });
 
   return (
     <>

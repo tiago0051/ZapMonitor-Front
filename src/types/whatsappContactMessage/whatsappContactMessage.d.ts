@@ -14,5 +14,9 @@ type WhatsappContactMessage = {
   categories: WhatsappMessageCategoryShort[];
   serviceRepresentative: string | null;
   serviceGroupId: string | null;
+  // Valores de WhatsappServiceStatus; null quando o contato nunca teve atendimento
+  serviceStatus: number | null;
+  userIdInService: string | null;
+  queueEnteredAt: string | null;
   replyTimeExpiredAt: string;
 };
