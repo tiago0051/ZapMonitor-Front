@@ -84,6 +84,22 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
   });
 
   async function handleSendMessage() {
+    try {
+      await sendMessage();
+    } catch {
+      // O onError já avisou; a mensagem continua na caixa para o atendente tentar de novo
+      return;
+    }
+
+    setMessage(defaultMessage);
+    onCancelReply?.();
+
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+    }
+  }
+
+  async function sendMessage() {
     const replyToMessageId = replyingTo?.id;
 
     if (messageIsAudio) {
@@ -127,7 +143,7 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
     }
 
     if (messageIsText) {
-      createMessageMutate.mutate({
+      await createMessageMutate.mutateAsync({
         params: {
           contactId: contact.id,
           configurationId: contact.whatsappConfigurationId,
@@ -139,20 +155,14 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
           replyToMessageId,
         },
       });
-
-      if (inputRef.current) {
-        inputRef.current.style.height = "auto";
-      }
     }
-
-    setMessage(defaultMessage);
-    onCancelReply?.();
   }
 
   function onKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      handleSendMessage();
+      // O texto fica na caixa até o envio terminar; um segundo Enter não pode duplicar a mensagem
+      if (!disableButtonSendMessage) handleSendMessage();
     }
   }
 
