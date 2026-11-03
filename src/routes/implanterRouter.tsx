@@ -1,3 +1,4 @@
+import { NotFound } from "@/components/not-found";
 import { PanelLayout } from "@/components/panel-layout";
 import { Implanter } from "@/pages/implanter/implanter";
 import type { FC } from "react";
@@ -8,6 +9,7 @@ export const ImplanterRouter: FC = () => {
     <Routes>
       <Route element={<PanelLayout />}>
         <Route index element={<Implanter />} />
+        <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
   );

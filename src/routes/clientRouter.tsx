@@ -1,3 +1,4 @@
+import { NotFound } from "@/components/not-found";
 import { PermissionRoute } from "@/components/permission-route";
 import { EditClientLayout } from "@/pages/dashboard/configuration/layout";
 import { lazy } from "react";
@@ -20,6 +21,7 @@ const ConfigurationRouter = () => {
           </PermissionRoute>
         }
       />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };

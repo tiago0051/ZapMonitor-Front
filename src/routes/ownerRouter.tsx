@@ -1,3 +1,4 @@
+import { NotFound } from "@/components/not-found";
 import { PanelLayout } from "@/components/panel-layout";
 import { Owner } from "@/pages/owner/owner";
 import type { FC } from "react";
@@ -8,6 +9,7 @@ export const OwnerRouter: FC = () => {
     <Routes>
       <Route element={<PanelLayout />}>
         <Route index element={<Owner />} />
+        <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
   );

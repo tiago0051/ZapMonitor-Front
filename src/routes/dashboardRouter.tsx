@@ -1,3 +1,4 @@
+import { NotFound } from "@/components/not-found";
 import { type FC, lazy } from "react";
 import { Navigate, Route, Routes, useParams } from "react-router";
 import { HomePage } from "../pages/dashboard/home/home";
@@ -54,6 +55,7 @@ export const DashboardRouter: FC = () => {
               </PermissionRoute>
             }
           />
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Route>
     </Routes>

@@ -12,10 +12,12 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useUserContext } from "@/context/UserContext/userContext";
-import { FiActivity, FiBriefcase, FiLogOut, FiMail, FiSettings, FiTrendingUp, FiUsers } from "react-icons/fi";
+import { FiActivity, FiBriefcase, FiLogOut, FiMail, FiRepeat, FiSettings, FiTrendingUp, FiUsers } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
 import { PanelLeftIcon } from "lucide-react";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
+import { useQuery } from "@tanstack/react-query";
+import { clientService } from "@/services/api/clientService";
 import { useBaseUrl } from "@/hooks/use-baseUrl";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 
@@ -56,7 +58,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { logout, user } = useUserContext();
   const { toggleSidebar } = useSidebar();
   const baseUrl = useBaseUrl();
-  const { can } = useClientContext();
+  const { can, client } = useClientContext();
+  const { pathname } = useLocation();
+
+  // Mesma consulta da tela de clientes: trocar só faz sentido com mais de um cliente
+  const findAllClientQuery = useQuery({
+    queryKey: ["clients"],
+    queryFn: () => clientService.findAll(),
+  });
+  const canSwitchClient = (findAllClientQuery.data?.length ?? 0) > 1;
+
+  const isActive = (url: string) => pathname === url || pathname.startsWith(`${url}/`);
 
   return (
     <Sidebar variant="floating" collapsible="icon" {...props}>
@@ -71,6 +83,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </p>
               </Link>
             </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem className="group-data-[collapsible=icon]:hidden">
+            <p className="text-muted-foreground px-2 pt-1 text-xs">Cliente</p>
+            <p className="truncate px-2 text-sm font-semibold" title={client.name}>
+              {client.name}
+            </p>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip={"Encolher"}>
@@ -89,7 +107,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               .filter((item) => !item.permission || can(item.permission))
               .map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild tooltip={item.title}>
+                  <SidebarMenuButton asChild tooltip={item.title} isActive={isActive(`${baseUrl}/${item.url}`)}>
                     <Link to={`${baseUrl}/${item.url}`} className="font-medium">
                       <item.icon />
                       {item.title}
@@ -102,6 +120,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
+          {canSwitchClient && (
+            <SidebarMenuButton asChild tooltip={"Trocar cliente"}>
+              <Link to={`/auth/select_client`}>
+                <FiRepeat />
+                Trocar cliente
+              </Link>
+            </SidebarMenuButton>
+          )}
           {user?.isImplanter && (
             <SidebarMenuButton asChild tooltip={"Painel do implantador"}>
               <Link to={`/dashboard/implanter`}>
