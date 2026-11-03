@@ -1,5 +1,6 @@
 import { ContactAvatar } from "@/components/contact-avatar";
-import { Bot, FileAudio, FileText, Film, Image as ImageIcon, Paperclip, Tag } from "lucide-react";
+import { Bot, Briefcase, FileAudio, FileText, Film, Image as ImageIcon, Paperclip, Tag } from "lucide-react";
+import { ContactDeals } from "@/pages/dashboard/crm/components/contactDeals";
 import { formatWhatsappText, formatPhoneNumber, formatShortId } from "@/utils/formatString";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { whatsappService } from "@/services/api/whatsappService";
@@ -51,16 +52,18 @@ function StatusDot({ status }: { status: ProtocolStatus }) {
   return <span className={`h-2 w-2 flex-shrink-0 rounded-full ${colors[status]}`} />;
 }
 
+export type InfoPanelTab = "summary" | "history" | "files" | "deals";
+
 export function InfoPanel({
   selected,
   rightPanel,
   setRightPanel,
 }: {
   selected: WhatsappContactMessage;
-  rightPanel: "summary" | "history" | "files";
-  setRightPanel: (p: "summary" | "history" | "files") => void;
+  rightPanel: InfoPanelTab;
+  setRightPanel: (p: InfoPanelTab) => void;
 }) {
-  const { client } = useClientContext();
+  const { client, canUseCrm } = useClientContext();
   const { socket, isConnected } = useSocketContext();
 
   const findAllServicesHistoryByContact = useInfiniteQuery({
@@ -148,6 +151,18 @@ export function InfoPanel({
           Arquivos
           {rightPanel === "files" && <span className="absolute right-0 bottom-0 left-0 h-0.5 rounded-full bg-green-500" />}
         </button>
+        {canUseCrm && (
+          <button
+            onClick={() => setRightPanel("deals")}
+            className={`relative flex flex-1 items-center justify-center gap-1.5 py-3 text-xs font-medium transition-colors ${
+              rightPanel === "deals" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Briefcase className="h-3.5 w-3.5" />
+            Negócios
+            {rightPanel === "deals" && <span className="absolute right-0 bottom-0 left-0 h-0.5 rounded-full bg-green-500" />}
+          </button>
+        )}
       </div>
 
       <div className="border-border bg-muted/40 flex-shrink-0 border-b px-4 py-3">
@@ -160,10 +175,7 @@ export function InfoPanel({
         </div>
       </div>
 
-      <div
-        className="scrollbar-hide flex-1 overflow-y-auto px-4 py-4"
-        onScroll={rightPanel === "files" ? onScrollFiles : undefined}
-      >
+      <div className="scrollbar-hide flex-1 overflow-y-auto px-4 py-4" onScroll={rightPanel === "files" ? onScrollFiles : undefined}>
         {rightPanel === "summary" ? (
           <div>
             <div className="mb-3 flex items-center gap-2">
@@ -195,6 +207,11 @@ export function InfoPanel({
                 </div>
               </div>
             )}
+          </div>
+        ) : rightPanel === "deals" && canUseCrm ? (
+          <div>
+            <p className="text-muted-foreground mb-3 text-[11px] font-semibold tracking-wider uppercase">Negócios do contato</p>
+            <ContactDeals contact={selected} />
           </div>
         ) : rightPanel === "history" ? (
           <div>
@@ -247,7 +264,9 @@ export function InfoPanel({
                 ))}
               </div>
             )}
-            {findAllFilesByContact.isFetchingNextPage && <p className="text-muted-foreground mt-2 text-center text-[11px]">Carregando...</p>}
+            {findAllFilesByContact.isFetchingNextPage && (
+              <p className="text-muted-foreground mt-2 text-center text-[11px]">Carregando...</p>
+            )}
           </div>
         )}
       </div>

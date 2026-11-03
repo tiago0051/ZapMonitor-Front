@@ -12,7 +12,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { buttonVariants } from "@/components/ui/button";
 import { formatPhoneNumber } from "@/utils/formatString";
-import { ArrowLeft, Forward, Info } from "lucide-react";
+import { ArrowLeft, Briefcase, Forward, Info } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useClientContext } from "@/context/ClientContext/clientContext";
+import { ContactDeals } from "@/pages/dashboard/crm/components/contactDeals";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { FC } from "react";
 import type { ServiceActions } from "../../hooks/useServiceActions";
@@ -27,6 +30,7 @@ interface HeaderProps {
 
 export const Header: FC<HeaderProps> = ({ contact, contactService, serviceActions, onBack, onShowInfo }) => {
   const contactName = contact.surname?.trim() || contact.name?.trim() || "este contato";
+  const { canUseCrm } = useClientContext();
 
   return (
     <header className="bg-card border-border flex flex-shrink-0 items-center gap-1.5 border-b px-2 py-2.5 sm:gap-2 sm:px-3 sm:py-3 md:px-5">
@@ -43,6 +47,20 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, serviceAction
         <p className="text-muted-foreground text-xs">{formatPhoneNumber(contact.phoneNumber)}</p>
       </div>
       <div className="flex flex-shrink-0 items-center gap-1">
+        {canUseCrm && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="bg-muted hover:bg-muted/70 text-foreground flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium whitespace-nowrap transition-colors sm:px-3">
+                <Briefcase className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Negócios</span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="max-h-[70vh] w-80 overflow-y-auto">
+              <p className="mb-3 text-sm font-semibold">Negócios de {contactName}</p>
+              <ContactDeals contact={contact} />
+            </PopoverContent>
+          </Popover>
+        )}
         {serviceActions.canAssumeService && (
           <button
             onClick={serviceActions.assumeService}

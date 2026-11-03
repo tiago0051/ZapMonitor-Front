@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { aiAgentService } from "@/services/api/aiAgentService";
+import { crmService } from "@/services/api/crmService";
+import { useClientContext } from "@/context/ClientContext/clientContext";
 import { flowService } from "@/services/api/flowService";
 import { serviceGroupService } from "@/services/api/serviceGroupService";
 import { whatsappService } from "@/services/api/whatsappService";
@@ -38,7 +40,19 @@ import { createFlowId, flowNodeConfigs, getFlowNodeOutputs } from "./flowNodeCon
 import { FlowNodePanel } from "./flowNodePanel";
 
 const nodeTypes = Object.fromEntries(Object.keys(flowNodeConfigs).map((type) => [type, FlowCanvasNode]));
-const paletteNodeTypes: FlowNodeType[] = ["message", "condition", "aiAgent", "serviceGroup", "businessHours", "category", "removeCategory", "replaceCategories", "flow", "end"];
+const paletteNodeTypes: FlowNodeType[] = [
+  "message",
+  "condition",
+  "aiAgent",
+  "serviceGroup",
+  "businessHours",
+  "category",
+  "removeCategory",
+  "replaceCategories",
+  "crm",
+  "flow",
+  "end",
+];
 
 const toCanvasNodes = (definition: FlowDefinition): FlowCanvasNodeType[] =>
   definition.nodes.map((node) => ({
@@ -86,6 +100,9 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
   const [whatsappConfigurationIds, setWhatsappConfigurationIds] = useState(flow.whatsappConfigurationIds);
   const configurations = useWhatsappConfigurations(clientId);
   const { flows } = useFlowEditorContext();
+  const { access } = useClientContext();
+  // O nó do CRM só aparece quando o plano inclui o módulo
+  const availableNodeTypes = paletteNodeTypes.filter((type) => type !== "crm" || access.crmEnabled);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [rejectedIssues, setRejectedIssues] = useState<RejectedIssues | null>(null);
@@ -326,7 +343,7 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
       <div className="flex min-h-0 flex-1">
         <aside className="bg-card w-56 shrink-0 space-y-2 overflow-y-auto border-r p-3">
           <p className="text-muted-foreground text-xs font-semibold uppercase">Adicionar nó</p>
-          {paletteNodeTypes.map((type) => {
+          {availableNodeTypes.map((type) => {
             const config = flowNodeConfigs[type];
             const Icon = config.icon;
 
@@ -433,15 +450,23 @@ export const FlowEditor = () => {
     queryFn: () => flowService.findAll({ params: { clientId: clientId! } }),
   });
 
+  const { access } = useClientContext();
+  const pipelinesQuery = useQuery({
+    queryKey: ["crm", "pipelines", clientId],
+    queryFn: () => crmService.findAllPipelines({ params: { clientId: clientId! } }),
+    enabled: access.crmEnabled,
+  });
+
   const contextValue = useMemo(
     () => ({
       serviceGroups: serviceGroupsQuery.data ?? [],
       aiAgents: aiAgentsQuery.data ?? [],
       categories: categoriesQuery.data?.items ?? [],
       flows: flowsQuery.data ?? [],
+      pipelines: (pipelinesQuery.data ?? []).filter((pipeline) => pipeline.active),
       currentFlowId: flowId!,
     }),
-    [serviceGroupsQuery.data, aiAgentsQuery.data, categoriesQuery.data, flowsQuery.data, flowId],
+    [serviceGroupsQuery.data, aiAgentsQuery.data, categoriesQuery.data, flowsQuery.data, pipelinesQuery.data, flowId],
   );
 
   if (flowQuery.isLoading) return <LoadingState className="h-full" label="Carregando o fluxo..." />;

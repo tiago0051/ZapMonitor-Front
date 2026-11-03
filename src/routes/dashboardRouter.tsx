@@ -13,6 +13,7 @@ const ConfigurationRouter = lazy(() => import("./clientRouter"));
 const EmailRouter = lazy(() => import("./emailRouter"));
 const MembersRouter = lazy(() => import("./membersRouter"));
 const ManagementRouter = lazy(() => import("./managementRouter"));
+const CrmRouter = lazy(() => import("./crmRouter"));
 
 export const DashboardRouter: FC = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -51,6 +52,14 @@ export const DashboardRouter: FC = () => {
             element={
               <PermissionRoute permission="whatsapp.chat">
                 <WhatsappRouter />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="crm/*"
+            element={
+              <PermissionRoute permission="crm.view" requiresCrm>
+                <CrmRouter />
               </PermissionRoute>
             }
           />

@@ -4,6 +4,8 @@ type ClientContextProps = {
   client: Client;
   access: TenantAccess;
   can: (permission: Permission) => boolean;
+  // Plano com o módulo CRM e permissão de usá-lo
+  canUseCrm: boolean;
 };
 
 export const ClientContext = createContext({} as ClientContextProps);

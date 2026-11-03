@@ -1,4 +1,18 @@
-import { Bot, Clock, Flag, GitBranch, MessageSquareText, Play, Replace, Tag, Tags, Users, Workflow, type LucideIcon } from "lucide-react";
+import {
+  Bot,
+  Clock,
+  Columns3,
+  Flag,
+  GitBranch,
+  MessageSquareText,
+  Play,
+  Replace,
+  Tag,
+  Tags,
+  Users,
+  Workflow,
+  type LucideIcon,
+} from "lucide-react";
 
 // Espelha as saídas calculadas pelo backend (flowDefinition.entity.ts)
 export const FLOW_OUTPUT_NEXT = "next";
@@ -91,6 +105,13 @@ export const flowNodeConfigs: Record<FlowNodeType, FlowNodeConfig> = {
     colorClassName: "text-cyan-600 border-cyan-500/60",
     defaultData: () => ({ categoryIds: [] }),
   },
+  crm: {
+    label: "Funil do CRM",
+    description: "Cria ou move o negócio do contato e segue",
+    icon: Columns3,
+    colorClassName: "text-fuchsia-600 border-fuchsia-500/60",
+    defaultData: () => ({ pipelineId: "", stageId: "", serviceGroupId: "" }),
+  },
   flow: {
     label: "Ir para fluxo",
     description: "Continua no início de outro fluxo",
@@ -118,6 +139,7 @@ export function getFlowNodeOutputs(type: FlowNodeType, data: FlowNodeData): Flow
     case "category":
     case "removeCategory":
     case "replaceCategories":
+    case "crm":
       return [{ id: FLOW_OUTPUT_NEXT, label: "Próximo" }];
     case "businessHours":
       return [

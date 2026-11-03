@@ -25,9 +25,10 @@ export const ClientProvider = () => {
   const access = findMyAccessQuery.data;
 
   const can = (permission: Permission) => access.permissions.includes(permission);
+  const canUseCrm = access.crmEnabled && can("crm.view");
 
   return (
-    <ClientContext.Provider value={{ client, access, can }}>
+    <ClientContext.Provider value={{ client, access, can, canUseCrm }}>
       <Outlet />
     </ClientContext.Provider>
   );

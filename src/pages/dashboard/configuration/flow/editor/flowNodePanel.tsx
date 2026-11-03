@@ -114,7 +114,7 @@ const OutputsEditor: FC<OutputsEditorProps> = ({ label, hint, outputs, withDescr
 };
 
 export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, onDelete, onClose }) => {
-  const { serviceGroups, aiAgents, categories, flows, currentFlowId } = useFlowEditorContext();
+  const { serviceGroups, aiAgents, categories, flows, pipelines, currentFlowId } = useFlowEditorContext();
   const config = flowNodeConfigs[type];
   const Icon = config.icon;
 
@@ -273,6 +273,64 @@ export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, on
           </>
         )}
 
+        {type === "crm" && (
+          <>
+            <Field label="Funil" hint={pipelines.length === 0 ? "Cadastre um funil ativo na aba Funis." : undefined}>
+              <select
+                className={selectClassName}
+                value={data.pipelineId ?? ""}
+                onChange={(e) => update({ pipelineId: e.target.value, stageId: "" })}
+              >
+                <option value="">Selecione...</option>
+                {pipelines.map((pipeline) => (
+                  <option key={pipeline.id} value={pipeline.id}>
+                    {pipeline.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field
+              label="Etapa"
+              hint="Se o contato já tem um negócio aberto neste funil, ele é movido para a etapa; senão, um negócio novo é criado nela."
+            >
+              <select
+                className={selectClassName}
+                value={data.stageId ?? ""}
+                disabled={!data.pipelineId}
+                onChange={(e) => update({ stageId: e.target.value })}
+              >
+                <option value="">Selecione...</option>
+                {pipelines
+                  .find((pipeline) => pipeline.id === data.pipelineId)
+                  ?.stages.map((stage) => (
+                    <option key={stage.id} value={stage.id}>
+                      {stage.name}
+                    </option>
+                  ))}
+              </select>
+            </Field>
+
+            <Field
+              label="Grupo do negócio"
+              hint="Define quem vê o negócio. Sem grupo escolhido, o negócio novo fica com o grupo atual do contato e o existente mantém o seu."
+            >
+              <select
+                className={selectClassName}
+                value={data.serviceGroupId ?? ""}
+                onChange={(e) => update({ serviceGroupId: e.target.value })}
+              >
+                <option value="">Grupo atual do contato</option>
+                {serviceGroups.map((group) => (
+                  <option key={group.id} value={group.id}>
+                    {group.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </>
+        )}
+
         {type === "flow" && (
           <Field
             label="Fluxo de destino"
@@ -293,14 +351,7 @@ export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, on
         )}
 
         {(type === "category" || type === "removeCategory" || type === "replaceCategories") && (
-          <Field
-            label="Categorias"
-            hint={
-              categories.length === 0
-                ? "Cadastre categorias na aba Categorias."
-                : CATEGORY_HINTS[type]
-            }
-          >
+          <Field label="Categorias" hint={categories.length === 0 ? "Cadastre categorias na aba Categorias." : CATEGORY_HINTS[type]}>
             <div className="max-h-64 space-y-2 overflow-y-auto rounded-md border p-3">
               {categories.map((category) => (
                 <label key={category.id} className="flex cursor-pointer items-center gap-2 text-sm">
