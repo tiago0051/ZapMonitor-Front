@@ -1,3 +1,4 @@
+import { differenceInCalendarDays, format, isToday, isYesterday } from "date-fns";
 import { parsePhoneNumber } from "libphonenumber-js";
 
 export function formatShortId(id: string) {
@@ -39,4 +40,17 @@ export const formatBoldText = (text: string) => {
 export function formatPhoneNumber(phone: string) {
   const phoneNumberParsed = parsePhoneNumber(phone, "BR");
   return phoneNumberParsed ? phoneNumberParsed.formatInternational() : phone;
+}
+
+// Horário da última mensagem no estilo do WhatsApp: hora hoje, "Ontem", dia da semana na última semana, data depois disso
+export function formatConversationTime(date: string | Date) {
+  if (isToday(date)) return format(date, "HH:mm");
+  if (isYesterday(date)) return "Ontem";
+  if (differenceInCalendarDays(new Date(), date) < 7) {
+    // "segunda-feira" vira "Segunda"
+    const weekday = format(date, "EEEE").split("-")[0];
+    return weekday.charAt(0).toUpperCase() + weekday.slice(1);
+  }
+
+  return format(date, "dd/MM/yy");
 }

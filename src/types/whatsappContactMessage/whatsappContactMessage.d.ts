@@ -7,6 +7,9 @@ type WhatsappContactMessage = {
   messageContentType: string;
   messageType: number;
   isRead: boolean;
+  // Data da última mensagem da conversa, recebida ou enviada
+  lastMessageAt: string;
+  unreadCount: number;
   whatsappConfigurationId: string;
   categories: WhatsappMessageCategoryShort[];
   serviceRepresentative: string | null;

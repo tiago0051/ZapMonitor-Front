@@ -5,8 +5,10 @@ import { Header } from "./components/header";
 import { MessageList } from "./components/messageList";
 import { CreateMessageBar } from "./components/createMessageBar";
 import { useContactService } from "./hooks/useContactService";
+import { useServiceActions } from "./hooks/useServiceActions";
 import { isBefore } from "date-fns";
 import { DialogSendTemplate } from "./components/dialogSendTemplate";
+import { ReplyBlockedNotice } from "./components/replyBlockedNotice";
 
 type ChatViewProps = {
   contact: WhatsappContactMessage;
@@ -19,6 +21,7 @@ export const ChatView = ({ contact, onServiceAssumed, onBack, onShowInfo }: Chat
   const { socket, isConnected } = useSocketContext();
   const { user } = useUserContext();
   const { contactService } = useContactService({ contactId: contact.id });
+  const serviceActions = useServiceActions({ contact, contactService, onServiceAssumed });
 
   const [replyingTo, setReplyingTo] = useState<WhatsappMessage | null>(null);
   const [prevContactId, setPrevContactId] = useState(contact.id);
@@ -42,13 +45,7 @@ export const ChatView = ({ contact, onServiceAssumed, onBack, onShowInfo }: Chat
 
   return (
     <div className={"flex h-full flex-col overflow-hidden"}>
-      <Header
-        contact={contact}
-        contactService={contactService}
-        onServiceAssumed={onServiceAssumed}
-        onBack={onBack}
-        onShowInfo={onShowInfo}
-      />
+      <Header contact={contact} contactService={contactService} serviceActions={serviceActions} onBack={onBack} onShowInfo={onShowInfo} />
       <MessageList contact={contact} onReply={canSendMessage ? setReplyingTo : undefined} />
 
       {canSendMessage && (
@@ -56,9 +53,17 @@ export const ChatView = ({ contact, onServiceAssumed, onBack, onShowInfo }: Chat
           <CreateMessageBar contact={contact} replyingTo={replyingTo} onCancelReply={() => setReplyingTo(null)} />
         </div>
       )}
-      {contactService && !contactService?.canBeSentMessage && isReplyTimeExpired && (
-        <div className="w-full pt-2">
+      {contactService && isReplyTimeExpired && (
+        <div className="flex flex-col gap-2 px-4 pt-2 pb-3">
+          <p className="text-muted-foreground text-center text-sm">
+            O prazo para responder livremente este contato acabou. Envie um template para retomar a conversa.
+          </p>
           <DialogSendTemplate contactService={contactService} whatsappConfigurationId={contact.whatsappConfigurationId} />
+        </div>
+      )}
+      {contactService && !canSendMessage && !isReplyTimeExpired && (
+        <div className="px-4 pt-2 pb-3">
+          <ReplyBlockedNotice contactService={contactService} serviceActions={serviceActions} />
         </div>
       )}
     </div>

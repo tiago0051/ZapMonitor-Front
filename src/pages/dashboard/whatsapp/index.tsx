@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { MessageSquare, Search, X, ArrowLeft, Users } from "lucide-react";
+import { useEffect, useState } from "react";
+import { MessageSquare, Search, X, ArrowLeft, Users, WifiOff } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { ContactCard } from "./components/contactCard";
 import { ContactCardSkeleton } from "./components/contactCard/skeleton";
@@ -143,6 +143,38 @@ function ContactListPanel({
   );
 }
 
+// ── Connection status ────────────────────────────────────────────────────────
+
+// Espera um pouco antes de avisar: a conexão inicial e quedas rápidas não devem piscar a faixa
+const DISCONNECTED_NOTICE_DELAY = 3000;
+
+function ConnectionNotice({ isConnected }: { isConnected: boolean }) {
+  const [isDisconnectedLongEnough, setIsDisconnectedLongEnough] = useState(false);
+
+  useEffect(() => {
+    if (isConnected) return;
+
+    const timeout = setTimeout(() => setIsDisconnectedLongEnough(true), DISCONNECTED_NOTICE_DELAY);
+    return () => {
+      clearTimeout(timeout);
+      setIsDisconnectedLongEnough(false);
+    };
+  }, [isConnected]);
+
+  if (isConnected || !isDisconnectedLongEnough) return null;
+
+  return (
+    <div
+      role="status"
+      className="flex flex-shrink-0 items-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
+    >
+      <WifiOff className="h-4 w-4 flex-shrink-0" />
+      <span className="font-medium">Sem conexão em tempo real.</span>
+      <span className="text-amber-800 dark:text-amber-300">Reconectando… Novas mensagens podem demorar a aparecer.</span>
+    </div>
+  );
+}
+
 // ── Main App ──────────────────────────────────────────────────────────────────
 
 type MobileView = "list" | "chat" | "info";
@@ -175,7 +207,7 @@ export function Whatsapp() {
 
   return (
     <>
-      {!isConnected && <div className="max-h-10 w-full bg-yellow-300 p-2">Desconectado</div>}
+      <ConnectionNotice isConnected={isConnected} />
       <div className="flex h-full overflow-hidden" style={{ fontFamily: "Inter, sans-serif" }}>
         {/* ════ DESKTOP LAYOUT (md+) ════ */}
         {!isMobile && (
