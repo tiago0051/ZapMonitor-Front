@@ -457,6 +457,12 @@ export const FlowEditor = () => {
     enabled: access.crmEnabled,
   });
 
+  const crmFieldsQuery = useQuery({
+    queryKey: ["crm", "fields", clientId],
+    queryFn: () => crmService.findAllCrmFields({ params: { clientId: clientId! } }),
+    enabled: access.crmEnabled,
+  });
+
   const contextValue = useMemo(
     () => ({
       serviceGroups: serviceGroupsQuery.data ?? [],
@@ -464,9 +470,10 @@ export const FlowEditor = () => {
       categories: categoriesQuery.data?.items ?? [],
       flows: flowsQuery.data ?? [],
       pipelines: (pipelinesQuery.data ?? []).filter((pipeline) => pipeline.active),
+      crmFields: (crmFieldsQuery.data ?? []).filter((field) => field.active),
       currentFlowId: flowId!,
     }),
-    [serviceGroupsQuery.data, aiAgentsQuery.data, categoriesQuery.data, flowsQuery.data, pipelinesQuery.data, flowId],
+    [serviceGroupsQuery.data, aiAgentsQuery.data, categoriesQuery.data, flowsQuery.data, pipelinesQuery.data, crmFieldsQuery.data, flowId],
   );
 
   if (flowQuery.isLoading) return <LoadingState className="h-full" label="Carregando o fluxo..." />;

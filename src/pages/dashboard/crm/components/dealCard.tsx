@@ -1,9 +1,9 @@
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNow, isPast } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ListTodo, Snowflake, Tag, UserRound, Users } from "lucide-react";
+import { ListTodo, Snowflake, Sparkles, Tag, UserRound, Users } from "lucide-react";
 import type { FC } from "react";
-import { dealContactName, formatCurrency, staleDays } from "../crmUtils";
+import { aiScoreLabel, dealContactName, formatCurrency, staleDays } from "../crmUtils";
 
 type DealCardProps = {
   deal: Deal;
@@ -46,6 +46,14 @@ export const DealCard: FC<DealCardProps> = ({ deal, stage, onOpen, draggable }) 
       </div>
 
       {deal.title !== contactName && <p className="text-muted-foreground truncate text-xs">{contactName}</p>}
+
+      {deal.aiScore !== null && (
+        <p className="text-muted-foreground flex items-center gap-1 text-[11px]" title={deal.aiInsight?.scoreReason}>
+          <Sparkles className="text-primary h-3 w-3 shrink-0" />
+          <span className="text-foreground font-medium tabular-nums">{deal.aiScore}</span>
+          <span>· {aiScoreLabel(deal.aiScore)}</span>
+        </p>
+      )}
 
       {deal.contact.categories.length > 0 && (
         <div className="flex flex-wrap gap-1">

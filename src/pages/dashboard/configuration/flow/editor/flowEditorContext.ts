@@ -8,6 +8,8 @@ type FlowEditorContextValue = {
   flows: Flow[];
   // Funis ativos do CRM; vazio quando o plano não inclui o módulo
   pipelines: Pipeline[];
+  // Campos ativos do CRM, que o agente de IA pode preencher
+  crmFields: CrmField[];
   currentFlowId: string;
 };
 
@@ -17,6 +19,7 @@ export const FlowEditorContext = createContext<FlowEditorContextValue>({
   categories: [],
   flows: [],
   pipelines: [],
+  crmFields: [],
   currentFlowId: "",
 });
 
