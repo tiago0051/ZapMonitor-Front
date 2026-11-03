@@ -21,6 +21,60 @@ export const crmService = {
     return response.data;
   },
 
+  findAllCrmFields: async ({ params }: FindAllLostReasonsRequestData): Promise<CrmField[]> => {
+    const response = await api.get<CrmField[]>(`/client/${params.clientId}/crm/field`);
+    return response.data;
+  },
+
+  createCrmField: async ({ params, body }: CreateCrmFieldRequestData): Promise<CrmField> => {
+    const response = await api.post(`/client/${params.clientId}/crm/field`, body);
+    return response.data;
+  },
+
+  updateCrmField: async ({ params, body }: UpdateCrmFieldRequestData): Promise<CrmField> => {
+    const response = await api.put(`/client/${params.clientId}/crm/field/${params.fieldId}`, body);
+    return response.data;
+  },
+
+  setCrmFieldActive: async ({ params, body }: SetCrmFieldActiveRequestData): Promise<CrmField> => {
+    const response = await api.put(`/client/${params.clientId}/crm/field/${params.fieldId}/active`, body);
+    return response.data;
+  },
+
+  findDealTasks: async ({ params }: FindDealRequestData): Promise<DealTask[]> => {
+    const response = await api.get<DealTask[]>(`/client/${params.clientId}/crm/deal/${params.dealId}/task`);
+    return response.data;
+  },
+
+  findMyTasks: async ({ params }: FindAllLostReasonsRequestData): Promise<DealTask[]> => {
+    const response = await api.get<DealTask[]>(`/client/${params.clientId}/crm/task/mine`);
+    return response.data;
+  },
+
+  createDealTask: async ({ params, body }: CreateDealTaskRequestData): Promise<DealTask> => {
+    const response = await api.post(`/client/${params.clientId}/crm/deal/${params.dealId}/task`, body);
+    return response.data;
+  },
+
+  updateDealTask: async ({ params, body }: UpdateDealTaskRequestData): Promise<DealTask> => {
+    const response = await api.put(`/client/${params.clientId}/crm/task/${params.taskId}`, body);
+    return response.data;
+  },
+
+  setDealTaskCompleted: async ({ params, body }: SetDealTaskCompletedRequestData): Promise<DealTask> => {
+    const response = await api.put(`/client/${params.clientId}/crm/task/${params.taskId}/completed`, body);
+    return response.data;
+  },
+
+  deleteDealTask: async ({ params }: DeleteDealTaskRequestData): Promise<void> => {
+    await api.delete(`/client/${params.clientId}/crm/task/${params.taskId}`);
+  },
+
+  findReport: async ({ params, queries }: FindCrmReportRequestData): Promise<CrmReport> => {
+    const response = await api.get<CrmReport>(`/client/${params.clientId}/crm/report`, { params: queries });
+    return response.data;
+  },
+
   findAllLostReasons: async ({ params }: FindAllLostReasonsRequestData): Promise<LostReason[]> => {
     const response = await api.get<LostReason[]>(`/client/${params.clientId}/crm/lost-reason`);
     return response.data;

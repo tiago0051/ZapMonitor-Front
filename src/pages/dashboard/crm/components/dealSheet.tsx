@@ -23,8 +23,12 @@ import {
   dealStatusLabel,
   findPipelineStage,
   stageFlowResultLabel,
+  toCustomFieldsBody,
+  toCustomFieldsForm,
 } from "../crmUtils";
 import { useCrmOptions } from "../useCrmOptions";
+import { CustomFieldInput } from "./customFieldInput";
+import { DealTasks } from "./dealTasks";
 import { useDealActions } from "../useDealActions";
 
 type DealSheetProps = {
@@ -49,7 +53,13 @@ const describeEvent = (event: DealEvent) => {
     case "FLOW_TRIGGERED":
       return `Fluxo da etapa ${payload.flowName ? `"${payload.flowName}" ` : ""}${stageFlowResultLabel[payload.result as StageFlowResult] ?? ""}`;
     case "UPDATED":
+      if (payload.fieldNames) return `Alterou os campos ${(payload.fieldNames as string[]).join(", ")}`;
+
       return `Alterou ${((payload.fields as string[]) ?? []).map((field) => fieldLabel[field] ?? field).join(", ")}`;
+    case "TASK_CREATED":
+      return `Criou a tarefa "${payload.taskTitle}"`;
+    case "TASK_COMPLETED":
+      return `Concluiu a tarefa "${payload.taskTitle}"`;
   }
 };
 
@@ -62,8 +72,12 @@ const statusVariant: Record<DealStatus, string> = {
 // A key do pai recria o formulário quando o negócio muda no servidor, trazendo os valores salvos
 const DealDetailsForm: FC<{ deal: Deal }> = ({ deal }) => {
   const { client } = useClientContext();
-  const { members } = useCrmOptions();
+  const { members, activeFields } = useCrmOptions();
   const actions = useDealActions();
+  // Só os campos editados vão para a API, para nada ser apagado se a lista de campos chegar depois do formulário
+  const [customEdits, setCustomEdits] = useState<Record<string, string>>({});
+  const customValues = { ...toCustomFieldsForm(activeFields, deal.customFields), ...customEdits };
+  const editedFields = activeFields.filter((field) => field.id in customEdits);
 
   const [title, setTitle] = useState(deal.title);
   const [value, setValue] = useState(deal.value === null ? "" : String(deal.value));
@@ -79,7 +93,13 @@ const DealDetailsForm: FC<{ deal: Deal }> = ({ deal }) => {
     actions.updateDeal.mutate(
       {
         params: { clientId: client.id, dealId: deal.id },
-        body: { title: title.trim(), value: parsedValue, notes: notes.trim() || null, ownerUserId: ownerUserId || null },
+        body: {
+          title: title.trim(),
+          value: parsedValue,
+          notes: notes.trim() || null,
+          ownerUserId: ownerUserId || null,
+          ...(editedFields.length > 0 && { customFields: toCustomFieldsBody(editedFields, customEdits) }),
+        },
       },
       { onSuccess: () => toast.success("Negócio atualizado") },
     );
@@ -123,6 +143,17 @@ const DealDetailsForm: FC<{ deal: Deal }> = ({ deal }) => {
           className={crmTextareaClassName}
         />
       </div>
+      {activeFields.map((field) => (
+        <div key={field.id} className="grid gap-2">
+          <Label htmlFor={`deal-field-${field.id}`}>{field.name}</Label>
+          <CustomFieldInput
+            id={`deal-field-${field.id}`}
+            field={field}
+            value={customValues[field.id] ?? ""}
+            onChange={(value) => setCustomEdits((edits) => ({ ...edits, [field.id]: value }))}
+          />
+        </div>
+      ))}
       <Button onClick={saveDetails} disabled={!title.trim() || isValueInvalid || actions.isPending}>
         Salvar
       </Button>
@@ -249,6 +280,8 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
 
             <DealDetailsForm key={`${deal.id}-${deal.updatedAt}`} deal={deal} />
 
+            <DealTasks deal={deal} />
+
             <section>
               <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">Histórico</p>
               {eventsQuery.isLoading && <LoadingState className="justify-start py-2" />}
@@ -265,7 +298,7 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
             </section>
           </div>
         )}
-        {actions.lostReasonDialog}
+        {actions.dialogs}
       </SheetContent>
     </Sheet>
   );

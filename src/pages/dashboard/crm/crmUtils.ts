@@ -48,3 +48,38 @@ export const stageFlowResultLabel: Record<StageFlowResult, string> = {
   SERVICE_LIMIT: "não rodou porque o plano atingiu o limite de atendimentos",
   FAILED: "falhou ao rodar",
 };
+
+export const crmFieldTypeLabel: Record<CrmFieldType, string> = {
+  TEXT: "Texto",
+  NUMBER: "Número",
+  DATE: "Data",
+  SELECT: "Lista de opções",
+};
+
+export const isFieldFilled = (value: unknown) => value !== undefined && value !== null && value !== "";
+
+/** Campos ativos que a etapa exige e que o negócio ainda não tem preenchidos. */
+export const missingRequiredFields = (deal: Deal, stage: PipelineStage, activeFields: CrmField[]) =>
+  activeFields.filter((field) => stage.requiredFieldIds.includes(field.id) && !isFieldFilled(deal.customFields[field.id]));
+
+export const formatFieldValue = (field: CrmField, value: string | number | undefined) => {
+  if (!isFieldFilled(value)) return "—";
+  if (field.type === "DATE") return String(value).split("-").reverse().join("/");
+  if (field.type === "NUMBER") return Number(value).toLocaleString("pt-BR");
+
+  return String(value);
+};
+
+/** Valores do formulário para a API: número vira número e vazio vira nulo, que apaga o valor. */
+export const toCustomFieldsBody = (fields: CrmField[], values: Record<string, string>) =>
+  Object.fromEntries(
+    fields.map((field) => {
+      const value = values[field.id]?.trim() ?? "";
+      if (!value) return [field.id, null];
+
+      return [field.id, field.type === "NUMBER" ? Number(value) : value];
+    }),
+  ) as Record<string, string | number | null>;
+
+export const toCustomFieldsForm = (fields: CrmField[], customFields: Deal["customFields"]) =>
+  Object.fromEntries(fields.map((field) => [field.id, customFields[field.id] === undefined ? "" : String(customFields[field.id])]));

@@ -2,9 +2,13 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Outlet } from "react-router";
+import { useClientContext } from "@/context/ClientContext/clientContext";
+import { useTaskReminders } from "./crm/useTaskReminders";
 
 export const DashboardLayout = () => {
   const isMobile = useIsMobile();
+  const { canUseCrm } = useClientContext();
+  useTaskReminders(canUseCrm);
 
   return (
     <SidebarProvider>

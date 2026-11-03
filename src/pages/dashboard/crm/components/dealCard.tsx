@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
-import { formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow, isPast } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Snowflake, Tag, UserRound, Users } from "lucide-react";
+import { ListTodo, Snowflake, Tag, UserRound, Users } from "lucide-react";
 import type { FC } from "react";
 import { dealContactName, formatCurrency, staleDays } from "../crmUtils";
 
@@ -17,6 +17,7 @@ export const DEAL_DRAG_TYPE = "application/x-zapmonitor-deal";
 export const DealCard: FC<DealCardProps> = ({ deal, stage, onOpen, draggable }) => {
   const contactName = dealContactName(deal.contact);
   const daysStale = staleDays(deal, stage);
+  const isTaskOverdue = !!deal.nextTask && isPast(new Date(deal.nextTask.dueAt));
 
   return (
     <button
@@ -69,6 +70,20 @@ export const DealCard: FC<DealCardProps> = ({ deal, stage, onOpen, draggable }) 
           {formatDistanceToNow(new Date(deal.stageEnteredAt), { locale: ptBR })}
         </span>
       </div>
+
+      {deal.nextTask && (
+        <p
+          className={cn("flex items-center gap-1 text-[11px]", isTaskOverdue ? "font-medium text-red-600" : "text-muted-foreground")}
+          title={deal.nextTask.title}
+        >
+          <ListTodo className="h-3 w-3 shrink-0" />
+          <span className="truncate">
+            {isTaskOverdue ? "Atrasada: " : ""}
+            {deal.nextTask.title} · {format(new Date(deal.nextTask.dueAt), "dd/MM HH:mm", { locale: ptBR })}
+          </span>
+          {deal.openTaskCount > 1 && <span className="shrink-0">+{deal.openTaskCount - 1}</span>}
+        </p>
+      )}
 
       {deal.serviceGroup && (
         <p className="text-muted-foreground flex items-center gap-1 text-[11px]">

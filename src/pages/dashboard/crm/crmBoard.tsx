@@ -12,12 +12,14 @@ import { crmService } from "@/services/api/crmService";
 import { whatsappService } from "@/services/api/whatsappService";
 import { useQuery } from "@tanstack/react-query";
 import { endOfDay, startOfDay } from "date-fns";
-import { ChevronDown, Columns3, Users } from "lucide-react";
+import { ChevronDown, Columns3, List, Users } from "lucide-react";
 import { useState, type DragEvent } from "react";
 import { Link } from "react-router";
 import { useLocalStorage } from "usehooks-ts";
 import { DEAL_DRAG_TYPE, DealCard } from "./components/dealCard";
 import { DealSheet } from "./components/dealSheet";
+import { DealList } from "./components/dealList";
+import { useCrmRealtime } from "./useCrmRealtime";
 import { crmSelectClassName, formatCurrency, staleDays, sumDealValues } from "./crmUtils";
 import { useCrmOptions } from "./useCrmOptions";
 import { useDealActions } from "./useDealActions";
@@ -45,6 +47,8 @@ export const CrmBoard = () => {
   const [endDate, setEndDate] = useState("");
   const [openDealId, setOpenDealId] = useState<string | null>(null);
   const [dropStageId, setDropStageId] = useState<string | null>(null);
+  const [view, setView] = useLocalStorage<"board" | "list">(`crm:view:${client.id}`, "board");
+  useCrmRealtime();
 
   const pipeline = activePipelines.find((item) => item.id === storedPipelineId) ?? activePipelines[0];
   // Grupos lembrados que deixaram de existir ou de ser do usuário saem do filtro
@@ -132,10 +136,6 @@ export const CrmBoard = () => {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex flex-wrap items-end gap-3 border-b p-4">
-        <div className="mr-2">
-          <h1 className="text-2xl font-semibold">CRM</h1>
-        </div>
-
         <div className="grid gap-1">
           <Label htmlFor="crm-pipeline" className="text-xs">
             Funil
@@ -251,6 +251,24 @@ export const CrmBoard = () => {
           <Checkbox checked={onlyMine} onCheckedChange={(checked) => setOnlyMine(checked === true)} />
           Só os meus
         </label>
+
+        <div className="ml-auto flex rounded-md border p-0.5" role="group" aria-label="Visualização">
+          {(["board", "list"] as const).map((option) => (
+            <button
+              key={option}
+              type="button"
+              aria-pressed={view === option}
+              onClick={() => setView(option)}
+              className={cn(
+                "flex items-center gap-1.5 rounded px-2.5 py-1 text-sm",
+                view === option ? "bg-muted font-medium" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {option === "board" ? <Columns3 className="h-3.5 w-3.5" /> : <List className="h-3.5 w-3.5" />}
+              {option === "board" ? "Quadro" : "Lista"}
+            </button>
+          ))}
+        </div>
       </div>
 
       {boardQuery.isError ? (
@@ -259,6 +277,12 @@ export const CrmBoard = () => {
           onRetry={() => boardQuery.refetch()}
           isRetrying={boardQuery.isFetching}
         />
+      ) : view === "list" && pipeline ? (
+        boardQuery.isLoading ? (
+          <LoadingState />
+        ) : (
+          <DealList deals={deals} pipeline={pipeline} onOpen={(deal) => setOpenDealId(deal.id)} />
+        )
       ) : (
         <div className="flex flex-1 gap-3 overflow-x-auto p-4">
           {pipeline?.stages.map((stage) => {
@@ -314,7 +338,7 @@ export const CrmBoard = () => {
       )}
 
       <DealSheet dealId={openDealId} onClose={() => setOpenDealId(null)} />
-      {actions.lostReasonDialog}
+      {actions.dialogs}
     </div>
   );
 };

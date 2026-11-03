@@ -25,6 +25,11 @@ export const useCrmOptions = () => {
     enabled: !canViewAll,
   });
 
+  const fieldsQuery = useQuery({
+    queryKey: ["crm", "fields", client.id],
+    queryFn: () => crmService.findAllCrmFields({ params: { clientId: client.id } }),
+  });
+
   const membersQuery = useQuery({
     queryKey: ["members", client.id, "active-list"],
     queryFn: () => memberService.findAll({ params: { clientId: client.id }, queries: { page: 1, take: 100, status: "ACTIVE" } }),
@@ -39,6 +44,8 @@ export const useCrmOptions = () => {
     // Destinos de uma transferência: qualquer grupo do cliente
     allServiceGroups: allServiceGroupsQuery.data ?? [],
     members: membersQuery.data?.items ?? [],
+    // Campos ativos, na ordem cadastrada; os inativos ficam fora dos formulários
+    activeFields: (fieldsQuery.data ?? []).filter((field) => field.active),
     isLoading: pipelinesQuery.isLoading || allServiceGroupsQuery.isLoading || myServiceGroupsQuery.isLoading,
   };
 };

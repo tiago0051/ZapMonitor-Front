@@ -2,7 +2,10 @@ type PipelineStageType = "OPEN" | "WON" | "LOST";
 
 type DealStatus = "OPEN" | "WON" | "LOST";
 
-type DealEventType = "CREATED" | "UPDATED" | "STAGE_CHANGED" | "GROUP_CHANGED" | "REOPENED" | "FLOW_TRIGGERED";
+type DealEventType =
+  "CREATED" | "UPDATED" | "STAGE_CHANGED" | "GROUP_CHANGED" | "REOPENED" | "FLOW_TRIGGERED" | "TASK_CREATED" | "TASK_COMPLETED";
+
+type CrmFieldType = "TEXT" | "NUMBER" | "DATE" | "SELECT";
 
 type StageFlowResult = "STARTED" | "FLOW_INACTIVE" | "OUTSIDE_WINDOW" | "SERVICE_LIMIT" | "FAILED";
 
@@ -16,6 +19,8 @@ type PipelineStage = {
   entryFlowId: string | null;
   // Dias sem atividade para um negócio aberto aparecer como esfriando
   staleAfterDays: number | null;
+  // Campos que precisam estar preenchidos para mover um negócio para a etapa
+  requiredFieldIds: string[];
 };
 
 type Pipeline = {
@@ -55,6 +60,11 @@ type Deal = {
   lostReasonId: string | null;
   // Última mudança no negócio ou mensagem trocada com o contato
   lastActivityAt: string;
+  // Valores dos campos personalizados por id; data no formato aaaa-mm-dd
+  customFields: Record<string, string | number>;
+  // Tarefa aberta com o prazo mais próximo
+  nextTask: { id: string; title: string; dueAt: string } | null;
+  openTaskCount: number;
   stageEnteredAt: string;
   closedAt: string | null;
   createdAt: string;
@@ -75,4 +85,31 @@ type LostReason = {
   id: string;
   name: string;
   active: boolean;
+};
+
+type CrmField = {
+  id: string;
+  name: string;
+  type: CrmFieldType;
+  options: string[];
+  active: boolean;
+};
+
+type DealTask = {
+  id: string;
+  deal: { id: string; title: string; pipelineId: string };
+  title: string;
+  dueAt: string;
+  assignee: NamedSummary | null;
+  completedAt: string | null;
+  createdAt: string;
+};
+
+type CrmReport = {
+  created: number;
+  won: { count: number; value: number };
+  lost: { count: number; value: number };
+  winRate: number | null;
+  stages: { stageId: string; reached: number; conversion: number; averageHours: number | null }[];
+  lostReasons: { reason: string; count: number }[];
 };

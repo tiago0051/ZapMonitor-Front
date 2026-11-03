@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Sparkles,
   Tags,
+  TextCursorInput,
   Users,
   Workflow,
   type LucideIcon,
@@ -27,6 +28,7 @@ import { Flows } from "./flow/flows";
 import { PermissionGroups } from "./permissionGroup/permissionGroups";
 import { Pipelines } from "./pipeline/pipelines";
 import { LostReasons } from "./lostReason/lostReasons";
+import { CrmFields } from "./crmField/crmFields";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { ServiceGroups } from "./serviceGroup/serviceGroup";
 import { WhatsappAiConfiguration } from "./whatsapp/whatsappAi/whatsappAiConfiguration";
@@ -65,6 +67,14 @@ const configurationGroups: { label: string; sections: ConfigurationSection[] }[]
     label: "CRM",
     sections: [
       { id: "pipeline", label: "Funis", icon: Columns3, content: <Pipelines />, permission: "crm.manage", requiresCrm: true },
+      {
+        id: "crmField",
+        label: "Campos do negócio",
+        icon: TextCursorInput,
+        content: <CrmFields />,
+        permission: "crm.manage",
+        requiresCrm: true,
+      },
       {
         id: "lostReason",
         label: "Motivos de perda",

@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { crmSelectClassName, dealStatusLabel, findPipelineStage, formatCurrency } from "../crmUtils";
 import { useCrmOptions } from "../useCrmOptions";
 import { useDealActions } from "../useDealActions";
+import { useCrmRealtime } from "../useCrmRealtime";
 import { DealSheet } from "./dealSheet";
 
 type ContactDealsProps = {
@@ -21,6 +22,7 @@ export const ContactDeals: FC<ContactDealsProps> = ({ contact }) => {
   const { client } = useClientContext();
   const { canViewAll, pipelines, activePipelines, visibleServiceGroups } = useCrmOptions();
   const actions = useDealActions();
+  useCrmRealtime();
 
   const [openDealId, setOpenDealId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -168,7 +170,7 @@ export const ContactDeals: FC<ContactDealsProps> = ({ contact }) => {
       )}
 
       <DealSheet dealId={openDealId} onClose={() => setOpenDealId(null)} />
-      {actions.lostReasonDialog}
+      {actions.dialogs}
     </div>
   );
 };
