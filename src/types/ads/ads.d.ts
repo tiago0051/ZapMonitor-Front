@@ -31,6 +31,8 @@ type AvailableAdAccount = {
   accountStatus: number;
   businessName: string | null;
   linked: boolean;
+  /** false quando a conta não foi marcada para o app na conexão com a Meta */
+  granted: boolean;
 };
 
 type AdCreativeSnapshot = {

@@ -165,6 +165,11 @@ export const MetaAdsSettings = () => {
                             {linked.syncError && <span className="text-destructive"> · {linked.syncError}</span>}
                           </p>
                         )}
+                        {!available.granted && (
+                          <p className="text-destructive text-xs">
+                            Não liberada para o app. Reconecte, clique em editar acesso na Meta e marque esta conta.
+                          </p>
+                        )}
                       </div>
                       {linked ? (
                         <>
@@ -190,7 +195,7 @@ export const MetaAdsSettings = () => {
                       ) : (
                         <Button
                           size="sm"
-                          disabled={isPending}
+                          disabled={isPending || !available.granted}
                           onClick={() =>
                             linkAccount.mutate({ params: { clientId: client.id }, body: { metaAccountId: available.metaAccountId } })
                           }
