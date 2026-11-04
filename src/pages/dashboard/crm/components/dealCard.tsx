@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNow, isPast } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ListTodo, Snowflake, Sparkles, Tag, UserRound, Users } from "lucide-react";
+import { ListTodo, PhoneOff, Snowflake, Sparkles, Tag, UserRound, Users } from "lucide-react";
 import type { FC } from "react";
 import { aiScoreLabel, dealContactName, formatCurrency, staleDays } from "../crmUtils";
 import { DealOriginBadge } from "./dealOrigin";
@@ -46,7 +46,14 @@ export const DealCard: FC<DealCardProps> = ({ deal, stage, onOpen, draggable }) 
         {deal.value !== null && <span className="shrink-0 text-xs font-semibold text-green-700">{formatCurrency(deal.value)}</span>}
       </div>
 
-      {deal.title !== contactName && <p className="text-muted-foreground truncate text-xs">{contactName}</p>}
+      {!deal.contact ? (
+        <p className="flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+          <PhoneOff className="h-3 w-3" />
+          Sem telefone: adicione para conversar
+        </p>
+      ) : (
+        deal.title !== contactName && <p className="text-muted-foreground truncate text-xs">{contactName}</p>
+      )}
 
       {deal.origin && <DealOriginBadge origin={deal.origin} />}
 
@@ -58,7 +65,7 @@ export const DealCard: FC<DealCardProps> = ({ deal, stage, onOpen, draggable }) 
         </p>
       )}
 
-      {deal.contact.categories.length > 0 && (
+      {!!deal.contact?.categories.length && (
         <div className="flex flex-wrap gap-1">
           {deal.contact.categories.slice(0, 2).map((category) => (
             <span key={category.id} className="bg-muted inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium">

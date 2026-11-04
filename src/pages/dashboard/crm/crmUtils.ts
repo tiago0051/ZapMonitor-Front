@@ -20,8 +20,8 @@ const currencyFormatter = new Intl.NumberFormat("pt-BR", { style: "currency", cu
 
 export const formatCurrency = (value: number) => currencyFormatter.format(value);
 
-export const dealContactName = (contact: DealContact) =>
-  contact.surname?.trim() || contact.name?.trim() || formatPhoneNumber(contact.phoneNumber);
+export const dealContactName = (contact: DealContact | null) =>
+  contact ? contact.surname?.trim() || contact.name?.trim() || formatPhoneNumber(contact.phoneNumber) : "Sem telefone";
 
 export const sumDealValues = (deals: Deal[]) => deals.reduce((total, deal) => total + (deal.value ?? 0), 0);
 
@@ -46,6 +46,7 @@ export const stageFlowResultLabel: Record<StageFlowResult, string> = {
   FLOW_INACTIVE: "não rodou porque o fluxo está desativado",
   OUTSIDE_WINDOW: "não rodou porque o contato não escreveu nas últimas 24h",
   SERVICE_LIMIT: "não rodou porque o plano atingiu o limite de atendimentos",
+  NO_CONTACT: "não rodou porque o negócio ainda não tem telefone",
   FAILED: "falhou ao rodar",
 };
 

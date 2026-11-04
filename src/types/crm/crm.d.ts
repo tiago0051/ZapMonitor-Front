@@ -7,7 +7,7 @@ type DealEventType =
 
 type CrmFieldType = "TEXT" | "NUMBER" | "DATE" | "SELECT";
 
-type StageFlowResult = "STARTED" | "FLOW_INACTIVE" | "OUTSIDE_WINDOW" | "SERVICE_LIMIT" | "FAILED";
+type StageFlowResult = "STARTED" | "FLOW_INACTIVE" | "OUTSIDE_WINDOW" | "SERVICE_LIMIT" | "NO_CONTACT" | "FAILED";
 
 type PipelineStage = {
   id: string;
@@ -74,7 +74,8 @@ type Deal = {
   id: string;
   pipelineId: string;
   stageId: string;
-  contact: DealContact;
+  // Nulo quando o negócio veio de um lead de formulário sem telefone
+  contact: DealContact | null;
   serviceGroup: NamedSummary | null;
   owner: NamedSummary | null;
   title: string;

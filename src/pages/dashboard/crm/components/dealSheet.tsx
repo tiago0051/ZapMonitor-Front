@@ -8,10 +8,11 @@ import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useBaseUrl } from "@/hooks/use-baseUrl";
 import { crmService } from "@/services/api/crmService";
 import { formatPhoneNumber } from "@/utils/formatString";
-import { useQuery } from "@tanstack/react-query";
+import { requestErrorHandling } from "@/utils/request";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { MessageCircle, RotateCcw } from "lucide-react";
+import { MessageCircle, PhoneOff, RotateCcw } from "lucide-react";
 import { useState, type FC } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
@@ -38,7 +39,13 @@ type DealSheetProps = {
   onClose: () => void;
 };
 
-const fieldLabel: Record<string, string> = { title: "título", value: "valor", notes: "notas", ownerUserId: "responsável" };
+const fieldLabel: Record<string, string> = {
+  title: "título",
+  value: "valor",
+  notes: "notas",
+  ownerUserId: "responsável",
+  contact: "telefone do contato",
+};
 
 const describeEvent = (event: DealEvent) => {
   const payload = (event.payload ?? {}) as Record<string, string | string[] | null>;
@@ -183,6 +190,19 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
   const deal = dealQuery.data;
   const pipeline = pipelines.find((item) => item.id === deal?.pipelineId);
 
+  const queryClient = useQueryClient();
+  const [contactPhone, setContactPhone] = useState("");
+  const linkContact = useMutation({
+    mutationFn: crmService.linkDealContact,
+    onError: requestErrorHandling,
+    onSuccess: () => {
+      setContactPhone("");
+      queryClient.invalidateQueries({ queryKey: ["crm", "deals"] });
+      queryClient.invalidateQueries({ queryKey: ["metaAds", "leads"] });
+      toast.success("Telefone adicionado. O negócio agora tem contato no WhatsApp.");
+    },
+  });
+
   const transferTo = (serviceGroupId: string) => {
     if (!deal) return;
 
@@ -207,7 +227,11 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
         <SheetHeader>
           <SheetTitle>{deal?.title ?? "Negócio"}</SheetTitle>
           <SheetDescription>
-            {deal ? `${dealContactName(deal.contact)} · ${formatPhoneNumber(deal.contact.phoneNumber)}` : "Carregando..."}
+            {!deal
+              ? "Carregando..."
+              : deal.contact
+                ? `${dealContactName(deal.contact)} · ${formatPhoneNumber(deal.contact.phoneNumber)}`
+                : "Sem telefone"}
           </SheetDescription>
         </SheetHeader>
 
@@ -220,13 +244,47 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
                 {dealStatusLabel[deal.status]}
               </Badge>
               <span className="text-muted-foreground text-xs">{pipeline?.name}</span>
-              <Button variant="outline" size="sm" className="ml-auto" asChild>
-                <Link to={contactChatPath(baseUrl, deal.contact)}>
-                  <MessageCircle className="h-3.5 w-3.5" />
-                  Abrir conversa
-                </Link>
-              </Button>
+              {deal.contact && (
+                <Button variant="outline" size="sm" className="ml-auto" asChild>
+                  <Link to={contactChatPath(baseUrl, deal.contact)}>
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    Abrir conversa
+                  </Link>
+                </Button>
+              )}
             </div>
+
+            {!deal.contact && (
+              <form
+                className="space-y-2 rounded-lg border border-amber-300 bg-amber-50/60 p-3 dark:border-amber-700/60 dark:bg-amber-950/30"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (contactPhone.trim())
+                    linkContact.mutate({ params: { clientId: client.id, dealId: deal.id }, body: { phone: contactPhone.trim() } });
+                }}
+              >
+                <p className="flex items-center gap-1.5 text-sm font-medium text-amber-800 dark:text-amber-300">
+                  <PhoneOff className="h-4 w-4" />
+                  Este negócio ainda não tem telefone
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  O lead chegou sem um telefone válido. Ao adicionar, o ZapMonitor liga o contato do WhatsApp ao negócio (ou cria um novo) e
+                  libera a conversa e os fluxos da etapa.
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    type="tel"
+                    placeholder="(11) 99999-8888"
+                    aria-label="Telefone do contato"
+                    value={contactPhone}
+                    onChange={(event) => setContactPhone(event.target.value)}
+                  />
+                  <Button type="submit" disabled={!contactPhone.trim() || linkContact.isPending}>
+                    Adicionar
+                  </Button>
+                </div>
+              </form>
+            )}
 
             <section className="space-y-3">
               <div className="grid gap-2">
