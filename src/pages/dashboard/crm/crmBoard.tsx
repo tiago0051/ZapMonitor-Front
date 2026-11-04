@@ -45,6 +45,8 @@ export const CrmBoard = () => {
   const [categoryId, setCategoryId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  // "" todas; NONE sem anúncio; AD_MESSAGE e LEAD_FORM pelo tipo; campaign:<id> uma campanha
+  const [origin, setOrigin] = useState("");
   const [openDealId, setOpenDealId] = useState<string | null>(null);
   const [dropStageId, setDropStageId] = useState<string | null>(null);
   const [view, setView] = useLocalStorage<"board" | "list">(`crm:view:${client.id}`, "board");
@@ -68,7 +70,16 @@ export const CrmBoard = () => {
     categoryId: categoryId || undefined,
     startDate: startDate ? startOfDay(parseDateInput(startDate)).toISOString() : undefined,
     endDate: endDate ? endOfDay(parseDateInput(endDate)).toISOString() : undefined,
+    ...(origin.startsWith("campaign:")
+      ? { originMetaCampaignId: origin.substring("campaign:".length) }
+      : origin && { originType: origin as DealOriginType | "NONE" }),
   };
+
+  const originCampaignsQuery = useQuery({
+    queryKey: ["crm", "originCampaigns", client.id, pipeline?.id],
+    queryFn: () => crmService.findOriginCampaigns({ params: { clientId: client.id, pipelineId: pipeline!.id } }),
+    enabled: !!pipeline && !hasNoServiceGroup,
+  });
 
   const boardQuery = useQuery({
     meta: { errorHandledInline: true },
@@ -224,6 +235,32 @@ export const CrmBoard = () => {
                 {category.name}
               </option>
             ))}
+          </select>
+        </div>
+
+        <div className="grid gap-1">
+          <Label htmlFor="crm-origin" className="text-xs">
+            Origem
+          </Label>
+          <select
+            id="crm-origin"
+            value={origin}
+            onChange={(event) => setOrigin(event.target.value)}
+            className={cn(crmSelectClassName, "w-44")}
+          >
+            <option value="">Todas</option>
+            <option value="AD_MESSAGE">Anúncio no WhatsApp</option>
+            <option value="LEAD_FORM">Formulário de cadastro</option>
+            <option value="NONE">Sem anúncio</option>
+            {!!originCampaignsQuery.data?.length && (
+              <optgroup label="Campanha">
+                {originCampaignsQuery.data.map((campaign) => (
+                  <option key={campaign.metaCampaignId} value={`campaign:${campaign.metaCampaignId}`}>
+                    {campaign.name ?? `Campanha ${campaign.metaCampaignId}`}
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </select>
         </div>
 

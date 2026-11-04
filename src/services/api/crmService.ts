@@ -105,6 +105,11 @@ export const crmService = {
     return response.data;
   },
 
+  findOriginCampaigns: async ({ params }: { params: { clientId: string; pipelineId: string } }): Promise<DealOriginCampaign[]> => {
+    const response = await api.get<DealOriginCampaign[]>(`/client/${params.clientId}/crm/pipeline/${params.pipelineId}/origin-campaign`);
+    return response.data;
+  },
+
   findContactDeals: async ({ params }: FindContactDealsRequestData): Promise<Deal[]> => {
     const response = await api.get<Deal[]>(`/client/${params.clientId}/crm/contact/${params.contactId}/deal`);
     return response.data;

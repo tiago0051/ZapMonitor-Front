@@ -45,6 +45,27 @@ type DealContact = {
   categories: NamedSummary[];
 };
 
+type DealOriginType = "AD_MESSAGE" | "LEAD_FORM";
+
+// Anúncio que trouxe o contato, com os nomes como estavam quando o negócio foi criado
+type DealOrigin = {
+  type: DealOriginType;
+  metaAdId: string | null;
+  metaAdSetId: string | null;
+  metaCampaignId: string | null;
+  detail: {
+    adName: string | null;
+    adSetName: string | null;
+    campaignName: string | null;
+    headline: string | null;
+    sourceUrl: string | null;
+    thumbnailUrl: string | null;
+    pageName: string | null;
+  } | null;
+};
+
+type DealOriginCampaign = { metaCampaignId: string; name: string | null };
+
 type Deal = {
   id: string;
   pipelineId: string;
@@ -68,6 +89,7 @@ type Deal = {
   // Nota de 0 a 100 da última análise de IA
   aiScore: number | null;
   aiInsight: DealAiInsight | null;
+  origin: DealOrigin | null;
   stageEnteredAt: string;
   closedAt: string | null;
   createdAt: string;

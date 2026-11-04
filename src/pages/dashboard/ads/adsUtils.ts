@@ -87,3 +87,44 @@ export const budgetLabel = (item: { dailyBudget: number | null; lifetimeBudget: 
 
   return null;
 };
+
+/** Valores do painel já vêm em unidades da moeda (não centavos). */
+export const formatMoney = (value: number | null, currency: string) =>
+  value === null ? "—" : new Intl.NumberFormat("pt-BR", { style: "currency", currency: currency || "BRL" }).format(value);
+
+export const formatCount = (value: number | null, maximumFractionDigits = 0) =>
+  value === null ? "—" : value.toLocaleString("pt-BR", { maximumFractionDigits });
+
+/** Data aaaa-mm-dd de hoje no fuso da conta de anúncio. */
+export const todayInTimeZone = (timeZone: string | null) => {
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: timeZone ?? "America/Sao_Paulo" }).format(new Date());
+  } catch {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
+  }
+};
+
+export const addDaysToDate = (date: string, days: number) => {
+  const value = new Date(`${date}T00:00:00.000Z`);
+  value.setUTCDate(value.getUTCDate() + days);
+  return value.toISOString().substring(0, 10);
+};
+
+/** dd/mm a partir de aaaa-mm-dd, sem passar pelo fuso do navegador. */
+export const shortDate = (date: string) => `${date.substring(8, 10)}/${date.substring(5, 7)}`;
+
+/** Variação percentual; nula quando não há base de comparação. */
+export const percentChange = (value: number, base: number) => (base > 0 ? Math.round(((value - base) / base) * 100) : null);
+
+export const reportLevelLabel: Record<AdReportLevel, string> = {
+  campaign: "Campanhas",
+  adset: "Conjuntos",
+  ad: "Anúncios",
+};
+
+export const leadStatusInfo: Record<AdLeadStatus, { label: string; className: string }> = {
+  PENDING: { label: "Processando", className: "bg-muted text-muted-foreground" },
+  CREATED: { label: "Virou contato", className: "bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-300" },
+  NO_PHONE: { label: "Sem telefone", className: "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300" },
+  FAILED: { label: "Falhou", className: "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300" },
+};

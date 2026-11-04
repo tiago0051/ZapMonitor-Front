@@ -86,3 +86,8 @@ export const toCustomFieldsForm = (fields: CrmField[], customFields: Deal["custo
 
 // Faixas da nota de IA; descrevem a chance de ganho, não um estado de alerta
 export const aiScoreLabel = (score: number) => (score >= 70 ? "Quente" : score >= 40 ? "Morno" : "Frio");
+
+export const dealOriginLabel: Record<DealOriginType, string> = {
+  AD_MESSAGE: "Anúncio no WhatsApp",
+  LEAD_FORM: "Formulário de cadastro",
+};

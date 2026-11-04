@@ -25,6 +25,9 @@ import {
   statusToneClassName,
   syncStatusLabel,
 } from "./adsUtils";
+import { AdsDailySummary } from "./adsDailySummary";
+import { AdsLeads } from "./adsLeads";
+import { AdsResults } from "./adsResults";
 
 const StatusChip: FC<{ status: string }> = ({ status }) => {
   const info = effectiveStatusInfo(status);
@@ -113,12 +116,13 @@ const CampaignRows: FC<{ campaign: MetaCampaign; currency: string }> = ({ campai
   );
 };
 
-/** Estrutura das contas de anúncio copiada da Meta; só leitura nesta fase. */
+/** Resultados, estrutura e leads das contas de anúncio copiados da Meta; só leitura por enquanto. */
 export const AdsPage = () => {
   const { client, can } = useClientContext();
   const baseUrl = useBaseUrl();
   const queryClient = useQueryClient();
   const [storedAccountId, setStoredAccountId] = useLocalStorage<string | null>(`ads:account:${client.id}`, null);
+  const [tab, setTab] = useLocalStorage<string>(`ads:tab:${client.id}`, "results");
 
   const connectionQuery = useQuery({
     queryKey: ["metaAds", "connection", client.id],
@@ -210,78 +214,91 @@ export const AdsPage = () => {
         )}
       </div>
 
-      {structureQuery.isLoading && <LoadingState />}
-      {structureQuery.isError && (
-        <ErrorState
-          message="Não foi possível carregar a conta."
-          onRetry={() => structureQuery.refetch()}
-          isRetrying={structureQuery.isFetching}
-        />
-      )}
+      <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden">
+        <TabsList className="mx-4 mt-3">
+          <TabsTrigger value="results">Resultados</TabsTrigger>
+          <TabsTrigger value="campaigns">Campanhas{structure && ` (${structure.campaigns.length})`}</TabsTrigger>
+          <TabsTrigger value="audiences">Públicos{structure && ` (${structure.audiences.length})`}</TabsTrigger>
+          <TabsTrigger value="leads">Leads</TabsTrigger>
+        </TabsList>
 
-      {structure && (
-        <Tabs defaultValue="campaigns" className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden">
-          <TabsList className="mx-4 mt-3">
-            <TabsTrigger value="campaigns">Campanhas ({structure.campaigns.length})</TabsTrigger>
-            <TabsTrigger value="audiences">Públicos ({structure.audiences.length})</TabsTrigger>
-          </TabsList>
+        <TabsContent value="results" className="min-h-0 flex-1 space-y-8 overflow-auto p-4">
+          <AdsDailySummary key={currentAccount.id} account={currentAccount} />
+          <AdsResults key={currentAccount.id} account={currentAccount} />
+        </TabsContent>
 
-          <TabsContent value="campaigns" className="min-h-0 flex-1 overflow-auto p-4">
-            {structure.campaigns.length === 0 ? (
-              <EmptyState title="Nenhuma campanha nesta conta" description="Campanhas excluídas na Meta não aparecem aqui." />
-            ) : (
-              <div className="rounded-lg border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Campanha / conjunto / anúncio</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Lance / cobrança</TableHead>
-                      <TableHead className="text-right">Orçamento</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {structure.campaigns.map((campaign) => (
-                      <CampaignRows key={campaign.metaId} campaign={campaign} currency={structure.account.currency} />
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </TabsContent>
+        <TabsContent value="leads" className="min-h-0 flex-1 overflow-auto p-4">
+          <AdsLeads />
+        </TabsContent>
 
-          <TabsContent value="audiences" className="min-h-0 flex-1 overflow-auto p-4">
-            {structure.audiences.length === 0 ? (
-              <EmptyState title="Nenhum público personalizado nesta conta" />
-            ) : (
-              <div className="rounded-lg border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Público</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead className="text-right">Tamanho aproximado</TableHead>
-                      <TableHead>Entrega</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {structure.audiences.map((audience) => (
-                      <TableRow key={audience.metaId}>
-                        <TableCell className="font-medium">{audience.name}</TableCell>
-                        <TableCell className="text-xs">{audience.subtype?.toLowerCase() ?? "—"}</TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {audience.approximateCount === null ? "—" : `${audience.approximateCount.toLocaleString("pt-BR")}+`}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-xs">{audience.deliveryStatus ?? "—"}</TableCell>
+        {(tab === "campaigns" || tab === "audiences") && structureQuery.isLoading && <LoadingState />}
+        {(tab === "campaigns" || tab === "audiences") && structureQuery.isError && (
+          <ErrorState
+            message="Não foi possível carregar a conta."
+            onRetry={() => structureQuery.refetch()}
+            isRetrying={structureQuery.isFetching}
+          />
+        )}
+
+        {structure && (
+          <>
+            <TabsContent value="campaigns" className="min-h-0 flex-1 overflow-auto p-4">
+              {structure.campaigns.length === 0 ? (
+                <EmptyState title="Nenhuma campanha nesta conta" description="Campanhas excluídas na Meta não aparecem aqui." />
+              ) : (
+                <div className="rounded-lg border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Campanha / conjunto / anúncio</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Lance / cobrança</TableHead>
+                        <TableHead className="text-right">Orçamento</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      )}
+                    </TableHeader>
+                    <TableBody>
+                      {structure.campaigns.map((campaign) => (
+                        <CampaignRows key={campaign.metaId} campaign={campaign} currency={structure.account.currency} />
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="audiences" className="min-h-0 flex-1 overflow-auto p-4">
+              {structure.audiences.length === 0 ? (
+                <EmptyState title="Nenhum público personalizado nesta conta" />
+              ) : (
+                <div className="rounded-lg border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Público</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead className="text-right">Tamanho aproximado</TableHead>
+                        <TableHead>Entrega</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {structure.audiences.map((audience) => (
+                        <TableRow key={audience.metaId}>
+                          <TableCell className="font-medium">{audience.name}</TableCell>
+                          <TableCell className="text-xs">{audience.subtype?.toLowerCase() ?? "—"}</TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {audience.approximateCount === null ? "—" : `${audience.approximateCount.toLocaleString("pt-BR")}+`}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-xs">{audience.deliveryStatus ?? "—"}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </TabsContent>
+          </>
+        )}
+      </Tabs>
     </div>
   );
 };
