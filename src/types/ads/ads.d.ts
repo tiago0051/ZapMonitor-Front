@@ -226,3 +226,68 @@ type ConversionEvent = {
   sentAt: string | null;
   createdAt: string;
 };
+
+type AdSuggestionStatus = "OPEN" | "ACCEPTED" | "REJECTED" | "POSTPONED";
+
+type AdSuggestionPriority = "HIGH" | "MEDIUM" | "LOW";
+
+type AdSuggestionSource = "AUDIT" | "DAILY" | "CHAT";
+
+type AdSuggestionActionType =
+  "PAUSE" | "SET_DAILY_BUDGET" | "ENABLE_ADVANTAGE_AUDIENCE" | "ENABLE_ADVANTAGE_PLACEMENTS" | "EXCLUDE_AUDIENCE" | "MANUAL";
+
+type AdTargetLevel = "account" | "campaign" | "adset" | "ad";
+
+type AdSuggestion = {
+  id: string;
+  source: AdSuggestionSource;
+  category: string;
+  priority: AdSuggestionPriority;
+  title: string;
+  problem: string;
+  evidence: string;
+  proposedChange: string;
+  expectedImpact: string;
+  targetLevel: AdTargetLevel | null;
+  targetMetaId: string | null;
+  targetName: string | null;
+  // Mudança que a aplicação com aprovação vai executar; MANUAL é orientação
+  action: { type: AdSuggestionActionType; value?: number | null; audienceId?: string | null } | null;
+  status: AdSuggestionStatus;
+  postponedUntil: string | null;
+  decidedByName: string | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+  createdAt: string;
+};
+
+type AdAnalysis = {
+  id: string;
+  kind: "AUDIT" | "DAILY";
+  status: "RUNNING" | "DONE" | "FAILED";
+  summary: string | null;
+  error: string | null;
+  suggestionsCount: number;
+  startedAt: string;
+  finishedAt: string | null;
+};
+
+type AdAdvisorStatus = {
+  // A IA está ativa e com cota
+  aiEnabled: boolean;
+  dailyAnalysis: boolean;
+  latestAnalysis: AdAnalysis | null;
+};
+
+type AdChat = { id: string; title: string; createdAt: string; updatedAt: string };
+
+type AdChatMessage = {
+  id: string;
+  role: "USER" | "ASSISTANT";
+  content: string;
+  // Sugestões criadas nesta resposta
+  suggestionIds: string[];
+  createdAt: string;
+};
+
+type AdChatConversation = { chat: AdChat; messages: AdChatMessage[]; suggestions: AdSuggestion[] };

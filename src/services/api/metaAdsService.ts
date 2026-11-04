@@ -117,4 +117,59 @@ export const metaAdsService = {
   retryConversionEvent: async ({ params }: { params: { clientId: string; eventId: string } }): Promise<void> => {
     await api.post(`/client/${params.clientId}/meta-ads/conversion-event/${params.eventId}/retry`);
   },
+
+  findAdvisorStatus: async ({ params }: MetaAdsAccountParams): Promise<AdAdvisorStatus> => {
+    const response = await api.get<AdAdvisorStatus>(`/client/${params.clientId}/meta-ads/account/${params.accountId}/advisor`);
+    return response.data;
+  },
+
+  requestAudit: async ({ params }: MetaAdsAccountParams): Promise<AdAnalysis> => {
+    const response = await api.post(`/client/${params.clientId}/meta-ads/account/${params.accountId}/analysis`);
+    return response.data;
+  },
+
+  setDailyAnalysis: async ({ params, body }: MetaAdsAccountParams & { body: { enabled: boolean } }): Promise<AdAdvisorStatus> => {
+    const response = await api.put(`/client/${params.clientId}/meta-ads/account/${params.accountId}/daily-analysis`, body);
+    return response.data;
+  },
+
+  findSuggestions: async ({ params, queries }: MetaAdsAccountParams & { queries: { status: string } }): Promise<AdSuggestion[]> => {
+    const response = await api.get<AdSuggestion[]>(`/client/${params.clientId}/meta-ads/account/${params.accountId}/suggestion`, {
+      params: queries,
+    });
+    return response.data;
+  },
+
+  decideSuggestion: async ({
+    params,
+    body,
+  }: {
+    params: { clientId: string; suggestionId: string };
+    body: { status: AdSuggestionStatus; note?: string | null; postponedUntil?: string | null };
+  }): Promise<AdSuggestion> => {
+    const response = await api.put(`/client/${params.clientId}/meta-ads/suggestion/${params.suggestionId}/decision`, body);
+    return response.data;
+  },
+
+  findChats: async ({ params }: MetaAdsAccountParams): Promise<AdChat[]> => {
+    const response = await api.get<AdChat[]>(`/client/${params.clientId}/meta-ads/account/${params.accountId}/chat`);
+    return response.data;
+  },
+
+  findChatConversation: async ({ params }: { params: { clientId: string; chatId: string } }): Promise<AdChatConversation> => {
+    const response = await api.get<AdChatConversation>(`/client/${params.clientId}/meta-ads/chat/${params.chatId}`);
+    return response.data;
+  },
+
+  sendChatMessage: async ({
+    params,
+    body,
+  }: MetaAdsAccountParams & { body: { message: string; chatId: string | null } }): Promise<AdChatConversation> => {
+    const response = await api.post(`/client/${params.clientId}/meta-ads/account/${params.accountId}/chat/message`, body);
+    return response.data;
+  },
+
+  deleteChat: async ({ params }: { params: { clientId: string; chatId: string } }): Promise<void> => {
+    await api.delete(`/client/${params.clientId}/meta-ads/chat/${params.chatId}`);
+  },
 };
