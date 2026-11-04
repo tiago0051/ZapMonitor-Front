@@ -29,6 +29,8 @@ import { AdsDailySummary } from "./adsDailySummary";
 import { AdsLeads } from "./adsLeads";
 import { AdsConversionEvents } from "./adsConversionEvents";
 import { AdsSuggestions } from "./adsSuggestions";
+import { AdsChanges } from "./adsChanges";
+import { AdsAutomation } from "./adsAutomation";
 import { AdsStrategyChatTab } from "./adsStrategyChatTab";
 import { AdsResults } from "./adsResults";
 
@@ -222,6 +224,8 @@ export const AdsPage = () => {
           <TabsTrigger value="results">Resultados</TabsTrigger>
           <TabsTrigger value="suggestions">Sugestões</TabsTrigger>
           {can("ads.manage") && <TabsTrigger value="strategy">Estratégia</TabsTrigger>}
+          <TabsTrigger value="changes">Mudanças</TabsTrigger>
+          <TabsTrigger value="automation">Automação</TabsTrigger>
           <TabsTrigger value="campaigns">Campanhas{structure && ` (${structure.campaigns.length})`}</TabsTrigger>
           <TabsTrigger value="audiences">Públicos{structure && ` (${structure.audiences.length})`}</TabsTrigger>
           <TabsTrigger value="leads">Leads</TabsTrigger>
@@ -242,6 +246,14 @@ export const AdsPage = () => {
             <AdsStrategyChatTab key={currentAccount.id} account={currentAccount} />
           </TabsContent>
         )}
+
+        <TabsContent value="changes" className="min-h-0 flex-1 overflow-auto p-4">
+          <AdsChanges key={currentAccount.id} account={currentAccount} />
+        </TabsContent>
+
+        <TabsContent value="automation" className="min-h-0 flex-1 overflow-auto p-4">
+          <AdsAutomation key={currentAccount.id} account={currentAccount} />
+        </TabsContent>
 
         <TabsContent value="leads" className="min-h-0 flex-1 overflow-auto p-4">
           <AdsLeads />

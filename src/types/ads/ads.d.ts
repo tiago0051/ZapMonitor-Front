@@ -258,6 +258,8 @@ type AdSuggestion = {
   decidedByName: string | null;
   decidedAt: string | null;
   decisionNote: string | null;
+  // Mudança gerada pela sugestão aceita
+  change: { id: string; status: AdChangeStatus; error: string | null } | null;
   createdAt: string;
 };
 
@@ -291,3 +293,73 @@ type AdChatMessage = {
 };
 
 type AdChatConversation = { chat: AdChat; messages: AdChatMessage[]; suggestions: AdSuggestion[] };
+
+type AdChangeStatus = "PENDING_APPROVAL" | "APPLIED" | "FAILED" | "BLOCKED" | "REJECTED" | "REVERTED";
+
+// Só os campos que a mudança toca; orçamento na moeda da conta
+type AdChangeState = {
+  status?: string | null;
+  dailyBudget?: number | null;
+  advantageAudience?: boolean;
+  // Plataformas escolhidas à mão; vazio é Advantage+
+  placements?: string[];
+  excludedAudienceIds?: string[];
+};
+
+type AdChange = {
+  id: string;
+  type: AdSuggestionActionType;
+  targetLevel: AdTargetLevel;
+  targetMetaId: string;
+  targetName: string;
+  // Enquanto pendente, da última sincronização; depois de aplicada, o estado lido na Meta
+  before: AdChangeState | null;
+  after: AdChangeState;
+  status: AdChangeStatus;
+  error: string | null;
+  suggestionTitle: string | null;
+  ruleName: string | null;
+  // Mudança desfeita por esta
+  revertOfChangeId: string | null;
+  requestedByName: string | null;
+  approvedByName: string | null;
+  approvedAt: string | null;
+  appliedAt: string | null;
+  revertedByName: string | null;
+  revertedAt: string | null;
+  createdAt: string;
+};
+
+type AdGuardrails = {
+  // Aumento máximo do orçamento diário de um item em 24 horas
+  maxBudgetIncreasePercent: number;
+  // Horário no fuso da conta; fim não incluso
+  allowedStartHour: number;
+  allowedEndHour: number;
+  allowWeekends: boolean;
+  // Regras automáticas podem aplicar sem aprovação
+  allowAutoApply: boolean;
+};
+
+type AdRuleMetric =
+  "SPEND" | "CTR" | "CONVERSATIONS" | "COST_PER_CONVERSATION" | "DEALS" | "COST_PER_DEAL" | "WON_DEALS" | "COST_PER_WON_DEAL" | "ROAS";
+
+type AdRuleOperator = "GREATER_THAN" | "LESS_THAN";
+
+type AdRuleAction = "PAUSE" | "INCREASE_BUDGET" | "DECREASE_BUDGET";
+
+type AdRuleValues = {
+  name: string;
+  active: boolean;
+  level: "campaign" | "adset" | "ad";
+  metric: AdRuleMetric;
+  operator: AdRuleOperator;
+  threshold: number;
+  periodDays: number;
+  minSpend: number;
+  action: AdRuleAction;
+  actionValue: number | null;
+  requiresApproval: boolean;
+};
+
+type AdRule = AdRuleValues & { id: string; lastRunAt: string | null };
