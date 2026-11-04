@@ -10,7 +10,14 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Check, Clock, RotateCcw, Wand2, X } from "lucide-react";
 import { useState, type FC } from "react";
-import { addDaysToDate, suggestionActionLabel, suggestionPriorityInfo, suggestionSourceLabel, targetLevelLabel } from "../adsUtils";
+import {
+  addDaysToDate,
+  changeStatusInfo,
+  suggestionActionLabel,
+  suggestionPriorityInfo,
+  suggestionSourceLabel,
+  targetLevelLabel,
+} from "../adsUtils";
 
 const Detail: FC<{ label: string; text: string }> = ({ label, text }) =>
   text ? (
@@ -79,7 +86,22 @@ export const AdSuggestionCard: FC<AdSuggestionCardProps> = ({ suggestion, curren
             `Adiada até ${suggestion.postponedUntil ? format(new Date(suggestion.postponedUntil), "dd/MM/yyyy", { locale: ptBR }) : "—"}`}
           {suggestion.decidedByName && ` por ${suggestion.decidedByName}`}
           {suggestion.decidedAt && ` em ${format(new Date(suggestion.decidedAt), "dd/MM HH:mm")}`}
-          {suggestion.status === "ACCEPTED" && ". A aplicação na Meta com aprovação chega na próxima fase."}
+          {suggestion.status === "ACCEPTED" &&
+            !suggestion.change &&
+            suggestion.action?.type === "MANUAL" &&
+            ". Faça a mudança no Gerenciador de Anúncios."}
+        </p>
+      )}
+
+      {suggestion.change && (
+        <p className="flex flex-wrap items-center gap-2 text-xs">
+          <span className={cn("rounded px-1.5 py-0.5 font-medium", changeStatusInfo[suggestion.change.status].className)}>
+            {changeStatusInfo[suggestion.change.status].label}
+          </span>
+          {suggestion.change.status === "PENDING_APPROVAL" && <span className="text-muted-foreground">Aprove na aba Mudanças.</span>}
+          {suggestion.change.error && suggestion.change.status !== "APPLIED" && (
+            <span className="text-destructive">{suggestion.change.error}</span>
+          )}
         </p>
       )}
 

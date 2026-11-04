@@ -184,3 +184,49 @@ export const suggestionActionLabel = (action: AdSuggestion["action"], currency: 
       return "Mudança manual";
   }
 };
+
+export const changeStatusInfo: Record<AdChangeStatus, { label: string; className: string }> = {
+  PENDING_APPROVAL: { label: "Esperando aprovação", className: "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300" },
+  APPLIED: { label: "Aplicada", className: "bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-300" },
+  FAILED: { label: "A Meta recusou", className: "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300" },
+  BLOCKED: { label: "Barrada por trava", className: "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300" },
+  REJECTED: { label: "Recusada", className: "bg-muted text-muted-foreground" },
+  REVERTED: { label: "Desfeita", className: "bg-muted text-muted-foreground" },
+};
+
+/** Valor do antes ou do depois no campo que a mudança altera. */
+export const changeStateLabel = (type: AdSuggestionActionType, state: AdChangeState | null, currency: string) => {
+  if (!state) return "—";
+  switch (type) {
+    case "PAUSE":
+      return state.status ? effectiveStatusInfo(state.status).label : "—";
+    case "SET_DAILY_BUDGET":
+      return state.dailyBudget == null ? "—" : `${formatMoney(state.dailyBudget, currency)}/dia`;
+    case "ENABLE_ADVANTAGE_AUDIENCE":
+      return state.advantageAudience ? "Público Advantage+ ligado" : "Público Advantage+ desligado";
+    case "ENABLE_ADVANTAGE_PLACEMENTS":
+      return state.placements?.length ? `Manuais: ${state.placements.join(", ")}` : "Posicionamentos Advantage+";
+    case "EXCLUDE_AUDIENCE":
+      return state.excludedAudienceIds?.length ? `Exclui ${state.excludedAudienceIds.length} público(s)` : "Sem exclusões";
+    default:
+      return "—";
+  }
+};
+
+export const ruleMetricLabel: Record<AdRuleMetric, string> = {
+  SPEND: "Gasto",
+  CTR: "CTR (%)",
+  CONVERSATIONS: "Conversas",
+  COST_PER_CONVERSATION: "Custo por conversa",
+  DEALS: "Negócios",
+  COST_PER_DEAL: "Custo por negócio",
+  WON_DEALS: "Vendas",
+  COST_PER_WON_DEAL: "Custo por venda",
+  ROAS: "ROAS",
+};
+
+export const ruleActionLabel: Record<AdRuleAction, string> = {
+  PAUSE: "Pausar",
+  INCREASE_BUDGET: "Aumentar o orçamento",
+  DECREASE_BUDGET: "Reduzir o orçamento",
+};

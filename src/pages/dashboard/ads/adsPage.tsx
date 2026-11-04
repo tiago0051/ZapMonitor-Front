@@ -29,6 +29,10 @@ import { AdsDailySummary } from "./adsDailySummary";
 import { AdsLeads } from "./adsLeads";
 import { AdsConversionEvents } from "./adsConversionEvents";
 import { AdsSuggestions } from "./adsSuggestions";
+import { AdsChanges } from "./adsChanges";
+import { AdsAutomation } from "./adsAutomation";
+import { AdsCampaignBuilder } from "./campaign/adsCampaignBuilder";
+import { AdsCrmAudiences } from "./campaign/adsCrmAudiences";
 import { AdsStrategyChatTab } from "./adsStrategyChatTab";
 import { AdsResults } from "./adsResults";
 
@@ -220,8 +224,11 @@ export const AdsPage = () => {
       <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden">
         <TabsList className="mx-4 mt-3">
           <TabsTrigger value="results">Resultados</TabsTrigger>
+          <TabsTrigger value="create">Criar campanha</TabsTrigger>
           <TabsTrigger value="suggestions">Sugestões</TabsTrigger>
           {can("ads.manage") && <TabsTrigger value="strategy">Estratégia</TabsTrigger>}
+          <TabsTrigger value="changes">Mudanças</TabsTrigger>
+          <TabsTrigger value="automation">Automação</TabsTrigger>
           <TabsTrigger value="campaigns">Campanhas{structure && ` (${structure.campaigns.length})`}</TabsTrigger>
           <TabsTrigger value="audiences">Públicos{structure && ` (${structure.audiences.length})`}</TabsTrigger>
           <TabsTrigger value="leads">Leads</TabsTrigger>
@@ -233,6 +240,10 @@ export const AdsPage = () => {
           <AdsResults key={currentAccount.id} account={currentAccount} />
         </TabsContent>
 
+        <TabsContent value="create" className="min-h-0 flex-1 overflow-auto p-4">
+          <AdsCampaignBuilder key={currentAccount.id} account={currentAccount} />
+        </TabsContent>
+
         <TabsContent value="suggestions" className="min-h-0 flex-1 overflow-auto p-4">
           <AdsSuggestions key={currentAccount.id} account={currentAccount} />
         </TabsContent>
@@ -242,6 +253,14 @@ export const AdsPage = () => {
             <AdsStrategyChatTab key={currentAccount.id} account={currentAccount} />
           </TabsContent>
         )}
+
+        <TabsContent value="changes" className="min-h-0 flex-1 overflow-auto p-4">
+          <AdsChanges key={currentAccount.id} account={currentAccount} />
+        </TabsContent>
+
+        <TabsContent value="automation" className="min-h-0 flex-1 overflow-auto p-4">
+          <AdsAutomation key={currentAccount.id} account={currentAccount} />
+        </TabsContent>
 
         <TabsContent value="leads" className="min-h-0 flex-1 overflow-auto p-4">
           <AdsLeads />
@@ -286,7 +305,9 @@ export const AdsPage = () => {
               )}
             </TabsContent>
 
-            <TabsContent value="audiences" className="min-h-0 flex-1 overflow-auto p-4">
+            <TabsContent value="audiences" className="min-h-0 flex-1 space-y-4 overflow-auto p-4">
+              <AdsCrmAudiences account={currentAccount} />
+
               {structure.audiences.length === 0 ? (
                 <EmptyState title="Nenhum público personalizado nesta conta" />
               ) : (
