@@ -47,6 +47,9 @@ type FindDealBoardRequestQuery = {
   categoryId?: string;
   startDate?: string;
   endDate?: string;
+  // NONE traz os negócios sem anúncio de origem
+  originType?: DealOriginType | "NONE";
+  originMetaCampaignId?: string;
 };
 
 type FindDealBoardRequestData = {

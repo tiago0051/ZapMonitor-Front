@@ -4,6 +4,7 @@ import { ptBR } from "date-fns/locale";
 import { ListTodo, Snowflake, Sparkles, Tag, UserRound, Users } from "lucide-react";
 import type { FC } from "react";
 import { aiScoreLabel, dealContactName, formatCurrency, staleDays } from "../crmUtils";
+import { DealOriginBadge } from "./dealOrigin";
 
 type DealCardProps = {
   deal: Deal;
@@ -46,6 +47,8 @@ export const DealCard: FC<DealCardProps> = ({ deal, stage, onOpen, draggable }) 
       </div>
 
       {deal.title !== contactName && <p className="text-muted-foreground truncate text-xs">{contactName}</p>}
+
+      {deal.origin && <DealOriginBadge origin={deal.origin} />}
 
       {deal.aiScore !== null && (
         <p className="text-muted-foreground flex items-center gap-1 text-[11px]" title={deal.aiInsight?.scoreReason}>

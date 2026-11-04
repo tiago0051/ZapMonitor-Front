@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { MetaAdsLeadPages } from "./metaAdsLeadPages";
 
 const scopeLabel: Record<string, string> = {
   ads_management: "mudar anúncios",
@@ -201,6 +202,8 @@ export const MetaAdsSettings = () => {
                 })}
               </ul>
             </section>
+
+            <MetaAdsLeadPages />
 
             <div className="flex flex-wrap items-center gap-2 border-t pt-4">
               {isConfirmingDisconnect ? (
