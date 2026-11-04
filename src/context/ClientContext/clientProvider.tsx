@@ -26,9 +26,10 @@ export const ClientProvider = () => {
 
   const can = (permission: Permission) => access.permissions.includes(permission);
   const canUseCrm = access.crmEnabled && can("crm.view");
+  const canUseAds = access.adsEnabled && can("ads.view");
 
   return (
-    <ClientContext.Provider value={{ client, access, can, canUseCrm }}>
+    <ClientContext.Provider value={{ client, access, can, canUseCrm, canUseAds }}>
       <Outlet />
     </ClientContext.Provider>
   );

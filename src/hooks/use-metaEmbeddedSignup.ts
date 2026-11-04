@@ -24,7 +24,7 @@ type UseMetaEmbeddedSignupOptions = {
 
 let sdkPromise: Promise<FacebookSdk> | null = null;
 
-function loadFacebookSdk(): Promise<FacebookSdk> {
+export function loadFacebookSdk(): Promise<FacebookSdk> {
   if (window.FB) return Promise.resolve(window.FB);
   if (sdkPromise) return sdkPromise;
 

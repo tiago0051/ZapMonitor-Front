@@ -12,7 +12,18 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useUserContext } from "@/context/UserContext/userContext";
-import { FiActivity, FiBriefcase, FiColumns, FiLogOut, FiMail, FiRepeat, FiSettings, FiTrendingUp, FiUsers } from "react-icons/fi";
+import {
+  FiActivity,
+  FiBriefcase,
+  FiColumns,
+  FiLogOut,
+  FiMail,
+  FiRepeat,
+  FiSettings,
+  FiSpeaker,
+  FiTrendingUp,
+  FiUsers,
+} from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
 import { PanelLeftIcon } from "lucide-react";
 import { Link, useLocation } from "react-router";
@@ -23,7 +34,14 @@ import { useClientContext } from "@/context/ClientContext/clientContext";
 
 // Itens sem permissão ficam visíveis para qualquer membro do cliente
 // Itens do CRM também dependem de o plano incluir o módulo
-const navMain: { title: string; icon: React.ComponentType; url: string; permission?: Permission; requiresCrm?: boolean }[] = [
+const navMain: {
+  title: string;
+  icon: React.ComponentType;
+  url: string;
+  permission?: Permission;
+  requiresCrm?: boolean;
+  requiresAds?: boolean;
+}[] = [
   {
     title: "E-mails",
     icon: FiMail,
@@ -42,6 +60,13 @@ const navMain: { title: string; icon: React.ComponentType; url: string; permissi
     url: "crm",
     permission: "crm.view",
     requiresCrm: true,
+  },
+  {
+    title: "Anúncios",
+    icon: FiSpeaker,
+    url: "ads",
+    permission: "ads.view",
+    requiresAds: true,
   },
   {
     title: "Gestão",
@@ -66,7 +91,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { logout, user } = useUserContext();
   const { toggleSidebar } = useSidebar();
   const baseUrl = useBaseUrl();
-  const { can, canUseCrm, client } = useClientContext();
+  const { can, canUseCrm, canUseAds, client } = useClientContext();
   const { pathname } = useLocation();
 
   // Mesma consulta da tela de clientes: trocar só faz sentido com mais de um cliente
@@ -112,7 +137,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarGroup>
           <SidebarMenu className="gap-2">
             {navMain
-              .filter((item) => (!item.permission || can(item.permission)) && (!item.requiresCrm || canUseCrm))
+              .filter(
+                (item) =>
+                  (!item.permission || can(item.permission)) && (!item.requiresCrm || canUseCrm) && (!item.requiresAds || canUseAds),
+              )
               .map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild tooltip={item.title} isActive={isActive(`${baseUrl}/${item.url}`)}>
