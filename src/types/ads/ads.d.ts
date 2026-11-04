@@ -186,6 +186,8 @@ type AdLead = {
   metaAdId: string | null;
   metaCampaignId: string | null;
   fields: { name: string; values: string[] }[];
+  // Telefone digitado no ZapMonitor; tem prioridade sobre o do formulário
+  manualPhone: string | null;
   status: AdLeadStatus;
   error: string | null;
   whatsappContactId: string | null;

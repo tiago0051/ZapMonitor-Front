@@ -117,6 +117,16 @@ export const metaAdsService = {
     await api.post(`/client/${params.clientId}/meta-ads/lead/${params.leadId}/retry`);
   },
 
+  importLead: async ({ params, body }: MetaAdsClientParams & { body: { metaLeadId: string } }): Promise<AdLead> => {
+    const response = await api.post<AdLead>(`/client/${params.clientId}/meta-ads/lead/import`, body);
+    return response.data;
+  },
+
+  setLeadPhone: async ({ params, body }: { params: { clientId: string; leadId: string }; body: { phone: string } }): Promise<AdLead> => {
+    const response = await api.put<AdLead>(`/client/${params.clientId}/meta-ads/lead/${params.leadId}/phone`, body);
+    return response.data;
+  },
+
   findConversionSettings: async ({ params }: MetaAdsClientParams): Promise<ConversionSettings> => {
     const response = await api.get<ConversionSettings>(`/client/${params.clientId}/meta-ads/conversion-settings`);
     return response.data;
