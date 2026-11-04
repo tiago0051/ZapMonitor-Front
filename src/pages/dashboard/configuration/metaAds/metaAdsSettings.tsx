@@ -13,6 +13,7 @@ import { AlertTriangle, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { MetaAdsLeadPages } from "./metaAdsLeadPages";
+import { MetaAdsConversions } from "./metaAdsConversions";
 
 const scopeLabel: Record<string, string> = {
   ads_management: "mudar anúncios",
@@ -204,6 +205,8 @@ export const MetaAdsSettings = () => {
             </section>
 
             <MetaAdsLeadPages />
+
+            <MetaAdsConversions />
 
             <div className="flex flex-wrap items-center gap-2 border-t pt-4">
               {isConfirmingDisconnect ? (

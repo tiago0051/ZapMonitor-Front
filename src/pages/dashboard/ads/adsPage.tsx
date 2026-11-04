@@ -27,6 +27,9 @@ import {
 } from "./adsUtils";
 import { AdsDailySummary } from "./adsDailySummary";
 import { AdsLeads } from "./adsLeads";
+import { AdsConversionEvents } from "./adsConversionEvents";
+import { AdsSuggestions } from "./adsSuggestions";
+import { AdsStrategyChatTab } from "./adsStrategyChatTab";
 import { AdsResults } from "./adsResults";
 
 const StatusChip: FC<{ status: string }> = ({ status }) => {
@@ -217,9 +220,12 @@ export const AdsPage = () => {
       <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden">
         <TabsList className="mx-4 mt-3">
           <TabsTrigger value="results">Resultados</TabsTrigger>
+          <TabsTrigger value="suggestions">Sugestões</TabsTrigger>
+          {can("ads.manage") && <TabsTrigger value="strategy">Estratégia</TabsTrigger>}
           <TabsTrigger value="campaigns">Campanhas{structure && ` (${structure.campaigns.length})`}</TabsTrigger>
           <TabsTrigger value="audiences">Públicos{structure && ` (${structure.audiences.length})`}</TabsTrigger>
           <TabsTrigger value="leads">Leads</TabsTrigger>
+          <TabsTrigger value="conversions">Eventos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="results" className="min-h-0 flex-1 space-y-8 overflow-auto p-4">
@@ -227,8 +233,22 @@ export const AdsPage = () => {
           <AdsResults key={currentAccount.id} account={currentAccount} />
         </TabsContent>
 
+        <TabsContent value="suggestions" className="min-h-0 flex-1 overflow-auto p-4">
+          <AdsSuggestions key={currentAccount.id} account={currentAccount} />
+        </TabsContent>
+
+        {can("ads.manage") && (
+          <TabsContent value="strategy" className="min-h-0 flex-1 overflow-auto p-4">
+            <AdsStrategyChatTab key={currentAccount.id} account={currentAccount} />
+          </TabsContent>
+        )}
+
         <TabsContent value="leads" className="min-h-0 flex-1 overflow-auto p-4">
           <AdsLeads />
+        </TabsContent>
+
+        <TabsContent value="conversions" className="min-h-0 flex-1 overflow-auto p-4">
+          <AdsConversionEvents />
         </TabsContent>
 
         {(tab === "campaigns" || tab === "audiences") && structureQuery.isLoading && <LoadingState />}

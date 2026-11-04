@@ -14,6 +14,7 @@ type SavePipelineStageRequestBody = {
   entryFlowId?: string | null;
   staleAfterDays?: number | null;
   requiredFieldIds?: string[];
+  conversionEvent?: ConversionEventName | null;
 };
 
 type SavePipelineRequestBody = {

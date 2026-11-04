@@ -12,6 +12,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState, type FC } from "react";
 import { toast } from "sonner";
+import { useClientContext } from "@/context/ClientContext/clientContext";
+import { conversionEventLabel } from "@/pages/dashboard/crm/crmUtils";
 
 type DialogSavePipelineProps = {
   clientId: string;
@@ -29,7 +31,7 @@ const buildDefaultStages = (): StageDraft[] => [
   { key: newKey(), name: "Novo lead", color: stageColorOptions[0], type: "OPEN" },
   { key: newKey(), name: "Em negociação", color: stageColorOptions[1], type: "OPEN" },
   { key: newKey(), name: "Proposta enviada", color: stageColorOptions[2], type: "OPEN" },
-  { key: newKey(), name: "Ganho", color: "#22c55e", type: "WON" },
+  { key: newKey(), name: "Ganho", color: "#22c55e", type: "WON", conversionEvent: "PURCHASE" },
   { key: newKey(), name: "Perdido", color: "#ef4444", type: "LOST" },
 ];
 
@@ -39,12 +41,21 @@ type StageRowProps = {
   fields: CrmField[];
   onChange: (stage: StageDraft) => void;
   disabled: boolean;
+  // Só aparece para quem tem o módulo de anúncios
+  showConversionEvent: boolean;
   children?: React.ReactNode;
+};
+
+// Eventos que cabem em cada tipo de etapa; perda não tem evento padrão na Meta
+const conversionEventsByStageType: Record<PipelineStageType, ConversionEventName[]> = {
+  OPEN: ["LEAD_SUBMITTED", "QUALIFIED_LEAD"],
+  WON: ["PURCHASE"],
+  LOST: [],
 };
 
 const toggleId = (ids: string[], id: string, checked: boolean) => (checked ? [...ids, id] : ids.filter((item) => item !== id));
 
-const StageRow: FC<StageRowProps> = ({ stage, flows, fields, onChange, disabled, children }) => (
+const StageRow: FC<StageRowProps> = ({ stage, flows, fields, onChange, disabled, showConversionEvent, children }) => (
   <div className="bg-muted/30 grid gap-2 rounded-lg border p-2">
     <div className="flex items-center gap-2">
       <input
@@ -108,6 +119,25 @@ const StageRow: FC<StageRowProps> = ({ stage, flows, fields, onChange, disabled,
           </PopoverContent>
         </Popover>
       )}
+      {showConversionEvent && conversionEventsByStageType[stage.type].length > 0 && (
+        <label className="flex items-center gap-2">
+          <span className="text-muted-foreground shrink-0">Evento na Meta</span>
+          <select
+            aria-label={`Evento na Meta da etapa ${stage.name}`}
+            value={stage.conversionEvent ?? ""}
+            disabled={disabled}
+            onChange={(event) => onChange({ ...stage, conversionEvent: (event.target.value || null) as ConversionEventName | null })}
+            className={`${crmSelectClassName} h-8 text-xs`}
+          >
+            <option value="">Nenhum</option>
+            {conversionEventsByStageType[stage.type].map((event) => (
+              <option key={event} value={event}>
+                {conversionEventLabel[event]}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       {stage.type === "OPEN" && (
         <label className="flex items-center gap-2">
           <span className="text-muted-foreground">Esfria após</span>
@@ -132,6 +162,7 @@ const StageRow: FC<StageRowProps> = ({ stage, flows, fields, onChange, disabled,
 );
 
 export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipeline }) => {
+  const { access } = useClientContext();
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [stages, setStages] = useState<StageDraft[]>([]);
@@ -197,7 +228,7 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
 
     const body: SavePipelineRequestBody = {
       name: name.trim(),
-      stages: stages.map(({ id, name: stageName, color, type, entryFlowId, staleAfterDays, requiredFieldIds }) => ({
+      stages: stages.map(({ id, name: stageName, color, type, entryFlowId, staleAfterDays, requiredFieldIds, conversionEvent }) => ({
         id,
         name: stageName.trim(),
         color,
@@ -206,6 +237,7 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
         staleAfterDays: type === "OPEN" ? (staleAfterDays ?? null) : null,
         // Só campos ativos; um campo desativado depois deixa de ser exigido
         requiredFieldIds: (requiredFieldIds ?? []).filter((fieldId) => fields.some((field) => field.id === fieldId)),
+        conversionEvent: conversionEvent ?? null,
       })),
     };
 
@@ -254,7 +286,15 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
           <div className="grid gap-2">
             <Label>Etapas</Label>
             {openStages.map((stage, index) => (
-              <StageRow key={stage.key} stage={stage} flows={flows} fields={fields} onChange={updateStage} disabled={isPending}>
+              <StageRow
+                key={stage.key}
+                stage={stage}
+                flows={flows}
+                fields={fields}
+                onChange={updateStage}
+                disabled={isPending}
+                showConversionEvent={access.adsEnabled}
+              >
                 <Button
                   type="button"
                   variant="ghost"
@@ -309,7 +349,15 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
           <div className="grid gap-2">
             <Label>Etapas finais</Label>
             {finalStages.map((stage) => (
-              <StageRow key={stage.key} stage={stage} flows={flows} fields={fields} onChange={updateStage} disabled={isPending}>
+              <StageRow
+                key={stage.key}
+                stage={stage}
+                flows={flows}
+                fields={fields}
+                onChange={updateStage}
+                disabled={isPending}
+                showConversionEvent={access.adsEnabled}
+              >
                 <span className="text-muted-foreground w-16 shrink-0 text-xs">{stage.type === "WON" ? "Ganho" : "Perdido"}</span>
               </StageRow>
             ))}
