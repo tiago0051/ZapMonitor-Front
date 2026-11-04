@@ -27,6 +27,7 @@ import {
 } from "./adsUtils";
 import { AdsDailySummary } from "./adsDailySummary";
 import { AdsLeads } from "./adsLeads";
+import { AdsConversionEvents } from "./adsConversionEvents";
 import { AdsResults } from "./adsResults";
 
 const StatusChip: FC<{ status: string }> = ({ status }) => {
@@ -220,6 +221,7 @@ export const AdsPage = () => {
           <TabsTrigger value="campaigns">Campanhas{structure && ` (${structure.campaigns.length})`}</TabsTrigger>
           <TabsTrigger value="audiences">Públicos{structure && ` (${structure.audiences.length})`}</TabsTrigger>
           <TabsTrigger value="leads">Leads</TabsTrigger>
+          <TabsTrigger value="conversions">Eventos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="results" className="min-h-0 flex-1 space-y-8 overflow-auto p-4">
@@ -229,6 +231,10 @@ export const AdsPage = () => {
 
         <TabsContent value="leads" className="min-h-0 flex-1 overflow-auto p-4">
           <AdsLeads />
+        </TabsContent>
+
+        <TabsContent value="conversions" className="min-h-0 flex-1 overflow-auto p-4">
+          <AdsConversionEvents />
         </TabsContent>
 
         {(tab === "campaigns" || tab === "audiences") && structureQuery.isLoading && <LoadingState />}

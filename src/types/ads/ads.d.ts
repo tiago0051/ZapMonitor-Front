@@ -188,3 +188,41 @@ type AdLead = {
   leadCreatedAt: string | null;
   createdAt: string;
 };
+
+type ConversionEventStatus = "PENDING" | "SENT" | "FAILED" | "SKIPPED";
+
+type ConversionChannel = "WHATSAPP" | "LEAD_FORM";
+
+type ConversionSettingsValues = {
+  enabled: boolean;
+  // Negócio criado a partir de anúncio manda LeadSubmitted
+  leadSubmittedOnCreate: boolean;
+  // Conjunto de dados (pixel) dos leads de formulário
+  leadsDatasetId: string | null;
+  // Código de teste do Gerenciador de Eventos
+  testEventCode: string | null;
+};
+
+type ConversionSettings = ConversionSettingsValues & {
+  // Eventos dos últimos 7 dias por nome e situação
+  health: { eventName: ConversionEventName; status: ConversionEventStatus; count: number }[];
+};
+
+type ConversionEvent = {
+  id: string;
+  dealId: string;
+  dealTitle: string | null;
+  eventName: ConversionEventName;
+  channel: ConversionChannel | null;
+  // event_id mandado à Meta, que deduplica o evento
+  eventId: string;
+  datasetId: string | null;
+  status: ConversionEventStatus;
+  value: number | null;
+  eventTime: string;
+  eventsReceived: number | null;
+  error: string | null;
+  attempts: number;
+  sentAt: string | null;
+  createdAt: string;
+};

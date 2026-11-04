@@ -95,4 +95,26 @@ export const metaAdsService = {
   retryLead: async ({ params }: { params: { clientId: string; leadId: string } }): Promise<void> => {
     await api.post(`/client/${params.clientId}/meta-ads/lead/${params.leadId}/retry`);
   },
+
+  findConversionSettings: async ({ params }: MetaAdsClientParams): Promise<ConversionSettings> => {
+    const response = await api.get<ConversionSettings>(`/client/${params.clientId}/meta-ads/conversion-settings`);
+    return response.data;
+  },
+
+  saveConversionSettings: async ({
+    params,
+    body,
+  }: MetaAdsClientParams & { body: ConversionSettingsValues }): Promise<ConversionSettings> => {
+    const response = await api.put(`/client/${params.clientId}/meta-ads/conversion-settings`, body);
+    return response.data;
+  },
+
+  findConversionEvents: async ({ params }: MetaAdsClientParams): Promise<ConversionEvent[]> => {
+    const response = await api.get<ConversionEvent[]>(`/client/${params.clientId}/meta-ads/conversion-event`);
+    return response.data;
+  },
+
+  retryConversionEvent: async ({ params }: { params: { clientId: string; eventId: string } }): Promise<void> => {
+    await api.post(`/client/${params.clientId}/meta-ads/conversion-event/${params.eventId}/retry`);
+  },
 };

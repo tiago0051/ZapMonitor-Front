@@ -21,7 +21,11 @@ type PipelineStage = {
   staleAfterDays: number | null;
   // Campos que precisam estar preenchidos para mover um negócio para a etapa
   requiredFieldIds: string[];
+  // Evento mandado à Meta quando um negócio vindo de anúncio entra na etapa
+  conversionEvent: ConversionEventName | null;
 };
+
+type ConversionEventName = "LEAD_SUBMITTED" | "QUALIFIED_LEAD" | "PURCHASE";
 
 type Pipeline = {
   id: string;

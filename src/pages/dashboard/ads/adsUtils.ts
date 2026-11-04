@@ -128,3 +128,15 @@ export const leadStatusInfo: Record<AdLeadStatus, { label: string; className: st
   NO_PHONE: { label: "Sem telefone", className: "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300" },
   FAILED: { label: "Falhou", className: "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300" },
 };
+
+export const conversionStatusInfo: Record<ConversionEventStatus, { label: string; className: string }> = {
+  PENDING: { label: "Na fila", className: "bg-muted text-muted-foreground" },
+  SENT: { label: "Aceito pela Meta", className: "bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-300" },
+  FAILED: { label: "Falhou", className: "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300" },
+  SKIPPED: { label: "Não enviado", className: "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300" },
+};
+
+export const conversionChannelLabel: Record<ConversionChannel, string> = {
+  WHATSAPP: "WhatsApp",
+  LEAD_FORM: "Formulário",
+};

@@ -91,3 +91,10 @@ export const dealOriginLabel: Record<DealOriginType, string> = {
   AD_MESSAGE: "Anúncio no WhatsApp",
   LEAD_FORM: "Formulário de cadastro",
 };
+
+// Nomes dos eventos padrão da Meta
+export const conversionEventLabel: Record<ConversionEventName, string> = {
+  LEAD_SUBMITTED: "Lead (LeadSubmitted)",
+  QUALIFIED_LEAD: "Lead qualificado (QualifiedLead)",
+  PURCHASE: "Compra (Purchase)",
+};
