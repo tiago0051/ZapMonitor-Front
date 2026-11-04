@@ -299,7 +299,7 @@ export const metaAdsService = {
   },
 
   publishDraft: async ({ params }: { params: { clientId: string; draftId: string } }): Promise<AdCampaignDraft> => {
-    const response = await api.post(`/client/${params.clientId}/meta-ads/draft/${params.draftId}/publish`, null, { timeout: 180000 });
+    const response = await api.post(`/client/${params.clientId}/meta-ads/draft/${params.draftId}/publish`, undefined, { timeout: 180000 });
     return response.data;
   },
 
@@ -357,7 +357,7 @@ export const metaAdsService = {
   },
 
   syncCrmAudience: async ({ params }: { params: { clientId: string; audienceId: string } }): Promise<AdCrmAudience> => {
-    const response = await api.post(`/client/${params.clientId}/meta-ads/crm-audience/${params.audienceId}/sync`, null, {
+    const response = await api.post(`/client/${params.clientId}/meta-ads/crm-audience/${params.audienceId}/sync`, undefined, {
       timeout: 180000,
     });
     return response.data;
