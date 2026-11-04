@@ -363,3 +363,110 @@ type AdRuleValues = {
 };
 
 type AdRule = AdRuleValues & { id: string; lastRunAt: string | null };
+
+type AdDraftStatus = "DRAFT" | "PUBLISHING" | "PUBLISHED" | "FAILED" | "ACTIVE";
+
+type SpecialAdCategory = "NONE" | "FINANCIAL_PRODUCTS_SERVICES" | "EMPLOYMENT" | "HOUSING";
+
+type AdCampaignBrief = {
+  goal: string;
+  product: string;
+  offer: string | null;
+  audienceDescription: string | null;
+  region: string | null;
+  // Na moeda da conta
+  dailyBudget: number;
+  durationDays: number | null;
+  notes: string | null;
+};
+
+type AdPlanAdSet = {
+  key: string;
+  name: string;
+  ageMin: number;
+  ageMax: number;
+  countries: string[];
+  advantageAudience: boolean;
+  // Ids dos públicos na Meta
+  includeAudienceIds: string[];
+  excludeAudienceIds: string[];
+  rationale: string | null;
+};
+
+type AdPlanCreative = {
+  key: string;
+  adSetKey: string;
+  name: string;
+  primaryText: string;
+  headline: string;
+  description: string | null;
+  // Primeira mensagem que aparece no WhatsApp de quem clica
+  welcomeMessage: string;
+  assetId: string | null;
+  advantageEnhancements: boolean;
+};
+
+type AdCampaignPlan = {
+  campaignName: string;
+  specialAdCategory: SpecialAdCategory;
+  dailyBudget: number;
+  reasoning: string;
+  adSets: AdPlanAdSet[];
+  creatives: AdPlanCreative[];
+  abTest: { enabled: boolean; variable: "creative" | "audience" };
+};
+
+type AdDraftRouting = {
+  whatsappConfigurationId: string | null;
+  metaPageId: string | null;
+  flowId: string | null;
+  pipelineId: string | null;
+  stageId: string | null;
+  serviceGroupId: string | null;
+};
+
+type AdCampaignDraft = AdDraftRouting & {
+  id: string;
+  name: string;
+  status: AdDraftStatus;
+  brief: AdCampaignBrief;
+  plan: AdCampaignPlan | null;
+  // Ids criados na Meta
+  published: {
+    campaignId: string | null;
+    adSets: Record<string, string>;
+    ads: Record<string, string>;
+    studyId: string | null;
+    studyError: string | null;
+  } | null;
+  error: string | null;
+  // O que falta para publicar; só vem no detalhe
+  publishErrors: string[];
+  publishedAt: string | null;
+  activatedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type AdCreativeAsset = { id: string; type: "IMAGE" | "VIDEO"; name: string; previewUrl: string | null; createdAt: string };
+
+type AdCrmAudienceKind = "CUSTOM" | "LOOKALIKE";
+
+type AdCrmAudienceSource = "WON" | "OPEN" | "ALL";
+
+type AdCrmAudience = {
+  id: string;
+  name: string;
+  kind: AdCrmAudienceKind;
+  source: AdCrmAudienceSource | null;
+  pipelineId: string | null;
+  originAudienceId: string | null;
+  ratio: number | null;
+  metaAudienceId: string | null;
+  contactsCount: number;
+  status: "PENDING" | "SYNCED" | "FAILED";
+  error: string | null;
+  lastSyncedAt: string | null;
+};
+
+type AdAbTestCell = { cell: string; metaAdSetId: string; row: AdReportRow | null };

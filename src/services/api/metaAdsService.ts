@@ -228,4 +228,111 @@ export const metaAdsService = {
     const response = await api.post(`/client/${params.clientId}/meta-ads/rule/${params.ruleId}/run`);
     return response.data;
   },
+
+  findDrafts: async ({ params }: MetaAdsAccountParams): Promise<AdCampaignDraft[]> => {
+    const response = await api.get<AdCampaignDraft[]>(`/client/${params.clientId}/meta-ads/account/${params.accountId}/draft`);
+    return response.data;
+  },
+
+  createDraft: async ({
+    params,
+    body,
+  }: MetaAdsAccountParams & { body: Partial<AdDraftRouting> & { name: string; brief: AdCampaignBrief } }): Promise<AdCampaignDraft> => {
+    const response = await api.post(`/client/${params.clientId}/meta-ads/account/${params.accountId}/draft`, body);
+    return response.data;
+  },
+
+  findDraft: async ({ params }: { params: { clientId: string; draftId: string } }): Promise<AdCampaignDraft> => {
+    const response = await api.get<AdCampaignDraft>(`/client/${params.clientId}/meta-ads/draft/${params.draftId}`);
+    return response.data;
+  },
+
+  updateDraft: async ({
+    params,
+    body,
+  }: {
+    params: { clientId: string; draftId: string };
+    body: Partial<AdDraftRouting> & { name?: string; brief?: AdCampaignBrief; plan?: AdCampaignPlan };
+  }): Promise<AdCampaignDraft> => {
+    const response = await api.put(`/client/${params.clientId}/meta-ads/draft/${params.draftId}`, body);
+    return response.data;
+  },
+
+  deleteDraft: async ({ params }: { params: { clientId: string; draftId: string } }): Promise<void> => {
+    await api.delete(`/client/${params.clientId}/meta-ads/draft/${params.draftId}`);
+  },
+
+  generatePlan: async ({ params }: { params: { clientId: string; draftId: string } }): Promise<AdCampaignDraft> => {
+    const response = await api.post(`/client/${params.clientId}/meta-ads/draft/${params.draftId}/plan`);
+    return response.data;
+  },
+
+  publishDraft: async ({ params }: { params: { clientId: string; draftId: string } }): Promise<AdCampaignDraft> => {
+    const response = await api.post(`/client/${params.clientId}/meta-ads/draft/${params.draftId}/publish`, null, { timeout: 180000 });
+    return response.data;
+  },
+
+  activateDraft: async ({ params }: { params: { clientId: string; draftId: string } }): Promise<AdCampaignDraft> => {
+    const response = await api.post(`/client/${params.clientId}/meta-ads/draft/${params.draftId}/activate`);
+    return response.data;
+  },
+
+  findAbTest: async ({ params }: { params: { clientId: string; draftId: string } }): Promise<AdAbTestCell[]> => {
+    const response = await api.get<AdAbTestCell[]>(`/client/${params.clientId}/meta-ads/draft/${params.draftId}/ab-test`);
+    return response.data;
+  },
+
+  findAssets: async ({ params }: MetaAdsAccountParams): Promise<AdCreativeAsset[]> => {
+    const response = await api.get<AdCreativeAsset[]>(`/client/${params.clientId}/meta-ads/account/${params.accountId}/asset`);
+    return response.data;
+  },
+
+  uploadAsset: async ({ params, file }: MetaAdsAccountParams & { file: File }): Promise<AdCreativeAsset> => {
+    const form = new FormData();
+    form.append("file", file);
+    const response = await api.post(`/client/${params.clientId}/meta-ads/account/${params.accountId}/asset`, form, {
+      headers: { "Content-Type": "multipart/form-data" },
+      timeout: 300000,
+    });
+    return response.data;
+  },
+
+  deleteAsset: async ({ params }: { params: { clientId: string; assetId: string } }): Promise<void> => {
+    await api.delete(`/client/${params.clientId}/meta-ads/asset/${params.assetId}`);
+  },
+
+  findCrmAudiences: async ({ params }: MetaAdsAccountParams): Promise<AdCrmAudience[]> => {
+    const response = await api.get<AdCrmAudience[]>(`/client/${params.clientId}/meta-ads/account/${params.accountId}/crm-audience`);
+    return response.data;
+  },
+
+  createCrmAudience: async ({
+    params,
+    body,
+  }: MetaAdsAccountParams & {
+    body: {
+      name: string;
+      kind: AdCrmAudienceKind;
+      source?: AdCrmAudienceSource;
+      pipelineId?: string | null;
+      originAudienceId?: string | null;
+      ratio?: number | null;
+    };
+  }): Promise<AdCrmAudience> => {
+    const response = await api.post(`/client/${params.clientId}/meta-ads/account/${params.accountId}/crm-audience`, body, {
+      timeout: 180000,
+    });
+    return response.data;
+  },
+
+  syncCrmAudience: async ({ params }: { params: { clientId: string; audienceId: string } }): Promise<AdCrmAudience> => {
+    const response = await api.post(`/client/${params.clientId}/meta-ads/crm-audience/${params.audienceId}/sync`, null, {
+      timeout: 180000,
+    });
+    return response.data;
+  },
+
+  deleteCrmAudience: async ({ params }: { params: { clientId: string; audienceId: string } }): Promise<void> => {
+    await api.delete(`/client/${params.clientId}/meta-ads/crm-audience/${params.audienceId}`);
+  },
 };
