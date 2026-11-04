@@ -12,6 +12,10 @@ type AdAccount = {
   syncStatus: AdSyncStatus;
   syncError: string | null;
   lastSyncedAt: string | null;
+  // A conta usa um token informado pelo usuário em vez do token da conexão
+  hasOwnToken: boolean;
+  // Validade do token próprio; nulo quando não expira ou não há token próprio
+  tokenExpiresAt: string | null;
 };
 
 type MetaAdsConnection = {

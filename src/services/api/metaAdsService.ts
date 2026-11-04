@@ -28,6 +28,27 @@ export const metaAdsService = {
     return response.data;
   },
 
+  findAccountsForToken: async ({
+    params,
+    body,
+  }: MetaAdsClientParams & { body: { accessToken: string } }): Promise<AvailableAdAccount[]> => {
+    const response = await api.post<AvailableAdAccount[]>(`/client/${params.clientId}/meta-ads/token/available-account`, body);
+    return response.data;
+  },
+
+  linkAccountWithToken: async ({
+    params,
+    body,
+  }: MetaAdsClientParams & { body: { accessToken: string; metaAccountId: string } }): Promise<AdAccount> => {
+    const response = await api.post<AdAccount>(`/client/${params.clientId}/meta-ads/token/account`, body);
+    return response.data;
+  },
+
+  removeAccountToken: async ({ params }: MetaAdsAccountParams): Promise<AdAccount> => {
+    const response = await api.delete<AdAccount>(`/client/${params.clientId}/meta-ads/account/${params.accountId}/token`);
+    return response.data;
+  },
+
   unlinkAccount: async ({ params }: MetaAdsAccountParams): Promise<void> => {
     await api.delete(`/client/${params.clientId}/meta-ads/account/${params.accountId}`);
   },

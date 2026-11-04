@@ -14,6 +14,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { MetaAdsLeadPages } from "./metaAdsLeadPages";
 import { MetaAdsConversions } from "./metaAdsConversions";
+import { MetaAdsTokenDialog } from "./metaAdsTokenDialog";
 
 const scopeLabel: Record<string, string> = {
   ads_management: "mudar anúncios",
@@ -26,6 +27,7 @@ export const MetaAdsSettings = () => {
   const { client } = useClientContext();
   const queryClient = useQueryClient();
   const [isConfirmingDisconnect, setIsConfirmingDisconnect] = useState(false);
+  const [isTokenDialogOpen, setIsTokenDialogOpen] = useState(false);
 
   const connectionQuery = useSuspenseQuery({
     meta: { errorHandledInline: true },
@@ -68,6 +70,14 @@ export const MetaAdsSettings = () => {
     },
   });
   const unlinkAccount = useMutation({ mutationFn: metaAdsService.unlinkAccount, onError: requestErrorHandling, onSuccess: invalidate });
+  const removeAccountToken = useMutation({
+    mutationFn: metaAdsService.removeAccountToken,
+    onError: requestErrorHandling,
+    onSuccess: () => {
+      invalidate();
+      toast.success("A conta voltou a usar o token da conexão");
+    },
+  });
   const syncAccount = useMutation({
     mutationFn: metaAdsService.syncAccount,
     onError: requestErrorHandling,
@@ -83,8 +93,25 @@ export const MetaAdsSettings = () => {
     onError: (message) => toast.error(message),
   });
 
-  const isPending = connect.isPending || disconnect.isPending || linkAccount.isPending || unlinkAccount.isPending;
+  const isPending =
+    connect.isPending || disconnect.isPending || linkAccount.isPending || unlinkAccount.isPending || removeAccountToken.isPending;
   const linkedByMetaId = new Map(connection.accounts.map((account) => [account.metaAccountId, account]));
+  // Contas vinculadas com token próprio podem não aparecer para o token da conexão; entram na lista do mesmo jeito
+  const availableIds = new Set(availableQuery.data?.map((account) => account.metaAccountId));
+  const accountRows: AvailableAdAccount[] = [
+    ...(availableQuery.data ?? []),
+    ...(availableQuery.isSuccess ? connection.accounts : [])
+      .filter((account) => !availableIds.has(account.metaAccountId))
+      .map((account) => ({
+        metaAccountId: account.metaAccountId,
+        name: account.name,
+        currency: account.currency,
+        accountStatus: account.accountStatus,
+        businessName: account.businessName,
+        linked: true,
+        granted: false,
+      })),
+  ];
 
   return (
     <Card>
@@ -96,16 +123,22 @@ export const MetaAdsSettings = () => {
             lidas e copiadas a cada 6 horas.
           </CardDescription>
         </div>
-        {!connection.connected ? (
-          <Button onClick={launch} disabled={!isConfigured || !isSdkReady || isPending}>
-            Conectar com a Meta
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button variant="outline" onClick={() => setIsTokenDialogOpen(true)} disabled={isPending}>
+            Vincular com token
           </Button>
-        ) : (
-          <Button variant="outline" onClick={launch} disabled={!isSdkReady || isPending}>
-            Reconectar
-          </Button>
-        )}
+          {!connection.connected ? (
+            <Button onClick={launch} disabled={!isConfigured || !isSdkReady || isPending}>
+              Conectar com a Meta
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={launch} disabled={!isSdkReady || isPending}>
+              Reconectar
+            </Button>
+          )}
+        </div>
       </CardHeader>
+      <MetaAdsTokenDialog clientId={client.id} open={isTokenDialogOpen} onOpenChange={setIsTokenDialogOpen} />
 
       <CardContent className="space-y-6">
         {!isConfigured && (
@@ -117,7 +150,7 @@ export const MetaAdsSettings = () => {
         {!connection.connected && (
           <EmptyState
             title="A Meta ainda não está conectada"
-            description="Ao conectar, entre com uma pessoa que tenha acesso às contas de anúncio no portfólio da empresa e autorize os anúncios."
+            description="Ao conectar, entre com uma pessoa que tenha acesso às contas de anúncio no portfólio da empresa e autorize os anúncios. Se preferir, vincule as contas com um token de usuário do sistema."
           />
         )}
 
@@ -142,11 +175,11 @@ export const MetaAdsSettings = () => {
             <section className="space-y-2">
               <h3 className="text-sm font-semibold">Contas de anúncio</h3>
               {availableQuery.isLoading && <LoadingState className="justify-start py-2" />}
-              {availableQuery.data?.length === 0 && (
+              {availableQuery.isSuccess && accountRows.length === 0 && (
                 <p className="text-muted-foreground text-sm">Esta conexão não enxerga nenhuma conta de anúncio.</p>
               )}
               <ul className="divide-y rounded-lg border">
-                {availableQuery.data?.map((available) => {
+                {accountRows.map((available) => {
                   const linked = linkedByMetaId.get(available.metaAccountId);
 
                   return (
@@ -165,15 +198,34 @@ export const MetaAdsSettings = () => {
                             {linked.syncError && <span className="text-destructive"> · {linked.syncError}</span>}
                           </p>
                         )}
-                        {!available.granted && (
+                        {linked?.hasOwnToken && (
+                          <p className="text-muted-foreground text-xs">
+                            Usa token próprio
+                            {linked.tokenExpiresAt
+                              ? ` · válido até ${format(new Date(linked.tokenExpiresAt), "dd/MM/yyyy")}`
+                              : " · sem prazo de expiração"}
+                          </p>
+                        )}
+                        {!available.granted && !linked?.hasOwnToken && (
                           <p className="text-destructive text-xs">
-                            Não liberada para o app. Reconecte, clique em editar acesso na Meta e marque esta conta.
+                            Não liberada para o app. Reconecte e marque esta conta em editar acesso na Meta, ou vincule com token.
                           </p>
                         )}
                       </div>
                       {linked ? (
                         <>
                           <Badge variant="secondary">Vinculada</Badge>
+                          {/* Só quando a conexão também alcança a conta; senão a sincronização voltaria a falhar */}
+                          {linked.hasOwnToken && available.granted && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled={isPending}
+                              onClick={() => removeAccountToken.mutate({ params: { clientId: client.id, accountId: linked.id } })}
+                            >
+                              Usar token da conexão
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="ghost"
