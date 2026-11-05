@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Film, ImagePlus, Loader2, Trash2 } from "lucide-react";
 import { useRef, type FC } from "react";
 import { toast } from "sonner";
+import { assetOriginLabel } from "../pilot/pilotUtils";
 
 const ACCEPT = "image/jpeg,image/png,video/mp4,video/quicktime";
 
@@ -62,6 +63,12 @@ export const AdsAssetLibrary: FC<AdsAssetLibraryProps> = ({ account, assets, sel
                 </span>
               )}
               <span className="block truncate px-1 py-0.5 text-left text-[10px]">{asset.name}</span>
+              {asset.origin !== "UPLOAD" && (
+                <span className="text-muted-foreground block truncate px-1 pb-0.5 text-left text-[10px]">
+                  {assetOriginLabel[asset.origin]}
+                  {asset.angle && ` · ${asset.angle}`}
+                </span>
+              )}
             </button>
             {can("ads.manage") && !onSelect && (
               <Button

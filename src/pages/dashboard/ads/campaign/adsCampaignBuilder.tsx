@@ -320,10 +320,10 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
 };
 
 /** Criação de campanhas de clique para WhatsApp a partir de um objetivo, com a biblioteca de criativos. */
-export const AdsCampaignBuilder: FC<{ account: AdAccount }> = ({ account }) => {
+export const AdsCampaignBuilder: FC<{ account: AdAccount; initialDraftId?: string | null }> = ({ account, initialDraftId = null }) => {
   const { client, can } = useClientContext();
   const queryClient = useQueryClient();
-  const [openDraftId, setOpenDraftId] = useState<string | null>(null);
+  const [openDraftId, setOpenDraftId] = useState<string | null>(initialDraftId);
   const [isCreating, setIsCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const params = { clientId: client.id, accountId: account.id };

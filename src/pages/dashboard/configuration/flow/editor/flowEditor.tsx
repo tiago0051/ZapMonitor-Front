@@ -50,6 +50,7 @@ const paletteNodeTypes: FlowNodeType[] = [
   "removeCategory",
   "replaceCategories",
   "crm",
+  "crmAnalysis",
   "flow",
   "end",
 ];
@@ -101,8 +102,8 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
   const configurations = useWhatsappConfigurations(clientId);
   const { flows } = useFlowEditorContext();
   const { access } = useClientContext();
-  // O nó do CRM só aparece quando o plano inclui o módulo
-  const availableNodeTypes = paletteNodeTypes.filter((type) => type !== "crm" || access.crmEnabled);
+  // Os nós do CRM só aparecem quando o plano inclui o módulo
+  const availableNodeTypes = paletteNodeTypes.filter((type) => (type !== "crm" && type !== "crmAnalysis") || access.crmEnabled);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [rejectedIssues, setRejectedIssues] = useState<RejectedIssues | null>(null);

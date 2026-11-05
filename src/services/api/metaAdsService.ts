@@ -371,4 +371,149 @@ export const metaAdsService = {
   deleteCrmAudience: async ({ params }: { params: { clientId: string; audienceId: string } }): Promise<void> => {
     await api.delete(`/client/${params.clientId}/meta-ads/crm-audience/${params.audienceId}`);
   },
+
+  // ---------- Piloto automático ----------
+
+  findBrandProfile: async ({ params }: MetaAdsAccountParams): Promise<AdBrandProfile> => {
+    const response = await api.get<AdBrandProfile>(`/client/${params.clientId}/meta-ads/account/${params.accountId}/pilot/brand`);
+    return response.data;
+  },
+
+  saveBrandSettings: async ({
+    params,
+    body,
+  }: MetaAdsAccountParams & {
+    body: { baseText?: string | null; whatsappConfigurationId?: string | null; metaPageId?: string | null };
+  }): Promise<AdBrandProfile> => {
+    const response = await api.put(`/client/${params.clientId}/meta-ads/account/${params.accountId}/pilot/brand`, body);
+    return response.data;
+  },
+
+  saveBrandProfile: async ({ params, profile }: MetaAdsAccountParams & { profile: AdBrandProfileData }): Promise<AdBrandProfile> => {
+    const response = await api.put(`/client/${params.clientId}/meta-ads/account/${params.accountId}/pilot/brand/profile`, { profile });
+    return response.data;
+  },
+
+  generateBrandProfile: async ({ params }: MetaAdsAccountParams): Promise<AdBrandProfile> => {
+    const response = await api.post(
+      `/client/${params.clientId}/meta-ads/account/${params.accountId}/pilot/brand/profile/generate`,
+      undefined,
+      {
+        timeout: 180000,
+      },
+    );
+    return response.data;
+  },
+
+  addBrandSource: async ({ params, file }: MetaAdsAccountParams & { file: File }): Promise<AdBrandProfile> => {
+    const form = new FormData();
+    form.append("file", file);
+    const response = await api.post(`/client/${params.clientId}/meta-ads/account/${params.accountId}/pilot/brand/source`, form, {
+      headers: { "Content-Type": "multipart/form-data" },
+      timeout: 180000,
+    });
+    return response.data;
+  },
+
+  deleteBrandSource: async ({ params }: { params: { clientId: string; accountId: string; sourceId: string } }): Promise<AdBrandProfile> => {
+    const response = await api.delete(
+      `/client/${params.clientId}/meta-ads/account/${params.accountId}/pilot/brand/source/${params.sourceId}`,
+    );
+    return response.data;
+  },
+
+  findBrandLogo: async ({ params }: MetaAdsAccountParams): Promise<{ dataUrl: string | null }> => {
+    const response = await api.get(`/client/${params.clientId}/meta-ads/account/${params.accountId}/pilot/brand/logo`);
+    return response.data;
+  },
+
+  uploadBrandLogo: async ({ params, file }: MetaAdsAccountParams & { file: File }): Promise<AdBrandProfile> => {
+    const form = new FormData();
+    form.append("file", file);
+    const response = await api.post(`/client/${params.clientId}/meta-ads/account/${params.accountId}/pilot/brand/logo`, form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  },
+
+  deleteBrandLogo: async ({ params }: MetaAdsAccountParams): Promise<AdBrandProfile> => {
+    const response = await api.delete(`/client/${params.clientId}/meta-ads/account/${params.accountId}/pilot/brand/logo`);
+    return response.data;
+  },
+
+  refreshBrandIdentity: async ({ params, metaPageId }: MetaAdsAccountParams & { metaPageId?: string | null }): Promise<AdBrandProfile> => {
+    const response = await api.post(
+      `/client/${params.clientId}/meta-ads/account/${params.accountId}/pilot/brand/identity`,
+      { metaPageId: metaPageId || null },
+      { timeout: 180000 },
+    );
+    return response.data;
+  },
+
+  findScoreboard: async ({ params, days }: MetaAdsAccountParams & { days?: number }): Promise<AdCreativeScore[]> => {
+    const response = await api.get<AdCreativeScore[]>(`/client/${params.clientId}/meta-ads/account/${params.accountId}/pilot/scoreboard`, {
+      params: { days },
+    });
+    return response.data;
+  },
+
+  analyzeCreatives: async ({ params }: MetaAdsAccountParams): Promise<AdBrandProfile> => {
+    const response = await api.post(`/client/${params.clientId}/meta-ads/account/${params.accountId}/pilot/scoreboard/analyze`, undefined, {
+      timeout: 180000,
+    });
+    return response.data;
+  },
+
+  findPilotRuns: async ({ params }: MetaAdsAccountParams): Promise<AdPilotRun[]> => {
+    const response = await api.get<AdPilotRun[]>(`/client/${params.clientId}/meta-ads/account/${params.accountId}/pilot/run`);
+    return response.data;
+  },
+
+  requestPilotCampaign: async ({
+    params,
+    body,
+  }: MetaAdsAccountParams & {
+    body: {
+      maxDailyBudget: number;
+      goal?: string | null;
+      notes?: string | null;
+      whatsappConfigurationId?: string | null;
+      metaPageId?: string | null;
+    };
+  }): Promise<AdPilotRun> => {
+    const response = await api.post(`/client/${params.clientId}/meta-ads/account/${params.accountId}/pilot/campaign`, body);
+    return response.data;
+  },
+
+  requestPilotReview: async ({ params }: MetaAdsAccountParams): Promise<AdPilotRun> => {
+    const response = await api.post(`/client/${params.clientId}/meta-ads/account/${params.accountId}/pilot/review`);
+    return response.data;
+  },
+
+  setPilotDaily: async ({ params, enabled }: MetaAdsAccountParams & { enabled: boolean }): Promise<AdBrandProfile> => {
+    const response = await api.put(`/client/${params.clientId}/meta-ads/account/${params.accountId}/pilot/daily`, { enabled });
+    return response.data;
+  },
+
+  findCreativeRefreshes: async ({
+    params,
+    status,
+  }: MetaAdsAccountParams & { status?: AdCreativeRefreshStatus[] }): Promise<AdCreativeRefresh[]> => {
+    const response = await api.get<AdCreativeRefresh[]>(`/client/${params.clientId}/meta-ads/account/${params.accountId}/pilot/refresh`, {
+      params: { status: status?.join(",") },
+    });
+    return response.data;
+  },
+
+  approveCreativeRefresh: async ({ params }: { params: { clientId: string; refreshId: string } }): Promise<AdCreativeRefresh> => {
+    const response = await api.post(`/client/${params.clientId}/meta-ads/pilot/refresh/${params.refreshId}/approve`, undefined, {
+      timeout: 120000,
+    });
+    return response.data;
+  },
+
+  rejectCreativeRefresh: async ({ params }: { params: { clientId: string; refreshId: string } }): Promise<AdCreativeRefresh> => {
+    const response = await api.post(`/client/${params.clientId}/meta-ads/pilot/refresh/${params.refreshId}/reject`);
+    return response.data;
+  },
 };

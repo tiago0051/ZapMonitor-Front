@@ -7,6 +7,7 @@ import {
   MessageSquareText,
   Play,
   Replace,
+  Sparkles,
   Tag,
   Tags,
   Users,
@@ -112,6 +113,13 @@ export const flowNodeConfigs: Record<FlowNodeType, FlowNodeConfig> = {
     colorClassName: "text-fuchsia-600 border-fuchsia-500/60",
     defaultData: () => ({ pipelineId: "", stageId: "", serviceGroupId: "" }),
   },
+  crmAnalysis: {
+    label: "Análise de IA do negócio",
+    description: "Pede à IA a nota e o próximo passo dos negócios do contato e segue",
+    icon: Sparkles,
+    colorClassName: "text-violet-600 border-violet-500/60",
+    defaultData: () => ({ pipelineId: "" }),
+  },
   flow: {
     label: "Ir para fluxo",
     description: "Continua no início de outro fluxo",
@@ -140,6 +148,7 @@ export function getFlowNodeOutputs(type: FlowNodeType, data: FlowNodeData): Flow
     case "removeCategory":
     case "replaceCategories":
     case "crm":
+    case "crmAnalysis":
       return [{ id: FLOW_OUTPUT_NEXT, label: "Próximo" }];
     case "businessHours":
       return [
