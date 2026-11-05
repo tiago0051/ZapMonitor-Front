@@ -54,6 +54,7 @@ const queuePaletteNodeTypes: FlowNodeType[] = [
   "replaceCategories",
   "crm",
   "crmAnalysis",
+  "aiAgent",
   "end",
 ];
 const paletteNodeTypes: FlowNodeType[] = [

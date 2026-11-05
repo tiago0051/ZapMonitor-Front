@@ -351,9 +351,20 @@ export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, on
               </select>
             </Field>
 
+            {isQueueFlow && (
+              <p className="rounded-md bg-sky-50 p-2 text-xs text-sky-900 dark:bg-sky-950/40 dark:text-sky-200">
+                Na fila o agente responde o contato sem tirá-lo da fila: o atendimento continua esperando um atendente. Ligado ao "Cliente
+                mandou mensagem", use 0 no intervalo entre respostas para o agente responder toda mensagem.
+              </p>
+            )}
+
             <Field
-              label="Objetivo desta etapa"
-              hint="Somado ao system prompt do agente. Diga o que precisa acontecer para a etapa terminar."
+              label={isQueueFlow ? "O que o agente deve fazer na fila" : "Objetivo desta etapa"}
+              hint={
+                isQueueFlow
+                  ? "Somado ao system prompt do agente. Ex.: tirar dúvidas enquanto o contato espera e avisar que um atendente já vai responder."
+                  : "Somado ao system prompt do agente. Diga o que precisa acontecer para a etapa terminar."
+              }
             >
               <textarea
                 value={data.goal ?? ""}
@@ -365,14 +376,20 @@ export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, on
 
             <OutputsEditor
               label="Saídas"
-              hint="A IA escolhe a saída ao concluir a etapa, com base na descrição."
+              hint={
+                isQueueFlow
+                  ? "Opcional. Quando o agente concluir por uma saída, o fluxo de fila segue por ela (ex.: mandar uma mensagem ou encerrar); sem saída, o contato só continua esperando."
+                  : "A IA escolhe a saída ao concluir a etapa, com base na descrição."
+              }
               outputs={data.outputs ?? []}
               withDescription
-              minItems={1}
+              minItems={isQueueFlow ? 0 : 1}
               onChange={(outputs) => update({ outputs })}
             />
 
-            {pipelines.length > 0 && <AgentCrmSettings data={data} pipelines={pipelines} crmFields={crmFields} update={update} />}
+            {pipelines.length > 0 && !isQueueFlow && (
+              <AgentCrmSettings data={data} pipelines={pipelines} crmFields={crmFields} update={update} />
+            )}
           </>
         )}
 
