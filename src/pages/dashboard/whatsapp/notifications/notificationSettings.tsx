@@ -2,6 +2,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Bell, BellOff } from "lucide-react";
 import { useState, type FC } from "react";
+import { BackgroundNotificationSettings } from "./backgroundNotificationSettings";
 import { isBrowserNotificationSupported, useNotificationPreferences, type NotificationPreferences } from "./useNotificationPreferences";
 
 const options: { key: keyof NotificationPreferences; label: string; description: string }[] = [
@@ -74,7 +75,8 @@ export const NotificationSettings: FC = () => {
             Este navegador não tem notificações do sistema. Os avisos aparecem só com a aba aberta.
           </p>
         )}
-        <p className="text-muted-foreground border-t pt-2 text-xs">Os avisos chegam enquanto a tela de WhatsApp estiver aberta.</p>
+        <p className="text-muted-foreground border-t pt-2 text-xs">Os avisos acima chegam enquanto a tela de WhatsApp estiver aberta.</p>
+        <BackgroundNotificationSettings />
       </PopoverContent>
     </Popover>
   );

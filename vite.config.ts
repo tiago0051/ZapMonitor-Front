@@ -51,6 +51,8 @@ export default defineConfig(({ mode }) => {
         workbox: {
           // defining cached files formats
           globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest}"],
+          // Notificações em segundo plano (push e clique na notificação)
+          importScripts: ["/push-sw.js"],
         },
       }),
     ],
