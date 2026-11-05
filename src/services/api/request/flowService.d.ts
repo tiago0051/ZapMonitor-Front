@@ -61,3 +61,11 @@ type CreateFlowTestContactRequestData = {
 type FlowTestContactRequestData = {
   params: FlowRequestParams & { testContactId: string };
 };
+
+type SimulateFlowRequestData = {
+  params: FlowRequestParams;
+  body:
+    | { action: "start" }
+    | { action: "reply"; state: FlowSimulationState; text: string }
+    | { action: "forward"; state: FlowSimulationState; outputId: string };
+};

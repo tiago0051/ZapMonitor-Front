@@ -26,7 +26,7 @@ import {
   type Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { ArrowLeft, Loader2, Phone, Rocket, Save, Undo2 } from "lucide-react";
+import { ArrowLeft, Loader2, MessageSquareText, Phone, Rocket, Save, Undo2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useWhatsappConfigurations } from "../flowLinks";
@@ -39,6 +39,7 @@ import { FlowIssuesPanel } from "./flowIssuesPanel";
 import { createFlowId, flowNodeConfigs, getFlowNodeOutputs } from "./flowNodeConfig";
 import { FlowNodePanel } from "./flowNodePanel";
 import { DiscardDraftDialog, FlowVersionHistory, PublishFlowDialog } from "./flowPublishing";
+import { FlowSimulator } from "./flowSimulator";
 import { FlowTestContacts } from "./flowTesting";
 
 const nodeTypes = Object.fromEntries(Object.keys(flowNodeConfigs).map((type) => [type, FlowCanvasNode]));
@@ -117,6 +118,16 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
   const [isIssuesOpen, setIsIssuesOpen] = useState(false);
   const [isPublishOpen, setIsPublishOpen] = useState(false);
   const [isDiscardOpen, setIsDiscardOpen] = useState(false);
+  const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
+
+  // O nó em que a simulação está fica selecionado no canvas
+  const highlightSimulationNode = useCallback(
+    (nodeId: string | null) => {
+      setNodes((currentNodes) => currentNodes.map((node) => ({ ...node, selected: !!nodeId && node.id === nodeId })));
+      if (nodeId) fitView({ nodes: [{ id: nodeId }], duration: 300, maxZoom: 1 });
+    },
+    [setNodes, fitView],
+  );
 
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) ?? null;
 
@@ -447,6 +458,17 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
               <Undo2 className="h-4 w-4" />
             </Button>
           )}
+          <Button
+            variant="outline"
+            title="Conversar com o rascunho salvo, sem WhatsApp"
+            onClick={() => {
+              setSelectedNodeId(null);
+              setIsSimulatorOpen(true);
+            }}
+          >
+            <MessageSquareText className="h-4 w-4" />
+            Simular
+          </Button>
           <FlowTestContacts clientId={clientId} flow={flow} />
           <FlowVersionHistory
             clientId={clientId}
@@ -543,7 +565,19 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
           </FlowIssuesContext.Provider>
         </div>
 
-        {selectedNode && (
+        {isSimulatorOpen && (
+          <aside className="bg-card w-96 shrink-0 border-l">
+            <FlowSimulator
+              clientId={clientId}
+              flow={flow}
+              isDirty={isDirty}
+              onClose={() => setIsSimulatorOpen(false)}
+              onCurrentNode={highlightSimulationNode}
+            />
+          </aside>
+        )}
+
+        {selectedNode && !isSimulatorOpen && (
           <aside className="bg-card w-80 shrink-0 border-l">
             <FlowNodePanel
               key={selectedNode.id}

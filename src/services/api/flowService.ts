@@ -65,6 +65,11 @@ export const flowService = {
     return response.data;
   },
 
+  simulate: async ({ params, body }: SimulateFlowRequestData): Promise<FlowSimulationResult> => {
+    const response = await api.post(`/client/${params.clientId}/flow/${params.flowId}/simulate`, body, { timeout: 90000 });
+    return response.data;
+  },
+
   activate: async ({ params }: ToggleFlowRequestData): Promise<Flow> => {
     const response = await api.put(`/client/${params.clientId}/flow/${params.flowId}/activate`);
     return response.data;

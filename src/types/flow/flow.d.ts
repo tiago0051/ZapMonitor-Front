@@ -110,3 +110,27 @@ type FlowTestContact = {
   phoneNumber: string;
   createdAt: string;
 };
+
+type FlowSimulationState = {
+  rootFlowId: string;
+  flowId: string;
+  nodeId: string | null;
+  finished: boolean;
+  history: { role: "contact" | "bot"; text: string }[];
+};
+
+type FlowSimulationEvent = {
+  // bot: mensagem do fluxo; info: o que aconteceria (categoria, CRM...); queue: foi para a fila; end: encerrou
+  kind: "bot" | "info" | "queue" | "end";
+  text: string;
+  buttons?: string[];
+  flowId: string;
+  nodeId?: string;
+};
+
+type FlowSimulationResult = {
+  state: FlowSimulationState;
+  events: FlowSimulationEvent[];
+  visitedNodeIds: string[];
+  forwardOptions: FlowOutput[];
+};
