@@ -245,7 +245,7 @@ export const AdsResults: FC<{ account: AdAccount }> = ({ account }) => {
           )}
           <p className="text-muted-foreground text-xs">
             Conversas e leads são contados pela Meta. Negócios, qualificados e ganhos vêm do CRM: negócios criados no período a partir de um
-            anúncio, e qualificados são os que passaram da primeira etapa.
+            anúncio, e qualificados são os que entraram numa etapa do funil com o evento QualifiedLead configurado.
           </p>
         </>
       )}
