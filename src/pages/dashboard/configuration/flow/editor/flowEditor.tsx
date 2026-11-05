@@ -26,7 +26,7 @@ import {
   type Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { ArrowLeft, Loader2, Phone, Save } from "lucide-react";
+import { ArrowLeft, Loader2, Phone, Rocket, Save, Undo2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useWhatsappConfigurations } from "../flowLinks";
@@ -38,6 +38,7 @@ import { FlowEditorContext, FlowIssuesContext, useFlowEditorContext } from "./fl
 import { FlowIssuesPanel } from "./flowIssuesPanel";
 import { createFlowId, flowNodeConfigs, getFlowNodeOutputs } from "./flowNodeConfig";
 import { FlowNodePanel } from "./flowNodePanel";
+import { DiscardDraftDialog, FlowVersionHistory, PublishFlowDialog } from "./flowPublishing";
 
 const nodeTypes = Object.fromEntries(Object.keys(flowNodeConfigs).map((type) => [type, FlowCanvasNode]));
 const paletteNodeTypes: FlowNodeType[] = [
@@ -90,12 +91,17 @@ type FlowEditorCanvasProps = {
   flow: Flow;
 };
 
+// O editor mostra o rascunho; sem rascunho, a versão publicada
+const editingDefinition = (flow: Flow) => flow.draftDefinition ?? flow.definition;
+
+const isConflict = (error: unknown) => isAxiosError(error) && error.response?.status === 409;
+
 const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
   const queryClient = useQueryClient();
   const { screenToFlowPosition, fitView } = useReactFlow();
 
-  const [nodes, setNodes, onNodesChange] = useNodesState<FlowCanvasNodeType>(toCanvasNodes(flow.definition));
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(toCanvasEdges(flow.definition));
+  const [nodes, setNodes, onNodesChange] = useNodesState<FlowCanvasNodeType>(toCanvasNodes(editingDefinition(flow)));
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(toCanvasEdges(editingDefinition(flow)));
   const [name, setName] = useState(flow.name);
   const [resetAfterMinutes, setResetAfterMinutes] = useState(flow.resetAfterMinutes);
   const [whatsappConfigurationIds, setWhatsappConfigurationIds] = useState(flow.whatsappConfigurationIds);
@@ -108,6 +114,8 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
   const [isDirty, setIsDirty] = useState(false);
   const [rejectedIssues, setRejectedIssues] = useState<RejectedIssues | null>(null);
   const [isIssuesOpen, setIsIssuesOpen] = useState(false);
+  const [isPublishOpen, setIsPublishOpen] = useState(false);
+  const [isDiscardOpen, setIsDiscardOpen] = useState(false);
 
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) ?? null;
 
@@ -116,33 +124,95 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
     queryClient.invalidateQueries({ queryKey: ["flows", clientId] });
   };
 
-  const handleIssuesError = (error: unknown) => {
+  // Troca o que está no canvas pelo fluxo recebido (descartar, restaurar ou recarregar depois de conflito)
+  const loadFlow = (loadedFlow: Flow) => {
+    setNodes(toCanvasNodes(editingDefinition(loadedFlow)));
+    setEdges(toCanvasEdges(editingDefinition(loadedFlow)));
+    setName(loadedFlow.name);
+    setResetAfterMinutes(loadedFlow.resetAfterMinutes);
+    setWhatsappConfigurationIds(loadedFlow.whatsappConfigurationIds);
+    setSelectedNodeId(null);
+    setRejectedIssues(null);
+    setIsDirty(false);
+    onFlowSaved(loadedFlow);
+  };
+
+  const reloadFlow = async () => {
+    const latestFlow = await flowService.findById({ params: { clientId, flowId: flow.id } });
+    loadFlow(latestFlow);
+    toast.success("Fluxo recarregado com a versão mais recente");
+  };
+
+  const handleIssuesError = (title: string) => (error: unknown) => {
+    if (isConflict(error))
+      return toast.error("Outra pessoa salvou este fluxo depois que você abriu", {
+        description: "Recarregue para ver a versão atual. As suas alterações não salvas serão perdidas.",
+        action: { label: "Recarregar", onClick: () => void reloadFlow() },
+        duration: 15000,
+      });
+
     const rejected = getRejectedIssues(error);
     if (!rejected) return requestErrorHandling(error);
 
     setRejectedIssues(rejected);
     setIsIssuesOpen(true);
-    toast.error("Fluxo não salvo", { description: `Corrija as ${rejected.issues.length} pendência(s) listadas sobre o fluxo.` });
+    toast.error(title, { description: `Corrija as ${rejected.issues.length} pendência(s) listadas sobre o fluxo.` });
   };
 
   const updateFlow = useMutation({
     mutationFn: flowService.update,
-    onError: handleIssuesError,
+    onError: handleIssuesError("Fluxo não salvo"),
     onSuccess: (savedFlow) => {
       onFlowSaved(savedFlow);
       setIsDirty(false);
       setRejectedIssues(null);
+      toast.success(savedFlow.draftDefinition ? "Rascunho salvo. Publique para colocar as alterações no ar." : "Fluxo salvo");
+    },
+  });
+
+  const publishFlow = useMutation({
+    mutationFn: flowService.publish,
+    onError: (error) => {
+      setIsPublishOpen(false);
+      handleIssuesError("Fluxo não publicado")(error);
+    },
+    onSuccess: (publishedFlow) => {
+      onFlowSaved(publishedFlow);
+      setIsPublishOpen(false);
+      setRejectedIssues(null);
       toast.success(
-        savedFlow.version > flow.version
-          ? `Fluxo salvo como versão ${savedFlow.version}. Atendimentos em andamento continuam na versão em que começaram.`
-          : "Fluxo salvo",
+        publishedFlow.active
+          ? `Versão ${publishedFlow.version} publicada. Novos atendimentos já usam esta versão.`
+          : `Versão ${publishedFlow.version} publicada. Ative o fluxo para ela começar a atender.`,
       );
+    },
+  });
+
+  const discardDraft = useMutation({
+    mutationFn: flowService.discardDraft,
+    onError: requestErrorHandling,
+    onSuccess: (savedFlow) => {
+      loadFlow(savedFlow);
+      setIsDiscardOpen(false);
+      toast.success(`Rascunho descartado. O editor voltou para a versão ${savedFlow.version}.`);
+    },
+  });
+
+  const restoreVersion = useMutation({
+    mutationFn: flowService.restoreVersion,
+    onError: requestErrorHandling,
+    onSuccess: (savedFlow, { params }) => {
+      loadFlow(savedFlow);
+      const restored = queryClient
+        .getQueryData<FlowVersion[]>(["flowVersions", clientId, flow.id, flow.version])
+        ?.find((version) => version.id === params.versionId);
+      toast.success(`Versão ${restored?.version ?? ""} copiada para o rascunho. Publique para colocá-la no ar.`);
     },
   });
 
   const toggleFlow = useMutation({
     mutationFn: flow.active ? flowService.deactivate : flowService.activate,
-    onError: handleIssuesError,
+    onError: handleIssuesError("Fluxo não ativado"),
     onSuccess: (savedFlow) => {
       onFlowSaved(savedFlow);
       toast.success(savedFlow.active ? "Fluxo ativado. Novos atendimentos passam por ele." : "Fluxo desativado");
@@ -152,7 +222,13 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
   const handleSave = () => {
     updateFlow.mutate({
       params: { clientId, flowId: flow.id },
-      body: { name: name.trim(), resetAfterMinutes, definition: toDefinition(nodes, edges), whatsappConfigurationIds },
+      body: {
+        name: name.trim(),
+        resetAfterMinutes,
+        definition: toDefinition(nodes, edges),
+        whatsappConfigurationIds,
+        expectedUpdatedAt: flow.updatedAt,
+      },
     });
   };
 
@@ -227,14 +303,14 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
     setIsDirty(true);
   };
 
-  // A recusa mais recente mostra o rascunho que o usuário tentou salvar; sem ela, vale a última versão salva
+  // A recusa mais recente mostra o que o usuário tentou publicar ou ativar; sem ela, vale o que está salvo no editor
   const issues = rejectedIssues?.issues ?? flow.issues;
   const issuesTitle = rejectedIssues
-    ? `Fluxo não salvo: ${rejectedIssues.issues.length} pendência(s)`
-    : `${flow.issues.length} pendência(s) na última versão salva`;
+    ? `${rejectedIssues.issues.length} pendência(s)`
+    : `${flow.issues.length} pendência(s) ${flow.draftDefinition ? "no rascunho salvo" : "na versão publicada"}`;
   const issuesDescription = rejectedIssues
     ? `${rejectedIssues.title}. Clique em um item para ir até o nó.`
-    : "Resolva para poder ativar o fluxo. Clique em um item para ir até o nó.";
+    : "Resolva para poder publicar. Clique em um item para ir até o nó.";
   const issueCountByNodeId = useMemo(() => {
     const counts = new Map<string, number>();
     for (const issue of issues) {
@@ -243,8 +319,24 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
     return counts;
   }, [issues]);
 
-  const isPending = updateFlow.isPending || toggleFlow.isPending;
-  const canActivate = !flow.active && flow.issues.length === 0 && !isDirty;
+  const isPending =
+    updateFlow.isPending || toggleFlow.isPending || publishFlow.isPending || discardDraft.isPending || restoreVersion.isPending;
+  const hasDraft = !!flow.draftDefinition;
+  const canPublish = hasDraft && !isDirty && flow.issues.length === 0;
+  const publishTitle = isDirty
+    ? "Salve as alterações antes de publicar"
+    : !hasDraft
+      ? "Nada para publicar: o editor está igual à versão no ar"
+      : flow.issues.length > 0
+        ? "Resolva as pendências do rascunho para publicar"
+        : undefined;
+  const canActivate = !flow.active && flow.version > 0 && flow.publishedIssues.length === 0;
+  const activateTitle =
+    flow.version === 0
+      ? "Publique o fluxo antes de ativar"
+      : flow.publishedIssues.length > 0
+        ? "A versão publicada tem pendências: corrija, publique e ative"
+        : undefined;
 
   return (
     <div className="flex h-full flex-col">
@@ -318,27 +410,72 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
           </Popover>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Badge variant={flow.active ? "default" : "secondary"}>{flow.active ? "Ativo" : "Inativo"}</Badge>
-          {flow.version > 0 && (
-            <Badge variant="outline" title="Cada edição gera uma versão; atendimentos em andamento continuam na versão em que começaram">
-              Versão {flow.version}
-            </Badge>
+          <Badge variant="outline" title="Cada publicação gera uma versão; atendimentos em andamento continuam na versão em que começaram">
+            {flow.version > 0 ? `Versão ${flow.version} no ar` : "Nunca publicado"}
+          </Badge>
+          {isDirty ? (
+            <span className="text-muted-foreground text-xs">Alterações não salvas</span>
+          ) : (
+            hasDraft &&
+            flow.version > 0 && <span className="text-xs font-medium text-amber-700 dark:text-amber-400">Rascunho não publicado</span>
           )}
-          {isDirty && <span className="text-muted-foreground text-xs">Alterações não salvas</span>}
-          <Button onClick={handleSave} disabled={isPending || !name.trim() || !Number.isInteger(resetAfterMinutes)}>
+          <Button
+            variant="outline"
+            onClick={handleSave}
+            disabled={isPending || !name.trim() || !Number.isInteger(resetAfterMinutes)}
+            title="Salva o rascunho; os atendimentos continuam na versão publicada"
+          >
             {updateFlow.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Salvar
+            Salvar rascunho
           </Button>
+          <Button disabled={isPending || !canPublish} title={publishTitle} onClick={() => setIsPublishOpen(true)}>
+            <Rocket className="h-4 w-4" />
+            Publicar
+          </Button>
+          {hasDraft && flow.version > 0 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Descartar rascunho"
+              title="Descartar rascunho e voltar para a versão publicada"
+              disabled={isPending}
+              onClick={() => setIsDiscardOpen(true)}
+            >
+              <Undo2 className="h-4 w-4" />
+            </Button>
+          )}
+          <FlowVersionHistory
+            clientId={clientId}
+            flow={flow}
+            disabled={isDirty || isPending}
+            restoringVersionId={restoreVersion.isPending ? (restoreVersion.variables?.params.versionId ?? null) : null}
+            onRestore={(version) => restoreVersion.mutate({ params: { clientId, flowId: flow.id, versionId: version.id } })}
+          />
           <Button
             variant={flow.active ? "outline" : "secondary"}
             disabled={isPending || (!flow.active && !canActivate)}
-            title={!flow.active && !canActivate ? "Salve o fluxo e resolva as pendências para ativar" : undefined}
+            title={!flow.active ? activateTitle : undefined}
             onClick={() => toggleFlow.mutate({ params: { clientId, flowId: flow.id } })}
           >
             {flow.active ? "Desativar" : "Ativar"}
           </Button>
         </div>
+        <PublishFlowDialog
+          flow={flow}
+          open={isPublishOpen}
+          onOpenChange={setIsPublishOpen}
+          isPending={publishFlow.isPending}
+          onConfirm={() => publishFlow.mutate({ params: { clientId, flowId: flow.id }, body: { expectedUpdatedAt: flow.updatedAt } })}
+        />
+        <DiscardDraftDialog
+          flow={flow}
+          open={isDiscardOpen}
+          onOpenChange={setIsDiscardOpen}
+          isPending={discardDraft.isPending}
+          onConfirm={() => discardDraft.mutate({ params: { clientId, flowId: flow.id } })}
+        />
       </div>
 
       <div className="flex min-h-0 flex-1">

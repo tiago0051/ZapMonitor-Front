@@ -77,12 +77,27 @@ type Flow = {
   name: string;
   active: boolean;
   resetAfterMinutes: number;
-  // Cada edição do grafo gera uma versão; atendimentos seguem na versão em que começaram
+  // Cada publicação gera uma versão (0 = nunca publicado); atendimentos seguem na versão em que começaram
   version: number;
+  // Versão publicada, a que atende os contatos
   definition: FlowDefinition;
+  // Rascunho em edição; nulo quando o editor está igual à versão publicada
+  draftDefinition: FlowDefinition | null;
+  draftUpdatedAt: string | null;
   // Números cujos novos atendimentos começam neste fluxo
   whatsappConfigurationIds: string[];
+  // Pendências do que está no editor (impedem publicar) e da versão publicada (impedem ativar)
   issues: FlowIssue[];
+  publishedIssues: FlowIssue[];
   createdAt: string;
   updatedAt: string;
+};
+
+type FlowVersion = {
+  id: string;
+  version: number;
+  publishedByName: string | null;
+  createdAt: string;
+  // A versão no ar agora
+  current: boolean;
 };

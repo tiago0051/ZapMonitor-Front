@@ -3,11 +3,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { flowService } from "@/services/api/flowService";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { requestErrorHandling } from "@/utils/request";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { AlertTriangle, ArrowRight, CornerDownRight, Pencil, Phone, Workflow } from "lucide-react";
+import { AlertTriangle, ArrowRight, Copy, CornerDownRight, Pencil, Phone, Workflow } from "lucide-react";
 import { findFlowSources, findFlowTargetIds, useWhatsappConfigurations } from "./flowLinks";
-import { Link, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
+import { toast } from "sonner";
 import { DialogCreateFlow } from "./components/dialogCreateFlow";
 
 export const Flows = () => {
@@ -17,6 +19,20 @@ export const Flows = () => {
     meta: { errorHandledInline: true },
     queryKey: ["flows", clientId],
     queryFn: () => flowService.findAll({ params: { clientId: clientId! } }),
+  });
+
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const duplicateFlow = useMutation({
+    mutationFn: flowService.duplicate,
+    onError: requestErrorHandling,
+    onSuccess: (copy) => {
+      queryClient.invalidateQueries({ queryKey: ["flows", clientId] });
+      toast.success(`Cópia criada: ${copy.name}`, {
+        description: "Ela nasce inativa e sem número. Publique e ative quando estiver pronta.",
+      });
+      navigate(`flow/${copy.id}`);
+    },
   });
 
   const flows = findAllFlowsQuery.data;
@@ -60,6 +76,17 @@ export const Flows = () => {
                       {flow.version > 0 && <Badge variant="outline">v{flow.version}</Badge>}
                     </div>
                     <div className="flex shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground h-8 w-8"
+                        aria-label={`Duplicar ${flow.name}`}
+                        title="Duplicar"
+                        disabled={duplicateFlow.isPending}
+                        onClick={() => duplicateFlow.mutate({ params: { clientId: clientId!, flowId: flow.id }, body: {} })}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="text-muted-foreground h-8 w-8" asChild>
                         <Link to={`flow/${flow.id}`}>
                           <Pencil className="h-4 w-4" />
@@ -69,8 +96,14 @@ export const Flows = () => {
                   </div>
 
                   <p className="text-muted-foreground text-sm">
-                    {flow.definition.nodes.length} nó(s) · reinicia após {flow.resetAfterMinutes} min sem interação
+                    {(flow.draftDefinition ?? flow.definition).nodes.length} nó(s) · reinicia após {flow.resetAfterMinutes} min sem
+                    interação
                   </p>
+                  {flow.draftDefinition && (
+                    <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                      {flow.version === 0 ? "Nunca publicado" : "Rascunho com alterações não publicadas"}
+                    </p>
+                  )}
 
                   <div className="space-y-1 text-sm">
                     <p className="flex items-start gap-1.5">
@@ -98,7 +131,7 @@ export const Flows = () => {
                   {flow.issues.length > 0 && (
                     <p className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400">
                       <AlertTriangle className="h-3.5 w-3.5" />
-                      {flow.issues.length} pendência(s) para ativar
+                      {flow.issues.length} pendência(s) para publicar
                     </p>
                   )}
 
