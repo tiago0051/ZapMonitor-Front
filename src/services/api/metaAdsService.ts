@@ -308,6 +308,13 @@ export const metaAdsService = {
     return response.data;
   },
 
+  undoDraftPublication: async ({ params }: { params: { clientId: string; draftId: string } }): Promise<AdCampaignDraft> => {
+    const response = await api.post(`/client/${params.clientId}/meta-ads/draft/${params.draftId}/undo-publication`, undefined, {
+      timeout: 120000,
+    });
+    return response.data;
+  },
+
   activateDraft: async ({ params }: { params: { clientId: string; draftId: string } }): Promise<AdCampaignDraft> => {
     const response = await api.post(`/client/${params.clientId}/meta-ads/draft/${params.draftId}/activate`);
     return response.data;
