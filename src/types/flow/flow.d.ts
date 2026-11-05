@@ -9,6 +9,8 @@ type FlowNodeType =
   | "removeCategory"
   | "replaceCategories"
   | "crm"
+  // Pede à IA a análise dos negócios abertos do contato
+  | "crmAnalysis"
   | "flow"
   | "end";
 

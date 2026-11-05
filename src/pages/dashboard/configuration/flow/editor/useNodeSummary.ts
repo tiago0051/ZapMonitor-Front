@@ -28,6 +28,10 @@ export function useNodeSummary(type: FlowNodeType, data: FlowNodeData) {
       const stage = pipeline?.stages.find((item) => item.id === data.stageId);
       return pipeline && stage ? `${pipeline.name} → ${stage.name}` : "Selecione o funil e a etapa";
     }
+    case "crmAnalysis":
+      return data.pipelineId
+        ? `Negócios do funil ${pipelines.find((item) => item.id === data.pipelineId)?.name ?? "removido"}`
+        : "Todos os negócios abertos do contato";
     case "flow":
       return flows.find((flow) => flow.id === data.flowId)?.name ?? "Selecione um fluxo";
     case "businessHours": {

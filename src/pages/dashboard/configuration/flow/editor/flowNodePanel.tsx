@@ -355,6 +355,24 @@ export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, on
           </>
         )}
 
+        {type === "crmAnalysis" && (
+          <>
+            <Field
+              label="Funil"
+              hint="A IA lê a conversa e dá a nota, a etapa sugerida e o próximo passo de cada negócio aberto do contato. Roda em segundo plano: o fluxo segue na hora. Usa a cota de IA."
+            >
+              <select className={selectClassName} value={data.pipelineId ?? ""} onChange={(e) => update({ pipelineId: e.target.value })}>
+                <option value="">Todos os funis</option>
+                {pipelines.map((pipeline) => (
+                  <option key={pipeline.id} value={pipeline.id}>
+                    {pipeline.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </>
+        )}
+
         {type === "crm" && (
           <>
             <Field label="Funil" hint={pipelines.length === 0 ? "Cadastre um funil ativo na aba Funis." : undefined}>
