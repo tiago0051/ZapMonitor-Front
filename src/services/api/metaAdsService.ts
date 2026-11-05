@@ -145,6 +145,11 @@ export const metaAdsService = {
     return response.data;
   },
 
+  retryFailedConversionEvents: async ({ params }: MetaAdsClientParams): Promise<{ queued: number; expired: number }> => {
+    const response = await api.post(`/client/${params.clientId}/meta-ads/conversion-event/retry-failed`);
+    return response.data;
+  },
+
   retryConversionEvent: async ({ params }: { params: { clientId: string; eventId: string } }): Promise<void> => {
     await api.post(`/client/${params.clientId}/meta-ads/conversion-event/${params.eventId}/retry`);
   },
