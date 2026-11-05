@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { serviceGroupService } from "@/services/api/serviceGroupService";
 import { requestErrorHandling } from "@/utils/request";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { flowService } from "@/services/api/flowService";
 import { Pencil } from "lucide-react";
 import { useEffect, useState, type FC } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
@@ -25,6 +26,7 @@ const schema = z.object({
   name: z.string().trim().min(1, "O nome do grupo é obrigatório"),
   userIds: z.array(z.string()).min(1, "Selecione ao menos um usuário"),
   whatsappConfigurationIds: z.array(z.string()),
+  queueFlowId: z.string(),
 });
 
 type SchemaType = z.infer<typeof schema>;
@@ -35,6 +37,12 @@ export const DialogSaveServiceGroup: FC<DialogSaveServiceGroupProps> = ({ client
 
   const queryClient = useQueryClient();
   const { members, configurations, isLoading } = useServiceGroupOptions(clientId);
+  const flowsQuery = useQuery({
+    queryKey: ["flows", clientId],
+    queryFn: () => flowService.findAll({ params: { clientId } }),
+    enabled: isOpen,
+  });
+  const queueFlows = (flowsQuery.data ?? []).filter((flow) => flow.kind === "QUEUE");
 
   const onSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ["serviceGroups", clientId] });
@@ -62,11 +70,13 @@ export const DialogSaveServiceGroup: FC<DialogSaveServiceGroupProps> = ({ client
       name: "",
       userIds: [],
       whatsappConfigurationIds: [],
+      queueFlowId: "",
     },
     disabled: isPending,
   });
 
-  const handleSubmit: SubmitHandler<SchemaType> = (data) => {
+  const handleSubmit: SubmitHandler<SchemaType> = ({ queueFlowId, ...rest }) => {
+    const data = { ...rest, queueFlowId: queueFlowId || null };
     if (serviceGroup) {
       updateServiceGroup.mutate({ params: { clientId, serviceGroupId: serviceGroup.id }, body: data });
       return;
@@ -82,6 +92,7 @@ export const DialogSaveServiceGroup: FC<DialogSaveServiceGroupProps> = ({ client
       name: serviceGroup?.name ?? "",
       userIds: serviceGroup?.userIds ?? [],
       whatsappConfigurationIds: serviceGroup?.whatsappConfigurationIds ?? [],
+      queueFlowId: serviceGroup?.queueFlowId ?? "",
     });
   }, [isOpen]);
 
@@ -181,6 +192,33 @@ export const DialogSaveServiceGroup: FC<DialogSaveServiceGroupProps> = ({ client
                     })}
                   </div>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="queueFlowId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Fluxo de fila</FormLabel>
+                  <select
+                    className="border-input dark:bg-input/30 flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs"
+                    value={field.value}
+                    disabled={field.disabled}
+                    onChange={(event) => field.onChange(event.target.value)}
+                  >
+                    <option value="">Nenhum</option>
+                    {queueFlows.map((flow) => (
+                      <option key={flow.id} value={flow.id}>
+                        {flow.name}
+                        {flow.active ? "" : " (inativo)"}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-muted-foreground text-xs">
+                    Age enquanto o contato espera neste grupo: mensagens a cada período e resposta a quem escreve. O nó Grupo de um fluxo
+                    pode escolher outro. Crie em Fluxos de atendimento, com o tipo Fila.
+                  </p>
                 </FormItem>
               )}
             />

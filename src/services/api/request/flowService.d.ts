@@ -20,6 +20,7 @@ type CreateFlowRequestData = {
   body: {
     name: string;
     resetAfterMinutes?: number;
+    kind?: FlowKind;
   };
 };
 
@@ -30,9 +31,43 @@ type UpdateFlowRequestData = {
     resetAfterMinutes: number;
     definition: FlowDefinition;
     whatsappConfigurationIds: string[];
+    // updatedAt do fluxo que o editor abriu; o back recusa se outra pessoa salvou depois
+    expectedUpdatedAt?: string;
   };
+};
+
+type PublishFlowRequestData = {
+  params: FlowRequestParams;
+  body: { expectedUpdatedAt?: string };
+};
+
+type RestoreFlowVersionRequestData = {
+  params: FlowRequestParams & { versionId: string };
+};
+
+type DuplicateFlowRequestData = {
+  params: FlowRequestParams;
+  body: { name?: string };
 };
 
 type ToggleFlowRequestData = {
   params: FlowRequestParams;
+};
+
+type CreateFlowTestContactRequestData = {
+  params: FlowRequestParams;
+  body: { phoneNumber: string };
+};
+
+type FlowTestContactRequestData = {
+  params: FlowRequestParams & { testContactId: string };
+};
+
+type SimulateFlowRequestData = {
+  params: FlowRequestParams;
+  body:
+    | { action: "start" }
+    | { action: "reply"; state: FlowSimulationState; text: string }
+    | { action: "forward"; state: FlowSimulationState; outputId: string }
+    | { action: "tick"; state: FlowSimulationState };
 };

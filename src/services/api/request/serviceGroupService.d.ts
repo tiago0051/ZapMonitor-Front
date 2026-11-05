@@ -10,6 +10,8 @@ type SaveServiceGroupRequestBody = {
   name: string;
   userIds: string[];
   whatsappConfigurationIds: string[];
+  // Fluxo de fila padrão do grupo; null tira
+  queueFlowId?: string | null;
 };
 
 type CreateServiceGroupRequestData = {

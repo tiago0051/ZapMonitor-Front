@@ -11,6 +11,7 @@ import {
   FLOW_CONDITION_MAX_BUTTON_TITLE,
   FLOW_CONDITION_MAX_BUTTONS,
   flowNodeConfigs,
+  QUEUE_MESSAGE_VARIABLES,
   WEEKDAY_LABELS,
 } from "./flowNodeConfig";
 
@@ -195,6 +196,9 @@ const AgentCrmSettings: FC<{
 
 export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, onDelete, onClose }) => {
   const { serviceGroups, aiAgents, categories, flows, pipelines, crmFields, currentFlowId } = useFlowEditorContext();
+  const isQueueFlow = flows.find((flow) => flow.id === currentFlowId)?.kind === "QUEUE";
+  const queueFlows = flows.filter((flow) => flow.kind === "QUEUE");
+  const queueTextHint = isQueueFlow ? `Use ${QUEUE_MESSAGE_VARIABLES}. Só é enviada dentro da janela de 24h do WhatsApp.` : undefined;
   const config = flowNodeConfigs[type];
   const Icon = config.icon;
 
@@ -222,8 +226,49 @@ export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, on
           <p className="text-sm">O fluxo começa aqui quando um contato abre um novo atendimento. Conecte a saída ao primeiro passo.</p>
         )}
 
+        {type === "queueTimer" && (
+          <>
+            <Field label="A cada (minutos)" hint="Conta a partir de quando o contato entrou na fila.">
+              <Input
+                type="number"
+                min={1}
+                max={1440}
+                value={data.everyMinutes ?? ""}
+                onChange={(e) => update({ everyMinutes: e.target.valueAsNumber })}
+              />
+            </Field>
+            <Field label="Repetir no máximo" hint="Depois disso o fluxo para; o contato continua na fila.">
+              <Input
+                type="number"
+                min={1}
+                max={50}
+                value={data.maxRepetitions ?? ""}
+                onChange={(e) => update({ maxRepetitions: e.target.valueAsNumber })}
+              />
+            </Field>
+            <p className="text-muted-foreground text-xs">
+              Para quando um atendente assume, o atendimento termina ou o contato sai da fila.
+            </p>
+          </>
+        )}
+
+        {type === "queueMessage" && (
+          <Field
+            label="Intervalo mínimo entre respostas (minutos)"
+            hint="Quem manda várias mensagens seguidas recebe uma resposta só. Use 0 para responder toda mensagem."
+          >
+            <Input
+              type="number"
+              min={0}
+              max={1440}
+              value={data.cooldownMinutes ?? ""}
+              onChange={(e) => update({ cooldownMinutes: e.target.valueAsNumber })}
+            />
+          </Field>
+        )}
+
         {type === "message" && (
-          <Field label="Mensagem">
+          <Field label="Mensagem" hint={queueTextHint}>
             <textarea
               value={data.text ?? ""}
               onChange={(e) => update({ text: e.target.value })}
@@ -234,7 +279,10 @@ export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, on
         )}
 
         {type === "end" && (
-          <Field label="Mensagem de despedida" hint="Opcional. Enviada antes de finalizar o atendimento.">
+          <Field
+            label="Mensagem de despedida"
+            hint={`Opcional. Enviada antes de finalizar o atendimento.${queueTextHint ? ` ${queueTextHint}` : ""}`}
+          >
             <textarea
               value={data.text ?? ""}
               onChange={(e) => update({ text: e.target.value })}
@@ -345,6 +393,22 @@ export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, on
               </select>
             </Field>
 
+            <Field label="Fluxo de fila" hint="Age enquanto o contato espera: mensagens a cada período e resposta a quem escreve.">
+              <select
+                className={selectClassName}
+                value={data.queueFlowId ?? ""}
+                onChange={(e) => update({ queueFlowId: e.target.value || null })}
+              >
+                <option value="">O padrão do grupo</option>
+                {queueFlows.map((flow) => (
+                  <option key={flow.id} value={flow.id}>
+                    {flow.name}
+                    {flow.active ? "" : " (inativo)"}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
             <OutputsEditor
               label="Saídas"
               hint='O atendente escolhe uma destas saídas no botão "Encaminhar" da conversa.'
@@ -439,7 +503,7 @@ export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, on
             <select className={selectClassName} value={data.flowId ?? ""} onChange={(e) => update({ flowId: e.target.value })}>
               <option value="">Selecione...</option>
               {flows
-                .filter((flow) => flow.id !== currentFlowId)
+                .filter((flow) => flow.id !== currentFlowId && flow.kind !== "QUEUE")
                 .map((flow) => (
                   <option key={flow.id} value={flow.id}>
                     {flow.name}

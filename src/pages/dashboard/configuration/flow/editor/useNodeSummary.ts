@@ -32,6 +32,10 @@ export function useNodeSummary(type: FlowNodeType, data: FlowNodeData) {
       return data.pipelineId
         ? `Negócios do funil ${pipelines.find((item) => item.id === data.pipelineId)?.name ?? "removido"}`
         : "Todos os negócios abertos do contato";
+    case "queueTimer":
+      return `A cada ${data.everyMinutes ?? "?"} min, até ${data.maxRepetitions ?? "?"} vez(es)`;
+    case "queueMessage":
+      return data.cooldownMinutes ? `No máximo 1 resposta a cada ${data.cooldownMinutes} min` : "Responde toda mensagem";
     case "flow":
       return flows.find((flow) => flow.id === data.flowId)?.name ?? "Selecione um fluxo";
     case "businessHours": {
