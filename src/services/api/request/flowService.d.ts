@@ -52,3 +52,12 @@ type DuplicateFlowRequestData = {
 type ToggleFlowRequestData = {
   params: FlowRequestParams;
 };
+
+type CreateFlowTestContactRequestData = {
+  params: FlowRequestParams;
+  body: { phoneNumber: string };
+};
+
+type FlowTestContactRequestData = {
+  params: FlowRequestParams & { testContactId: string };
+};

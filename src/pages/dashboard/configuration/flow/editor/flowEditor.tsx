@@ -39,6 +39,7 @@ import { FlowIssuesPanel } from "./flowIssuesPanel";
 import { createFlowId, flowNodeConfigs, getFlowNodeOutputs } from "./flowNodeConfig";
 import { FlowNodePanel } from "./flowNodePanel";
 import { DiscardDraftDialog, FlowVersionHistory, PublishFlowDialog } from "./flowPublishing";
+import { FlowTestContacts } from "./flowTesting";
 
 const nodeTypes = Object.fromEntries(Object.keys(flowNodeConfigs).map((type) => [type, FlowCanvasNode]));
 const paletteNodeTypes: FlowNodeType[] = [
@@ -446,6 +447,7 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
               <Undo2 className="h-4 w-4" />
             </Button>
           )}
+          <FlowTestContacts clientId={clientId} flow={flow} />
           <FlowVersionHistory
             clientId={clientId}
             flow={flow}

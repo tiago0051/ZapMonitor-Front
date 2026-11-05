@@ -101,3 +101,12 @@ type FlowVersion = {
   // A versão no ar agora
   current: boolean;
 };
+
+// Telefone que, ao escrever para qualquer número do cliente, cai no rascunho do fluxo
+type FlowTestContact = {
+  id: string;
+  flowId: string;
+  // Só dígitos, com DDI
+  phoneNumber: string;
+  createdAt: string;
+};
