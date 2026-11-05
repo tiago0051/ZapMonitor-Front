@@ -9,7 +9,7 @@ import { metaAdsService } from "@/services/api/metaAdsService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { AlertTriangle, ArrowLeft, Loader2, Megaphone, Play, Plus, Rocket, Save, Sparkles, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Loader2, Megaphone, Play, Plus, Rocket, Save, Sparkles, Trash2, Undo2 } from "lucide-react";
 import { useState, type FC } from "react";
 import { toast } from "sonner";
 import { formatCount, formatMoney } from "../adsUtils";
@@ -176,7 +176,20 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
       onBack();
     },
   });
-  const isBusy = save.isPending || generate.isPending || publish.isPending || activate.isPending;
+  const [isConfirmingUndo, setIsConfirmingUndo] = useState(false);
+  const undo = useMutation({
+    mutationFn: metaAdsService.undoDraftPublication,
+    onError: requestErrorHandling,
+    onSuccess: (updated) => {
+      refresh(updated);
+      setIsConfirmingUndo(false);
+      toast.success("Campanha excluída da Meta. Corrija o plano e crie de novo.");
+    },
+  });
+  const isBusy = save.isPending || generate.isPending || publish.isPending || activate.isPending || undo.isPending;
+  // Criada (ou criada pela metade) e ainda não ativada: dá para excluir da Meta e voltar ao rascunho
+  const canUndo =
+    can("ads.manage") && !!draft.published?.campaignId && (draft.status === "FAILED" || draft.status === "PUBLISHED") && !draft.activatedAt;
 
   return (
     <div className="space-y-6">
@@ -211,7 +224,8 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
       {draft.error && draft.status === "FAILED" && (
         <p className="text-destructive flex items-start gap-2 text-sm">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          {draft.error} O que já foi criado ficou pausado; corrigindo, tente de novo e a criação continua de onde parou.
+          {draft.error} O que já foi criado ficou pausado. Se o erro estiver na Meta, tente de novo e a criação continua de onde parou; se
+          precisar mudar o plano (verba, público, criativo), exclua da Meta e volte ao rascunho.
         </p>
       )}
 
@@ -302,6 +316,27 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
               Ativar campanha
             </Button>
           )}
+          {canUndo &&
+            (isConfirmingUndo ? (
+              <>
+                <Button variant="destructive" disabled={isBusy} onClick={() => undo.mutate({ params })}>
+                  {undo.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Undo2 className="h-4 w-4" />}
+                  Confirmar exclusão na Meta
+                </Button>
+                <Button variant="ghost" disabled={undo.isPending} onClick={() => setIsConfirmingUndo(false)}>
+                  Cancelar
+                </Button>
+                <p className="text-muted-foreground basis-full text-xs">
+                  Exclui da Meta a campanha, os conjuntos, os anúncios e os criativos criados por aqui. O plano fica salvo para você
+                  corrigir e criar de novo.
+                </p>
+              </>
+            ) : (
+              <Button variant="outline" disabled={isBusy} onClick={() => setIsConfirmingUndo(true)}>
+                <Undo2 className="h-4 w-4" />
+                Excluir da Meta e voltar ao rascunho
+              </Button>
+            ))}
           {draft.status === "PUBLISHED" && !can("ads.approve") && (
             <p className="text-muted-foreground text-sm">Quem aprova anúncios ativa a campanha.</p>
           )}
