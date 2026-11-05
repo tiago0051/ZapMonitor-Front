@@ -4,6 +4,8 @@ import {
   Columns3,
   Flag,
   GitBranch,
+  Hourglass,
+  MessageCircleReply,
   MessageSquareText,
   Play,
   Replace,
@@ -134,7 +136,27 @@ export const flowNodeConfigs: Record<FlowNodeType, FlowNodeConfig> = {
     colorClassName: "text-rose-600 border-rose-500/60",
     defaultData: () => ({ text: "" }),
   },
+  queueTimer: {
+    label: "A cada período",
+    description: "Age de tempos em tempos enquanto o contato espera",
+    icon: Hourglass,
+    colorClassName: "text-emerald-600 border-emerald-500/60",
+    defaultData: () => ({ everyMinutes: 10, maxRepetitions: 3 }),
+  },
+  queueMessage: {
+    label: "Cliente mandou mensagem",
+    description: "Responde quem escreve enquanto espera",
+    icon: MessageCircleReply,
+    colorClassName: "text-emerald-600 border-emerald-500/60",
+    defaultData: () => ({ cooldownMinutes: 5 }),
+  },
 };
+
+// Pontos de entrada do fluxo de fila: como o Início, não recebem conexão
+export const FLOW_ENTRY_NODE_TYPES: FlowNodeType[] = ["start", "queueTimer", "queueMessage"];
+
+// Variáveis aceitas nas mensagens do fluxo de fila
+export const QUEUE_MESSAGE_VARIABLES = "{{nome}}, {{posicao}} (posição na fila) e {{espera}} (tempo esperando)";
 
 export function createFlowId() {
   return Math.random().toString(36).slice(2, 10);
@@ -149,6 +171,8 @@ export function getFlowNodeOutputs(type: FlowNodeType, data: FlowNodeData): Flow
     case "replaceCategories":
     case "crm":
     case "crmAnalysis":
+    case "queueTimer":
+    case "queueMessage":
       return [{ id: FLOW_OUTPUT_NEXT, label: "Próximo" }];
     case "businessHours":
       return [

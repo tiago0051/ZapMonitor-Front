@@ -3,7 +3,7 @@ import { AlertTriangle } from "lucide-react";
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import { memo } from "react";
 import { useFlowIssuesContext } from "./flowEditorContext";
-import { flowNodeConfigs, getFlowNodeOutputs } from "./flowNodeConfig";
+import { FLOW_ENTRY_NODE_TYPES, flowNodeConfigs, getFlowNodeOutputs } from "./flowNodeConfig";
 import { useNodeSummary } from "./useNodeSummary";
 
 export type FlowCanvasNodeType = Node<FlowNodeData, FlowNodeType>;
@@ -26,7 +26,9 @@ export const FlowCanvasNode = memo(({ id, type, data, selected }: NodeProps<Flow
         issueCount > 0 && !selected && "ring-2 ring-amber-400/70",
       )}
     >
-      {type !== "start" && <Handle type="target" position={Position.Left} className={handleClassName} />}
+      {!FLOW_ENTRY_NODE_TYPES.includes(type as FlowNodeType) && (
+        <Handle type="target" position={Position.Left} className={handleClassName} />
+      )}
 
       <div className="flex items-center gap-2 border-b px-3 py-2">
         <Icon className="h-4 w-4 shrink-0" />

@@ -17,7 +17,17 @@ type DialogCreateFlowProps = {
 
 const schema = z.object({
   name: z.string().trim().min(1, "O nome do fluxo é obrigatório").max(100, "Use no máximo 100 caracteres"),
+  kind: z.enum(["SERVICE", "QUEUE"]),
 });
+
+const KIND_OPTIONS: { value: FlowKind; label: string; description: string }[] = [
+  { value: "SERVICE", label: "Atendimento", description: "Conduz o contato desde a primeira mensagem: perguntas, IA, grupos." },
+  {
+    value: "QUEUE",
+    label: "Fila",
+    description: "Age enquanto o contato espera um atendente: mensagens a cada período e resposta a quem escreve.",
+  },
+];
 
 type SchemaType = z.infer<typeof schema>;
 
@@ -37,7 +47,7 @@ export const DialogCreateFlow: FC<DialogCreateFlowProps> = ({ clientId }) => {
 
   const form = useForm<SchemaType>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "" },
+    defaultValues: { name: "", kind: "SERVICE" },
     disabled: createFlow.isPending,
   });
 
@@ -59,7 +69,8 @@ export const DialogCreateFlow: FC<DialogCreateFlowProps> = ({ clientId }) => {
         <DialogHeader>
           <DialogTitle>Novo fluxo de atendimento</DialogTitle>
           <DialogDescription>
-            O fluxo é criado inativo. Depois de montá-lo no editor, ative-o para que novos atendimentos passem por ele.
+            O fluxo é criado inativo. Monte no editor, publique e ative. O fluxo de fila é escolhido no grupo de atendimento ou no nó Grupo
+            de outro fluxo.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -74,6 +85,36 @@ export const DialogCreateFlow: FC<DialogCreateFlowProps> = ({ clientId }) => {
                     <Input {...field} placeholder="Ex.: Atendimento padrão" />
                   </FormControl>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="kind"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo</FormLabel>
+                  <div className="grid gap-2" role="radiogroup">
+                    {KIND_OPTIONS.map((option) => (
+                      <label
+                        key={option.value}
+                        className="has-[:checked]:border-primary has-[:checked]:bg-primary/5 flex cursor-pointer items-start gap-2 rounded-lg border p-3"
+                      >
+                        <input
+                          type="radio"
+                          name={field.name}
+                          value={option.value}
+                          checked={field.value === option.value}
+                          onChange={() => field.onChange(option.value)}
+                          className="mt-1"
+                        />
+                        <span>
+                          <span className="block text-sm font-medium">{option.label}</span>
+                          <span className="text-muted-foreground block text-xs">{option.description}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
                 </FormItem>
               )}
             />

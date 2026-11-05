@@ -43,6 +43,19 @@ import { FlowSimulator } from "./flowSimulator";
 import { FlowTestContacts } from "./flowTesting";
 
 const nodeTypes = Object.fromEntries(Object.keys(flowNodeConfigs).map((type) => [type, FlowCanvasNode]));
+// Fluxo de fila: pontos de entrada e só nós que não tiram o contato da fila
+const queuePaletteNodeTypes: FlowNodeType[] = [
+  "queueTimer",
+  "queueMessage",
+  "message",
+  "businessHours",
+  "category",
+  "removeCategory",
+  "replaceCategories",
+  "crm",
+  "crmAnalysis",
+  "end",
+];
 const paletteNodeTypes: FlowNodeType[] = [
   "message",
   "condition",
@@ -111,7 +124,10 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
   const { flows } = useFlowEditorContext();
   const { access } = useClientContext();
   // Os nós do CRM só aparecem quando o plano inclui o módulo
-  const availableNodeTypes = paletteNodeTypes.filter((type) => (type !== "crm" && type !== "crmAnalysis") || access.crmEnabled);
+  const isQueueFlow = flow.kind === "QUEUE";
+  const availableNodeTypes = (isQueueFlow ? queuePaletteNodeTypes : paletteNodeTypes).filter(
+    (type) => (type !== "crm" && type !== "crmAnalysis") || access.crmEnabled,
+  );
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [rejectedIssues, setRejectedIssues] = useState<RejectedIssues | null>(null);
@@ -372,56 +388,59 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
           />
         </div>
 
-        <div className="w-44 space-y-1">
-          <Label htmlFor="flow-reset">Reiniciar após (min)</Label>
-          <Input
-            id="flow-reset"
-            type="number"
-            min={5}
-            max={10080}
-            value={resetAfterMinutes}
-            title="Minutos sem interação do contato com a IA ou a pergunta do fluxo; depois disso a próxima mensagem recomeça o fluxo"
-            onChange={(e) => {
-              setResetAfterMinutes(e.target.valueAsNumber);
-              setIsDirty(true);
-            }}
-          />
-        </div>
+        {!isQueueFlow && (
+          <>
+            <div className="w-44 space-y-1">
+              <Label htmlFor="flow-reset">Reiniciar após (min)</Label>
+              <Input
+                id="flow-reset"
+                type="number"
+                min={5}
+                max={10080}
+                value={resetAfterMinutes}
+                title="Minutos sem interação do contato com a IA ou a pergunta do fluxo; depois disso a próxima mensagem recomeça o fluxo"
+                onChange={(e) => {
+                  setResetAfterMinutes(e.target.valueAsNumber);
+                  setIsDirty(true);
+                }}
+              />
+            </div>
 
-        <div className="space-y-1">
-          <Label>Números</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="w-44 justify-start font-normal">
-                <Phone className="h-4 w-4" />
-                {whatsappConfigurationIds.length ? `${whatsappConfigurationIds.length} número(s)` : "Nenhum"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-80 space-y-2">
-              <p className="text-muted-foreground text-xs">
-                Novos atendimentos destes números começam neste fluxo. Sem número, o fluxo só é acionado pelo nó "Ir para fluxo".
-              </p>
-              {configurations.length === 0 && <p className="text-muted-foreground text-sm">Nenhum número cadastrado.</p>}
-              {configurations.map((configuration) => {
-                const otherFlowName = findOtherFlowName(configuration.id);
+            <div className="space-y-1">
+              <Label>Números</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-44 justify-start font-normal">
+                    <Phone className="h-4 w-4" />
+                    {whatsappConfigurationIds.length ? `${whatsappConfigurationIds.length} número(s)` : "Nenhum"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-80 space-y-2">
+                  <p className="text-muted-foreground text-xs">
+                    Novos atendimentos destes números começam neste fluxo. Sem número, o fluxo só é acionado pelo nó "Ir para fluxo".
+                  </p>
+                  {configurations.length === 0 && <p className="text-muted-foreground text-sm">Nenhum número cadastrado.</p>}
+                  {configurations.map((configuration) => {
+                    const otherFlowName = findOtherFlowName(configuration.id);
 
-                return (
-                  <label key={configuration.id} className="flex cursor-pointer items-center gap-2 text-sm">
-                    <Checkbox
-                      checked={whatsappConfigurationIds.includes(configuration.id)}
-                      onCheckedChange={(checked) => toggleConfiguration(configuration.id, checked === true)}
-                    />
-                    <span>{configuration.phoneNumber}</span>
-                    {otherFlowName && !whatsappConfigurationIds.includes(configuration.id) && (
-                      <span className="text-muted-foreground truncate text-xs">(hoje inicia {otherFlowName})</span>
-                    )}
-                  </label>
-                );
-              })}
-            </PopoverContent>
-          </Popover>
-        </div>
-
+                    return (
+                      <label key={configuration.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                        <Checkbox
+                          checked={whatsappConfigurationIds.includes(configuration.id)}
+                          onCheckedChange={(checked) => toggleConfiguration(configuration.id, checked === true)}
+                        />
+                        <span>{configuration.phoneNumber}</span>
+                        {otherFlowName && !whatsappConfigurationIds.includes(configuration.id) && (
+                          <span className="text-muted-foreground truncate text-xs">(hoje inicia {otherFlowName})</span>
+                        )}
+                      </label>
+                    );
+                  })}
+                </PopoverContent>
+              </Popover>
+            </div>
+          </>
+        )}
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant={flow.active ? "default" : "secondary"}>{flow.active ? "Ativo" : "Inativo"}</Badge>
           <Badge variant="outline" title="Cada publicação gera uma versão; atendimentos em andamento continuam na versão em que começaram">
@@ -469,7 +488,7 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
             <MessageSquareText className="h-4 w-4" />
             Simular
           </Button>
-          <FlowTestContacts clientId={clientId} flow={flow} />
+          {!isQueueFlow && <FlowTestContacts clientId={clientId} flow={flow} />}
           <FlowVersionHistory
             clientId={clientId}
             flow={flow}

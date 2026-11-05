@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { flowService } from "@/services/api/flowService";
 import { requestErrorHandling } from "@/utils/request";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { AlertTriangle, ArrowRight, Copy, CornerDownRight, Pencil, Phone, Workflow } from "lucide-react";
+import { AlertTriangle, ArrowRight, Copy, CornerDownRight, Pencil, Phone, Users, Workflow } from "lucide-react";
+import { serviceGroupService } from "@/services/api/serviceGroupService";
 import { findFlowSources, findFlowTargetIds, useWhatsappConfigurations } from "./flowLinks";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
@@ -36,6 +37,13 @@ export const Flows = () => {
   });
 
   const flows = findAllFlowsQuery.data;
+  const serviceGroupsQuery = useQuery({
+    queryKey: ["serviceGroups", clientId],
+    queryFn: () => serviceGroupService.findAll({ params: { clientId: clientId! } }),
+  });
+  // Grupos que usam o fluxo de fila como padrão
+  const queueGroupsOf = (flowId: string) =>
+    (serviceGroupsQuery.data ?? []).filter((group) => group.queueFlowId === flowId).map((group) => group.name);
   const configurations = useWhatsappConfigurations(clientId!);
 
   const getFlowName = (flowId: string) => flows.find((flow) => flow.id === flowId)?.name ?? "Fluxo removido";
@@ -73,6 +81,7 @@ export const Flows = () => {
                       <Workflow className="text-primary h-5 w-5 shrink-0" />
                       <h3 className="truncate text-base font-semibold">{flow.name}</h3>
                       <Badge variant={flow.active ? "default" : "secondary"}>{flow.active ? "Ativo" : "Inativo"}</Badge>
+                      {flow.kind === "QUEUE" && <Badge variant="outline">Fila</Badge>}
                       {flow.version > 0 && <Badge variant="outline">v{flow.version}</Badge>}
                     </div>
                     <div className="flex shrink-0">
@@ -106,14 +115,25 @@ export const Flows = () => {
                   )}
 
                   <div className="space-y-1 text-sm">
-                    <p className="flex items-start gap-1.5">
-                      <Phone className="text-muted-foreground mt-0.5 h-3.5 w-3.5 shrink-0" />
-                      {flow.whatsappConfigurationIds.length ? (
-                        <span>Inicia em {flow.whatsappConfigurationIds.map(getPhoneNumber).join(", ")}</span>
-                      ) : (
-                        <span className="text-muted-foreground">Sem número · só é acionado por outro fluxo</span>
-                      )}
-                    </p>
+                    {flow.kind === "QUEUE" ? (
+                      <p className="text-muted-foreground flex items-start gap-1.5">
+                        <Users className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        <span>
+                          {queueGroupsOf(flow.id).length
+                            ? `Fila de ${queueGroupsOf(flow.id).join(", ")}`
+                            : "Escolha este fluxo num grupo de atendimento ou no nó Grupo"}
+                        </span>
+                      </p>
+                    ) : (
+                      <p className="flex items-start gap-1.5">
+                        <Phone className="text-muted-foreground mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        {flow.whatsappConfigurationIds.length ? (
+                          <span>Inicia em {flow.whatsappConfigurationIds.map(getPhoneNumber).join(", ")}</span>
+                        ) : (
+                          <span className="text-muted-foreground">Sem número · só é acionado por outro fluxo</span>
+                        )}
+                      </p>
+                    )}
                     {sources.length > 0 && (
                       <p className="flex items-start gap-1.5">
                         <CornerDownRight className="text-muted-foreground mt-0.5 h-3.5 w-3.5 shrink-0" />

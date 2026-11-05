@@ -20,6 +20,7 @@ type CreateFlowRequestData = {
   body: {
     name: string;
     resetAfterMinutes?: number;
+    kind?: FlowKind;
   };
 };
 
@@ -67,5 +68,6 @@ type SimulateFlowRequestData = {
   body:
     | { action: "start" }
     | { action: "reply"; state: FlowSimulationState; text: string }
-    | { action: "forward"; state: FlowSimulationState; outputId: string };
+    | { action: "forward"; state: FlowSimulationState; outputId: string }
+    | { action: "tick"; state: FlowSimulationState };
 };

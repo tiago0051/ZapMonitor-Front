@@ -12,7 +12,13 @@ type FlowNodeType =
   // Pede à IA a análise dos negócios abertos do contato
   | "crmAnalysis"
   | "flow"
-  | "end";
+  | "end"
+  // Pontos de entrada do fluxo de fila
+  | "queueTimer"
+  | "queueMessage";
+
+// SERVICE conduz o atendimento a partir do Início; QUEUE age enquanto o contato espera na fila de um grupo
+type FlowKind = "SERVICE" | "QUEUE";
 
 type FlowOutput = {
   id: string;
@@ -44,6 +50,13 @@ type FlowNodeData = {
   stageId?: string;
   // Nó de agente: etapas e campos do CRM que o agente pode mudar no negócio do contato
   crm?: { pipelineId: string; stageIds: string[]; fieldIds: string[] } | null;
+  // Nó Grupo: fluxo de fila desta etapa; sem ele vale o do grupo
+  queueFlowId?: string | null;
+  // "A cada período": intervalo e limite de repetições
+  everyMinutes?: number;
+  maxRepetitions?: number;
+  // "Cliente mandou mensagem": intervalo mínimo entre respostas
+  cooldownMinutes?: number;
 };
 
 type FlowDefinitionNode = {
@@ -77,6 +90,7 @@ type Flow = {
   name: string;
   active: boolean;
   resetAfterMinutes: number;
+  kind: FlowKind;
   // Cada publicação gera uma versão (0 = nunca publicado); atendimentos seguem na versão em que começaram
   version: number;
   // Versão publicada, a que atende os contatos
@@ -133,4 +147,6 @@ type FlowSimulationResult = {
   events: FlowSimulationEvent[];
   visitedNodeIds: string[];
   forwardOptions: FlowOutput[];
+  // Fluxo de fila: dá para avançar o tempo
+  canTick: boolean;
 };

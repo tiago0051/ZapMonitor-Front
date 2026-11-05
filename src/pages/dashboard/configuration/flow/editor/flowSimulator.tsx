@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { flowService } from "@/services/api/flowService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation } from "@tanstack/react-query";
-import { CheckCircle2, Info, Loader2, RotateCcw, Send, Users, X } from "lucide-react";
+import { CheckCircle2, FastForward, Info, Loader2, RotateCcw, Send, Users, X } from "lucide-react";
 import { useEffect, useRef, useState, type FC } from "react";
 
 type ChatItem = { id: number; kind: "contact"; text: string } | (FlowSimulationEvent & { id: number });
@@ -178,6 +178,20 @@ export const FlowSimulator: FC<Props> = ({ clientId, flow, isDirty, onClose, onC
               </Button>
             ))}
           </div>
+        </div>
+      )}
+
+      {!isFinished && result?.canTick && (
+        <div className="border-t px-3 pt-3">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={step.isPending}
+            onClick={() => step.mutate({ action: "tick", state: result.state })}
+          >
+            <FastForward className="h-4 w-4" />
+            Avançar o tempo
+          </Button>
         </div>
       )}
 
