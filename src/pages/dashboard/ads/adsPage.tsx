@@ -35,6 +35,7 @@ import { AdsCampaignBuilder } from "./campaign/adsCampaignBuilder";
 import { AdsCrmAudiences } from "./campaign/adsCrmAudiences";
 import { AdsStrategyChatTab } from "./adsStrategyChatTab";
 import { AdsResults } from "./adsResults";
+import { AdsPilot } from "./pilot/adsPilot";
 
 const StatusChip: FC<{ status: string }> = ({ status }) => {
   const info = effectiveStatusInfo(status);
@@ -130,6 +131,8 @@ export const AdsPage = () => {
   const queryClient = useQueryClient();
   const [storedAccountId, setStoredAccountId] = useLocalStorage<string | null>(`ads:account:${client.id}`, null);
   const [tab, setTab] = useLocalStorage<string>(`ads:tab:${client.id}`, "results");
+  // Rascunho montado pelo piloto que a aba Criar campanha abre
+  const [pilotDraftId, setPilotDraftId] = useState<string | null>(null);
 
   const connectionQuery = useQuery({
     queryKey: ["metaAds", "connection", client.id],
@@ -224,6 +227,7 @@ export const AdsPage = () => {
       <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden">
         <TabsList className="mx-4 mt-3">
           <TabsTrigger value="results">Resultados</TabsTrigger>
+          <TabsTrigger value="pilot">Piloto automático</TabsTrigger>
           <TabsTrigger value="create">Criar campanha</TabsTrigger>
           <TabsTrigger value="suggestions">Sugestões</TabsTrigger>
           {can("ads.manage") && <TabsTrigger value="strategy">Estratégia</TabsTrigger>}
@@ -240,8 +244,19 @@ export const AdsPage = () => {
           <AdsResults key={currentAccount.id} account={currentAccount} />
         </TabsContent>
 
+        <TabsContent value="pilot" className="min-h-0 flex-1 overflow-auto p-4">
+          <AdsPilot
+            key={currentAccount.id}
+            account={currentAccount}
+            onOpenDraft={(draftId) => {
+              setPilotDraftId(draftId);
+              setTab("create");
+            }}
+          />
+        </TabsContent>
+
         <TabsContent value="create" className="min-h-0 flex-1 overflow-auto p-4">
-          <AdsCampaignBuilder key={currentAccount.id} account={currentAccount} />
+          <AdsCampaignBuilder key={`${currentAccount.id}-${pilotDraftId ?? ""}`} account={currentAccount} initialDraftId={pilotDraftId} />
         </TabsContent>
 
         <TabsContent value="suggestions" className="min-h-0 flex-1 overflow-auto p-4">

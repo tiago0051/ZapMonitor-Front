@@ -456,7 +456,19 @@ type AdCampaignDraft = AdDraftRouting & {
   updatedAt: string;
 };
 
-type AdCreativeAsset = { id: string; type: "IMAGE" | "VIDEO"; name: string; previewUrl: string | null; createdAt: string };
+// UPLOAD enviado pelo usuário, GENERATED gerado pela IA, POST postagem da página reaproveitada
+type AdAssetOrigin = "UPLOAD" | "GENERATED" | "POST";
+
+type AdCreativeAsset = {
+  id: string;
+  type: "IMAGE" | "VIDEO";
+  name: string;
+  previewUrl: string | null;
+  origin: AdAssetOrigin;
+  // Ângulo do criativo feito pela IA
+  angle: string | null;
+  createdAt: string;
+};
 
 type AdCrmAudienceKind = "CUSTOM" | "LOOKALIKE";
 
@@ -478,3 +490,149 @@ type AdCrmAudience = {
 };
 
 type AdAbTestCell = { cell: string; metaAdSetId: string; row: AdReportRow | null };
+
+// ---------- Piloto automático ----------
+
+type AdBrandProfileData = {
+  business: string;
+  products: string[];
+  audience: string;
+  differentiators: string[];
+  offers: string[];
+  proofs: string[];
+  tone: string;
+  restrictions: string[];
+  avoidWords: string[];
+  summary: string;
+};
+
+type AdBrandIdentity = { colors: string[]; visualStyle: string; logoDescription: string; engagingThemes: string[]; summary: string };
+
+type AdIdentitySourceStatus = "OK" | "MISSING_PERMISSION" | "NOT_LINKED" | "FAILED";
+
+type AdIdentitySources = {
+  page: AdIdentitySourceStatus;
+  facebookPosts: AdIdentitySourceStatus;
+  instagram: AdIdentitySourceStatus;
+  details: string[];
+};
+
+type AdCreativeInsights = {
+  winningPatterns: string[];
+  losingPatterns: string[];
+  recommendations: string[];
+  summary: string;
+  analyzedAdIds: string[];
+};
+
+type AdBrandSource = {
+  id: string;
+  kind: "TEXT" | "FILE";
+  name: string;
+  mimeType: string | null;
+  preview: string;
+  length: number;
+  createdAt: string;
+};
+
+type AdBrandPost = {
+  id: string;
+  platform: "FACEBOOK" | "INSTAGRAM";
+  caption: string | null;
+  mediaUrl: string | null;
+  permalink: string | null;
+  likes: number;
+  comments: number;
+  shares: number;
+  engagement: number;
+  postedAt: string | null;
+};
+
+type AdBrandProfile = {
+  id: string;
+  baseText: string | null;
+  profile: AdBrandProfileData | null;
+  profileUpdatedAt: string | null;
+  metaPageId: string | null;
+  instagramUsername: string | null;
+  hasLogo: boolean;
+  // Logo enviada pelo usuário; sem ela, a foto da página
+  logoUploaded: boolean;
+  identity: AdBrandIdentity | null;
+  identitySources: AdIdentitySources | null;
+  identityStatus: "PENDING" | "SYNCING" | "DONE" | "FAILED";
+  identityError: string | null;
+  identityUpdatedAt: string | null;
+  creativeInsights: AdCreativeInsights | null;
+  creativeInsightsAt: string | null;
+  pilotDailyEnabled: boolean;
+  whatsappConfigurationId: string | null;
+  // Permissões opcionais que faltam na conexão; sem elas as postagens não são lidas
+  missingOptionalScopes: string[];
+  sources: AdBrandSource[];
+  posts: AdBrandPost[];
+};
+
+type AdCreativeVerdict = "WINNER" | "LOSER" | "LEARNING";
+
+type AdCreativeScore = {
+  metaAdId: string;
+  name: string;
+  metaAdSetId: string | null;
+  metaCampaignId: string | null;
+  effectiveStatus: string | null;
+  title: string | null;
+  body: string | null;
+  imageUrl: string | null;
+  spend: number;
+  impressions: number;
+  ctr: number | null;
+  conversations: number;
+  deals: number;
+  wonDeals: number;
+  wonValue: number;
+  costPerConversation: number | null;
+  costPerWonDeal: number | null;
+  verdict: AdCreativeVerdict;
+};
+
+type AdPilotRunStatus = "RUNNING" | "DONE" | "FAILED";
+
+type AdPilotStep = "IDENTITY" | "HISTORY" | "INSIGHTS" | "PLAN" | "CREATIVES" | "DRAFT" | "REVIEW";
+
+type AdPilotRun = {
+  id: string;
+  kind: "CAMPAIGN" | "DAILY";
+  status: AdPilotRunStatus;
+  mode: "TEST" | "SCALE" | null;
+  step: AdPilotStep | null;
+  maxDailyBudget: number | null;
+  summary: string | null;
+  draftId: string | null;
+  error: string | null;
+  startedAt: string;
+  finishedAt: string | null;
+};
+
+type AdCreativeRefreshStatus = "OPEN" | "APPLIED" | "REJECTED" | "FAILED";
+
+type AdCreativeRefresh = {
+  id: string;
+  metaAdId: string;
+  metaAdSetId: string;
+  adName: string;
+  reason: string;
+  evidence: string;
+  assetId: string | null;
+  assetPreviewUrl: string | null;
+  assetOrigin: AdAssetOrigin | null;
+  primaryText: string;
+  headline: string;
+  description: string | null;
+  welcomeMessage: string;
+  status: AdCreativeRefreshStatus;
+  newMetaAdId: string | null;
+  error: string | null;
+  decidedAt: string | null;
+  createdAt: string;
+};
