@@ -28,6 +28,7 @@ export const DialogClientPlan: FC<{ client: OwnerClient }> = ({ client }) => {
   // undefined enquanto não alterado (vale o salvo); "" tira o vencimento
   const [dueDate, setDueDate] = useState<string | undefined>(undefined);
   const [renewalMonths, setRenewalMonths] = useState<number | undefined>(undefined);
+  const [firstPaymentToImplanter, setFirstPaymentToImplanter] = useState<boolean | undefined>(undefined);
   const queryClient = useQueryClient();
 
   const findPlanQuery = useQuery({
@@ -96,10 +97,12 @@ export const DialogClientPlan: FC<{ client: OwnerClient }> = ({ client }) => {
     setStartedAt(null);
     setDueDate(undefined);
     setRenewalMonths(undefined);
+    setFirstPaymentToImplanter(undefined);
   };
 
   const currentDueDate = dueDate ?? plan?.status.dueDate ?? "";
   const currentRenewalMonths = renewalMonths ?? plan?.status.renewalMonths ?? 1;
+  const currentFirstPaymentToImplanter = firstPaymentToImplanter ?? plan?.firstPaymentToImplanter ?? false;
 
   const handleSave = () => {
     savePlan.mutate({
@@ -109,6 +112,7 @@ export const DialogClientPlan: FC<{ client: OwnerClient }> = ({ client }) => {
         items: billingResources.map((resource) => ({ resource, quantity: currentQuantities[resource] })),
         dueDate: currentDueDate || null,
         renewalMonths: currentRenewalMonths,
+        firstPaymentToImplanter: currentFirstPaymentToImplanter,
       },
     });
   };
@@ -150,6 +154,23 @@ export const DialogClientPlan: FC<{ client: OwnerClient }> = ({ client }) => {
               <Input id="plan-started-at" type="date" value={currentStartedAt} onChange={(event) => setStartedAt(event.target.value)} />
               <p className="text-muted-foreground text-xs">O mês de início gera a comissão de venda do representante.</p>
             </div>
+
+            <label className="flex cursor-pointer items-start gap-2.5 rounded-md border p-3">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4"
+                checked={currentFirstPaymentToImplanter}
+                onChange={(event) => setFirstPaymentToImplanter(event.target.checked)}
+              />
+              <span>
+                <span className="block text-sm font-medium">Primeiro pagamento vai para o representante</span>
+                <span className="text-muted-foreground block text-xs">
+                  No mês de início, a mensalidade inteira é repassada ao representante no lugar da comissão de venda e da recorrente daquele
+                  mês. A comissão recorrente volta a partir do segundo mês.
+                  {!client.implanter && " Este tenant ainda não tem representante: sem ele, não há repasse."}
+                </span>
+              </span>
+            </label>
 
             <div className="grid gap-3 rounded-md border p-3">
               <div className="flex flex-wrap items-center gap-2">

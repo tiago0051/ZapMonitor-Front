@@ -51,6 +51,8 @@ type ClientPlan = {
   resources: ClientPlanResource[];
   status: PlanStatus;
   renewals: ClientPlanRenewal[];
+  // O primeiro pagamento vai inteiro para o representante, no lugar da comissão de venda
+  firstPaymentToImplanter: boolean;
 };
 
 type ResourceFinance = {
@@ -70,6 +72,8 @@ type ClientFinance = {
   variableCost: number;
   fixedCostShare: number;
   saleCommission: number;
+  // Primeiro pagamento repassado ao representante, no lugar da comissão de venda e da recorrente do mês
+  firstPaymentTransfer: number;
   recurringCommission: number;
   profit: number;
 };
@@ -79,6 +83,8 @@ type ImplanterFinance = OwnerUserSummary & {
   newClients: number;
   revenue: number;
   saleCommission: number;
+  // Primeiro pagamento repassado ao representante, no lugar da comissão de venda e da recorrente do mês
+  firstPaymentTransfer: number;
   recurringCommission: number;
   // Comissão de venda por tenant novo no mês
   cac: number | null;
@@ -92,6 +98,8 @@ type MonthFinance = {
   variableCost: number;
   fixedCost: number;
   saleCommission: number;
+  // Primeiro pagamento repassado ao representante, no lugar da comissão de venda e da recorrente do mês
+  firstPaymentTransfer: number;
   recurringCommission: number;
   profit: number;
   resources: ResourceFinance[];
