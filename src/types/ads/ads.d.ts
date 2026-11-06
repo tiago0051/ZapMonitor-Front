@@ -466,7 +466,7 @@ type AdCampaignDraft = AdDraftRouting & {
 };
 
 // UPLOAD enviado pelo usuário, GENERATED gerado pela IA, POST postagem da página reaproveitada
-type AdAssetOrigin = "UPLOAD" | "GENERATED" | "POST";
+type AdAssetOrigin = "UPLOAD" | "GENERATED" | "POST" | "AD";
 
 type AdCreativeAsset = {
   id: string;
@@ -603,6 +603,9 @@ type AdCreativeScore = {
   costPerConversation: number | null;
   costPerWonDeal: number | null;
   verdict: AdCreativeVerdict;
+  // Já há números para julgar; quando não, o que falta
+  enoughData: boolean;
+  missingData: string | null;
 };
 
 type AdPilotRunStatus = "RUNNING" | "DONE" | "FAILED";
@@ -644,4 +647,18 @@ type AdCreativeRefresh = {
   error: string | null;
   decidedAt: string | null;
   createdAt: string;
+};
+
+type AdEvidenceThresholdValues = {
+  minDeliveryDays: number;
+  minImpressions: number;
+  expectedConversations: number;
+  minConversationsForDeals: number;
+};
+
+/** Régua de dados suficientes da conta: o que ela definiu (nulo usa o padrão), os valores em uso e o padrão. */
+type AdEvidenceThresholds = {
+  custom: { [K in keyof AdEvidenceThresholdValues]: number | null };
+  effective: AdEvidenceThresholdValues;
+  defaults: AdEvidenceThresholdValues;
 };

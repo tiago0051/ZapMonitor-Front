@@ -139,17 +139,21 @@ export const PilotCampaign: FC<Props> = ({ account, brand, configurations, pages
           </div>
           <div className="grid gap-1">
             <Label htmlFor="pilot-notes" className="text-xs">
-              Observações para esta campanha (opcional)
+              Pedido para a IA (opcional)
             </Label>
             <textarea
               id="pilot-notes"
               className={cn(pilotTextareaClassName, "min-h-16")}
               rows={2}
               maxLength={2000}
-              placeholder="Ex.: foco em Curitiba e região; destacar a taxa de novembro"
+              placeholder="Ex.: crie uma campanha com os 3 criativos de maior CTR; use os vencedores e um criativo novo; foco em Curitiba"
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
             />
+            <p className="text-muted-foreground text-xs">
+              A IA vê todos os anúncios da conta com CTR, vendas e veredito (vencedor, perdedor ou em aprendizado) e pode reaproveitar a
+              imagem ou o vídeo deles. O pedido vale acima das regras do modo; só o teto de verba e as políticas da Meta valem acima dele.
+            </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Button disabled={!canRequest} onClick={() => request.mutate()}>

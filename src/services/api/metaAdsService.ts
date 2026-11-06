@@ -169,6 +169,19 @@ export const metaAdsService = {
     return response.data;
   },
 
+  findEvidenceThresholds: async ({ params }: MetaAdsAccountParams): Promise<AdEvidenceThresholds> => {
+    const response = await api.get(`/client/${params.clientId}/meta-ads/account/${params.accountId}/evidence-thresholds`);
+    return response.data;
+  },
+
+  setEvidenceThresholds: async ({
+    params,
+    body,
+  }: MetaAdsAccountParams & { body: AdEvidenceThresholds["custom"] }): Promise<AdEvidenceThresholds> => {
+    const response = await api.put(`/client/${params.clientId}/meta-ads/account/${params.accountId}/evidence-thresholds`, body);
+    return response.data;
+  },
+
   findSuggestions: async ({ params, queries }: MetaAdsAccountParams & { queries: { status: string } }): Promise<AdSuggestion[]> => {
     const response = await api.get<AdSuggestion[]>(`/client/${params.clientId}/meta-ads/account/${params.accountId}/suggestion`, {
       params: queries,
