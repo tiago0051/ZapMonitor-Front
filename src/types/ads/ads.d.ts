@@ -648,3 +648,17 @@ type AdCreativeRefresh = {
   decidedAt: string | null;
   createdAt: string;
 };
+
+type AdEvidenceThresholdValues = {
+  minDeliveryDays: number;
+  minImpressions: number;
+  expectedConversations: number;
+  minConversationsForDeals: number;
+};
+
+/** Régua de dados suficientes da conta: o que ela definiu (nulo usa o padrão), os valores em uso e o padrão. */
+type AdEvidenceThresholds = {
+  custom: { [K in keyof AdEvidenceThresholdValues]: number | null };
+  effective: AdEvidenceThresholdValues;
+  defaults: AdEvidenceThresholdValues;
+};

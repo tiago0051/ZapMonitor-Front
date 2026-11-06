@@ -1,3 +1,4 @@
+import { EvidenceThresholdsSettings } from "./components/evidenceThresholdsSettings";
 import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -110,6 +111,8 @@ export const AdsSuggestions: FC<{ account: AdAccount }> = ({ account }) => {
           </Button>
         )}
       </div>
+
+      <EvidenceThresholdsSettings account={account} />
 
       <div className="flex rounded-md border p-0.5" role="group" aria-label="Situação das sugestões">
         {STATUSES.map((option) => (
