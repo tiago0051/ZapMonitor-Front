@@ -212,7 +212,12 @@ export const FinanceTab = () => {
                       <TableCell>
                         {client.implanter?.name ?? <span className="text-muted-foreground italic">Sem responsável</span>}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">{formatCurrency(client.monthlyFee)}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {formatCurrency(client.monthlyFee)}
+                        {client.listFee !== client.monthlyFee && (
+                          <p className="text-muted-foreground text-[11px]">tabela {formatCurrency(client.listFee)}</p>
+                        )}
+                      </TableCell>
                       <TableCell className="text-right tabular-nums">{formatCurrency(client.variableCost)}</TableCell>
                       <TableCell className="text-right tabular-nums">{formatCurrency(client.fixedCostShare)}</TableCell>
                       <TableCell className="text-right tabular-nums">

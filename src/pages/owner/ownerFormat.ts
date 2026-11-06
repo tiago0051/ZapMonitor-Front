@@ -28,6 +28,49 @@ const currencyFormatter = new Intl.NumberFormat("pt-BR", { style: "currency", cu
 
 export const formatCurrency = (value: number) => currencyFormatter.format(value);
 
-/** Mensalidade de um plano com os preços de uma tabela. */
-export const calculateMonthlyFee = (table: PriceTable | undefined, quantities: Partial<Record<BillingResource, number>>) =>
-  table?.items.reduce((total, item) => total + (quantities[item.resource] ?? 0) * item.unitPrice, 0) ?? 0;
+const round = (value: number) => Math.round(value * 100) / 100;
+
+/**
+ * Mensalidade de um plano com os preços de uma tabela e os ajustes por cima. Espelha o cálculo do servidor
+ * (planPricing.entity.ts), que é o que vale no fechamento:
+ * 1. ajustes de um recurso mudam só o valor dele, na ordem em que estão;
+ * 2. ajustes do total valem sobre a soma já ajustada: primeiro os percentuais (todos sobre a mesma base), depois os fixos;
+ * 3. um desconto nunca deixa um recurso ou o total negativo.
+ */
+export const calculatePlanPrice = (
+  table: PriceTable | undefined,
+  quantities: Partial<Record<BillingResource, number>>,
+  adjustments: PlanAdjustment[] = [],
+): PlanPrice => {
+  const lines = new Map(
+    (table?.items ?? []).map((item) => {
+      const amount = round((quantities[item.resource] ?? 0) * item.unitPrice);
+      return [item.resource, { listAmount: amount, amount }];
+    }),
+  );
+
+  const applied = new Map<PlanAdjustment, number>();
+  const apply = (adjustment: PlanAdjustment, base: number, current: number) => {
+    const raw = round(adjustment.mode === "PERCENT" ? (base * adjustment.value) / 100 : adjustment.value);
+    const amount = adjustment.type === "DISCOUNT" ? -Math.min(raw, current) : raw;
+    applied.set(adjustment, amount);
+    return round(current + amount);
+  };
+
+  for (const adjustment of adjustments) {
+    const line = adjustment.resource ? lines.get(adjustment.resource) : undefined;
+    if (line) line.amount = apply(adjustment, line.listAmount, line.amount);
+  }
+
+  const subtotal = round([...lines.values()].reduce((sum, line) => sum + line.amount, 0));
+  const totalAdjustments = adjustments.filter((adjustment) => !adjustment.resource);
+  let total = subtotal;
+  for (const adjustment of totalAdjustments.filter((item) => item.mode === "PERCENT")) total = apply(adjustment, subtotal, total);
+  for (const adjustment of totalAdjustments.filter((item) => item.mode === "FIXED")) total = apply(adjustment, subtotal, total);
+
+  return {
+    listPrice: round([...lines.values()].reduce((sum, line) => sum + line.listAmount, 0)),
+    adjustments: adjustments.map((adjustment) => ({ ...adjustment, amount: applied.get(adjustment) ?? 0 })),
+    total,
+  };
+};

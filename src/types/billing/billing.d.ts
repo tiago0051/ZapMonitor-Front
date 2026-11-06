@@ -37,6 +37,47 @@ type PriceTable = {
   fixedCosts: PriceTableFixedCost[];
 };
 
+type PlanAdjustmentType = "DISCOUNT" | "SURCHARGE";
+
+// PERCENT sobre o valor do recurso ou do total; FIXED em reais por mês
+type PlanAdjustmentMode = "PERCENT" | "FIXED";
+
+type PlanAdjustment = {
+  type: PlanAdjustmentType;
+  mode: PlanAdjustmentMode;
+  value: number;
+  // Nulo vale sobre o total
+  resource: BillingResource | null;
+  description: string | null;
+};
+
+// Quanto o ajuste mudou a mensalidade: negativo no desconto, positivo no acréscimo
+type AppliedPlanAdjustment = PlanAdjustment & { amount: number };
+
+type PlanPrice = {
+  // Mensalidade pela tabela, sem ajustes
+  listPrice: number;
+  adjustments: AppliedPlanAdjustment[];
+  total: number;
+};
+
+type PlanTemplate = {
+  id: string;
+  name: string;
+  description: string | null;
+  renewalMonths: number;
+  firstPaymentToImplanter: boolean;
+  // Inativo não aparece na hora de contratar
+  isActive: boolean;
+  items: { resource: BillingResource; quantity: number }[];
+  adjustments: PlanAdjustment[];
+  // Preço pela tabela em vigor; nulo sem tabela
+  price: PlanPrice | null;
+  // Tenants contratados com este modelo
+  clientPlans: number;
+  updatedAt: string;
+};
+
 type ClientPlanResource = {
   resource: BillingResource;
   quantity: number;
@@ -53,6 +94,12 @@ type ClientPlan = {
   renewals: ClientPlanRenewal[];
   // O primeiro pagamento vai inteiro para o representante, no lugar da comissão de venda
   firstPaymentToImplanter: boolean;
+  // Modelo usado na contratação
+  planTemplate: { id: string; name: string } | null;
+  // Descontos e acréscimos em vigor
+  adjustments: PlanAdjustment[];
+  // Mensalidade pela tabela em vigor; nula sem plano ou sem tabela
+  price: PlanPrice | null;
 };
 
 type ResourceFinance = {
@@ -68,6 +115,9 @@ type ClientFinance = {
   name: string;
   implanter: OwnerUserSummary | null;
   isNew: boolean;
+  // Mensalidade pela tabela, sem os ajustes do plano
+  listFee: number;
+  // Com os descontos e acréscimos: base das comissões
   monthlyFee: number;
   variableCost: number;
   fixedCostShare: number;
