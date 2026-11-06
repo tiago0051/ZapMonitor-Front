@@ -18,16 +18,23 @@ export const pushService = {
     return response.data;
   },
 
-  saveSubscription: async (body: { endpoint: string; p256dh: string; auth: string }): Promise<void> => {
+  // Com clientId, ativa as notificações daquele tenant neste aparelho; sem, só atualiza o aparelho
+  saveSubscription: async (body: { endpoint: string; p256dh: string; auth: string; clientId?: string }): Promise<void> => {
     await api.post("/push/subscription", body);
   },
 
-  deleteSubscription: async (endpoint: string): Promise<void> => {
-    await api.delete("/push/subscription", { data: { endpoint } });
+  // Com clientId, desliga só aquele tenant; sem, remove o aparelho
+  deleteSubscription: async (endpoint: string, clientId?: string): Promise<void> => {
+    await api.delete("/push/subscription", { data: { endpoint, clientId } });
   },
 
-  sendTest: async (): Promise<{ delivered: number }> => {
-    const response = await api.post("/push/test");
+  findSubscriptionStatus: async (endpoint: string, clientId: string): Promise<{ subscribed: boolean }> => {
+    const response = await api.post("/push/subscription/status", { endpoint, clientId });
+    return response.data;
+  },
+
+  sendTest: async (clientId: string): Promise<{ delivered: number }> => {
+    const response = await api.post("/push/test", { clientId });
     return response.data;
   },
 

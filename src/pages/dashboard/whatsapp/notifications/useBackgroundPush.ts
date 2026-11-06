@@ -33,10 +33,12 @@ const toBody = (subscription: PushSubscription) => {
 const findRegistration = () =>
   Promise.race([navigator.serviceWorker.ready, new Promise<null>((resolve) => setTimeout(() => resolve(null), 4000))]);
 
-/** Inscrição deste aparelho nas notificações com o app fechado. */
-export const useBackgroundPush = () => {
+/** Inscrição deste aparelho nas notificações com o app fechado, por tenant: cada tenant é ativado à parte. */
+export const useBackgroundPush = (clientId: string) => {
   const configQuery = useQuery({ queryKey: ["push", "config"], queryFn: pushService.findConfig, enabled: isBackgroundPushSupported() });
   const [subscription, setSubscription] = useState<PushSubscription | null>(null);
+  // O aparelho recebe as notificações deste tenant
+  const [isSubscribedHere, setIsSubscribedHere] = useState(false);
   // Sem suporte não há o que verificar
   const [isChecking, setIsChecking] = useState(isBackgroundPushSupported);
   const [isBusy, setIsBusy] = useState(false);
@@ -49,18 +51,24 @@ export const useBackgroundPush = () => {
     (async () => {
       const registration = await findRegistration();
       const current = (await registration?.pushManager.getSubscription()) ?? null;
+      if (current) {
+        // Liga o aparelho ao usuário logado agora (o mesmo navegador pode ter trocado de conta), sem ativar tenant
+        await pushService.saveSubscription(toBody(current)).catch(() => undefined);
+        const status = await pushService.findSubscriptionStatus(current.endpoint, clientId).catch(() => ({ subscribed: false }));
+        if (!active) return;
+        setIsSubscribedHere(status.subscribed);
+      }
       if (!active) return;
 
       setSubscription(current);
       setIsChecking(false);
-      // Liga o aparelho ao usuário logado agora (o mesmo navegador pode ter trocado de conta)
-      if (current) pushService.saveSubscription(toBody(current)).catch(() => undefined);
     })();
 
     return () => {
       active = false;
     };
-  }, []);
+    // Trocar de cliente verifica de novo se este aparelho recebe as notificações dele
+  }, [clientId]);
 
   const publicKey = configQuery.data?.publicKey ?? null;
 
@@ -72,7 +80,7 @@ export const useBackgroundPush = () => {
       ? "unavailable"
       : Notification.permission === "denied"
         ? "denied"
-        : subscription
+        : subscription && isSubscribedHere
           ? "on"
           : "off";
 
@@ -94,19 +102,20 @@ export const useBackgroundPush = () => {
         return;
       }
 
-      const created = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: toApplicationServerKey(publicKey),
-      });
-      await pushService.saveSubscription(toBody(created));
+      // O aparelho pode já estar inscrito por outro tenant: reaproveita e só ativa este
+      const created =
+        (await registration.pushManager.getSubscription()) ??
+        (await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: toApplicationServerKey(publicKey) }));
+      await pushService.saveSubscription({ ...toBody(created), clientId });
       setSubscription(created);
+      setIsSubscribedHere(true);
       configQuery.refetch();
     } catch {
       setError("Não foi possível ativar as notificações neste aparelho. Tente de novo.");
     } finally {
       setIsBusy(false);
     }
-  }, [publicKey, configQuery]);
+  }, [publicKey, configQuery, clientId]);
 
   const disable = useCallback(async () => {
     if (!subscription) return;
@@ -114,14 +123,14 @@ export const useBackgroundPush = () => {
     setError(null);
 
     try {
-      await pushService.deleteSubscription(subscription.endpoint).catch(() => undefined);
-      await subscription.unsubscribe();
-      setSubscription(null);
+      // Desliga só este tenant; o aparelho continua recebendo dos outros em que foi ativado
+      await pushService.deleteSubscription(subscription.endpoint, clientId).catch(() => undefined);
+      setIsSubscribedHere(false);
       configQuery.refetch();
     } finally {
       setIsBusy(false);
     }
-  }, [subscription, configQuery]);
+  }, [subscription, configQuery, clientId]);
 
   return { status, isChecking, isBusy, error, enable, disable };
 };
