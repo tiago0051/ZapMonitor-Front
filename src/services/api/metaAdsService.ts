@@ -216,6 +216,18 @@ export const metaAdsService = {
     return response.data;
   },
 
+  // Muda o orçamento diário na hora, dentro das travas; fica no histórico de mudanças, com desfazer
+  setBudget: async ({
+    params,
+    body,
+  }: {
+    params: { clientId: string; accountId: string };
+    body: { level: "campaign" | "adset"; metaId: string; dailyBudget: number };
+  }): Promise<AdChange> => {
+    const response = await api.post(`/client/${params.clientId}/meta-ads/account/${params.accountId}/budget`, body);
+    return response.data;
+  },
+
   // Pausa ou ativa na hora; fica no histórico de mudanças, com desfazer
   setStatus: async ({
     params,

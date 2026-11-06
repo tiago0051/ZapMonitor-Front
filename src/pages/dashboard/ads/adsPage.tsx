@@ -17,7 +17,6 @@ import { Link } from "react-router";
 import { toast } from "sonner";
 import { useLocalStorage } from "usehooks-ts";
 import {
-  budgetLabel,
   campaignObjectiveLabel,
   destinationTypeLabel,
   effectiveStatusInfo,
@@ -37,6 +36,7 @@ import { AdsStrategyChatTab } from "./adsStrategyChatTab";
 import { AdsResults } from "./adsResults";
 import { AdsPilot } from "./pilot/adsPilot";
 import { AdStatusToggle } from "./components/adStatusToggle";
+import { AdBudgetEditor } from "./components/adBudgetEditor";
 
 const StatusChip: FC<{ status: string }> = ({ status }) => {
   const info = effectiveStatusInfo(status);
@@ -95,7 +95,15 @@ const CampaignRows: FC<{ campaign: MetaCampaign; currency: string; accountId: st
         </TableCell>
         <TableCell className="text-xs">{campaign.bidStrategy?.replaceAll("_", " ").toLowerCase() ?? "—"}</TableCell>
         <TableCell className="text-right text-sm whitespace-nowrap tabular-nums">
-          {budgetLabel(campaign, currency) ?? <span className="text-muted-foreground text-xs">no conjunto</span>}
+          <AdBudgetEditor
+            accountId={accountId}
+            level="campaign"
+            metaId={campaign.metaId}
+            dailyBudget={campaign.dailyBudget}
+            lifetimeBudget={campaign.lifetimeBudget}
+            currency={currency}
+            emptyLabel="no conjunto"
+          />
         </TableCell>
       </TableRow>
 
@@ -125,7 +133,16 @@ const CampaignRows: FC<{ campaign: MetaCampaign; currency: string; accountId: st
                 </span>
               </TableCell>
               <TableCell className="text-xs">{adSet.billingEvent?.replaceAll("_", " ").toLowerCase() ?? "—"}</TableCell>
-              <TableCell className="text-right text-sm whitespace-nowrap tabular-nums">{budgetLabel(adSet, currency) ?? "—"}</TableCell>
+              <TableCell className="text-right text-sm whitespace-nowrap tabular-nums">
+                <AdBudgetEditor
+                  accountId={accountId}
+                  level="adset"
+                  metaId={adSet.metaId}
+                  dailyBudget={adSet.dailyBudget}
+                  lifetimeBudget={adSet.lifetimeBudget}
+                  currency={currency}
+                />
+              </TableCell>
             </TableRow>
             {openAdSetIds.includes(adSet.metaId) && <AdRows adSet={adSet} accountId={accountId} />}
           </Fragment>
