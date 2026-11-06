@@ -16,6 +16,21 @@ export const billingService = {
   deletePriceTable: async ({ params }: DeletePriceTableRequestData): Promise<void> => {
     await api.delete(`/owner/price-tables/${params.priceTableId}`);
   },
+  findPlanTemplates: async (): Promise<PlanTemplate[]> => {
+    const response = await api.get("/owner/plan-templates");
+    return response.data;
+  },
+  createPlanTemplate: async ({ body }: CreatePlanTemplateRequestData): Promise<PlanTemplate> => {
+    const response = await api.post("/owner/plan-templates", body);
+    return response.data;
+  },
+  updatePlanTemplate: async ({ params, body }: UpdatePlanTemplateRequestData): Promise<PlanTemplate> => {
+    const response = await api.put(`/owner/plan-templates/${params.planTemplateId}`, body);
+    return response.data;
+  },
+  deletePlanTemplate: async ({ params }: DeletePlanTemplateRequestData): Promise<void> => {
+    await api.delete(`/owner/plan-templates/${params.planTemplateId}`);
+  },
   findClientPlan: async ({ params }: FindClientPlanRequestData): Promise<ClientPlan> => {
     const response = await api.get(`/owner/clients/${params.clientId}/plan`);
     return response.data;

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { ClientsTab } from "./components/clientsTab";
 import { FinanceTab } from "./components/financeTab";
 import { PriceTablesTab } from "./components/priceTablesTab";
+import { PlanTemplatesTab } from "./components/planTemplatesTab";
 import { ImplantersTab } from "./components/implantersTab";
 import { PeriodFilter } from "./components/periodFilter";
 import { formatNumber, periodPresets, toPeriodQuery, type Period } from "./ownerFormat";
@@ -16,7 +17,7 @@ export const Owner = () => {
   const [implanterFilter, setImplanterFilter] = useState<string>("");
 
   const periodQuery = toPeriodQuery(period);
-  // Financeiro e Preços têm o próprio recorte de tempo
+  // Financeiro, Preços e Modelos têm o próprio recorte de tempo (ou nenhum)
   const usesPeriod = tab === "implanters" || tab === "clients";
 
   const findImplantersQuery = useQuery({
@@ -55,6 +56,7 @@ export const Owner = () => {
           <TabsTrigger value="clients">Tenants</TabsTrigger>
           <TabsTrigger value="finance">Financeiro</TabsTrigger>
           <TabsTrigger value="prices">Preços</TabsTrigger>
+          <TabsTrigger value="templates">Modelos de plano</TabsTrigger>
         </TabsList>
         {usesPeriod && (
           <div className="flex flex-col gap-4 pt-2">
@@ -83,6 +85,9 @@ export const Owner = () => {
         </TabsContent>
         <TabsContent value="prices" className="pt-2">
           <PriceTablesTab />
+        </TabsContent>
+        <TabsContent value="templates" className="pt-2">
+          <PlanTemplatesTab />
         </TabsContent>
         <TabsContent value="clients" className="flex flex-col gap-4 pt-2">
           {periodQuery && (

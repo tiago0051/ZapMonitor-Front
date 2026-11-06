@@ -45,6 +45,37 @@ type SaveClientPlanRequestBody = {
   dueDate?: string | null;
   renewalMonths?: number;
   firstPaymentToImplanter?: boolean;
+  // Modelo usado na contratação; nulo para plano montado à mão
+  planTemplateId?: string | null;
+  // Omitido mantém; vazio tira todos
+  adjustments?: PlanAdjustment[];
+};
+
+type SavePlanTemplateRequestBody = {
+  name: string;
+  description: string | null;
+  renewalMonths: number;
+  firstPaymentToImplanter: boolean;
+  isActive: boolean;
+  items: { resource: BillingResource; quantity: number }[];
+  adjustments: PlanAdjustment[];
+};
+
+type PlanTemplateRequestParams = {
+  planTemplateId: string;
+};
+
+type CreatePlanTemplateRequestData = {
+  body: SavePlanTemplateRequestBody;
+};
+
+type UpdatePlanTemplateRequestData = {
+  params: PlanTemplateRequestParams;
+  body: SavePlanTemplateRequestBody;
+};
+
+type DeletePlanTemplateRequestData = {
+  params: PlanTemplateRequestParams;
 };
 
 type RenewClientPlanRequestData = {

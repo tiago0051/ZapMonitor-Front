@@ -4,19 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { billingFeatureResources, billingResourceLabel, billingResourceUnit, billingResources } from "@/contants/billingContants";
+import { billingResources } from "@/contants/billingContants";
 import { billingService } from "@/services/api/billingService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { addMonths, format, parseISO } from "date-fns";
 import { useState, type FC } from "react";
 import { toast } from "sonner";
-import { calculateMonthlyFee, formatCurrency, formatNumber } from "../ownerFormat";
+import { calculatePlanPrice } from "../ownerFormat";
 import { formatPlanDate, PLAN_RENEWAL_MONTH_OPTIONS, renewalLabel } from "@/components/plan/planExpired";
 import { PlanRenewControl, PlanStatusBadge } from "@/components/plan/planRenewalFields";
-
-type Quantities = Record<BillingResource, number>;
+import { hasInvalidAdjustment, toAdjustmentBody } from "../planAdjustmentFormat";
+import { PlanAdjustmentsEditor, PlanPriceSummary, selectClassName } from "./planAdjustments";
+import { PlanQuantitiesTable, type Quantities } from "./planQuantitiesTable";
 
 const toInputDate = (date: Date) => format(date, "yyyy-MM-dd");
 
@@ -29,6 +29,9 @@ export const DialogClientPlan: FC<{ client: OwnerClient }> = ({ client }) => {
   const [dueDate, setDueDate] = useState<string | undefined>(undefined);
   const [renewalMonths, setRenewalMonths] = useState<number | undefined>(undefined);
   const [firstPaymentToImplanter, setFirstPaymentToImplanter] = useState<boolean | undefined>(undefined);
+  // undefined enquanto não alterado (vale o salvo); null é plano montado à mão
+  const [planTemplateId, setPlanTemplateId] = useState<string | null | undefined>(undefined);
+  const [adjustments, setAdjustments] = useState<PlanAdjustment[] | null>(null);
   const queryClient = useQueryClient();
 
   const findPlanQuery = useQuery({
@@ -40,6 +43,12 @@ export const DialogClientPlan: FC<{ client: OwnerClient }> = ({ client }) => {
   const findPriceTablesQuery = useQuery({
     queryKey: ["owner", "priceTables"],
     queryFn: billingService.findPriceTables,
+    enabled: isOpen,
+  });
+
+  const findPlanTemplatesQuery = useQuery({
+    queryKey: ["owner", "planTemplates"],
+    queryFn: billingService.findPlanTemplates,
     enabled: isOpen,
   });
 
@@ -98,11 +107,43 @@ export const DialogClientPlan: FC<{ client: OwnerClient }> = ({ client }) => {
     setDueDate(undefined);
     setRenewalMonths(undefined);
     setFirstPaymentToImplanter(undefined);
+    setPlanTemplateId(undefined);
+    setAdjustments(null);
   };
 
   const currentDueDate = dueDate ?? plan?.status.dueDate ?? "";
   const currentRenewalMonths = renewalMonths ?? plan?.status.renewalMonths ?? 1;
   const currentFirstPaymentToImplanter = firstPaymentToImplanter ?? plan?.firstPaymentToImplanter ?? false;
+  const currentPlanTemplateId = planTemplateId !== undefined ? planTemplateId : (plan?.planTemplate?.id ?? null);
+  const currentAdjustments = adjustments ?? plan?.adjustments ?? [];
+  const price = calculatePlanPrice(table, currentQuantities, currentAdjustments);
+  // Os ativos, mais o do contrato atual mesmo que tenha sido desativado depois
+  const templateOptions = (findPlanTemplatesQuery.data ?? []).filter(
+    (template) => template.isActive || template.id === plan?.planTemplate?.id,
+  );
+
+  /** Copia o modelo para o plano; tudo ainda pode ser editado antes de salvar. */
+  const applyTemplate = (id: string) => {
+    if (!id) {
+      setPlanTemplateId(null);
+      return;
+    }
+
+    const template = templateOptions.find((item) => item.id === id);
+    if (!template) return;
+
+    setPlanTemplateId(template.id);
+    setQuantities(
+      Object.fromEntries(
+        billingResources.map((resource) => [resource, template.items.find((item) => item.resource === resource)?.quantity ?? 0]),
+      ) as Quantities,
+    );
+    setAdjustments(template.adjustments.map((adjustment) => ({ ...adjustment })));
+    setRenewalMonths(template.renewalMonths);
+    setFirstPaymentToImplanter(template.firstPaymentToImplanter);
+    // Sem vencimento, o primeiro período pago vai do início da cobrança até o mesmo dia, meses depois
+    if (!currentDueDate) setDueDate(format(addMonths(parseISO(currentStartedAt), template.renewalMonths), "yyyy-MM-dd"));
+  };
 
   const handleSave = () => {
     savePlan.mutate({
@@ -113,12 +154,11 @@ export const DialogClientPlan: FC<{ client: OwnerClient }> = ({ client }) => {
         dueDate: currentDueDate || null,
         renewalMonths: currentRenewalMonths,
         firstPaymentToImplanter: currentFirstPaymentToImplanter,
+        planTemplateId: currentPlanTemplateId,
+        adjustments: toAdjustmentBody(currentAdjustments),
       },
     });
   };
-
-  const setQuantity = (resource: BillingResource, quantity: number) =>
-    setQuantities({ ...currentQuantities, [resource]: Number.isNaN(quantity) ? 0 : quantity });
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -149,10 +189,33 @@ export const DialogClientPlan: FC<{ client: OwnerClient }> = ({ client }) => {
 
         {plan && table && (
           <div className="grid gap-4">
-            <div className="space-y-1 sm:max-w-xs">
-              <Label htmlFor="plan-started-at">Início da cobrança</Label>
-              <Input id="plan-started-at" type="date" value={currentStartedAt} onChange={(event) => setStartedAt(event.target.value)} />
-              <p className="text-muted-foreground text-xs">O mês de início gera a comissão de venda do representante.</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label htmlFor="plan-template">Modelo</Label>
+                <select
+                  id="plan-template"
+                  className={selectClassName}
+                  value={currentPlanTemplateId ?? ""}
+                  onChange={(event) => applyTemplate(event.target.value)}
+                >
+                  <option value="">Personalizado</option>
+                  {templateOptions.map((template) => (
+                    <option key={template.id} value={template.id}>
+                      {template.name}
+                      {!template.isActive && " (inativo)"}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-muted-foreground text-xs">
+                  Preenche recursos, ajustes e período, que ainda podem ser editados. O plano guarda uma cópia: mudar o modelo depois não o
+                  altera.
+                </p>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="plan-started-at">Início da cobrança</Label>
+                <Input id="plan-started-at" type="date" value={currentStartedAt} onChange={(event) => setStartedAt(event.target.value)} />
+                <p className="text-muted-foreground text-xs">O mês de início gera a comissão de venda do representante.</p>
+              </div>
             </div>
 
             <label className="flex cursor-pointer items-start gap-2.5 rounded-md border p-3">
@@ -228,66 +291,16 @@ export const DialogClientPlan: FC<{ client: OwnerClient }> = ({ client }) => {
               )}
             </div>
 
-            <div className="overflow-x-auto rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Recurso</TableHead>
-                    <TableHead className="text-right">Uso no mês</TableHead>
-                    <TableHead>Contratado</TableHead>
-                    <TableHead className="text-right">Valor</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {billingResources.map((resource) => {
-                    const item = table.items.find((tableItem) => tableItem.resource === resource);
-                    const used = plan.resources.find((planResource) => planResource.resource === resource)?.used ?? 0;
-                    const isFeature = billingFeatureResources.includes(resource);
-                    const minimum = minimumOf(resource);
+            <PlanQuantitiesTable
+              table={table}
+              quantities={currentQuantities}
+              onChange={setQuantities}
+              usage={Object.fromEntries(plan.resources.map((resource) => [resource.resource, resource.used]))}
+            />
 
-                    return (
-                      <TableRow key={resource}>
-                        <TableCell>
-                          <p className="font-medium">{billingResourceLabel[resource]}</p>
-                          <p className="text-muted-foreground text-xs">
-                            {formatCurrency(item?.unitPrice ?? 0)} {billingResourceUnit[resource]}
-                            {minimum > 0 && ` · mínimo ${minimum}`}
-                          </p>
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">{isFeature ? "–" : formatNumber(used)}</TableCell>
-                        <TableCell className="min-w-28">
-                          {isFeature ? (
-                            <input
-                              type="checkbox"
-                              aria-label={billingResourceLabel[resource]}
-                              className="h-4 w-4"
-                              checked={currentQuantities[resource] > 0}
-                              onChange={(event) => setQuantity(resource, event.target.checked ? 1 : 0)}
-                            />
-                          ) : (
-                            <Input
-                              type="number"
-                              min={minimum}
-                              step={1}
-                              value={currentQuantities[resource]}
-                              onChange={(event) => setQuantity(resource, event.target.valueAsNumber)}
-                            />
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {formatCurrency(currentQuantities[resource] * (item?.unitPrice ?? 0))}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+            <PlanAdjustmentsEditor idPrefix="client-plan" adjustments={currentAdjustments} onChange={setAdjustments} />
 
-            <p className="text-right text-sm">
-              Mensalidade pela tabela em vigor:{" "}
-              <span className="text-base font-semibold">{formatCurrency(calculateMonthlyFee(table, currentQuantities))}</span>
-            </p>
+            <PlanPriceSummary price={price} className="rounded-md border p-3" />
           </div>
         )}
 
@@ -302,7 +315,11 @@ export const DialogClientPlan: FC<{ client: OwnerClient }> = ({ client }) => {
               Encerrar plano
             </Button>
           )}
-          <Button type="button" disabled={!plan || !table || savePlan.isPending || endPlan.isPending} onClick={handleSave}>
+          <Button
+            type="button"
+            disabled={!plan || !table || hasInvalidAdjustment(currentAdjustments) || savePlan.isPending || endPlan.isPending}
+            onClick={handleSave}
+          >
             Salvar plano
           </Button>
         </DialogFooter>
