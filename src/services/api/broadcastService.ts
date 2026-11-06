@@ -30,6 +30,9 @@ export const broadcastService = {
       templateId: string;
       headerFileId?: string;
       sendWindow?: BroadcastSendWindow;
+      reply?: Partial<BroadcastReply>;
+      frequencyCapDays?: number;
+      consentConfirmed?: boolean;
       recipients: BroadcastRecipientInput[];
       start?: boolean;
     },
@@ -80,6 +83,16 @@ export const broadcastService = {
 
   setSendWindow: async (clientId: string, broadcastId: string, sendWindow: BroadcastSendWindow | null): Promise<Broadcast> => {
     const response = await api.put(`${base(clientId)}/${broadcastId}/send-window`, { sendWindow });
+    return response.data;
+  },
+
+  duplicate: async (clientId: string, broadcastId: string, audience: "ALL" | "NOT_READ" | "NOT_REPLIED"): Promise<Broadcast> => {
+    const response = await api.post(`${base(clientId)}/${broadcastId}/duplicate`, { audience });
+    return response.data;
+  },
+
+  metrics: async (clientId: string, broadcastId: string): Promise<BroadcastMetrics> => {
+    const response = await api.get(`${base(clientId)}/${broadcastId}/metrics`);
     return response.data;
   },
 

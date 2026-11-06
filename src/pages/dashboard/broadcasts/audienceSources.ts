@@ -56,3 +56,5 @@ export const defaultMapping = (parameters: WhatsappTemplateParameter[]): Record<
         : { source: { kind: "fixed", value: "" }, fallback: "" },
     ]),
   );
+
+export const emptyReply: BroadcastReply = { flowId: null, pipelineId: null, stageId: null, serviceGroupId: null };

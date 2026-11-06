@@ -5,6 +5,20 @@ type BroadcastRecipientStatus = "PENDING" | "SENDING" | "SENT" | "DELIVERED" | "
 /** Horário de Brasília: minutos desde a meia-noite (fim não incluído) e dias da semana, 0 = domingo. */
 type BroadcastSendWindow = { startMinute: number; endMinute: number; days: number[] };
 
+/** O que acontece com quem responde: fluxo do atendimento e negócio no funil. */
+type BroadcastReply = {
+  flowId: string | null;
+  pipelineId: string | null;
+  stageId: string | null;
+  serviceGroupId: string | null;
+};
+
+type BroadcastMetrics = {
+  optedOut: number;
+  // Mensagens que a Meta marcou como cobradas, por categoria
+  billable: Record<string, number>;
+};
+
 type BroadcastTotals = {
   total: number;
   pending: number;
@@ -30,6 +44,9 @@ type Broadcast = {
   templateCategory: string | null;
   headerFileId: string | null;
   sendWindow: BroadcastSendWindow | null;
+  reply: BroadcastReply;
+  frequencyCapDays: number | null;
+  audienceConsentAt: string | null;
   pausedReason: string | null;
   scheduledAt: string | null;
   startedAt: string | null;
@@ -45,7 +62,7 @@ type BroadcastRecipient = {
   name: string | null;
   contactId: string | null;
   status: BroadcastRecipientStatus;
-  skipReason: "OPTED_OUT" | "INVALID_PHONE" | null;
+  skipReason: "OPTED_OUT" | "INVALID_PHONE" | "FREQUENCY_CAP" | null;
   errorCode: number | null;
   errorMessage: string | null;
   variables: Record<string, string> | null;
@@ -53,6 +70,7 @@ type BroadcastRecipient = {
   deliveredAt: string | null;
   readAt: string | null;
   repliedAt: string | null;
+  optedOutAt: string | null;
   failedAt: string | null;
 };
 

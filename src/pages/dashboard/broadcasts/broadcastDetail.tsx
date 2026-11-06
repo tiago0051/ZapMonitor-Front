@@ -15,6 +15,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import { broadcastStatusInfo, formatCount, progressOf, rate, recipientStatusInfo, skipReasonLabel } from "./broadcastUtils";
 import { BroadcastScheduling } from "./components/broadcastScheduling";
+import { BroadcastMoreActions, BroadcastResults } from "./components/broadcastResults";
 
 const TAKE = 50;
 
@@ -164,35 +165,38 @@ export const BroadcastDetail = () => {
           </div>
         </div>
 
-        {canSend && (
-          <div className="flex flex-wrap gap-2">
-            {(broadcast.status === "DRAFT" || broadcast.status === "PAUSED") && (
-              <Button disabled={busy} onClick={() => actionMutation.mutate("start")}>
-                {broadcast.status === "DRAFT" ? "Iniciar envio" : "Retomar"}
-              </Button>
-            )}
-            {sending && (
-              <Button variant="outline" disabled={busy} onClick={() => actionMutation.mutate("pause")}>
-                Pausar
-              </Button>
-            )}
-            {totals.failed > 0 && (broadcast.status === "COMPLETED" || broadcast.status === "PAUSED") && (
-              <Button variant="outline" disabled={busy} onClick={() => retryMutation.mutate()}>
-                Reenviar falhas
-              </Button>
-            )}
-            {open && broadcast.status !== "DRAFT" && (
-              <Button variant="ghost" disabled={busy} onClick={() => setConfirm("cancel")}>
-                Cancelar
-              </Button>
-            )}
-            {broadcast.status === "DRAFT" && (
-              <Button variant="ghost" disabled={busy} onClick={() => setConfirm("delete")}>
-                Excluir rascunho
-              </Button>
-            )}
-          </div>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {canSend && (
+            <>
+              {(broadcast.status === "DRAFT" || broadcast.status === "PAUSED") && (
+                <Button disabled={busy} onClick={() => actionMutation.mutate("start")}>
+                  {broadcast.status === "DRAFT" ? "Iniciar envio" : "Retomar"}
+                </Button>
+              )}
+              {sending && (
+                <Button variant="outline" disabled={busy} onClick={() => actionMutation.mutate("pause")}>
+                  Pausar
+                </Button>
+              )}
+              {totals.failed > 0 && (broadcast.status === "COMPLETED" || broadcast.status === "PAUSED") && (
+                <Button variant="outline" disabled={busy} onClick={() => retryMutation.mutate()}>
+                  Reenviar falhas
+                </Button>
+              )}
+              {open && broadcast.status !== "DRAFT" && (
+                <Button variant="ghost" disabled={busy} onClick={() => setConfirm("cancel")}>
+                  Cancelar
+                </Button>
+              )}
+              {broadcast.status === "DRAFT" && (
+                <Button variant="ghost" disabled={busy} onClick={() => setConfirm("delete")}>
+                  Excluir rascunho
+                </Button>
+              )}
+            </>
+          )}
+          <BroadcastMoreActions broadcast={broadcast} canSend={canSend} />
+        </div>
       </div>
 
       {confirm && (
@@ -246,6 +250,8 @@ export const BroadcastDetail = () => {
           </div>
         ))}
       </dl>
+
+      <BroadcastResults broadcast={broadcast} />
 
       <section className="grid gap-3">
         <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">

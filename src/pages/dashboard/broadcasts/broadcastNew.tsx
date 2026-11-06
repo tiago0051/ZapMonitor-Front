@@ -39,7 +39,16 @@ import {
   type VariableMapping,
 } from "./broadcastUtils";
 import { SendWindowFields } from "./components/sendWindowFields";
-import { allAudienceRows, defaultMapping, emptyAudienceSources, selectClassName, type AudienceSources } from "./audienceSources";
+import { ReplySettingsFields } from "./components/replySettingsFields";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  allAudienceRows,
+  defaultMapping,
+  emptyAudienceSources,
+  emptyReply,
+  selectClassName,
+  type AudienceSources,
+} from "./audienceSources";
 import { AudienceStep } from "./components/audienceStep";
 import { VariablesStep } from "./components/variablesStep";
 
@@ -63,6 +72,9 @@ export const BroadcastNew = () => {
   const [when, setWhen] = useState<"now" | "schedule">("now");
   const [scheduledAt, setScheduledAt] = useState("");
   const [sendWindow, setSendWindow] = useState<BroadcastSendWindow | null>(null);
+  const [reply, setReply] = useState<BroadcastReply>(emptyReply);
+  const [capDays, setCapDays] = useState("");
+  const [consent, setConsent] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   const configurationsQuery = useQuery({
@@ -146,6 +158,9 @@ export const BroadcastNew = () => {
         templateId: template!.id,
         headerFileId: fileId,
         sendWindow: sendWindow ?? undefined,
+        reply: Object.values(reply).some(Boolean) ? reply : undefined,
+        frequencyCapDays: capEnabled && capDays ? Number(capDays) : undefined,
+        consentConfirmed: consent,
         recipients: chunks[0],
       });
       for (let index = 1; index < chunks.length; index++) {
@@ -183,7 +198,12 @@ export const BroadcastNew = () => {
         : !isFutureSchedule(scheduledAt)
           ? "Escolha um horário no futuro"
           : null;
-  const reviewError = sendWindowError(sendWindow) ?? scheduleError;
+  const capEnabled = template?.category === "MARKETING";
+  // Lista vinda de fora do sistema pede a confirmação de que as pessoas aceitaram receber
+  const needsConsent = !!sources.csv || sources.pasted.trim().length > 0;
+  const capError = capEnabled && capDays && !(Number(capDays) >= 1 && Number(capDays) <= 90) ? "O limite vai de 1 a 90 dias" : null;
+  const settingsError = sendWindowError(sendWindow) ?? capError ?? (needsConsent && !consent ? "Confirme o consentimento da lista" : null);
+  const reviewError = settingsError ?? scheduleError;
 
   return (
     <div className="flex h-full flex-col gap-4 overflow-auto p-4 md:p-6">
@@ -393,6 +413,51 @@ export const BroadcastNew = () => {
                   <SendWindowFields value={sendWindow} onChange={setSendWindow} idPrefix="broadcast-window" disabled={busy} />
                 </div>
 
+                <div className="grid gap-3 rounded-lg border p-3">
+                  <p className="text-sm font-medium">Quem responder</p>
+                  <ReplySettingsFields value={reply} onChange={setReply} disabled={busy} />
+                </div>
+
+                {(capEnabled || needsConsent) && (
+                  <div className="grid gap-3 rounded-lg border p-3">
+                    <p className="text-sm font-medium">Cuidados com o número</p>
+                    {capEnabled && (
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="broadcast-cap-days" className="text-xs">
+                          Não enviar a quem recebeu outra campanha de marketing nos últimos dias (opcional)
+                        </Label>
+                        <Input
+                          id="broadcast-cap-days"
+                          type="number"
+                          min={1}
+                          max={90}
+                          className="w-32"
+                          value={capDays}
+                          disabled={busy}
+                          placeholder="Ex.: 7"
+                          onChange={(event) => setCapDays(event.target.value)}
+                        />
+                      </div>
+                    )}
+                    {needsConsent && (
+                      <label className="flex items-start gap-2 text-sm">
+                        <Checkbox
+                          id="broadcast-consent"
+                          checked={consent}
+                          disabled={busy}
+                          onCheckedChange={(checked) => setConsent(checked === true)}
+                        />
+                        <span>
+                          As pessoas da planilha e da lista colada aceitaram receber mensagens desta empresa pelo WhatsApp.
+                          <span className="text-muted-foreground block text-xs">
+                            Mensagem para quem não pediu gera denúncias, derruba a qualidade do número e expõe a empresa à LGPD.
+                          </span>
+                        </span>
+                      </label>
+                    )}
+                  </div>
+                )}
+
                 {uploadProgress !== null && (
                   <div className="grid gap-1">
                     <Progress value={uploadProgress} />
@@ -426,7 +491,7 @@ export const BroadcastNew = () => {
                     </Button>
                     <Button
                       variant="outline"
-                      disabled={busy || !summary.ready.length || !!sendWindowError(sendWindow)}
+                      disabled={busy || !summary.ready.length || !!settingsError}
                       onClick={() => createMutation.mutate("draft")}
                     >
                       Salvar rascunho

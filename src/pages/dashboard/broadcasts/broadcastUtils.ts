@@ -30,6 +30,7 @@ export const recipientStatusInfo: Record<BroadcastRecipientStatus, { label: stri
 export const skipReasonLabel: Record<string, string> = {
   OPTED_OUT: "Pediu para não receber marketing",
   INVALID_PHONE: "Número inválido",
+  FREQUENCY_CAP: "Recebeu outra campanha de marketing há pouco",
 };
 
 export const optOutSourceLabel: Record<BroadcastOptOut["source"], string> = {
@@ -283,3 +284,43 @@ export const isFutureSchedule = (value: string) => {
   const date = new Date(value);
   return !Number.isNaN(date.getTime()) && date.getTime() >= Date.now() + 60 * 1000;
 };
+
+/** Custo aproximado das mensagens que a Meta marcou como cobradas, pela mesma tabela da estimativa. */
+export const billedCostUsd = (billable: Record<string, number>) => {
+  let total = 0;
+  let known = false;
+  for (const [category, count] of Object.entries(billable)) {
+    const cost = estimateCostUsd(category, count);
+    if (cost === null) continue;
+    total += cost;
+    known = true;
+  }
+  return known ? total : null;
+};
+
+const csvCell = (value: string | number | null | undefined) => {
+  const text = value === null || value === undefined ? "" : String(value);
+  return /[;"\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+};
+
+/** Planilha com ponto e vírgula, que o Excel em português abre direto. */
+export function recipientsToCsv(recipients: BroadcastRecipient[]) {
+  const header = ["Telefone", "Nome", "Status", "Motivo", "Enviado em", "Entregue em", "Lido em", "Respondeu em", "Descadastrou em"];
+  const date = (value: string | null) => (value ? new Date(value).toLocaleString("pt-BR") : "");
+  const lines = recipients.map((recipient) =>
+    [
+      recipient.phoneNumber,
+      recipient.name,
+      recipientStatusInfo[recipient.status].label,
+      recipient.errorMessage ?? (recipient.skipReason ? skipReasonLabel[recipient.skipReason] : ""),
+      date(recipient.sentAt),
+      date(recipient.deliveredAt),
+      date(recipient.readAt),
+      date(recipient.repliedAt),
+      date(recipient.optedOutAt),
+    ]
+      .map(csvCell)
+      .join(";"),
+  );
+  return "\uFEFF" + [header.join(";"), ...lines].join("\r\n");
+}
