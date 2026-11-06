@@ -216,6 +216,18 @@ export const metaAdsService = {
     return response.data;
   },
 
+  // Pausa ou ativa na hora; fica no histórico de mudanças, com desfazer
+  setStatus: async ({
+    params,
+    body,
+  }: {
+    params: { clientId: string; accountId: string };
+    body: { level: Exclude<AdTargetLevel, "account">; metaId: string; status: "ACTIVE" | "PAUSED" };
+  }): Promise<AdChange> => {
+    const response = await api.post(`/client/${params.clientId}/meta-ads/account/${params.accountId}/status`, body);
+    return response.data;
+  },
+
   approveChange: async ({ params }: { params: { clientId: string; changeId: string } }): Promise<AdChange> => {
     const response = await api.post(`/client/${params.clientId}/meta-ads/change/${params.changeId}/approve`);
     return response.data;

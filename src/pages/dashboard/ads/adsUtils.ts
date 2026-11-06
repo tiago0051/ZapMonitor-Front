@@ -172,6 +172,8 @@ export const suggestionActionLabel = (action: AdSuggestion["action"], currency: 
   switch (action?.type) {
     case "PAUSE":
       return "Pausar";
+    case "ACTIVATE":
+      return "Ativar";
     case "SET_DAILY_BUDGET":
       return `Orçamento diário para ${formatMoney(action.value ?? null, currency)}`;
     case "ENABLE_ADVANTAGE_AUDIENCE":
@@ -199,6 +201,7 @@ export const changeStateLabel = (type: AdSuggestionActionType, state: AdChangeSt
   if (!state) return "—";
   switch (type) {
     case "PAUSE":
+    case "ACTIVATE":
       return state.status ? effectiveStatusInfo(state.status).label : "—";
     case "SET_DAILY_BUDGET":
       return state.dailyBudget == null ? "—" : `${formatMoney(state.dailyBudget, currency)}/dia`;

@@ -12,7 +12,8 @@ import { format } from "date-fns";
 import { AlertTriangle, ArrowLeft, Loader2, Megaphone, Play, Plus, Rocket, Save, Sparkles, Trash2, Undo2 } from "lucide-react";
 import { useState, type FC } from "react";
 import { toast } from "sonner";
-import { formatCount, formatMoney } from "../adsUtils";
+import { effectiveStatusInfo, formatCount, formatMoney, statusToneClassName } from "../adsUtils";
+import { AdStatusToggle } from "../components/adStatusToggle";
 import { AdsAssetLibrary } from "./adsAssetLibrary";
 import { BriefFields, RoutingFields } from "./draftFields";
 import { PlanEditor } from "./planEditor";
@@ -24,6 +25,19 @@ const statusInfo: Record<AdDraftStatus, { label: string; className: string }> = 
   PUBLISHED: { label: "Criada pausada", className: "bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300" },
   FAILED: { label: "Parou no meio", className: "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300" },
   ACTIVE: { label: "Ativa", className: "bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-300" },
+};
+
+/**
+ * Status para mostrar: depois de ativada, a campanha pode ser pausada na Meta, pela IA ou à mão; então vale o status
+ * da última sincronização, não o do rascunho.
+ */
+const draftStatusDisplay = (draft: AdCampaignDraft) => {
+  if (draft.status === "ACTIVE" && draft.campaignStatus && draft.campaignStatus !== "ACTIVE") {
+    const info = effectiveStatusInfo(draft.campaignStatus);
+    return { label: info.label, className: statusToneClassName[info.tone] };
+  }
+
+  return statusInfo[draft.status];
 };
 
 const emptyBrief = (): AdCampaignBrief => ({
@@ -126,7 +140,7 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
   const [plan, setPlan] = useState(draft.plan);
   const params = { clientId: client.id, draftId: draft.id };
   const isLocked = !!draft.published?.campaignId || draft.status === "PUBLISHING" || !can("ads.manage");
-  const status = statusInfo[draft.status];
+  const status = draftStatusDisplay(draft);
 
   const refresh = (updated: AdCampaignDraft) => {
     queryClient.setQueryData(["metaAds", "draft", client.id, draft.id], updated);
@@ -316,6 +330,16 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
               Ativar campanha
             </Button>
           )}
+          {/* Já ativada: pausar e reativar a campanha sem passar pela IA */}
+          {draft.status === "ACTIVE" && draft.published?.campaignId && draft.campaignStatus && (
+            <AdStatusToggle
+              accountId={account.id}
+              level="campaign"
+              metaId={draft.published.campaignId}
+              status={draft.campaignStatus}
+              size="sm"
+            />
+          )}
           {canUndo &&
             (isConfirmingUndo ? (
               <>
@@ -459,8 +483,8 @@ export const AdsCampaignBuilder: FC<{ account: AdAccount; initialDraftId?: strin
                 {draft.plan && (
                   <span className="text-muted-foreground text-xs">{formatMoney(draft.plan.dailyBudget, account.currency)}/dia</span>
                 )}
-                <span className={cn("rounded px-1.5 py-0.5 text-xs font-medium", statusInfo[draft.status].className)}>
-                  {statusInfo[draft.status].label}
+                <span className={cn("rounded px-1.5 py-0.5 text-xs font-medium", draftStatusDisplay(draft).className)}>
+                  {draftStatusDisplay(draft).label}
                 </span>
                 <span className="text-muted-foreground text-xs">{format(new Date(draft.updatedAt), "dd/MM HH:mm")}</span>
               </button>

@@ -242,7 +242,14 @@ type AdSuggestionPriority = "HIGH" | "MEDIUM" | "LOW";
 type AdSuggestionSource = "AUDIT" | "DAILY" | "CHAT";
 
 type AdSuggestionActionType =
-  "PAUSE" | "SET_DAILY_BUDGET" | "ENABLE_ADVANTAGE_AUDIENCE" | "ENABLE_ADVANTAGE_PLACEMENTS" | "EXCLUDE_AUDIENCE" | "MANUAL";
+  | "PAUSE"
+  // Só manual (pelo usuário): a IA não propõe ativar
+  | "ACTIVATE"
+  | "SET_DAILY_BUDGET"
+  | "ENABLE_ADVANTAGE_AUDIENCE"
+  | "ENABLE_ADVANTAGE_PLACEMENTS"
+  | "EXCLUDE_AUDIENCE"
+  | "MANUAL";
 
 type AdTargetLevel = "account" | "campaign" | "adset" | "ad";
 
@@ -437,6 +444,8 @@ type AdCampaignDraft = AdDraftRouting & {
   id: string;
   name: string;
   status: AdDraftStatus;
+  // Status da campanha na Meta pela última sincronização (ex.: ACTIVE, PAUSED); nulo antes de criar ou sincronizar
+  campaignStatus: string | null;
   brief: AdCampaignBrief;
   plan: AdCampaignPlan | null;
   // Ids criados na Meta

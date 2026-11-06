@@ -36,6 +36,7 @@ import { AdsCrmAudiences } from "./campaign/adsCrmAudiences";
 import { AdsStrategyChatTab } from "./adsStrategyChatTab";
 import { AdsResults } from "./adsResults";
 import { AdsPilot } from "./pilot/adsPilot";
+import { AdStatusToggle } from "./components/adStatusToggle";
 
 const StatusChip: FC<{ status: string }> = ({ status }) => {
   const info = effectiveStatusInfo(status);
@@ -44,7 +45,7 @@ const StatusChip: FC<{ status: string }> = ({ status }) => {
   );
 };
 
-const AdRows: FC<{ adSet: MetaAdSet }> = ({ adSet }) => (
+const AdRows: FC<{ adSet: MetaAdSet; accountId: string }> = ({ adSet, accountId }) => (
   <>
     {adSet.ads.map((ad) => (
       <TableRow key={ad.metaId} className="bg-muted/20">
@@ -53,7 +54,10 @@ const AdRows: FC<{ adSet: MetaAdSet }> = ({ adSet }) => (
           {ad.creative?.title && <p className="text-muted-foreground line-clamp-1 text-xs">{ad.creative.title}</p>}
         </TableCell>
         <TableCell>
-          <StatusChip status={ad.effectiveStatus} />
+          <span className="flex items-center gap-1.5">
+            <StatusChip status={ad.effectiveStatus} />
+            <AdStatusToggle accountId={accountId} level="ad" metaId={ad.metaId} status={ad.status} />
+          </span>
         </TableCell>
         <TableCell className="text-muted-foreground text-xs">
           {ad.creative?.callToActionType?.replaceAll("_", " ").toLowerCase() ?? "—"}
@@ -64,7 +68,7 @@ const AdRows: FC<{ adSet: MetaAdSet }> = ({ adSet }) => (
   </>
 );
 
-const CampaignRows: FC<{ campaign: MetaCampaign; currency: string }> = ({ campaign, currency }) => {
+const CampaignRows: FC<{ campaign: MetaCampaign; currency: string; accountId: string }> = ({ campaign, currency, accountId }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [openAdSetIds, setOpenAdSetIds] = useState<string[]>([]);
   const toggleAdSet = (metaId: string) =>
@@ -84,7 +88,10 @@ const CampaignRows: FC<{ campaign: MetaCampaign; currency: string }> = ({ campai
           </p>
         </TableCell>
         <TableCell>
-          <StatusChip status={campaign.effectiveStatus} />
+          <span className="flex items-center gap-1.5">
+            <StatusChip status={campaign.effectiveStatus} />
+            <AdStatusToggle accountId={accountId} level="campaign" metaId={campaign.metaId} status={campaign.status} />
+          </span>
         </TableCell>
         <TableCell className="text-xs">{campaign.bidStrategy?.replaceAll("_", " ").toLowerCase() ?? "—"}</TableCell>
         <TableCell className="text-right text-sm whitespace-nowrap tabular-nums">
@@ -112,12 +119,15 @@ const CampaignRows: FC<{ campaign: MetaCampaign; currency: string }> = ({ campai
                 </p>
               </TableCell>
               <TableCell>
-                <StatusChip status={adSet.effectiveStatus} />
+                <span className="flex items-center gap-1.5">
+                  <StatusChip status={adSet.effectiveStatus} />
+                  <AdStatusToggle accountId={accountId} level="adset" metaId={adSet.metaId} status={adSet.status} />
+                </span>
               </TableCell>
               <TableCell className="text-xs">{adSet.billingEvent?.replaceAll("_", " ").toLowerCase() ?? "—"}</TableCell>
               <TableCell className="text-right text-sm whitespace-nowrap tabular-nums">{budgetLabel(adSet, currency) ?? "—"}</TableCell>
             </TableRow>
-            {openAdSetIds.includes(adSet.metaId) && <AdRows adSet={adSet} />}
+            {openAdSetIds.includes(adSet.metaId) && <AdRows adSet={adSet} accountId={accountId} />}
           </Fragment>
         ))}
     </>
@@ -325,7 +335,12 @@ export const AdsPage = () => {
                     </TableHeader>
                     <TableBody>
                       {structure.campaigns.map((campaign) => (
-                        <CampaignRows key={campaign.metaId} campaign={campaign} currency={structure.account.currency} />
+                        <CampaignRows
+                          key={campaign.metaId}
+                          campaign={campaign}
+                          currency={structure.account.currency}
+                          accountId={currentAccount.id}
+                        />
                       ))}
                     </TableBody>
                   </Table>
