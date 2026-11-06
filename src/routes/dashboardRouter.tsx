@@ -17,6 +17,7 @@ const MembersRouter = lazy(() => import("./membersRouter"));
 const ManagementRouter = lazy(() => import("./managementRouter"));
 const CrmRouter = lazy(() => import("./crmRouter"));
 const AdsRouter = lazy(() => import("./adsRouter"));
+const BroadcastsRouter = lazy(() => import("./broadcastsRouter"));
 
 export const DashboardRouter: FC = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -72,6 +73,14 @@ export const DashboardRouter: FC = () => {
             element={
               <PermissionRoute permission="ads.view" requiresAds>
                 <AdsRouter />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="broadcasts/*"
+            element={
+              <PermissionRoute permission="broadcasts.view">
+                <BroadcastsRouter />
               </PermissionRoute>
             }
           />
