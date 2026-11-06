@@ -6,7 +6,7 @@ import { metaAdsService } from "@/services/api/metaAdsService";
 import { useQuery } from "@tanstack/react-query";
 import { AlertOctagon, AlertTriangle, CheckCircle2, Info } from "lucide-react";
 import { useState, type FC } from "react";
-import { addDaysToDate, formatCount, formatMoney, percentChange, shortDate, todayInTimeZone } from "./adsUtils";
+import { addDaysToDate, dateInputClassName, formatCount, formatMoney, percentChange, shortDate, todayInTimeZone } from "./adsUtils";
 
 const alertStyle: Record<AdAlertSeverity, { icon: typeof Info; className: string }> = {
   critical: {
@@ -72,7 +72,7 @@ export const AdsDailySummary: FC<{ account: AdAccount }> = ({ account }) => {
           value={date}
           max={yesterday}
           onChange={(event) => event.target.value && setDate(event.target.value)}
-          className="h-8 w-36"
+          className={cn(dateInputClassName, "w-44")}
         />
         {date === yesterday && <span className="text-muted-foreground text-xs">ontem, no fuso da conta</span>}
       </div>

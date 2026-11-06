@@ -12,6 +12,7 @@ import { Bar, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, T
 import {
   addDaysToDate,
   effectiveStatusInfo,
+  dateInputClassName,
   formatCount,
   formatMoney,
   reportLevelLabel,
@@ -76,14 +77,14 @@ export const AdsResults: FC<{ account: AdAccount }> = ({ account }) => {
             );
           })}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="grid w-full grid-cols-2 gap-1 sm:flex sm:w-auto sm:items-center">
           <Input
             type="date"
             aria-label="Início do período"
             value={startDate}
             max={endDate}
             onChange={(event) => event.target.value && setStartDate(event.target.value)}
-            className="h-8 w-36"
+            className={dateInputClassName}
           />
           <Input
             type="date"
@@ -92,7 +93,7 @@ export const AdsResults: FC<{ account: AdAccount }> = ({ account }) => {
             min={startDate}
             max={today}
             onChange={(event) => event.target.value && setEndDate(event.target.value)}
-            className="h-8 w-36"
+            className={dateInputClassName}
           />
         </div>
         <div className="grid gap-1">

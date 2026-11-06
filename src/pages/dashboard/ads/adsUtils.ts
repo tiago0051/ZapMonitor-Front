@@ -230,3 +230,10 @@ export const ruleActionLabel: Record<AdRuleAction, string> = {
   INCREASE_BUDGET: "Aumentar o orçamento",
   DECREASE_BUDGET: "Reduzir o orçamento",
 };
+
+/**
+ * Campo de data: no iPhone a data aparece por extenso ("4 de nov. de 2026") e quebrava em duas linhas no campo
+ * estreito. No celular o campo tem altura normal e ocupa a largura disponível, sem quebrar o texto.
+ */
+export const dateInputClassName =
+  "h-9 w-full min-w-0 appearance-none text-left sm:h-8 sm:w-36 [&::-webkit-date-and-time-value]:text-left [&::-webkit-date-and-time-value]:whitespace-nowrap";
