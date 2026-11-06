@@ -19,7 +19,7 @@ const options: { key: keyof BackgroundNotificationPreference; label: string; des
 export const BackgroundNotificationSettings: FC = () => {
   const { client } = useClientContext();
   const queryClient = useQueryClient();
-  const push = useBackgroundPush();
+  const push = useBackgroundPush(client.id);
   const queryKey = ["push", "preference", client.id];
 
   const preferenceQuery = useQuery({ queryKey, queryFn: () => pushService.findPreference(client.id), enabled: push.status === "on" });
@@ -32,7 +32,7 @@ export const BackgroundNotificationSettings: FC = () => {
     },
   });
   const sendTest = useMutation({
-    mutationFn: pushService.sendTest,
+    mutationFn: () => pushService.sendTest(client.id),
     onError: requestErrorHandling,
     onSuccess: ({ delivered }) =>
       delivered > 0
@@ -48,7 +48,9 @@ export const BackgroundNotificationSettings: FC = () => {
         <Smartphone className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold">Com o app fechado</p>
-          <p className="text-muted-foreground text-xs">Notificações no celular ou no computador mesmo sem o ZapMonitor aberto.</p>
+          <p className="text-muted-foreground text-xs">
+            Notificações deste cliente no celular ou no computador, mesmo sem o ZapMonitor aberto. Cada cliente é ativado à parte.
+          </p>
         </div>
       </div>
 
@@ -75,7 +77,7 @@ export const BackgroundNotificationSettings: FC = () => {
       {!push.isChecking && push.status === "off" && (
         <Button size="sm" className="w-full" disabled={push.isBusy} onClick={push.enable}>
           {push.isBusy && <Loader2 className="h-4 w-4 animate-spin" />}
-          Ativar neste aparelho
+          Ativar para {client.name} neste aparelho
         </Button>
       )}
 
@@ -104,7 +106,9 @@ export const BackgroundNotificationSettings: FC = () => {
               Desativar
             </Button>
           </div>
-          <p className="text-muted-foreground text-xs">As escolhas valem para este cliente em todos os seus aparelhos.</p>
+          <p className="text-muted-foreground text-xs">
+            Desativar vale só para este cliente neste aparelho. As escolhas acima valem para este cliente em todos os seus aparelhos.
+          </p>
         </>
       )}
 
