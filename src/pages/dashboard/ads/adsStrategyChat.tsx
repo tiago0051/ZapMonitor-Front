@@ -106,7 +106,7 @@ export const AdsStrategyChat: FC<{ account: AdAccount; aiEnabled: boolean }> = (
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                className="h-8 w-8 shrink-0 md:h-7 md:w-7 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100"
                 aria-label={`Apagar a conversa ${chat.title}`}
                 disabled={deleteChat.isPending}
                 onClick={() => deleteChat.mutate({ params: { clientId: client.id, chatId: chat.id } })}

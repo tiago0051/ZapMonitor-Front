@@ -12,7 +12,7 @@ import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ChevronDown, ChevronRight, Megaphone, RefreshCw } from "lucide-react";
-import { Fragment, useState, type FC } from "react";
+import { Fragment, useEffect, useRef, useState, type FC } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 import { useLocalStorage } from "usehooks-ts";
@@ -125,12 +125,21 @@ const CampaignRows: FC<{ campaign: MetaCampaign; currency: string }> = ({ campai
 };
 
 /** Resultados, estrutura e leads das contas de anúncio copiados da Meta; só leitura por enquanto. */
+// No celular o conteúdo rola junto com a tela; no computador cada aba rola dentro do próprio espaço
+const tabContentClassName = "p-3 sm:p-4 md:min-h-0 md:flex-1 md:overflow-auto";
+
 export const AdsPage = () => {
   const { client, can } = useClientContext();
   const baseUrl = useBaseUrl();
   const queryClient = useQueryClient();
   const [storedAccountId, setStoredAccountId] = useLocalStorage<string | null>(`ads:account:${client.id}`, null);
   const [tab, setTab] = useLocalStorage<string>(`ads:tab:${client.id}`, "results");
+  const tabsListRef = useRef<HTMLDivElement>(null);
+
+  // A aba escolhida fica visível na barra que rola para o lado (no celular)
+  useEffect(() => {
+    tabsListRef.current?.querySelector<HTMLElement>('[data-state="active"]')?.scrollIntoView({ block: "nearest", inline: "center" });
+  }, [tab]);
   // Rascunho montado pelo piloto que a aba Criar campanha abre
   const [pilotDraftId, setPilotDraftId] = useState<string | null>(null);
 
@@ -185,10 +194,11 @@ export const AdsPage = () => {
   const currentAccount = structure?.account ?? account;
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      <div className="flex flex-wrap items-end gap-4 border-b p-4">
-        <h1 className="mr-2 text-2xl font-semibold">Anúncios</h1>
-        <div className="grid gap-1">
+    // No celular a tela inteira rola junto (o cabeçalho não come o espaço); no computador cada aba rola sozinha
+    <div className="flex h-full flex-col overflow-y-auto md:overflow-hidden">
+      <div className="flex flex-wrap items-end gap-x-4 gap-y-2 border-b p-3 sm:p-4">
+        <h1 className="mr-2 text-xl font-semibold sm:text-2xl">Anúncios</h1>
+        <div className="grid w-full gap-1 sm:w-auto">
           <Label htmlFor="ads-account" className="text-xs">
             Conta de anúncio
           </Label>
@@ -196,7 +206,7 @@ export const AdsPage = () => {
             id="ads-account"
             value={account.id}
             onChange={(event) => setStoredAccountId(event.target.value)}
-            className={cn(crmSelectClassName, "w-64")}
+            className={cn(crmSelectClassName, "w-full sm:w-64")}
           >
             {accounts.map((item) => (
               <option key={item.id} value={item.id}>
@@ -205,7 +215,7 @@ export const AdsPage = () => {
             ))}
           </select>
         </div>
-        <p className="text-muted-foreground pb-2 text-xs">
+        <p className="text-muted-foreground min-w-0 flex-1 pb-2 text-xs sm:flex-none">
           {syncStatusLabel[currentAccount.syncStatus]}
           {currentAccount.lastSyncedAt && ` · atualizada em ${format(new Date(currentAccount.lastSyncedAt), "dd/MM HH:mm")}`}
           {currentAccount.syncError && <span className="text-destructive"> · {currentAccount.syncError}</span>}
@@ -224,27 +234,30 @@ export const AdsPage = () => {
         )}
       </div>
 
-      <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden">
-        <TabsList className="mx-4 mt-3">
-          <TabsTrigger value="results">Resultados</TabsTrigger>
-          <TabsTrigger value="pilot">Piloto automático</TabsTrigger>
-          <TabsTrigger value="create">Criar campanha</TabsTrigger>
-          <TabsTrigger value="suggestions">Sugestões</TabsTrigger>
-          {can("ads.manage") && <TabsTrigger value="strategy">Estratégia</TabsTrigger>}
-          <TabsTrigger value="changes">Mudanças</TabsTrigger>
-          <TabsTrigger value="automation">Automação</TabsTrigger>
-          <TabsTrigger value="campaigns">Campanhas{structure && ` (${structure.campaigns.length})`}</TabsTrigger>
-          <TabsTrigger value="audiences">Públicos{structure && ` (${structure.audiences.length})`}</TabsTrigger>
-          <TabsTrigger value="leads">Leads</TabsTrigger>
-          <TabsTrigger value="conversions">Eventos</TabsTrigger>
-        </TabsList>
+      <Tabs value={tab} onValueChange={setTab} className="flex flex-col gap-0 md:min-h-0 md:flex-1 md:overflow-hidden">
+        {/* Onze abas não cabem no celular: a barra rola para o lado e fica presa no topo */}
+        <div className="bg-background sticky top-0 z-10 overflow-x-auto px-3 pt-3 [scrollbar-width:none] sm:px-4 md:static [&::-webkit-scrollbar]:hidden">
+          <TabsList className="w-max" ref={tabsListRef}>
+            <TabsTrigger value="results">Resultados</TabsTrigger>
+            <TabsTrigger value="pilot">Piloto automático</TabsTrigger>
+            <TabsTrigger value="create">Criar campanha</TabsTrigger>
+            <TabsTrigger value="suggestions">Sugestões</TabsTrigger>
+            {can("ads.manage") && <TabsTrigger value="strategy">Estratégia</TabsTrigger>}
+            <TabsTrigger value="changes">Mudanças</TabsTrigger>
+            <TabsTrigger value="automation">Automação</TabsTrigger>
+            <TabsTrigger value="campaigns">Campanhas{structure && ` (${structure.campaigns.length})`}</TabsTrigger>
+            <TabsTrigger value="audiences">Públicos{structure && ` (${structure.audiences.length})`}</TabsTrigger>
+            <TabsTrigger value="leads">Leads</TabsTrigger>
+            <TabsTrigger value="conversions">Eventos</TabsTrigger>
+          </TabsList>
+        </div>
 
-        <TabsContent value="results" className="min-h-0 flex-1 space-y-8 overflow-auto p-4">
+        <TabsContent value="results" className={cn(tabContentClassName, "space-y-8")}>
           <AdsDailySummary key={currentAccount.id} account={currentAccount} />
           <AdsResults key={currentAccount.id} account={currentAccount} />
         </TabsContent>
 
-        <TabsContent value="pilot" className="min-h-0 flex-1 overflow-auto p-4">
+        <TabsContent value="pilot" className={tabContentClassName}>
           <AdsPilot
             key={currentAccount.id}
             account={currentAccount}
@@ -255,33 +268,33 @@ export const AdsPage = () => {
           />
         </TabsContent>
 
-        <TabsContent value="create" className="min-h-0 flex-1 overflow-auto p-4">
+        <TabsContent value="create" className={tabContentClassName}>
           <AdsCampaignBuilder key={`${currentAccount.id}-${pilotDraftId ?? ""}`} account={currentAccount} initialDraftId={pilotDraftId} />
         </TabsContent>
 
-        <TabsContent value="suggestions" className="min-h-0 flex-1 overflow-auto p-4">
+        <TabsContent value="suggestions" className={tabContentClassName}>
           <AdsSuggestions key={currentAccount.id} account={currentAccount} />
         </TabsContent>
 
         {can("ads.manage") && (
-          <TabsContent value="strategy" className="min-h-0 flex-1 overflow-auto p-4">
+          <TabsContent value="strategy" className={tabContentClassName}>
             <AdsStrategyChatTab key={currentAccount.id} account={currentAccount} />
           </TabsContent>
         )}
 
-        <TabsContent value="changes" className="min-h-0 flex-1 overflow-auto p-4">
+        <TabsContent value="changes" className={tabContentClassName}>
           <AdsChanges key={currentAccount.id} account={currentAccount} />
         </TabsContent>
 
-        <TabsContent value="automation" className="min-h-0 flex-1 overflow-auto p-4">
+        <TabsContent value="automation" className={tabContentClassName}>
           <AdsAutomation key={currentAccount.id} account={currentAccount} />
         </TabsContent>
 
-        <TabsContent value="leads" className="min-h-0 flex-1 overflow-auto p-4">
+        <TabsContent value="leads" className={tabContentClassName}>
           <AdsLeads />
         </TabsContent>
 
-        <TabsContent value="conversions" className="min-h-0 flex-1 overflow-auto p-4">
+        <TabsContent value="conversions" className={tabContentClassName}>
           <AdsConversionEvents />
         </TabsContent>
 
@@ -296,7 +309,7 @@ export const AdsPage = () => {
 
         {structure && (
           <>
-            <TabsContent value="campaigns" className="min-h-0 flex-1 overflow-auto p-4">
+            <TabsContent value="campaigns" className={tabContentClassName}>
               {structure.campaigns.length === 0 ? (
                 <EmptyState title="Nenhuma campanha nesta conta" description="Campanhas excluídas na Meta não aparecem aqui." />
               ) : (
@@ -320,7 +333,7 @@ export const AdsPage = () => {
               )}
             </TabsContent>
 
-            <TabsContent value="audiences" className="min-h-0 flex-1 space-y-4 overflow-auto p-4">
+            <TabsContent value="audiences" className={cn(tabContentClassName, "space-y-4")}>
               <AdsCrmAudiences account={currentAccount} />
 
               {structure.audiences.length === 0 ? (

@@ -113,11 +113,16 @@ export const PilotRefreshes: FC<Props> = ({ account, brand, onChange }) => {
       ) : (
         <div className="grid gap-3 lg:grid-cols-2">
           {refreshes.map((refresh) => (
-            <article key={refresh.id} className="flex gap-3 rounded-lg border p-3">
+            // No celular a imagem fica em cima do texto, em vez de espremer as duas colunas
+            <article key={refresh.id} className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row">
               {refresh.assetPreviewUrl ? (
-                <img src={refresh.assetPreviewUrl} alt="Criativo proposto" className="h-32 w-32 shrink-0 rounded object-cover" />
+                <img
+                  src={refresh.assetPreviewUrl}
+                  alt="Criativo proposto"
+                  className="aspect-square w-full max-w-64 shrink-0 rounded object-cover sm:h-32 sm:w-32"
+                />
               ) : (
-                <div className="bg-muted h-32 w-32 shrink-0 rounded" />
+                <div className="bg-muted aspect-square w-full max-w-64 shrink-0 rounded sm:h-32 sm:w-32" />
               )}
               <div className="min-w-0 flex-1 space-y-1 text-sm">
                 <p className="text-muted-foreground text-xs">
@@ -131,7 +136,7 @@ export const PilotRefreshes: FC<Props> = ({ account, brand, onChange }) => {
                 </p>
                 {refresh.error && <p className="text-destructive text-xs">{refresh.error}</p>}
                 {can("ads.approve") && (
-                  <div className="flex gap-2 pt-1">
+                  <div className="flex flex-wrap gap-2 pt-1">
                     <Button size="sm" disabled={approve.isPending || reject.isPending} onClick={() => approve.mutate(refresh.id)}>
                       <Check className="h-4 w-4" />
                       Aprovar troca

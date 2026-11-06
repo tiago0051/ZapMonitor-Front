@@ -93,13 +93,13 @@ export const PilotIdentity: FC<Props> = ({ account, brand, pages, onChange }) =>
       )}
 
       <div className="flex flex-wrap items-end gap-3">
-        <div className="grid gap-1">
+        <div className="grid w-full gap-1 sm:w-auto">
           <Label htmlFor="pilot-page" className="text-xs">
             Página da marca
           </Label>
           <select
             id="pilot-page"
-            className={cn(fieldSelectClassName, "w-64")}
+            className={cn(fieldSelectClassName, "w-full sm:w-64")}
             disabled={!canManage || isBusy}
             value={pageId}
             onChange={(event) => setPageId(event.target.value)}

@@ -4,7 +4,6 @@ import { fieldSelectClassName } from "./campaignUtils";
 import type { FC } from "react";
 import type { useCampaignOptions } from "./useCampaignOptions";
 
-
 type Options = ReturnType<typeof useCampaignOptions>;
 
 type RoutingFieldsProps = {

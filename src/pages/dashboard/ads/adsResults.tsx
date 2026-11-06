@@ -66,7 +66,10 @@ export const AdsResults: FC<{ account: AdAccount }> = ({ account }) => {
                 type="button"
                 aria-pressed={isActive}
                 onClick={() => applyPreset(days)}
-                className={cn("rounded px-2 py-1 text-xs", isActive ? "bg-primary text-primary-foreground" : "hover:bg-muted")}
+                className={cn(
+                  "rounded px-2.5 py-1.5 text-xs sm:px-2 sm:py-1",
+                  isActive ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                )}
               >
                 {days} dias
               </button>
@@ -188,7 +191,7 @@ export const AdsResults: FC<{ account: AdAccount }> = ({ account }) => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="min-w-56">{reportLevelLabel[level].slice(0, -1)}</TableHead>
+                    <TableHead className="min-w-40 sm:min-w-56">{reportLevelLabel[level].slice(0, -1)}</TableHead>
                     <TableHead className="text-right">Gasto</TableHead>
                     <TableHead className="text-right">CTR</TableHead>
                     <TableHead className="text-right">Conversas</TableHead>

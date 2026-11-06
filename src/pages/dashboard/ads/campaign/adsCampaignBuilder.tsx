@@ -407,7 +407,7 @@ export const AdsCampaignBuilder: FC<{ account: AdAccount; initialDraftId?: strin
         </div>
         {isCreating && (
           <div className="flex flex-wrap items-end gap-2 rounded-lg border border-dashed p-3">
-            <div className="grid min-w-64 flex-1 gap-1">
+            <div className="grid w-full flex-1 gap-1 sm:w-auto sm:min-w-64">
               <Label htmlFor="new-draft-name" className="text-xs">
                 Nome
               </Label>
