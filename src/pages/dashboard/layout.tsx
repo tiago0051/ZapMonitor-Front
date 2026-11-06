@@ -4,6 +4,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Outlet } from "react-router";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useTaskReminders } from "./crm/useTaskReminders";
+import { PlanDueBanner } from "@/components/plan/planDueBanner";
 
 export const DashboardLayout = () => {
   const isMobile = useIsMobile();
@@ -24,7 +25,10 @@ export const DashboardLayout = () => {
           </div>
         )}
         <div className="flex h-[calc(100dvh-40px)] flex-col overflow-hidden">
-          <Outlet />
+          <PlanDueBanner />
+          <div className="min-h-0 flex-1">
+            <Outlet />
+          </div>
         </div>
       </SidebarInset>
     </SidebarProvider>

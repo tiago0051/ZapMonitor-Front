@@ -7,6 +7,8 @@ import { HomePage } from "../pages/dashboard/home/home";
 import { DashboardLayout } from "@/pages/dashboard/layout";
 import { ClientProvider } from "@/context/ClientContext/clientProvider";
 import { PermissionRoute } from "@/components/permission-route";
+import { PlanExpiredScreen } from "@/components/plan/planExpiredScreen";
+import { isPlanExpiredError } from "@/components/plan/planExpired";
 
 const WhatsappRouter = lazy(() => import("./whatsappRouter"));
 const ConfigurationRouter = lazy(() => import("./clientRouter"));
@@ -27,6 +29,7 @@ export const DashboardRouter: FC = () => {
         element={
           <QueryErrorBoundary
             message="Não foi possível abrir este cliente."
+            renderError={(error) => (isPlanExpiredError(error) ? <PlanExpiredScreen /> : null)}
             action={
               <Button variant="link" asChild>
                 <Link to="/auth/select_client">Ir para meus clientes</Link>

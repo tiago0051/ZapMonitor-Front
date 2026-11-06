@@ -5,6 +5,10 @@ export const implanterService = {
     const response = await api.get("/implanter/clients");
     return response.data;
   },
+  renewClientPlan: async ({ clientId, months }: { clientId: string; months: number }): Promise<ImplanterClient> => {
+    const response = await api.post(`/implanter/clients/${clientId}/plan/renew`, { months });
+    return response.data;
+  },
   findUsers: async ({ queries }: FindAllImplanterUsersRequestData): Promise<PaginatedResponse<ImplanterUser>> => {
     const response = await api.get("/implanter/users", { params: queries });
     return response.data;

@@ -49,6 +49,8 @@ type ClientPlan = {
   startedAt: string | null;
   endedAt: string | null;
   resources: ClientPlanResource[];
+  status: PlanStatus;
+  renewals: ClientPlanRenewal[];
 };
 
 type ResourceFinance = {
