@@ -24,6 +24,10 @@ export const billingService = {
     const response = await api.put(`/owner/clients/${params.clientId}/plan`, body);
     return response.data;
   },
+  renewClientPlan: async ({ params, body }: RenewClientPlanRequestData): Promise<ClientPlan> => {
+    const response = await api.post(`/owner/clients/${params.clientId}/plan/renew`, body);
+    return response.data;
+  },
   endClientPlan: async ({ params }: EndClientPlanRequestData): Promise<void> => {
     await api.delete(`/owner/clients/${params.clientId}/plan`);
   },

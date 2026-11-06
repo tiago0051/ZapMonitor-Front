@@ -13,6 +13,8 @@ import { format } from "date-fns";
 import { useState, type FC } from "react";
 import { toast } from "sonner";
 import { calculateMonthlyFee, formatCurrency, formatNumber } from "../ownerFormat";
+import { formatPlanDate, PLAN_RENEWAL_MONTH_OPTIONS, renewalLabel } from "@/components/plan/planExpired";
+import { PlanRenewControl, PlanStatusBadge } from "@/components/plan/planRenewalFields";
 
 type Quantities = Record<BillingResource, number>;
 
@@ -23,6 +25,9 @@ export const DialogClientPlan: FC<{ client: OwnerClient }> = ({ client }) => {
   const [quantities, setQuantities] = useState<Quantities | null>(null);
   // Nulo enquanto não alterado: vale o início do plano, ou hoje para um plano novo
   const [startedAt, setStartedAt] = useState<string | null>(null);
+  // undefined enquanto não alterado (vale o salvo); "" tira o vencimento
+  const [dueDate, setDueDate] = useState<string | undefined>(undefined);
+  const [renewalMonths, setRenewalMonths] = useState<number | undefined>(undefined);
   const queryClient = useQueryClient();
 
   const findPlanQuery = useQuery({
@@ -66,6 +71,19 @@ export const DialogClientPlan: FC<{ client: OwnerClient }> = ({ client }) => {
     onSuccess: () => onSuccess("Plano salvo com sucesso"),
   });
 
+  const renewPlan = useMutation({
+    mutationFn: billingService.renewClientPlan,
+    onError: requestErrorHandling,
+    onSuccess: (updated) => {
+      queryClient.setQueryData(["owner", "plan", client.id], updated);
+      queryClient.invalidateQueries({ queryKey: ["owner", "clients"] });
+      setDueDate(undefined);
+      toast.success(
+        `Plano renovado até ${updated.status.dueDate ? formatPlanDate(updated.status.dueDate) : "—"}. O acesso dos usuários já voltou.`,
+      );
+    },
+  });
+
   const endPlan = useMutation({
     mutationFn: billingService.endClientPlan,
     onError: requestErrorHandling,
@@ -76,7 +94,12 @@ export const DialogClientPlan: FC<{ client: OwnerClient }> = ({ client }) => {
     setIsOpen(open);
     setQuantities(null);
     setStartedAt(null);
+    setDueDate(undefined);
+    setRenewalMonths(undefined);
   };
+
+  const currentDueDate = dueDate ?? plan?.status.dueDate ?? "";
+  const currentRenewalMonths = renewalMonths ?? plan?.status.renewalMonths ?? 1;
 
   const handleSave = () => {
     savePlan.mutate({
@@ -84,6 +107,8 @@ export const DialogClientPlan: FC<{ client: OwnerClient }> = ({ client }) => {
       body: {
         startedAt: new Date(`${currentStartedAt}T00:00:00`).toISOString(),
         items: billingResources.map((resource) => ({ resource, quantity: currentQuantities[resource] })),
+        dueDate: currentDueDate || null,
+        renewalMonths: currentRenewalMonths,
       },
     });
   };
@@ -124,6 +149,62 @@ export const DialogClientPlan: FC<{ client: OwnerClient }> = ({ client }) => {
               <Label htmlFor="plan-started-at">Início da cobrança</Label>
               <Input id="plan-started-at" type="date" value={currentStartedAt} onChange={(event) => setStartedAt(event.target.value)} />
               <p className="text-muted-foreground text-xs">O mês de início gera a comissão de venda do representante.</p>
+            </div>
+
+            <div className="grid gap-3 rounded-md border p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-medium">Vencimento</p>
+                {plan.startedAt && <PlanStatusBadge status={plan.status} />}
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label htmlFor="plan-due-date">Último dia pago</Label>
+                  <Input id="plan-due-date" type="date" value={currentDueDate} onChange={(event) => setDueDate(event.target.value)} />
+                  <p className="text-muted-foreground text-xs">
+                    No dia seguinte os usuários perdem o acesso; o atendimento automático continua. Vazio, o tenant nunca é bloqueado.
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="plan-renewal-months">Período do contrato</Label>
+                  <select
+                    id="plan-renewal-months"
+                    className="border-input dark:bg-input/30 flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs"
+                    value={currentRenewalMonths}
+                    onChange={(event) => setRenewalMonths(Number(event.target.value))}
+                  >
+                    {PLAN_RENEWAL_MONTH_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {renewalLabel[option]}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-muted-foreground text-xs">
+                    O quanto o Renovar soma por padrão. O implantador recebe aviso 7 dias antes.
+                  </p>
+                </div>
+              </div>
+              {isActive && (
+                <div className="flex flex-wrap items-center gap-3 border-t pt-3">
+                  <PlanRenewControl
+                    status={plan.status}
+                    isPending={renewPlan.isPending}
+                    onRenew={(months) => renewPlan.mutate({ params: { clientId: client.id }, body: { months } })}
+                  />
+                  <p className="text-muted-foreground text-xs">
+                    Em dia, soma a partir do vencimento atual; vencido, a partir de hoje. Libera o acesso na hora.
+                  </p>
+                </div>
+              )}
+              {plan.renewals.length > 0 && (
+                <ul className="text-muted-foreground space-y-0.5 border-t pt-2 text-xs">
+                  {plan.renewals.slice(0, 5).map((renewal) => (
+                    <li key={renewal.id}>
+                      {format(new Date(renewal.createdAt), "dd/MM/yyyy")}: renovado até {formatPlanDate(renewal.newDueDate)} (+
+                      {renewal.months} {renewal.months === 1 ? "mês" : "meses"}){renewal.renewedByName && ` por ${renewal.renewedByName}`}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
             <div className="overflow-x-auto rounded-md border">

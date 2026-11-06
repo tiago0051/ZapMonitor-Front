@@ -41,6 +41,14 @@ type SaveClientPlanRequestData = {
 type SaveClientPlanRequestBody = {
   startedAt: string;
   items: { resource: BillingResource; quantity: number }[];
+  // Último dia pago (YYYY-MM-DD); nulo tira o vencimento
+  dueDate?: string | null;
+  renewalMonths?: number;
+};
+
+type RenewClientPlanRequestData = {
+  params: ClientPlanRequestParams;
+  body: { months?: number };
 };
 
 type EndClientPlanRequestData = {

@@ -1,3 +1,4 @@
+import { PlanStatusBadge } from "@/components/plan/planRenewalFields";
 import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTablePaginate } from "@/components/ui/dataTablePaginate";
@@ -28,6 +29,7 @@ const ImplanterName = ({ client }: { client: OwnerClient }) =>
 const columns: DataTablePaginateColumnDef<OwnerClient>[] = [
   { accessorKey: "name", header: "Tenant" },
   { header: "Responsável", cell: ({ row }) => <ImplanterName client={row.original} /> },
+  { header: "Vencimento", cell: ({ row }) => (row.original.plan ? <PlanStatusBadge status={row.original.plan} /> : "—") },
   { accessorKey: "createdAt", header: "Criado em", cell: ({ row }) => format(row.original.createdAt, "dd/MM/yyyy") },
   { accessorKey: "activeUsers", header: "Usuários ativos", cell: ({ row }) => formatNumber(row.original.activeUsers) },
   { accessorKey: "messages", header: "Mensagens no período", cell: ({ row }) => formatNumber(row.original.messages) },

@@ -3,6 +3,9 @@ type ImplanterClient = {
   name: string;
   activeMembers: number;
   createdAt: string;
+  // É o implantador representante (responsável pela venda) e pode renovar o plano
+  isRepresentative: boolean;
+  plan: PlanStatus;
 };
 
 type ImplanterUserMembership = {

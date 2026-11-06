@@ -2,7 +2,11 @@ import { EmptyState, ErrorState, LoadingState } from "@/components/state-message
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { implanterService } from "@/services/api/implanterService";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { formatPlanDate } from "@/components/plan/planExpired";
+import { PlanRenewControl, PlanStatusBadge } from "@/components/plan/planRenewalFields";
+import { requestErrorHandling } from "@/utils/request";
+import { toast } from "sonner";
 import { format } from "date-fns";
 import { Link } from "react-router";
 import { DialogCreateClient } from "./dialogCreateClient";
@@ -14,7 +18,24 @@ export const ClientsTab = () => {
     queryFn: implanterService.findClients,
   });
 
-  const clients = findClientsQuery.data;
+  const queryClient = useQueryClient();
+  const renewPlan = useMutation({
+    mutationFn: implanterService.renewClientPlan,
+    onError: requestErrorHandling,
+    onSuccess: (updated) => {
+      queryClient.setQueryData<ImplanterClient[]>(["implanterClients"], (current) =>
+        current?.map((client) => (client.id === updated.id ? updated : client)),
+      );
+      toast.success(
+        `${updated.name} renovado até ${updated.plan.dueDate ? formatPlanDate(updated.plan.dueDate) : "—"}. O acesso dos usuários já voltou.`,
+      );
+    },
+  });
+
+  // Vencidos e os que vencem primeiro aparecem antes
+  const clients = findClientsQuery.data
+    ?.slice()
+    .sort((first, second) => (first.plan.daysUntilDue ?? Infinity) - (second.plan.daysUntilDue ?? Infinity));
 
   return (
     <div className="flex flex-col gap-4">
@@ -41,7 +62,10 @@ export const ClientsTab = () => {
             <Card key={client.id} className="gap-3">
               <CardHeader>
                 <CardTitle className="truncate">{client.name}</CardTitle>
-                <CardDescription>Criado em {format(client.createdAt, "dd/MM/yyyy")}</CardDescription>
+                <CardDescription className="flex flex-wrap items-center gap-2">
+                  Criado em {format(client.createdAt, "dd/MM/yyyy")}
+                  <PlanStatusBadge status={client.plan} />
+                </CardDescription>
               </CardHeader>
               <CardContent className="flex items-center justify-between gap-2">
                 <p className="text-sm">
@@ -51,6 +75,15 @@ export const ClientsTab = () => {
                   <Link to={`/dashboard/client/${client.id}`}>Abrir</Link>
                 </Button>
               </CardContent>
+              {client.isRepresentative && client.plan.dueDate && (
+                <CardContent className="border-t pt-3">
+                  <PlanRenewControl
+                    status={client.plan}
+                    isPending={renewPlan.isPending && renewPlan.variables?.clientId === client.id}
+                    onRenew={(months) => renewPlan.mutate({ clientId: client.id, months })}
+                  />
+                </CardContent>
+              )}
             </Card>
           ))}
         </div>

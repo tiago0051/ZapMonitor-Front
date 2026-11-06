@@ -1,6 +1,8 @@
 import { Outlet, useParams } from "react-router";
 import { ClientContext } from "./clientContext";
-import { useSuspenseQueries } from "@tanstack/react-query";
+import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { PLAN_EXPIRED_EVENT } from "@/services/api/api";
 import { clientService } from "@/services/api/clientService";
 
 export const ClientProvider = () => {
@@ -20,6 +22,15 @@ export const ClientProvider = () => {
       },
     ],
   });
+
+  // Plano venceu com a tela aberta: recarrega o acesso, que falha e mostra a tela de bloqueio
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    const handlePlanExpired = () => queryClient.resetQueries({ queryKey: ["clientAccess", clientId] });
+
+    window.addEventListener(PLAN_EXPIRED_EVENT, handlePlanExpired);
+    return () => window.removeEventListener(PLAN_EXPIRED_EVENT, handlePlanExpired);
+  }, [queryClient, clientId]);
 
   const client = findClientQuery.data;
   const access = findMyAccessQuery.data;

@@ -49,4 +49,6 @@ type TenantAccess = {
   crmEnabled: boolean;
   // O plano do tenant inclui o módulo de anúncios
   adsEnabled: boolean;
+  // Vencimento do plano, para o aviso dos últimos dias
+  plan?: PlanStatus;
 };

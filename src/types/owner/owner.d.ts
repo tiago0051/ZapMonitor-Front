@@ -25,4 +25,6 @@ type OwnerClient = {
   activeUsers: number;
   messages: number;
   services: number;
+  // Vencimento do plano
+  plan?: PlanStatus;
 };
