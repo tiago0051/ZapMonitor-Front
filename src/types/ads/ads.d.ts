@@ -466,7 +466,7 @@ type AdCampaignDraft = AdDraftRouting & {
 };
 
 // UPLOAD enviado pelo usuário, GENERATED gerado pela IA, POST postagem da página reaproveitada
-type AdAssetOrigin = "UPLOAD" | "GENERATED" | "POST";
+type AdAssetOrigin = "UPLOAD" | "GENERATED" | "POST" | "AD";
 
 type AdCreativeAsset = {
   id: string;

@@ -39,6 +39,7 @@ export const assetOriginLabel: Record<AdAssetOrigin, string> = {
   UPLOAD: "Enviado",
   GENERATED: "Gerado pela IA",
   POST: "Postagem",
+  AD: "Anúncio da conta",
 };
 
 // Campos de lista do perfil, um item por linha no formulário
