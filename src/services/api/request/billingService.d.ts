@@ -44,6 +44,7 @@ type SaveClientPlanRequestBody = {
   // Último dia pago (YYYY-MM-DD); nulo tira o vencimento
   dueDate?: string | null;
   renewalMonths?: number;
+  firstPaymentToImplanter?: boolean;
 };
 
 type RenewClientPlanRequestData = {

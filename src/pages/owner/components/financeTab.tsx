@@ -42,6 +42,7 @@ export const FinanceTab = () => {
 
   const finance = findFinanceQuery.data;
   const commissions = finance ? finance.saleCommission + finance.recurringCommission : 0;
+  const transfers = finance?.firstPaymentTransfer ?? 0;
 
   const summary = finance
     ? [
@@ -49,6 +50,7 @@ export const FinanceTab = () => {
         { label: "Custos dos recursos", value: finance.variableCost },
         { label: "Custos fixos", value: finance.fixedCost },
         { label: "Comissões", value: commissions },
+        ...(transfers > 0 ? [{ label: "Repasse do 1º pagamento", value: transfers }] : []),
         { label: "Lucro", value: finance.profit, highlight: true },
       ]
     : [];
@@ -115,6 +117,7 @@ export const FinanceTab = () => {
                     <TableHead className="text-right">Novos</TableHead>
                     <TableHead className="text-right">Receita</TableHead>
                     <TableHead className="text-right">Comissão de venda</TableHead>
+                    <TableHead className="text-right">Repasse do 1º pagamento</TableHead>
                     <TableHead className="text-right">CAC por tenant</TableHead>
                     <TableHead className="text-right">Comissão recorrente</TableHead>
                     <TableHead className="text-right">Custo total</TableHead>
@@ -132,12 +135,13 @@ export const FinanceTab = () => {
                       <TableCell className="text-right tabular-nums">{implanter.newClients}</TableCell>
                       <TableCell className="text-right tabular-nums">{formatCurrency(implanter.revenue)}</TableCell>
                       <TableCell className="text-right tabular-nums">{formatCurrency(implanter.saleCommission)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{formatCurrency(implanter.firstPaymentTransfer)}</TableCell>
                       <TableCell className="text-right tabular-nums">
                         {implanter.cac === null ? "–" : formatCurrency(implanter.cac)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">{formatCurrency(implanter.recurringCommission)}</TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {formatCurrency(implanter.saleCommission + implanter.recurringCommission)}
+                        {formatCurrency(implanter.saleCommission + implanter.firstPaymentTransfer + implanter.recurringCommission)}
                       </TableCell>
                       <TableCell className="text-right">
                         <ProfitValue value={implanter.profit} />
@@ -195,7 +199,7 @@ export const FinanceTab = () => {
                     <TableHead className="text-right">Mensalidade</TableHead>
                     <TableHead className="text-right">Custo dos recursos</TableHead>
                     <TableHead className="text-right">Custo fixo</TableHead>
-                    <TableHead className="text-right">Comissões</TableHead>
+                    <TableHead className="text-right">Comissões e repasse</TableHead>
                     <TableHead className="text-right">Lucro</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -212,7 +216,8 @@ export const FinanceTab = () => {
                       <TableCell className="text-right tabular-nums">{formatCurrency(client.variableCost)}</TableCell>
                       <TableCell className="text-right tabular-nums">{formatCurrency(client.fixedCostShare)}</TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {formatCurrency(client.saleCommission + client.recurringCommission)}
+                        {formatCurrency(client.saleCommission + client.firstPaymentTransfer + client.recurringCommission)}
+                        {client.firstPaymentTransfer > 0 && <p className="text-muted-foreground text-[11px]">repasse do 1º pagamento</p>}
                       </TableCell>
                       <TableCell className="text-right">
                         <ProfitValue value={client.profit} />
