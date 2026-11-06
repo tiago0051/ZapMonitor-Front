@@ -49,6 +49,18 @@ type PlanAdjustment = {
   // Nulo vale sobre o total
   resource: BillingResource | null;
   description: string | null;
+  // Plano do tenant: meses de vigência (YYYY-MM, inclusive); vazios valem sempre
+  validFrom?: string | null;
+  validUntil?: string | null;
+  // Modelo: vale nos primeiros N meses do contrato; vazio vale sempre
+  durationMonths?: number | null;
+};
+
+// Conjunto de ajustes que já foi trocado no plano do tenant
+type PlanAdjustmentHistory = {
+  startsAt: string;
+  endsAt: string;
+  adjustments: PlanAdjustment[];
 };
 
 // Quanto o ajuste mudou a mensalidade: negativo no desconto, positivo no acréscimo
@@ -96,10 +108,12 @@ type ClientPlan = {
   firstPaymentToImplanter: boolean;
   // Modelo usado na contratação
   planTemplate: { id: string; name: string } | null;
-  // Descontos e acréscimos em vigor
+  // Descontos e acréscimos do contrato, inclusive os de vigência futura ou encerrada
   adjustments: PlanAdjustment[];
-  // Mensalidade pela tabela em vigor; nula sem plano ou sem tabela
+  // Mensalidade deste mês pela tabela em vigor, só com os ajustes válidos no mês; nula sem plano ou sem tabela
   price: PlanPrice | null;
+  // Conjuntos de ajustes já trocados, do mais recente
+  adjustmentHistory: PlanAdjustmentHistory[];
 };
 
 type ResourceFinance = {

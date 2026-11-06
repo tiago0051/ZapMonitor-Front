@@ -14,8 +14,15 @@ import { toast } from "sonner";
 import { calculatePlanPrice } from "../ownerFormat";
 import { formatPlanDate, PLAN_RENEWAL_MONTH_OPTIONS, renewalLabel } from "@/components/plan/planExpired";
 import { PlanRenewControl, PlanStatusBadge } from "@/components/plan/planRenewalFields";
-import { hasInvalidAdjustment, toAdjustmentBody } from "../planAdjustmentFormat";
-import { PlanAdjustmentsEditor, PlanPriceSummary, selectClassName } from "./planAdjustments";
+import {
+  currentMonthKey,
+  formatMonth,
+  hasInvalidAdjustment,
+  isAdjustmentValidIn,
+  toAdjustmentBody,
+  toTenantAdjustments,
+} from "../planAdjustmentFormat";
+import { PlanAdjustmentHistoryList, PlanAdjustmentsEditor, PlanPriceSummary, selectClassName } from "./planAdjustments";
 import { PlanQuantitiesTable, type Quantities } from "./planQuantitiesTable";
 
 const toInputDate = (date: Date) => format(date, "yyyy-MM-dd");
@@ -116,7 +123,12 @@ export const DialogClientPlan: FC<{ client: OwnerClient }> = ({ client }) => {
   const currentFirstPaymentToImplanter = firstPaymentToImplanter ?? plan?.firstPaymentToImplanter ?? false;
   const currentPlanTemplateId = planTemplateId !== undefined ? planTemplateId : (plan?.planTemplate?.id ?? null);
   const currentAdjustments = adjustments ?? plan?.adjustments ?? [];
-  const price = calculatePlanPrice(table, currentQuantities, currentAdjustments);
+  // A mensalidade mostrada é a deste mês: só os ajustes com vigência no mês entram
+  const price = calculatePlanPrice(
+    table,
+    currentQuantities,
+    currentAdjustments.filter((adjustment) => isAdjustmentValidIn(adjustment, currentMonthKey())),
+  );
   // Os ativos, mais o do contrato atual mesmo que tenha sido desativado depois
   const templateOptions = (findPlanTemplatesQuery.data ?? []).filter(
     (template) => template.isActive || template.id === plan?.planTemplate?.id,
@@ -138,7 +150,8 @@ export const DialogClientPlan: FC<{ client: OwnerClient }> = ({ client }) => {
         billingResources.map((resource) => [resource, template.items.find((item) => item.resource === resource)?.quantity ?? 0]),
       ) as Quantities,
     );
-    setAdjustments(template.adjustments.map((adjustment) => ({ ...adjustment })));
+    // "Primeiros N meses" do modelo vira vigência a partir do mês de início da cobrança
+    setAdjustments(toTenantAdjustments(template.adjustments, currentStartedAt.substring(0, 7)));
     setRenewalMonths(template.renewalMonths);
     setFirstPaymentToImplanter(template.firstPaymentToImplanter);
     // Sem vencimento, o primeiro período pago vai do início da cobrança até o mesmo dia, meses depois
@@ -298,9 +311,16 @@ export const DialogClientPlan: FC<{ client: OwnerClient }> = ({ client }) => {
               usage={Object.fromEntries(plan.resources.map((resource) => [resource.resource, resource.used]))}
             />
 
-            <PlanAdjustmentsEditor idPrefix="client-plan" adjustments={currentAdjustments} onChange={setAdjustments} />
+            <PlanAdjustmentsEditor idPrefix="client-plan" validity="months" adjustments={currentAdjustments} onChange={setAdjustments} />
 
-            <PlanPriceSummary price={price} className="rounded-md border p-3" />
+            <div className="grid gap-1">
+              <p className="text-muted-foreground text-xs">
+                Mensalidade de {formatMonth(currentMonthKey())}, com os ajustes que valem neste mês:
+              </p>
+              <PlanPriceSummary price={price} className="rounded-md border p-3" />
+            </div>
+
+            <PlanAdjustmentHistoryList history={plan.adjustmentHistory ?? []} />
           </div>
         )}
 
