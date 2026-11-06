@@ -12,7 +12,7 @@ import { useState, type FC } from "react";
 import { toast } from "sonner";
 import { fieldSelectClassName } from "../campaign/campaignUtils";
 import { formatCount, formatMoney } from "../adsUtils";
-import { verdictInfo } from "./pilotUtils";
+import { scoreVerdictInfo } from "./pilotUtils";
 
 type Props = { account: AdAccount; brand: AdBrandProfile; onChange: (brand: AdBrandProfile) => void };
 
@@ -59,7 +59,8 @@ export const PilotScoreboard: FC<Props> = ({ account, brand, onChange }) => {
         <div className="mr-auto">
           <h2 className="text-lg font-semibold">3. Placar de criativos</h2>
           <p className="text-muted-foreground text-sm">
-            Vence quem vende no CRM; perde quem gastou sem trazer negócio. Anúncio com pouco gasto ainda está aprendendo.
+            Vence quem vende no CRM; perde quem já tem dados suficientes e não trouxe conversa ou trouxe 10 conversas sem negócio. Anúncio
+            com menos de 3 dias no ar, 1.000 impressões ou o gasto de 3 conversas no custo médio da conta ainda não é julgado.
           </p>
         </div>
         <select
@@ -145,10 +146,12 @@ export const PilotScoreboard: FC<Props> = ({ account, brand, onChange }) => {
                   </TableCell>
                   <TableCell>
                     <span
-                      className={cn("rounded px-1.5 py-0.5 text-xs font-medium whitespace-nowrap", verdictInfo[score.verdict].className)}
+                      title={score.missingData ?? undefined}
+                      className={cn("rounded px-1.5 py-0.5 text-xs font-medium whitespace-nowrap", scoreVerdictInfo(score).className)}
                     >
-                      {verdictInfo[score.verdict].label}
+                      {scoreVerdictInfo(score).label}
                     </span>
+                    {score.missingData && <p className="text-muted-foreground mt-1 max-w-56 text-xs">{score.missingData}</p>}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">{formatMoney(score.spend, account.currency)}</TableCell>
                   <TableCell className="text-right tabular-nums">{score.ctr === null ? "—" : `${formatCount(score.ctr, 2)}%`}</TableCell>

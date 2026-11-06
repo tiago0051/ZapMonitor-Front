@@ -10,8 +10,14 @@ export const identitySourceInfo: Record<AdIdentitySourceStatus, { label: string;
 export const verdictInfo: Record<AdCreativeVerdict, { label: string; className: string }> = {
   WINNER: { label: "Vencedor", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" },
   LOSER: { label: "Perdedor", className: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300" },
-  LEARNING: { label: "Aprendendo", className: "bg-muted text-muted-foreground" },
+  LEARNING: { label: "Sem veredito", className: "bg-muted text-muted-foreground" },
 };
+
+/** Sem dados suficientes o anúncio ainda não é julgado; com dados e sem veredito, não está nem bem nem mal. */
+export const scoreVerdictInfo = (score: AdCreativeScore) =>
+  score.verdict === "LEARNING" && !score.enoughData
+    ? { label: "Sem dados suficientes", className: "bg-muted text-muted-foreground" }
+    : verdictInfo[score.verdict];
 
 export const pilotStepLabel: Record<AdPilotStep, string> = {
   IDENTITY: "Lendo a identidade da marca",

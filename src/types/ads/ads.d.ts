@@ -603,6 +603,9 @@ type AdCreativeScore = {
   costPerConversation: number | null;
   costPerWonDeal: number | null;
   verdict: AdCreativeVerdict;
+  // Já há números para julgar; quando não, o que falta
+  enoughData: boolean;
+  missingData: string | null;
 };
 
 type AdPilotRunStatus = "RUNNING" | "DONE" | "FAILED";
