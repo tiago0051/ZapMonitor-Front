@@ -19,6 +19,7 @@ import {
   FiLogOut,
   FiMail,
   FiRepeat,
+  FiSend,
   FiSettings,
   FiSpeaker,
   FiTrendingUp,
@@ -53,6 +54,12 @@ const navMain: {
     icon: FaWhatsapp,
     url: "whatsapp",
     permission: "whatsapp.chat",
+  },
+  {
+    title: "Campanhas",
+    icon: FiSend,
+    url: "broadcasts",
+    permission: "broadcasts.view",
   },
   {
     title: "CRM",

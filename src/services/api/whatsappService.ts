@@ -97,6 +97,16 @@ export const whatsappService = {
     );
     return response.data;
   },
+  getTemplateHeaderUploadUrl: async ({
+    body,
+    params,
+  }: GetTemplateHeaderUploadUrlRequestData): Promise<GetFileDocumentUploadUrlResponseData> => {
+    const response = await api.post(
+      `/client/${params.clientId}/whatsapp/configuration/${params.configurationId}/template-header/${params.fileType}/upload-url`,
+      body,
+    );
+    return response.data;
+  },
   createWhatsappMessage: async ({ body, params }: CreateWhatsappMessageRequestData): Promise<WhatsappMessage> => {
     const response = await api.post(
       `/client/${params.clientId}/whatsapp/contact/${params.contactId}/configuration/${params.configurationId}/message`,

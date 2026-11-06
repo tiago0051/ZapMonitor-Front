@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { useState, type FC } from "react";
 import { FiAlertTriangle, FiDownload } from "react-icons/fi";
 import { IoCheckmarkDoneOutline, IoCheckmarkOutline, IoTimeOutline } from "react-icons/io5";
-import { ChevronDown, ChevronUp, Reply } from "lucide-react";
+import { ChevronDown, ChevronUp, Megaphone, Reply } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "motion/react";
 import { MessageReplyPreview } from "../../../messageReplyPreview";
@@ -120,6 +120,12 @@ export const MessageItem: FC<MessageItemProps> = ({ message, contactName, onRepl
 
       {message.contentType === WhatsappMessageContentType.CONTACTS && <MessageContact message={message as WhatsappMessage<string>} />}
 
+      {message.broadcast && (
+        <p className="text-muted-foreground mb-1 flex items-center gap-1 text-[11px] font-medium">
+          <Megaphone className="size-3" />
+          Campanha: {message.broadcast.name}
+        </p>
+      )}
       {message.contentType === WhatsappMessageContentType.TEMPLATE && <MessageTemplate message={message as WhatsappMessage<string>} />}
 
       {!supportedContentTypes.includes(message.contentType) && (

@@ -17,5 +17,7 @@ type WhatsappMessage<C = unknown> = {
   userName: string;
   contactReaction?: string | null;
   replyTo?: WhatsappMessageReplyTo | null;
+  // Campanha que enviou a mensagem
+  broadcast?: { id: string; name: string } | null;
   createdAt: string;
 };

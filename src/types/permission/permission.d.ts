@@ -20,7 +20,9 @@ type Permission =
   | "crm.manage"
   | "ads.view"
   | "ads.manage"
-  | "ads.approve";
+  | "ads.approve"
+  | "broadcasts.view"
+  | "broadcasts.send";
 
 type PermissionDefinition = {
   key: Permission;

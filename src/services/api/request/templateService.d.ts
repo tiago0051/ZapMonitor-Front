@@ -21,6 +21,11 @@ type FindClientByIdRequestData = {
   params: FindClientByIdRequestParams;
 };
 
+type FindAllWhatsappTemplatesRequestData = {
+  params: FindClientByIdRequestParams;
+  queries?: { configurationId?: string };
+};
+
 type DeleteWhatsappTemplateRequestData = {
   params: DeleteWhatsappTemplateRequestParams;
 };

@@ -6,8 +6,14 @@ export const templateService = {
     return response.data;
   },
 
-  findAll: async ({ params }: FindClientByIdRequestData): Promise<WhatsappTemplate[]> => {
-    const response = await api.get<WhatsappTemplate[]>(`/client/${params.clientId}/template`);
+  /** Com configurationId, só os modelos que o número pode enviar (da WABA dele e os manuais). */
+  findAll: async ({ params, queries }: FindAllWhatsappTemplatesRequestData): Promise<WhatsappTemplate[]> => {
+    const response = await api.get<WhatsappTemplate[]>(`/client/${params.clientId}/template`, { params: queries });
+    return response.data;
+  },
+
+  sync: async ({ params }: FindClientByIdRequestData): Promise<WhatsappTemplateSyncResult> => {
+    const response = await api.post<WhatsappTemplateSyncResult>(`/client/${params.clientId}/template/sync`);
     return response.data;
   },
 
