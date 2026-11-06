@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { billingResourceLabel, billingResources } from "@/contants/billingContants";
-import { describeAdjustment } from "../planAdjustmentFormat";
+import { currentMonthKey, describeAdjustment, formatMonth, isAdjustmentValidIn, isInvalidValidity } from "../planAdjustmentFormat";
+import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Plus, Trash2 } from "lucide-react";
 import type { FC } from "react";
@@ -15,7 +16,10 @@ export const PlanAdjustmentsEditor: FC<{
   adjustments: PlanAdjustment[];
   onChange: (adjustments: PlanAdjustment[]) => void;
   idPrefix: string;
-}> = ({ adjustments, onChange, idPrefix }) => {
+  // Plano do tenant: vigência por mês (de/até); modelo: primeiros N meses do contrato
+  validity: "months" | "duration";
+}> = ({ adjustments, onChange, idPrefix, validity }) => {
+  const thisMonth = currentMonthKey();
   const update = (index: number, change: Partial<PlanAdjustment>) =>
     onChange(adjustments.map((adjustment, current) => (current === index ? { ...adjustment, ...change } : adjustment)));
 
@@ -41,6 +45,8 @@ export const PlanAdjustmentsEditor: FC<{
       {adjustments.map((adjustment, index) => {
         const isInvalid =
           !(adjustment.value > 0) || (adjustment.type === "DISCOUNT" && adjustment.mode === "PERCENT" && adjustment.value > 100);
+        const isValidityInvalid = isInvalidValidity(adjustment);
+        const isOutOfThisMonth = validity === "months" && !isAdjustmentValidIn(adjustment, thisMonth);
 
         return (
           <div key={index} className="grid gap-2 rounded-md border p-2 sm:grid-cols-[1fr_5rem_6.5rem_1.4fr_auto] sm:items-start">
@@ -105,6 +111,50 @@ export const PlanAdjustmentsEditor: FC<{
               value={adjustment.description ?? ""}
               onChange={(event) => update(index, { description: event.target.value })}
             />
+            {validity === "months" ? (
+              <div className="flex flex-wrap items-center gap-2 text-xs sm:col-span-5">
+                <span className="text-muted-foreground">Vale de</span>
+                <Input
+                  type="month"
+                  aria-label="Primeiro mês em que vale"
+                  className="h-8 w-40"
+                  value={adjustment.validFrom ?? ""}
+                  onChange={(event) => update(index, { validFrom: event.target.value || null })}
+                />
+                <span className="text-muted-foreground">até</span>
+                <Input
+                  type="month"
+                  aria-label="Último mês em que vale"
+                  className="h-8 w-40"
+                  value={adjustment.validUntil ?? ""}
+                  aria-invalid={isValidityInvalid}
+                  onChange={(event) => update(index, { validUntil: event.target.value || null })}
+                />
+                <span className="text-muted-foreground">Vazio: desde já e sem fim.</span>
+                {isOutOfThisMonth && !isValidityInvalid && (
+                  <span className="rounded bg-amber-100 px-1.5 py-0.5 font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                    Não vale em {formatMonth(thisMonth)}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2 text-xs sm:col-span-5">
+                <span className="text-muted-foreground">Vale nos primeiros</span>
+                <Input
+                  type="number"
+                  aria-label="Meses em que vale"
+                  className="h-8 w-20"
+                  min={1}
+                  max={60}
+                  value={adjustment.durationMonths ?? ""}
+                  onChange={(event) =>
+                    update(index, { durationMonths: Number.isNaN(event.target.valueAsNumber) ? null : event.target.valueAsNumber })
+                  }
+                />
+                <span className="text-muted-foreground">meses do contrato. Vazio: sempre.</span>
+              </div>
+            )}
+            {isValidityInvalid && <p className="text-destructive text-xs sm:col-span-5">O mês final vem antes do inicial.</p>}
             {isInvalid && (
               <p className="text-destructive text-xs sm:col-span-5">
                 {adjustment.value > 100 ? "O desconto não pode passar de 100%." : "Informe um valor maior que zero."}
@@ -143,3 +193,29 @@ export const PlanPriceSummary: FC<{ price: PlanPrice; className?: string }> = ({
     </div>
   </div>
 );
+
+/** Conjuntos de ajustes que já valeram no contrato e foram trocados. */
+export const PlanAdjustmentHistoryList: FC<{ history: PlanAdjustmentHistory[] }> = ({ history }) =>
+  history.length > 0 && (
+    <details className="rounded-md border p-3 text-sm">
+      <summary className="cursor-pointer font-medium">Histórico de descontos e acréscimos</summary>
+      <ul className="mt-2 grid gap-2">
+        {history.map((entry) => (
+          <li key={`${entry.startsAt}-${entry.endsAt}`} className="grid gap-0.5">
+            <span className="text-muted-foreground text-xs">
+              De {format(new Date(entry.startsAt), "dd/MM/yyyy")} a {format(new Date(entry.endsAt), "dd/MM/yyyy")}
+            </span>
+            {entry.adjustments.length === 0 ? (
+              <span className="text-muted-foreground text-xs italic">Sem ajustes</span>
+            ) : (
+              entry.adjustments.map((adjustment, index) => (
+                <span key={index} className="text-xs">
+                  {describeAdjustment(adjustment)}
+                </span>
+              ))
+            )}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );

@@ -82,7 +82,7 @@ export const DialogSavePlanTemplate: FC<{ template?: PlanTemplate; table: PriceT
       firstPaymentToImplanter: draft.firstPaymentToImplanter,
       isActive: draft.isActive,
       items: billingResources.map((resource) => ({ resource, quantity: draft.quantities[resource] })),
-      adjustments: toAdjustmentBody(draft.adjustments),
+      adjustments: toAdjustmentBody(draft.adjustments, "duration"),
     });
 
   return (
@@ -169,6 +169,7 @@ export const DialogSavePlanTemplate: FC<{ template?: PlanTemplate; table: PriceT
           <PlanQuantitiesTable table={table} quantities={draft.quantities} onChange={(quantities) => change({ quantities })} />
           <PlanAdjustmentsEditor
             idPrefix="plan-template"
+            validity="duration"
             adjustments={draft.adjustments}
             onChange={(adjustments) => change({ adjustments })}
           />
