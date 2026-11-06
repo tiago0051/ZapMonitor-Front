@@ -29,6 +29,7 @@ export const broadcastService = {
       configurationId: string;
       templateId: string;
       headerFileId?: string;
+      sendWindow?: BroadcastSendWindow;
       recipients: BroadcastRecipientInput[];
       start?: boolean;
     },
@@ -64,6 +65,21 @@ export const broadcastService = {
 
   action: async (clientId: string, broadcastId: string, action: "start" | "pause" | "cancel"): Promise<Broadcast> => {
     const response = await api.post(`${base(clientId)}/${broadcastId}/${action}`);
+    return response.data;
+  },
+
+  schedule: async (clientId: string, broadcastId: string, scheduledAt: string): Promise<Broadcast> => {
+    const response = await api.post(`${base(clientId)}/${broadcastId}/schedule`, { scheduledAt });
+    return response.data;
+  },
+
+  unschedule: async (clientId: string, broadcastId: string): Promise<Broadcast> => {
+    const response = await api.post(`${base(clientId)}/${broadcastId}/unschedule`);
+    return response.data;
+  },
+
+  setSendWindow: async (clientId: string, broadcastId: string, sendWindow: BroadcastSendWindow | null): Promise<Broadcast> => {
+    const response = await api.put(`${base(clientId)}/${broadcastId}/send-window`, { sendWindow });
     return response.data;
   },
 

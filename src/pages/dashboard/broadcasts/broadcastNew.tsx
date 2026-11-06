@@ -21,11 +21,24 @@ import { templateService } from "@/services/api/templateService";
 import { whatsappService } from "@/services/api/whatsappService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
 import { ArrowLeft } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
-import { estimateCostUsd, formatCount, formatUsd, RECIPIENTS_PER_REQUEST, summarizeAudience, type VariableMapping } from "./broadcastUtils";
+import {
+  describeSendWindow,
+  estimateCostUsd,
+  isFutureSchedule,
+  formatCount,
+  formatUsd,
+  RECIPIENTS_PER_REQUEST,
+  sendWindowError,
+  summarizeAudience,
+  toLocalInputValue,
+  type VariableMapping,
+} from "./broadcastUtils";
+import { SendWindowFields } from "./components/sendWindowFields";
 import { allAudienceRows, defaultMapping, emptyAudienceSources, selectClassName, type AudienceSources } from "./audienceSources";
 import { AudienceStep } from "./components/audienceStep";
 import { VariablesStep } from "./components/variablesStep";
@@ -47,6 +60,9 @@ export const BroadcastNew = () => {
   const [mapping, setMapping] = useState<Record<string, VariableMapping>>({});
   const [testPhone, setTestPhone] = useState("");
   const [confirmSend, setConfirmSend] = useState(false);
+  const [when, setWhen] = useState<"now" | "schedule">("now");
+  const [scheduledAt, setScheduledAt] = useState("");
+  const [sendWindow, setSendWindow] = useState<BroadcastSendWindow | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   const configurationsQuery = useQuery({
@@ -111,7 +127,7 @@ export const BroadcastNew = () => {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (start: boolean) => {
+    mutationFn: async (action: "draft" | "now" | "schedule") => {
       const recipients: BroadcastRecipientInput[] = summary.ready.map(({ row, variables }) => ({
         phoneNumber: row.phoneNumber,
         name: row.name ?? undefined,
@@ -129,6 +145,7 @@ export const BroadcastNew = () => {
         configurationId,
         templateId: template!.id,
         headerFileId: fileId,
+        sendWindow: sendWindow ?? undefined,
         recipients: chunks[0],
       });
       for (let index = 1; index < chunks.length; index++) {
@@ -136,22 +153,37 @@ export const BroadcastNew = () => {
         setUploadProgress(Math.round(((index + 1) / chunks.length) * 100));
       }
       setUploadProgress(100);
-      if (start) broadcast = await broadcastService.action(client.id, broadcast.id, "start");
+      if (action === "now") broadcast = await broadcastService.action(client.id, broadcast.id, "start");
+      if (action === "schedule") broadcast = await broadcastService.schedule(client.id, broadcast.id, new Date(scheduledAt).toISOString());
       return broadcast;
     },
     onError: (error) => {
       setUploadProgress(null);
       requestErrorHandling(error);
     },
-    onSuccess: (broadcast, start) => {
+    onSuccess: (broadcast, action) => {
       queryClient.invalidateQueries({ queryKey: ["broadcasts", client.id] });
-      toast.success(start ? "Campanha iniciada" : "Rascunho salvo");
+      const waiting = action === "now" && broadcast.status === "SCHEDULED";
+      toast.success(
+        action === "draft" ? "Rascunho salvo" : action === "schedule" || waiting ? "Campanha agendada" : "Campanha iniciada",
+        waiting ? { description: "Agora está fora da janela de envio; começa no próximo horário permitido." } : undefined,
+      );
       navigate(`${baseUrl}/broadcasts/${broadcast.id}`);
     },
   });
 
   const estimate = estimateCostUsd(template?.category ?? null, summary.ready.length);
   const busy = createMutation.isPending;
+  const scheduleDate = scheduledAt ? new Date(scheduledAt) : null;
+  const scheduleError =
+    when !== "schedule"
+      ? null
+      : !scheduledAt
+        ? "Escolha a data e a hora"
+        : !isFutureSchedule(scheduledAt)
+          ? "Escolha um horário no futuro"
+          : null;
+  const reviewError = sendWindowError(sendWindow) ?? scheduleError;
 
   return (
     <div className="flex h-full flex-col gap-4 overflow-auto p-4 md:p-6">
@@ -321,6 +353,46 @@ export const BroadcastNew = () => {
                   <p className="text-muted-foreground text-xs">O teste usa as variáveis da primeira pessoa da lista.</p>
                 </div>
 
+                <div className="grid gap-3 rounded-lg border p-3">
+                  <p className="text-sm font-medium">Quando enviar</p>
+                  <div className="flex flex-wrap gap-4 text-sm">
+                    <label className="flex items-center gap-2">
+                      <input type="radio" name="broadcast-when" checked={when === "now"} onChange={() => setWhen("now")} disabled={busy} />
+                      Agora
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="broadcast-when"
+                        checked={when === "schedule"}
+                        disabled={busy}
+                        onChange={() => {
+                          setWhen("schedule");
+                          if (!scheduledAt) setScheduledAt(toLocalInputValue(new Date(Date.now() + 60 * 60 * 1000)));
+                        }}
+                      />
+                      Agendar
+                    </label>
+                  </div>
+                  {when === "schedule" && (
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="broadcast-scheduled-at" className="text-xs">
+                        Data e hora de início
+                      </Label>
+                      <Input
+                        id="broadcast-scheduled-at"
+                        type="datetime-local"
+                        className="h-9 w-full min-w-0 sm:w-60"
+                        value={scheduledAt}
+                        min={toLocalInputValue(new Date())}
+                        disabled={busy}
+                        onChange={(event) => setScheduledAt(event.target.value)}
+                      />
+                    </div>
+                  )}
+                  <SendWindowFields value={sendWindow} onChange={setSendWindow} idPrefix="broadcast-window" disabled={busy} />
+                </div>
+
                 {uploadProgress !== null && (
                   <div className="grid gap-1">
                     <Progress value={uploadProgress} />
@@ -331,13 +403,16 @@ export const BroadcastNew = () => {
                 {confirmSend ? (
                   <div className="grid gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30">
                     <p className="text-sm">
-                      Enviar agora para {formatCount(summary.ready.length)} {summary.ready.length === 1 ? "pessoa" : "pessoas"} pelo número{" "}
-                      {configurations.find((item) => item.id === configurationId)?.phoneNumber}? Dá para pausar depois, mas o que já saiu
-                      não volta.
+                      {when === "schedule" ? "Agendar" : "Enviar agora"} para {formatCount(summary.ready.length)}{" "}
+                      {summary.ready.length === 1 ? "pessoa" : "pessoas"} pelo número{" "}
+                      {configurations.find((item) => item.id === configurationId)?.phoneNumber}
+                      {when === "schedule" && scheduleDate && `, começando em ${format(scheduleDate, "dd/MM/yyyy 'às' HH:mm")}`}
+                      {sendWindow && ` (${describeSendWindow(sendWindow).toLowerCase()})`}? Dá para pausar depois, mas o que já saiu não
+                      volta.
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      <Button disabled={busy} onClick={() => createMutation.mutate(true)}>
-                        {busy ? "Iniciando..." : "Confirmar envio"}
+                      <Button disabled={busy} onClick={() => createMutation.mutate(when)}>
+                        {busy ? "Salvando..." : when === "schedule" ? "Confirmar agendamento" : "Confirmar envio"}
                       </Button>
                       <Button variant="ghost" disabled={busy} onClick={() => setConfirmSend(false)}>
                         Voltar
@@ -345,13 +420,18 @@ export const BroadcastNew = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-wrap gap-2">
-                    <Button disabled={busy || !summary.ready.length} onClick={() => setConfirmSend(true)}>
-                      Enviar agora
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button disabled={busy || !summary.ready.length || !!reviewError} onClick={() => setConfirmSend(true)}>
+                      {when === "schedule" ? "Agendar" : "Enviar agora"}
                     </Button>
-                    <Button variant="outline" disabled={busy || !summary.ready.length} onClick={() => createMutation.mutate(false)}>
+                    <Button
+                      variant="outline"
+                      disabled={busy || !summary.ready.length || !!sendWindowError(sendWindow)}
+                      onClick={() => createMutation.mutate("draft")}
+                    >
                       Salvar rascunho
                     </Button>
+                    {reviewError && <p className="text-muted-foreground text-xs">{reviewError}</p>}
                   </div>
                 )}
               </div>

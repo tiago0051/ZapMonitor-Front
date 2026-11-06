@@ -238,3 +238,48 @@ export function parsePastedList(text: string): AudienceRow[] {
 }
 
 export const RECIPIENTS_PER_REQUEST = 5000;
+
+export const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"] as const;
+
+/** Segunda a sexta, das 8h às 20h. */
+export const defaultSendWindow: BroadcastSendWindow = { startMinute: 8 * 60, endMinute: 20 * 60, days: [1, 2, 3, 4, 5] };
+
+export const minutesToTime = (minutes: number) =>
+  `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+
+export const timeToMinutes = (time: string) => {
+  const [hours, minutes] = time.split(":").map(Number);
+  return Number.isFinite(hours) && Number.isFinite(minutes) ? hours * 60 + minutes : 0;
+};
+
+/** "Seg a Sex, das 08:00 às 20:00" ou a lista de dias quando não são seguidos. */
+export const describeSendWindow = (window: BroadcastSendWindow) => {
+  const days = [...window.days].sort((a, b) => a - b);
+  const consecutive = days.length > 2 && days.every((day, index) => index === 0 || day === days[index - 1] + 1);
+  const dayText =
+    days.length === 7
+      ? "Todos os dias"
+      : consecutive
+        ? `${WEEKDAYS[days[0]]} a ${WEEKDAYS[days.at(-1)!]}`
+        : days.map((day) => WEEKDAYS[day]).join(", ");
+  return `${dayText}, das ${minutesToTime(window.startMinute)} às ${minutesToTime(window.endMinute)}`;
+};
+
+export const sendWindowError = (window: BroadcastSendWindow | null) => {
+  if (!window) return null;
+  if (window.startMinute >= window.endMinute) return "O fim precisa ser depois do início";
+  if (!window.days.length) return "Escolha pelo menos um dia";
+  return null;
+};
+
+/** Valor para o campo datetime-local, no horário do aparelho. */
+export const toLocalInputValue = (date: Date) => {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+};
+
+/** O horário escolhido é pelo menos um minuto no futuro, como o back exige. */
+export const isFutureSchedule = (value: string) => {
+  const date = new Date(value);
+  return !Number.isNaN(date.getTime()) && date.getTime() >= Date.now() + 60 * 1000;
+};

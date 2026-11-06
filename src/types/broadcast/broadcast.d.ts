@@ -2,6 +2,9 @@ type BroadcastStatus = "DRAFT" | "SCHEDULED" | "SENDING" | "PAUSED" | "COMPLETED
 
 type BroadcastRecipientStatus = "PENDING" | "SENDING" | "SENT" | "DELIVERED" | "READ" | "REPLIED" | "FAILED" | "SKIPPED" | "CANCELED";
 
+/** Horário de Brasília: minutos desde a meia-noite (fim não incluído) e dias da semana, 0 = domingo. */
+type BroadcastSendWindow = { startMinute: number; endMinute: number; days: number[] };
+
 type BroadcastTotals = {
   total: number;
   pending: number;
@@ -26,6 +29,7 @@ type Broadcast = {
   templateLanguage: string;
   templateCategory: string | null;
   headerFileId: string | null;
+  sendWindow: BroadcastSendWindow | null;
   pausedReason: string | null;
   scheduledAt: string | null;
   startedAt: string | null;
