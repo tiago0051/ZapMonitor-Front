@@ -315,6 +315,15 @@ type SendTemplateRequestParams = {
 
 type SendTemplateRequestBody = {
   templateId: string;
+  /** Valor de cada variável pela chave de parameters (body.1, header.1, button.0...) */
+  variables?: Record<string, string>;
+  /** Arquivo do cabeçalho de imagem, vídeo ou documento */
+  headerFileId?: string;
+};
+
+type GetTemplateHeaderUploadUrlRequestData = {
+  params: { clientId: string; configurationId: string; fileType: "image" | "video" | "document" };
+  body: GetFileDocumentUploadUrlRequestBody;
 };
 
 //#endregion
@@ -329,11 +338,10 @@ type SendTemplateToNewContactRequestParams = {
   clientId: string;
 };
 
-type SendTemplateToNewContactRequestBody = {
+type SendTemplateToNewContactRequestBody = SendTemplateRequestBody & {
   phoneNumber: string;
   name?: string;
   configurationId: string;
-  templateId: string;
 };
 //#endregion
 

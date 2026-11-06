@@ -72,16 +72,18 @@ export const DialogCreateWhatsappTemplate: FC<DialogCreateWhatsappTemplateProps>
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button variant="outline">
           <Plus className="mr-2 h-4 w-4" />
-          Novo template
+          Cadastro manual
         </Button>
       </DialogTrigger>
 
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Novo template</DialogTitle>
-          <DialogDescription>Cadastre um nome de template do WhatsApp para este cliente.</DialogDescription>
+          <DialogDescription>
+            Só para números sem conta do WhatsApp (WABA) conhecida. O modelo vai sem variáveis; prefira sincronizar com a Meta.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="grid gap-4" id="form">

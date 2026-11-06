@@ -4,16 +4,22 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useClientContext } from "@/context/ClientContext/clientContext";
-import { templateService } from "@/services/api/templateService";
 import { whatsappService } from "@/services/api/whatsappService";
 import { requestErrorHandling } from "@/utils/request";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { isValidPhoneNumber } from "libphonenumber-js";
 import { MessageSquarePlus } from "lucide-react";
-import { useForm, type SubmitHandler } from "react-hook-form";
+import { useForm, useWatch, type SubmitHandler } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
+import { TemplateComposer } from "@/components/whatsappTemplate/templateComposer";
+import {
+  buildTemplateSendBody,
+  emptyTemplateDraft,
+  templateDraftError,
+  type TemplateDraft,
+} from "@/components/whatsappTemplate/templateUtils";
 
 type DialogNewContactTemplateProps = {
   onSent: (contact: WhatsappContactMessage) => void;
@@ -26,7 +32,6 @@ const schema = z.object({
     .refine((value) => isValidPhoneNumber(value, "BR"), "Número de telefone inválido"),
   name: z.string().optional(),
   configurationId: z.string().min(1, "Selecione o número de envio"),
-  templateId: z.string().min(1, "Selecione um template"),
 });
 
 type SchemaType = z.infer<typeof schema>;
@@ -39,11 +44,7 @@ export const DialogNewContactTemplate: FC<DialogNewContactTemplateProps> = ({ on
   const { client } = useClientContext();
   const queryClient = useQueryClient();
 
-  const templatesQuery = useQuery({
-    queryKey: ["whatsappTemplates", client.id],
-    queryFn: () => templateService.findAll({ params: { clientId: client.id } }),
-    enabled: isOpen,
-  });
+  const [draft, setDraft] = useState<TemplateDraft>(emptyTemplateDraft);
 
   const configurationsQuery = useQuery({
     queryKey: ["whatsappConfigurations", client.id],
@@ -51,11 +52,14 @@ export const DialogNewContactTemplate: FC<DialogNewContactTemplateProps> = ({ on
     enabled: isOpen,
   });
 
-  const templates = templatesQuery.data || [];
   const configurations = (configurationsQuery.data?.items || []).filter((configuration) => configuration.enabled);
 
   const sendTemplateToNewContact = useMutation({
-    mutationFn: whatsappService.sendTemplateToNewContact,
+    mutationFn: async (data: SchemaType) =>
+      whatsappService.sendTemplateToNewContact({
+        params: { clientId: client.id },
+        body: { ...data, ...(await buildTemplateSendBody(client.id, data.configurationId, draft)) },
+      }),
     onError: requestErrorHandling,
     onSuccess: (contact) => {
       toast.success("Template enviado com sucesso!");
@@ -63,7 +67,7 @@ export const DialogNewContactTemplate: FC<DialogNewContactTemplateProps> = ({ on
       queryClient.invalidateQueries({ queryKey: ["whatsapp", "contacts"] });
       queryClient.invalidateQueries({ queryKey: ["whatsapp", "contactsStats"] });
 
-      setIsOpen(false);
+      changeOpen(false);
       onSent(contact);
     },
   });
@@ -74,28 +78,37 @@ export const DialogNewContactTemplate: FC<DialogNewContactTemplateProps> = ({ on
       phoneNumber: "",
       name: "",
       configurationId: "",
-      templateId: "",
     },
     disabled: sendTemplateToNewContact.isPending,
   });
 
+  const draftError = templateDraftError(draft);
+
   const handleSubmit: SubmitHandler<SchemaType> = (data) => {
-    sendTemplateToNewContact.mutate({
-      params: { clientId: client.id },
-      body: data,
-    });
+    if (draftError) {
+      toast.error(draftError);
+      return;
+    }
+    sendTemplateToNewContact.mutate(data);
   };
+
+  const configurationId = useWatch({ control: form.control, name: "configurationId" });
 
   useEffect(() => {
     if (!isOpen) form.reset();
   }, [isOpen]);
+
+  const changeOpen = (value: boolean) => {
+    setIsOpen(value);
+    if (!value) setDraft(emptyTemplateDraft);
+  };
 
   useEffect(() => {
     if (configurations.length === 1 && !form.getValues("configurationId")) form.setValue("configurationId", configurations[0].id);
   }, [isOpen, configurationsQuery.data]);
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={changeOpen}>
       <DialogTrigger asChild>
         <button
           title="Nova conversa"
@@ -105,10 +118,12 @@ export const DialogNewContactTemplate: FC<DialogNewContactTemplateProps> = ({ on
         </button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-h-[90dvh] max-w-md overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nova conversa</DialogTitle>
-          <DialogDescription>Envie um template para iniciar uma conversa com um número ainda não cadastrado.</DialogDescription>
+          <DialogDescription>
+            Envie um modelo aprovado pela Meta para iniciar uma conversa com um número ainda não cadastrado.
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -148,7 +163,16 @@ export const DialogNewContactTemplate: FC<DialogNewContactTemplateProps> = ({ on
                 <FormItem>
                   <FormLabel>Enviar pelo número</FormLabel>
                   <FormControl>
-                    <select {...field} className={selectClassName} disabled={field.disabled || configurationsQuery.isLoading}>
+                    <select
+                      {...field}
+                      className={selectClassName}
+                      disabled={field.disabled || configurationsQuery.isLoading}
+                      onChange={(event) => {
+                        // Os modelos dependem da conta do WhatsApp do número escolhido
+                        setDraft(emptyTemplateDraft);
+                        field.onChange(event);
+                      }}
+                    >
                       <option value="" disabled>
                         {configurationsQuery.isLoading ? "Carregando..." : "Selecione"}
                       </option>
@@ -164,36 +188,19 @@ export const DialogNewContactTemplate: FC<DialogNewContactTemplateProps> = ({ on
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="templateId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Template</FormLabel>
-                  <FormControl>
-                    <select {...field} className={selectClassName} disabled={field.disabled || templatesQuery.isLoading}>
-                      <option value="" disabled>
-                        {templatesQuery.isLoading ? "Carregando..." : templates.length === 0 ? "Nenhum template encontrado" : "Selecione"}
-                      </option>
-                      {templates.map((template) => (
-                        <option key={template.id} value={template.id}>
-                          {template.description
-                            ? `${template.name} (${template.language}) — ${template.description}`
-                            : `${template.name} (${template.language})`}
-                        </option>
-                      ))}
-                    </select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <TemplateComposer
+              clientId={client.id}
+              configurationId={configurationId}
+              value={draft}
+              onChange={setDraft}
+              disabled={sendTemplateToNewContact.isPending}
             />
           </form>
         </Form>
 
         <DialogFooter>
-          <Button type="submit" form="form-new-contact-template" disabled={sendTemplateToNewContact.isPending}>
-            Enviar template
+          <Button type="submit" form="form-new-contact-template" disabled={sendTemplateToNewContact.isPending || !draft.template}>
+            {sendTemplateToNewContact.isPending ? "Enviando..." : "Enviar modelo"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,14 +1,19 @@
-import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { templateService } from "@/services/api/templateService";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { whatsappService } from "@/services/api/whatsappService";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { requestErrorHandling } from "@/utils/request";
 import { SendHorizontal } from "lucide-react";
 import { toast } from "sonner";
+import { TemplateComposer } from "@/components/whatsappTemplate/templateComposer";
+import {
+  buildTemplateSendBody,
+  emptyTemplateDraft,
+  templateDraftError,
+  type TemplateDraft,
+} from "@/components/whatsappTemplate/templateUtils";
 
 type DialogSendTemplateProps = {
   contactService: WhatsappContactService;
@@ -17,47 +22,40 @@ type DialogSendTemplateProps = {
 
 export const DialogSendTemplate = ({ contactService, whatsappConfigurationId }: DialogSendTemplateProps) => {
   const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<TemplateDraft>(emptyTemplateDraft);
   const { client } = useClientContext();
   const queryClient = useQueryClient();
 
-  const templatesQuery = useQuery({
-    queryKey: ["whatsappTemplates", client.id],
-    queryFn: () => templateService.findAll({ params: { clientId: client.id } }),
-    enabled: open,
-  });
-
   const sendTemplateMutation = useMutation({
-    mutationFn: (templateId: string) =>
+    mutationFn: async (value: TemplateDraft) =>
       whatsappService.sendTemplate({
         params: {
           clientId: client.id,
           contactId: contactService.id,
           configurationId: whatsappConfigurationId,
         },
-        body: {
-          templateId,
-        },
+        body: await buildTemplateSendBody(client.id, whatsappConfigurationId, value),
       }),
     onSuccess: () => {
-      toast.success("Template enviado com sucesso!");
+      toast.success("Modelo enviado");
 
-      queryClient.invalidateQueries({
-        queryKey: [`contact-${contactService.id}`],
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: ["whatsappContacts"],
-      });
+      queryClient.invalidateQueries({ queryKey: [`contact-${contactService.id}`] });
+      queryClient.invalidateQueries({ queryKey: ["whatsappContacts"] });
 
       setOpen(false);
     },
     onError: requestErrorHandling,
   });
 
-  const templates = templatesQuery.data || [];
+  const changeOpen = (value: boolean) => {
+    setOpen(value);
+    if (!value) setDraft(emptyTemplateDraft);
+  };
+
+  const error = templateDraftError(draft);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={changeOpen}>
       <DialogTrigger asChild>
         <Button className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-green-600 py-5 text-base font-medium text-white shadow-sm transition-colors hover:bg-green-700 active:bg-green-800">
           <SendHorizontal className="h-5 w-5" />
@@ -65,36 +63,28 @@ export const DialogSendTemplate = ({ contactService, whatsappConfigurationId }: 
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-h-[90dvh] max-w-md overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Selecionar Template</DialogTitle>
+          <DialogTitle>Enviar modelo</DialogTitle>
+          <DialogDescription>A janela de 24 horas fechou: só um modelo aprovado pela Meta pode retomar a conversa.</DialogDescription>
         </DialogHeader>
-        <div className="space-y-3 py-2">
-          {templatesQuery.isLoading && <LoadingState label="Carregando templates..." />}
-          {templatesQuery.isError && (
-            <ErrorState
-              message="Não foi possível buscar os templates."
-              onRetry={() => templatesQuery.refetch()}
-              isRetrying={templatesQuery.isFetching}
-            />
-          )}
-          {templatesQuery.isSuccess && templates.length === 0 && (
-            <EmptyState title="Nenhum template cadastrado" description="Cadastre templates em Configurações › Templates." />
-          )}
-          {templates.map((template) => (
-            <div key={template.id} className="hover:bg-accent/50 flex items-center justify-between rounded-lg border p-3">
-              <div>
-                <p className="text-sm font-semibold">
-                  {template.name} <span className="text-muted-foreground text-xs font-normal">({template.language})</span>
-                </p>
-                {template.description && <p className="text-muted-foreground text-xs">{template.description}</p>}
-              </div>
-              <Button size="sm" disabled={sendTemplateMutation.isPending} onClick={() => sendTemplateMutation.mutate(template.id)}>
-                Enviar
-              </Button>
-            </div>
-          ))}
-        </div>
+
+        {open && (
+          <TemplateComposer
+            clientId={client.id}
+            configurationId={whatsappConfigurationId}
+            value={draft}
+            onChange={setDraft}
+            disabled={sendTemplateMutation.isPending}
+          />
+        )}
+
+        <DialogFooter className="items-center gap-2">
+          {draft.template && error && <p className="text-muted-foreground mr-auto text-xs">{error}</p>}
+          <Button disabled={!!error || sendTemplateMutation.isPending} onClick={() => sendTemplateMutation.mutate(draft)}>
+            {sendTemplateMutation.isPending ? "Enviando..." : "Enviar"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
