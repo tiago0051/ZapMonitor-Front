@@ -4,4 +4,6 @@ type EmailMessage = {
   emailTo: string;
   sendAt: string | null;
   clientName: string;
+  // Motivo quando o e-mail não saiu
+  error: string | null;
 };

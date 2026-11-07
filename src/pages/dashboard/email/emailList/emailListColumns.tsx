@@ -15,8 +15,15 @@ export const getColumns = () => {
       accessorKey: "sendAt",
       header: "Data de envio",
       cell: ({ row }) => {
-        const sendAt: Date = row.getValue("sendAt");
-        return format(sendAt, "dd/MM/yyyy HH:mm");
+        const { sendAt, error } = row.original;
+        if (sendAt) return format(new Date(sendAt), "dd/MM/yyyy HH:mm");
+        if (error)
+          return (
+            <span className="text-destructive" title={error}>
+              Não enviado: {error.length > 80 ? `${error.slice(0, 80)}…` : error}
+            </span>
+          );
+        return <span className="text-muted-foreground">Na fila</span>;
       },
     },
   ];
