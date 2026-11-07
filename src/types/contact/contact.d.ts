@@ -59,8 +59,19 @@ type ContactDetail = {
   deals: ContactDeal[];
   // Outras fichas com o mesmo nome, candidatas a mesclar
   sameName: ContactListItem[];
+  // Outras fichas com o mesmo e-mail ou telefone, todas com conversa (ficha só de lead é juntada sozinha)
+  mergeSuggestions: ContactMergeSuggestion[];
   createdAt: string;
   updatedAt: string;
+};
+
+type ContactMergeSuggestion = {
+  id: string;
+  reason: "EMAIL" | "PHONE";
+  sharedValue: string;
+  // De onde veio o dado: LEAD_FORM, AI ou API
+  source: string;
+  other: ContactListItem;
 };
 
 type ContactPage = {

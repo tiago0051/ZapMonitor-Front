@@ -71,6 +71,12 @@ export const contactService = {
     return response.data;
   },
 
+  // Não é a mesma pessoa: a sugestão some e não volta
+  dismissMergeSuggestion: async (clientId: string, contactId: string, suggestionId: string): Promise<ContactDetail> => {
+    const response = await api.post(`${base(clientId)}/${contactId}/merge-suggestion/${suggestionId}/dismiss`);
+    return response.data;
+  },
+
   // Junta a ficha sourceId na contactId (que fica)
   merge: async (clientId: string, contactId: string, sourceId: string): Promise<ContactDetail> => {
     const response = await api.post(`${base(clientId)}/${contactId}/merge`, { sourceId });
