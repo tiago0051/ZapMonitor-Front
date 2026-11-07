@@ -24,6 +24,7 @@ import { Link } from "react-router";
 import { toast } from "sonner";
 import { contactDetailKey } from "../contactUtils";
 import { ContactMerge } from "./contactMerge";
+import { AiFieldUpdates } from "@/components/aiFieldUpdates/aiFieldUpdates";
 
 type ContactProfileProps =
   { contactId: string; conversationId?: never; compact?: boolean } | { conversationId: string; contactId?: never; compact?: boolean };
@@ -68,6 +69,7 @@ export const ContactProfile: FC<ContactProfileProps> = ({ contactId, conversatio
 
   return (
     <div className={cn("grid", compact ? "gap-5" : "gap-6")}>
+      <AiFieldUpdates owner={{ contactId: contact.id }} onAccepted={() => query.refetch()} />
       <ContactData key={contact.updatedAt} contact={contact} onSaved={onSaved} />
       <ContactPhones contact={contact} onSaved={onSaved} />
       <ContactEmails contact={contact} onSaved={onSaved} />

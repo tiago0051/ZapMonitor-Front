@@ -127,6 +127,9 @@ type CrmField = {
   name: string;
   type: CrmFieldType;
   scope: CrmFieldScope;
+  // A IA pode preencher o campo a partir das conversas, seguindo a instrução
+  aiFillable: boolean;
+  aiInstruction: string | null;
   options: string[];
   active: boolean;
 };

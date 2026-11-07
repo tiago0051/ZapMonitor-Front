@@ -19,6 +19,8 @@ const DialogSaveCrmField: FC<{ clientId: string; field?: CrmField }> = ({ client
   const [name, setName] = useState("");
   const [type, setType] = useState<CrmFieldType>("TEXT");
   const [scope, setScope] = useState<CrmFieldScope>("DEAL");
+  const [aiFillable, setAiFillable] = useState(false);
+  const [aiInstruction, setAiInstruction] = useState("");
   // Uma opção por linha
   const [optionsText, setOptionsText] = useState("");
   const queryClient = useQueryClient();
@@ -45,6 +47,8 @@ const DialogSaveCrmField: FC<{ clientId: string; field?: CrmField }> = ({ client
       setName(field?.name ?? "");
       setType(field?.type ?? "TEXT");
       setScope(field?.scope ?? "DEAL");
+      setAiFillable(field?.aiFillable ?? false);
+      setAiInstruction(field?.aiInstruction ?? "");
       setOptionsText(field?.options.join("\n") ?? "");
     }
 
@@ -58,6 +62,8 @@ const DialogSaveCrmField: FC<{ clientId: string; field?: CrmField }> = ({ client
       name: name.trim(),
       type,
       ...(!field && { scope }),
+      aiFillable,
+      aiInstruction: aiFillable ? aiInstruction.trim() || null : null,
       ...(type === "SELECT" && { options }),
     };
     if (field) updateField.mutate({ params: { clientId, fieldId: field.id }, body });
@@ -122,6 +128,24 @@ const DialogSaveCrmField: FC<{ clientId: string; field?: CrmField }> = ({ client
                 </option>
               ))}
             </select>
+          </div>
+          <div className="grid gap-2 rounded-lg border p-3">
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input type="checkbox" checked={aiFillable} onChange={(event) => setAiFillable(event.target.checked)} />A IA pode preencher
+            </label>
+            <p className="text-muted-foreground text-xs">
+              A IA lê as conversas e preenche o campo quando a pessoa informar o valor. Campo vazio é preenchido na hora; valor diferente do
+              atual vira sugestão para alguém aprovar.
+            </p>
+            {aiFillable && (
+              <Input
+                aria-label="Instrução para a IA"
+                value={aiInstruction}
+                maxLength={300}
+                onChange={(event) => setAiInstruction(event.target.value)}
+                placeholder="Instrução opcional, ex.: só os números do CPF"
+              />
+            )}
           </div>
           {type === "SELECT" && (
             <div className="grid gap-2">
@@ -194,6 +218,7 @@ export const CrmFields = () => {
                   <p className={field.active ? "text-sm font-medium" : "text-muted-foreground text-sm line-through"}>{field.name}</p>
                   <p className="text-muted-foreground truncate text-xs">
                     {field.scope === "CONTACT" ? "Ficha do contato" : "Negócio"} · {crmFieldTypeLabel[field.type]}
+                    {field.aiFillable && " · IA preenche"}
                     {field.type === "SELECT" && `: ${field.options.join(", ")}`}
                   </p>
                 </div>

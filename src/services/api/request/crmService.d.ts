@@ -142,6 +142,8 @@ type SaveCrmFieldRequestBody = {
   type: CrmFieldType;
   // Só na criação; o escopo não muda depois
   scope?: CrmFieldScope;
+  aiFillable?: boolean;
+  aiInstruction?: string | null;
   options?: string[];
 };
 

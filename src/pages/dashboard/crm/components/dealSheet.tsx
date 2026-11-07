@@ -29,6 +29,7 @@ import {
 import { useCrmOptions } from "../useCrmOptions";
 import { CustomFieldInput } from "./customFieldInput";
 import { DealTasks } from "./dealTasks";
+import { AiFieldUpdates } from "@/components/aiFieldUpdates/aiFieldUpdates";
 import { OpenChatButton } from "../chatDock/openChatButton";
 import { DealAiInsight } from "./dealAiInsight";
 import { DealOriginDetails } from "./dealOrigin";
@@ -350,6 +351,8 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
             {deal.origin && <DealOriginDetails origin={deal.origin} />}
 
             <DealAiInsight deal={deal} pipeline={pipeline} onMove={(stage) => actions.requestMove(deal, stage)} />
+
+            <AiFieldUpdates owner={{ dealId: deal.id }} onAccepted={() => queryClient.invalidateQueries({ queryKey: ["crm", "deals"] })} />
 
             <DealDetailsForm key={`${deal.id}-${deal.updatedAt}`} deal={deal} />
 
