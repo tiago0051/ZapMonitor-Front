@@ -1,4 +1,4 @@
-import { useEffect, useState, type FC } from "react";
+import { useEffect, useState, type FC, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -23,6 +23,10 @@ import {
 
 type DialogNewContactTemplateProps = {
   onSent: (contact: WhatsappContactMessage) => void;
+  // Abrindo pela ficha: telefone e nome já preenchidos e o botão de quem chamou
+  defaultPhone?: string;
+  defaultName?: string;
+  trigger?: ReactNode;
 };
 
 const schema = z.object({
@@ -39,7 +43,7 @@ type SchemaType = z.infer<typeof schema>;
 const selectClassName =
   "border-input dark:bg-input/30 focus-visible:border-ring focus-visible:ring-ring/50 flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-base shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm";
 
-export const DialogNewContactTemplate: FC<DialogNewContactTemplateProps> = ({ onSent }) => {
+export const DialogNewContactTemplate: FC<DialogNewContactTemplateProps> = ({ onSent, defaultPhone, defaultName, trigger }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const { client } = useClientContext();
   const queryClient = useQueryClient();
@@ -95,7 +99,7 @@ export const DialogNewContactTemplate: FC<DialogNewContactTemplateProps> = ({ on
   const configurationId = useWatch({ control: form.control, name: "configurationId" });
 
   useEffect(() => {
-    if (!isOpen) form.reset();
+    form.reset({ phoneNumber: defaultPhone ?? "", name: defaultName ?? "", configurationId: "" });
   }, [isOpen]);
 
   const changeOpen = (value: boolean) => {
@@ -110,19 +114,22 @@ export const DialogNewContactTemplate: FC<DialogNewContactTemplateProps> = ({ on
   return (
     <Dialog open={isOpen} onOpenChange={changeOpen}>
       <DialogTrigger asChild>
-        <button
-          title="Nova conversa"
-          className="hover:bg-muted text-muted-foreground hover:text-foreground flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-colors"
-        >
-          <MessageSquarePlus className="h-4 w-4" />
-        </button>
+        {trigger ?? (
+          <button
+            title="Nova conversa"
+            className="hover:bg-muted text-muted-foreground hover:text-foreground flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-colors"
+          >
+            <MessageSquarePlus className="h-4 w-4" />
+          </button>
+        )}
       </DialogTrigger>
 
       <DialogContent className="max-h-[90dvh] max-w-md overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nova conversa</DialogTitle>
           <DialogDescription>
-            Envie um modelo aprovado pela Meta para iniciar uma conversa com um número ainda não cadastrado.
+            Envie um modelo aprovado pela Meta para iniciar uma conversa
+            {defaultPhone ? " com este telefone" : " com um número ainda não cadastrado"}.
           </DialogDescription>
         </DialogHeader>
 

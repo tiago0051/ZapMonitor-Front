@@ -20,7 +20,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Mail, MessageCircle, Phone, Star, Trash2 } from "lucide-react";
 import { useState, type FC, type FormEvent, type ReactNode } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
+import { DialogNewContactTemplate } from "@/pages/dashboard/whatsapp/components/dialogNewContactTemplate";
 import { toast } from "sonner";
 import { contactDetailKey } from "../contactUtils";
 import { ContactMerge } from "./contactMerge";
@@ -191,6 +192,7 @@ const ContactPhones: FC<SectionProps> = ({ contact, onSaved }) => {
               {item.phoneNumber}
               {item.label && <span className="text-muted-foreground"> · {item.label}</span>}
             </span>
+            <PhoneConversationAction contact={contact} phone={item} />
             {item.isPrimary ? (
               <Badge variant="secondary">Principal</Badge>
             ) : (
@@ -242,6 +244,39 @@ const ContactPhones: FC<SectionProps> = ({ contact, onSaved }) => {
         </Button>
       </form>
     </Section>
+  );
+};
+
+const onlyDigits = (value: string) => value.replace(/\D/g, "");
+
+/** Abre a conversa deste telefone ou, sem conversa ainda, começa uma mandando um modelo. */
+const PhoneConversationAction: FC<{ contact: ContactDetail; phone: ContactDetail["phones"][number] }> = ({ contact, phone }) => {
+  const baseUrl = useBaseUrl();
+  const navigate = useNavigate();
+  const { can } = useClientContext();
+  if (!can("whatsapp.chat")) return null;
+
+  const conversation = contact.conversations.find((item) => onlyDigits(item.phoneNumber) === onlyDigits(phone.phoneNumber));
+  const openUrl = (id: string, phoneNumber: string) => `${baseUrl}/whatsapp?contactId=${id}&phone=${encodeURIComponent(phoneNumber)}`;
+
+  if (conversation)
+    return (
+      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" asChild>
+        <Link to={openUrl(conversation.id, conversation.phoneNumber)}>Abrir conversa</Link>
+      </Button>
+    );
+
+  return (
+    <DialogNewContactTemplate
+      defaultPhone={phone.phoneNumber}
+      defaultName={contact.name ?? ""}
+      trigger={
+        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
+          Conversar
+        </Button>
+      }
+      onSent={(created) => navigate(openUrl(created.id, created.phoneNumber))}
+    />
   );
 };
 
