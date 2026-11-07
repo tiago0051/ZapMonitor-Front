@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import { Check, Copy } from "lucide-react";
 import { useState, type FC, type FormEvent } from "react";
 import { toast } from "sonner";
+import { EmailBrandCard } from "./emailBrand";
 
 const statusInfo: Record<EmailSenderStatus, { label: string; className: string }> = {
   VERIFIED: { label: "Verificado", className: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300" },
@@ -509,6 +510,7 @@ export const EmailSuppressions = () => {
 export const EmailSettings = () => (
   <div className="grid gap-6">
     <EmailSenders />
+    <EmailBrandCard />
     <EmailSuppressions />
   </div>
 );

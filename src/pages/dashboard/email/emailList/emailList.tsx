@@ -32,10 +32,7 @@ export const EmailList = () => {
   const columns = getColumns();
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between">
-        <h1>Lista de e-mails</h1>
-      </div>
+    <div>
       {findAllClientQuery.isLoading && <LoadingState />}
       {findAllClientQuery.isError && (
         <ErrorState
