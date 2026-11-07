@@ -8,6 +8,14 @@ export const contactService = {
     return response.data;
   },
 
+  importRows: async (
+    clientId: string,
+    body: { rows: ContactImportRow[]; mode: "skip" | "update"; firstLine: number },
+  ): Promise<ContactImportResult> => {
+    const response = await api.post(`/client/${clientId}/contact/import`, body);
+    return response.data;
+  },
+
   timeline: async (clientId: string, contactId: string, before?: string): Promise<ContactTimelinePage> => {
     const response = await api.get(`/client/${clientId}/contact/${contactId}/timeline`, { params: { before, take: 30 } });
     return response.data;

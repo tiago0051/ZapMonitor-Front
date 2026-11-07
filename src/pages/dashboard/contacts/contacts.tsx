@@ -13,6 +13,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import { useDebounceValue } from "usehooks-ts";
 import { contactDisplayName } from "./contactUtils";
+import { ImportContactsDialog } from "./components/importContactsDialog";
 
 const TAKE = 20;
 
@@ -109,7 +110,7 @@ const DialogNewContact = () => {
 };
 
 export const Contacts = () => {
-  const { client } = useClientContext();
+  const { client, can } = useClientContext();
   const baseUrl = useBaseUrl();
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebounceValue(search.trim(), 400);
@@ -133,7 +134,10 @@ export const Contacts = () => {
             A ficha de cada pessoa, com os telefones, os e-mails, os campos, as conversas e os negócios.
           </p>
         </div>
-        <DialogNewContact />
+        <div className="flex flex-wrap gap-2">
+          {can("contacts.manage") && <ImportContactsDialog />}
+          <DialogNewContact />
+        </div>
       </div>
 
       <div className="relative max-w-md">

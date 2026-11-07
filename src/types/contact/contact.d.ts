@@ -80,3 +80,20 @@ type ContactPage = {
   take: number;
   items: ContactListItem[];
 };
+
+type ContactImportRow = {
+  name?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  document?: string | null;
+  notes?: string | null;
+  customFields?: Record<string, string | null>;
+};
+
+type ContactImportResult = {
+  created: number;
+  updated: number;
+  skipped: number;
+  failed: number;
+  errors: { line: number; message: string }[];
+};
