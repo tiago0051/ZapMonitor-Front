@@ -195,7 +195,7 @@ const AgentCrmSettings: FC<{
 };
 
 export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, onDelete, onClose }) => {
-  const { serviceGroups, aiAgents, categories, flows, pipelines, crmFields, currentFlowId } = useFlowEditorContext();
+  const { serviceGroups, aiAgents, categories, flows, pipelines, crmFields, emailOptions, currentFlowId } = useFlowEditorContext();
   const isQueueFlow = flows.find((flow) => flow.id === currentFlowId)?.kind === "QUEUE";
   const queueFlows = flows.filter((flow) => flow.kind === "QUEUE");
   const queueTextHint = isQueueFlow ? `Use ${QUEUE_MESSAGE_VARIABLES}. Só é enviada dentro da janela de 24h do WhatsApp.` : undefined;
@@ -433,6 +433,37 @@ export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, on
               minItems={1}
               onChange={(outputs) => update({ outputs })}
             />
+          </>
+        )}
+
+        {type === "email" && (
+          <>
+            <Field
+              label="Remetente"
+              hint={emailOptions.senders.length === 0 ? "Verifique um domínio em Configurações › Envio de e-mail." : undefined}
+            >
+              <select className={selectClassName} value={data.senderId ?? ""} onChange={(e) => update({ senderId: e.target.value })}>
+                <option value="">Selecione...</option>
+                {emailOptions.senders.map((sender) => (
+                  <option key={sender.id} value={sender.id}>
+                    {sender.fromName} &lt;{sender.fromEmail}&gt;
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field
+              label="Modelo de e-mail"
+              hint='Vai para o e-mail principal da ficha do contato, com as variáveis da ficha e do negócio aberto mais recente. Sem e-mail na ficha, descadastrado ou com o remetente fora do ar, o fluxo segue por "Não enviado". O modelo é lido na hora do envio: editar o modelo muda os próximos envios.'
+            >
+              <select className={selectClassName} value={data.templateId ?? ""} onChange={(e) => update({ templateId: e.target.value })}>
+                <option value="">{emailOptions.templates.length ? "Selecione..." : "Crie um modelo em E-mails › Modelos"}</option>
+                {emailOptions.templates.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
           </>
         )}
 

@@ -3,7 +3,7 @@ import { WEEKDAY_LABELS } from "./flowNodeConfig";
 
 // Texto curto que descreve o que o nó faz, mostrado no canvas e na lista de pendências
 export function useNodeSummary(type: FlowNodeType, data: FlowNodeData) {
-  const { serviceGroups, aiAgents, categories, flows, pipelines } = useFlowEditorContext();
+  const { serviceGroups, aiAgents, categories, flows, pipelines, emailOptions } = useFlowEditorContext();
 
   switch (type) {
     case "start":
@@ -32,6 +32,8 @@ export function useNodeSummary(type: FlowNodeType, data: FlowNodeData) {
       return data.pipelineId
         ? `Negócios do funil ${pipelines.find((item) => item.id === data.pipelineId)?.name ?? "removido"}`
         : "Todos os negócios abertos do contato";
+    case "email":
+      return emailOptions.templates.find((template) => template.id === data.templateId)?.name ?? "Selecione o modelo de e-mail";
     case "queueTimer":
       return `A cada ${data.everyMinutes ?? "?"} min, até ${data.maxRepetitions ?? "?"} vez(es)`;
     case "queueMessage":

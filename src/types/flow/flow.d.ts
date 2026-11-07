@@ -12,6 +12,8 @@ type FlowNodeType =
   // Pede à IA a análise dos negócios abertos do contato
   | "crmAnalysis"
   | "flow"
+  // Manda um modelo de e-mail para o e-mail da ficha do contato
+  | "email"
   | "end"
   // Pontos de entrada do fluxo de fila
   | "queueTimer"
@@ -57,6 +59,9 @@ type FlowNodeData = {
   maxRepetitions?: number;
   // "Cliente mandou mensagem": intervalo mínimo entre respostas
   cooldownMinutes?: number;
+  // "Enviar e-mail": remetente verificado e modelo
+  senderId?: string;
+  templateId?: string;
 };
 
 type FlowDefinitionNode = {

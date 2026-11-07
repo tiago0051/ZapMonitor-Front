@@ -5,6 +5,7 @@ import {
   Flag,
   GitBranch,
   Hourglass,
+  Mail,
   MessageCircleReply,
   MessageSquareText,
   Play,
@@ -20,6 +21,7 @@ import {
 // Espelha as saídas calculadas pelo backend (flowDefinition.entity.ts)
 export const FLOW_OUTPUT_NEXT = "next";
 export const FLOW_OUTPUT_OTHER = "other";
+export const FLOW_OUTPUT_NOT_SENT = "notSent";
 export const FLOW_CONDITION_MAX_BUTTONS = 3;
 export const FLOW_CONDITION_MAX_BUTTON_TITLE = 20;
 
@@ -129,6 +131,13 @@ export const flowNodeConfigs: Record<FlowNodeType, FlowNodeConfig> = {
     colorClassName: "text-indigo-600 border-indigo-500/60",
     defaultData: () => ({ flowId: "" }),
   },
+  email: {
+    label: "Enviar e-mail",
+    description: "Manda um modelo de e-mail para o e-mail da ficha",
+    icon: Mail,
+    colorClassName: "text-blue-600 border-blue-500/60",
+    defaultData: () => ({ senderId: "", templateId: "" }),
+  },
   end: {
     label: "Encerrar atendimento",
     description: "Envia uma despedida e finaliza",
@@ -178,6 +187,11 @@ export function getFlowNodeOutputs(type: FlowNodeType, data: FlowNodeData): Flow
       return [
         { id: "open", label: "Dentro do horário" },
         { id: "closed", label: "Fora do horário" },
+      ];
+    case "email":
+      return [
+        { id: FLOW_OUTPUT_NEXT, label: "E-mail enviado" },
+        { id: FLOW_OUTPUT_NOT_SENT, label: "Não enviado" },
       ];
     case "condition":
       return [...(data.options ?? []), { id: FLOW_OUTPUT_OTHER, label: "Outra resposta" }];

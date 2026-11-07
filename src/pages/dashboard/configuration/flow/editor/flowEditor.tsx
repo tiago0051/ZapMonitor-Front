@@ -54,6 +54,7 @@ const queuePaletteNodeTypes: FlowNodeType[] = [
   "replaceCategories",
   "crm",
   "crmAnalysis",
+  "email",
   "aiAgent",
   "end",
 ];
@@ -68,6 +69,7 @@ const paletteNodeTypes: FlowNodeType[] = [
   "replaceCategories",
   "crm",
   "crmAnalysis",
+  "email",
   "flow",
   "end",
 ];
@@ -657,6 +659,11 @@ export const FlowEditor = () => {
     enabled: access.crmEnabled,
   });
 
+  const emailOptionsQuery = useQuery({
+    queryKey: ["flows", clientId, "emailOptions"],
+    queryFn: () => flowService.findEmailOptions(clientId!),
+  });
+
   const contextValue = useMemo(
     () => ({
       serviceGroups: serviceGroupsQuery.data ?? [],
@@ -665,9 +672,19 @@ export const FlowEditor = () => {
       flows: flowsQuery.data ?? [],
       pipelines: (pipelinesQuery.data ?? []).filter((pipeline) => pipeline.active),
       crmFields: (crmFieldsQuery.data ?? []).filter((field) => field.active),
+      emailOptions: emailOptionsQuery.data ?? { senders: [], templates: [] },
       currentFlowId: flowId!,
     }),
-    [serviceGroupsQuery.data, aiAgentsQuery.data, categoriesQuery.data, flowsQuery.data, pipelinesQuery.data, crmFieldsQuery.data, flowId],
+    [
+      serviceGroupsQuery.data,
+      aiAgentsQuery.data,
+      categoriesQuery.data,
+      flowsQuery.data,
+      pipelinesQuery.data,
+      crmFieldsQuery.data,
+      emailOptionsQuery.data,
+      flowId,
+    ],
   );
 
   if (flowQuery.isLoading) return <LoadingState className="h-full" label="Carregando o fluxo..." />;

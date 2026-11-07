@@ -1,6 +1,11 @@
 import api from "./api";
 
 export const flowService = {
+  findEmailOptions: async (clientId: string): Promise<EmailCampaignOptions> => {
+    const response = await api.get<EmailCampaignOptions>(`/client/${clientId}/flow/email-options`);
+    return response.data;
+  },
+
   findAll: async ({ params }: FindAllFlowsRequestData): Promise<Flow[]> => {
     const response = await api.get<Flow[]>(`/client/${params.clientId}/flow`);
     return response.data;
