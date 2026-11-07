@@ -4,6 +4,7 @@ import { ptBR } from "date-fns/locale";
 import { ListTodo, PhoneOff, Snowflake, Sparkles, Tag, UserRound, Users } from "lucide-react";
 import type { FC } from "react";
 import { aiScoreLabel, dealContactName, formatCurrency, staleDays } from "../crmUtils";
+import { OpenChatButton } from "../chatDock/openChatButton";
 import { DealOriginBadge } from "./dealOrigin";
 
 type DealCardProps = {
@@ -21,16 +22,23 @@ export const DealCard: FC<DealCardProps> = ({ deal, stage, onOpen, draggable }) 
   const isTaskOverdue = !!deal.nextTask && isPast(new Date(deal.nextTask.dueAt));
 
   return (
-    <button
-      type="button"
+    // div no lugar de button: o card leva o atalho da conversa, e botão dentro de botão não é válido
+    <div
+      role="button"
+      tabIndex={0}
       draggable={draggable}
       onDragStart={(event) => {
         event.dataTransfer.setData(DEAL_DRAG_TYPE, deal.id);
         event.dataTransfer.effectAllowed = "move";
       }}
       onClick={() => onOpen(deal)}
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget || (event.key !== "Enter" && event.key !== " ")) return;
+        event.preventDefault();
+        onOpen(deal);
+      }}
       className={cn(
-        "bg-card hover:border-primary/40 w-full space-y-2 rounded-lg border p-3 text-left shadow-xs transition-colors",
+        "bg-card hover:border-primary/40 focus-visible:ring-ring/50 w-full space-y-2 rounded-lg border p-3 text-left shadow-xs transition-colors outline-none focus-visible:ring-[3px]",
         draggable && "cursor-grab active:cursor-grabbing",
         daysStale !== null && "border-sky-400 bg-sky-50/60 dark:border-sky-500/70 dark:bg-sky-950/30",
       )}
@@ -43,7 +51,10 @@ export const DealCard: FC<DealCardProps> = ({ deal, stage, onOpen, draggable }) 
       )}
       <div className="flex items-start justify-between gap-2">
         <p className="line-clamp-2 text-sm font-medium">{deal.title}</p>
-        {deal.value !== null && <span className="shrink-0 text-xs font-semibold text-green-700">{formatCurrency(deal.value)}</span>}
+        <div className="-mt-0.5 -mr-1 flex shrink-0 items-center gap-1">
+          {deal.value !== null && <span className="text-xs font-semibold text-green-700">{formatCurrency(deal.value)}</span>}
+          {deal.contact && <OpenChatButton contact={deal.contact} variant="icon" />}
+        </div>
       </div>
 
       {!deal.contact ? (
@@ -109,6 +120,6 @@ export const DealCard: FC<DealCardProps> = ({ deal, stage, onOpen, draggable }) 
           <span className="truncate">{deal.serviceGroup.name}</span>
         </p>
       )}
-    </button>
+    </div>
   );
 };

@@ -5,19 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useClientContext } from "@/context/ClientContext/clientContext";
-import { useBaseUrl } from "@/hooks/use-baseUrl";
 import { crmService } from "@/services/api/crmService";
 import { formatPhoneNumber } from "@/utils/formatString";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { MessageCircle, PhoneOff, RotateCcw } from "lucide-react";
+import { PhoneOff, RotateCcw } from "lucide-react";
 import { useState, type FC } from "react";
-import { Link } from "react-router";
 import { toast } from "sonner";
 import {
-  contactChatPath,
   crmSelectClassName,
   crmTextareaClassName,
   dealContactName,
@@ -30,6 +27,7 @@ import {
 import { useCrmOptions } from "../useCrmOptions";
 import { CustomFieldInput } from "./customFieldInput";
 import { DealTasks } from "./dealTasks";
+import { OpenChatButton } from "../chatDock/openChatButton";
 import { DealAiInsight } from "./dealAiInsight";
 import { DealOriginDetails } from "./dealOrigin";
 import { useDealActions } from "../useDealActions";
@@ -172,7 +170,6 @@ const DealDetailsForm: FC<{ deal: Deal }> = ({ deal }) => {
 
 export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
   const { client, can } = useClientContext();
-  const baseUrl = useBaseUrl();
   const { pipelines, allServiceGroups } = useCrmOptions();
   const actions = useDealActions();
 
@@ -245,12 +242,8 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
               </Badge>
               <span className="text-muted-foreground text-xs">{pipeline?.name}</span>
               {deal.contact && (
-                <Button variant="outline" size="sm" className="ml-auto" asChild>
-                  <Link to={contactChatPath(baseUrl, deal.contact)}>
-                    <MessageCircle className="h-3.5 w-3.5" />
-                    Abrir conversa
-                  </Link>
-                </Button>
+                // Com a janela no rodapé, a ficha fecha para a conversa ficar visível
+                <OpenChatButton contact={deal.contact} className="ml-auto" onOpened={onClose} />
               )}
             </div>
 

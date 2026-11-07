@@ -4,6 +4,7 @@ import { format, formatDistanceToNow, isPast } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ArrowDown, ArrowUp, Snowflake } from "lucide-react";
 import { useState, type FC } from "react";
+import { OpenChatButton } from "../chatDock/openChatButton";
 import { dealContactName, dealStatusLabel, findPipelineStage, formatCurrency, staleDays } from "../crmUtils";
 
 type SortKey = "title" | "stage" | "value" | "aiScore" | "lastActivityAt" | "createdAt";
@@ -79,8 +80,13 @@ export const DealList: FC<DealListProps> = ({ deals, pipeline, onOpen }) => {
               return (
                 <TableRow key={deal.id} className="cursor-pointer" onClick={() => onOpen(deal)}>
                   <TableCell>
-                    <p className="font-medium">{deal.title}</p>
-                    <p className="text-muted-foreground text-xs">{dealContactName(deal.contact)}</p>
+                    <div className="flex items-center gap-1">
+                      <div className="min-w-0">
+                        <p className="font-medium">{deal.title}</p>
+                        <p className="text-muted-foreground text-xs">{dealContactName(deal.contact)}</p>
+                      </div>
+                      {deal.contact && <OpenChatButton contact={deal.contact} variant="icon" className="ml-auto" />}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">

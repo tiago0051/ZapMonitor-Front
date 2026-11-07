@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { formatAcronym } from "@/utils/formatString";
 
 type ContactAvatarProps = {
-  contact: WhatsappContactMessage;
+  contact: { name: string | null; surname: string | null };
   size?: "sm" | "md";
   className?: string;
 };
