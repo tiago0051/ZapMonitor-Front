@@ -28,7 +28,14 @@ export const emailCampaignService = {
 
   findAudience: async (
     clientId: string,
-    body: { categoryIds?: string[]; pipelineId?: string; stageIds?: string[]; allContacts?: boolean },
+    body: {
+      categoryIds?: string[];
+      pipelineId?: string;
+      stageIds?: string[];
+      allContacts?: boolean;
+      origin?: "AD_MESSAGE" | "LEAD_FORM" | "NONE";
+      field?: { fieldId: string; scope: "DEAL" | "CONTACT"; value: string };
+    },
   ): Promise<{ contacts: EmailAudienceContact[]; suppressed: number }> => (await api.post(`${base(clientId)}/audience`, body)).data,
 
   create: async (

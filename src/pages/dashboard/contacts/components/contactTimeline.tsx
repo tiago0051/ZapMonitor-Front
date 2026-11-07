@@ -137,7 +137,7 @@ const matches = (item: ContactTimelineItem, filter: Filter) =>
   filter === "all" || item.kind === filter || (filter === "email" && item.kind === "sequence");
 
 /** Tudo o que aconteceu com a pessoa: atendimentos, e-mails, sequências e negócios, do mais novo ao mais antigo. */
-export const ContactTimeline: FC<{ contactId: string }> = ({ contactId }) => {
+export const ContactTimeline: FC<{ contactId: string; compact?: boolean }> = ({ contactId, compact }) => {
   const { client } = useClientContext();
   const [filter, setFilter] = useState<Filter>("all");
 
@@ -154,7 +154,9 @@ export const ContactTimeline: FC<{ contactId: string }> = ({ contactId }) => {
   return (
     <section className="grid gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold">Linha do tempo</h2>
+        <h2 className={compact ? "text-muted-foreground text-[11px] font-semibold tracking-wider uppercase" : "text-lg font-semibold"}>
+          Linha do tempo
+        </h2>
         <div className="flex flex-wrap gap-1">
           {filters.map((item) => (
             <Button

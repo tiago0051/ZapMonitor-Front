@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useClientContext } from "@/context/ClientContext/clientContext";
+import { contactService } from "@/services/api/contactService";
 import { crmService } from "@/services/api/crmService";
 import { emailCampaignService } from "@/services/api/emailCampaignService";
 import { whatsappService } from "@/services/api/whatsappService";
@@ -28,6 +29,28 @@ export const EmailAudienceStep: FC<EmailAudienceStepProps> = ({ value, onChange 
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [pipelineId, setPipelineId] = useState("");
   const [stageIds, setStageIds] = useState<string[]>([]);
+  const [origin, setOrigin] = useState<"" | "AD_MESSAGE" | "LEAD_FORM" | "NONE">("");
+  // "DEAL:id" ou "CONTACT:id"
+  const [fieldKey, setFieldKey] = useState("");
+  const [fieldValue, setFieldValue] = useState("");
+
+  const dealFieldsQuery = useQuery({
+    queryKey: ["crm", "fields", client.id],
+    queryFn: () => crmService.findAllCrmFields({ params: { clientId: client.id } }),
+    enabled: canUseCrm,
+  });
+  const contactFieldsQuery = useQuery({
+    queryKey: ["contacts", "fields", client.id],
+    queryFn: () => contactService.findFields(client.id),
+  });
+  const dealFields = (dealFieldsQuery.data ?? []).filter((field) => field.active && field.scope !== "CONTACT");
+  const contactFields = (contactFieldsQuery.data ?? []).filter((field) => field.active);
+  const [fieldScope, fieldId] = fieldKey.split(":") as ["DEAL" | "CONTACT" | "", string | undefined];
+  const selectedField = [...dealFields, ...contactFields].find((field) => field.id === fieldId);
+  const fieldFilter =
+    fieldId && fieldValue.trim() ? { fieldId, scope: fieldScope as "DEAL" | "CONTACT", value: fieldValue.trim() } : undefined;
+  // Etiquetas e todas as fichas só filtram por campo da ficha
+  const contactFieldFilter = fieldFilter?.scope === "CONTACT" ? fieldFilter : undefined;
 
   const categoriesQuery = useQuery({
     queryKey: ["whatsappCategories", client.id, "broadcast"],
@@ -83,6 +106,71 @@ export const EmailAudienceStep: FC<EmailAudienceStepProps> = ({ value, onChange 
       </Button>
     );
 
+  // Filtro por um campo personalizado; dentro do componente para ler o estado sem passar props
+  const renderFieldFilter = (contactOnly = false) => (
+    <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-1.5">
+        <Label className="text-xs">Campo personalizado (opcional)</Label>
+        <select
+          aria-label="Campo personalizado"
+          className={selectClassName}
+          value={contactOnly && fieldScope === "DEAL" ? "" : fieldKey}
+          onChange={(event) => {
+            setFieldKey(event.target.value);
+            setFieldValue("");
+          }}
+        >
+          <option value="">Sem filtro</option>
+          {!contactOnly && dealFields.length > 0 && (
+            <optgroup label="Negócio">
+              {dealFields.map((field) => (
+                <option key={field.id} value={`DEAL:${field.id}`}>
+                  {field.name}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {contactFields.length > 0 && (
+            <optgroup label="Ficha">
+              {contactFields.map((field) => (
+                <option key={field.id} value={`CONTACT:${field.id}`}>
+                  {field.name}
+                </option>
+              ))}
+            </optgroup>
+          )}
+        </select>
+      </div>
+      {selectedField && !(contactOnly && fieldScope === "DEAL") && (
+        <div className="grid gap-1.5">
+          <Label className="text-xs">Igual a</Label>
+          {selectedField.type === "SELECT" ? (
+            <select
+              aria-label="Valor do campo"
+              className={selectClassName}
+              value={fieldValue}
+              onChange={(event) => setFieldValue(event.target.value)}
+            >
+              <option value="">Selecione</option>
+              {selectedField.options.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <Input
+              aria-label="Valor do campo"
+              type={selectedField.type === "NUMBER" ? "number" : selectedField.type === "DATE" ? "date" : "text"}
+              value={fieldValue}
+              onChange={(event) => setFieldValue(event.target.value)}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+
   const pastedCount = parsePastedEmails(value.pasted).length;
   const counter = (count: number) => (count > 0 ? ` (${formatCount(count)})` : "");
 
@@ -133,12 +221,33 @@ export const EmailAudienceStep: FC<EmailAudienceStepProps> = ({ value, onChange 
               </div>
             </div>
           )}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-1.5">
+              <Label htmlFor="email-campaign-origin" className="text-xs">
+                Origem do negócio
+              </Label>
+              <select
+                id="email-campaign-origin"
+                className={selectClassName}
+                value={origin}
+                onChange={(event) => setOrigin(event.target.value as typeof origin)}
+              >
+                <option value="">Qualquer origem</option>
+                <option value="AD_MESSAGE">Anúncio de mensagem (WhatsApp)</option>
+                <option value="LEAD_FORM">Formulário de anúncio</option>
+                <option value="NONE">Sem anúncio</option>
+              </select>
+            </div>
+          </div>
+          {renderFieldFilter()}
           <div className="flex flex-wrap items-center gap-2">
             <Button
               type="button"
               variant="outline"
               disabled={!pipelineId || audienceMutation.isPending}
-              onClick={() => audienceMutation.mutate({ target: "crm", body: { pipelineId, stageIds } })}
+              onClick={() =>
+                audienceMutation.mutate({ target: "crm", body: { pipelineId, stageIds, origin: origin || undefined, field: fieldFilter } })
+              }
             >
               Buscar fichas do funil
             </Button>
@@ -163,12 +272,13 @@ export const EmailAudienceStep: FC<EmailAudienceStepProps> = ({ value, onChange 
             </label>
           ))}
         </div>
+        {renderFieldFilter(true)}
         <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
             variant="outline"
             disabled={!categoryIds.length || audienceMutation.isPending}
-            onClick={() => audienceMutation.mutate({ target: "tags", body: { categoryIds } })}
+            onClick={() => audienceMutation.mutate({ target: "tags", body: { categoryIds, field: contactFieldFilter } })}
           >
             Buscar fichas das etiquetas
           </Button>
@@ -178,12 +288,13 @@ export const EmailAudienceStep: FC<EmailAudienceStepProps> = ({ value, onChange 
 
       <TabsContent value="all" className="grid gap-3">
         <p className="text-muted-foreground text-sm">Todas as fichas de contato com e-mail válido, sem os descadastrados.</p>
+        {renderFieldFilter(true)}
         <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
             variant="outline"
             disabled={audienceMutation.isPending}
-            onClick={() => audienceMutation.mutate({ target: "all", body: { allContacts: true } })}
+            onClick={() => audienceMutation.mutate({ target: "all", body: { allContacts: true, field: contactFieldFilter } })}
           >
             Buscar todas as fichas
           </Button>

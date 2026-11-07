@@ -271,6 +271,36 @@ export const EmailCampaignDetail = () => {
 
       {campaign.abTest && <EmailAbResults campaign={campaign} subjectA={campaign.subject} />}
 
+      {!!campaign.links?.length && (
+        <section className="grid gap-2">
+          <h2 className="font-semibold">Links mais clicados</h2>
+          <div className="overflow-x-auto rounded-xl border">
+            <table className="w-full text-sm">
+              <thead className="text-muted-foreground text-left text-xs">
+                <tr>
+                  <th className="px-4 py-2 font-medium">Link</th>
+                  <th className="px-4 py-2 text-right font-medium">Pessoas</th>
+                  <th className="px-4 py-2 text-right font-medium">Cliques</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {campaign.links.map((link) => (
+                  <tr key={link.url}>
+                    <td className="max-w-0 px-4 py-2">
+                      <a href={link.url} target="_blank" rel="noreferrer" className="block truncate hover:underline" title={link.url}>
+                        {link.url}
+                      </a>
+                    </td>
+                    <td className="px-4 py-2 text-right tabular-nums">{formatCount(link.people)}</td>
+                    <td className="px-4 py-2 text-right tabular-nums">{formatCount(link.clicks)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       <section className="grid gap-2">
         <Button variant="ghost" size="sm" className="justify-self-start" onClick={() => setShowPreview(!showPreview)}>
           {showPreview ? "Esconder o e-mail" : "Ver o e-mail enviado"}

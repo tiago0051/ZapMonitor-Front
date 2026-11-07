@@ -37,6 +37,8 @@ type EmailCampaign = {
   finishedAt: string | null;
   createdAt: string;
   totals: EmailCampaignTotals;
+  // Só no detalhe: links mais clicados
+  links?: { url: string; clicks: number; people: number }[];
 };
 
 type EmailCampaignRecipient = {

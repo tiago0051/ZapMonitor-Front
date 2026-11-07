@@ -25,6 +25,7 @@ import { DialogNewContactTemplate } from "@/pages/dashboard/whatsapp/components/
 import { toast } from "sonner";
 import { contactDetailKey } from "../contactUtils";
 import { ContactMerge } from "./contactMerge";
+import { ContactTimeline } from "./contactTimeline";
 import { ContactMergeSuggestions } from "./contactMergeSuggestions";
 import { AiFieldUpdates } from "@/components/aiFieldUpdates/aiFieldUpdates";
 
@@ -87,6 +88,8 @@ export const ContactProfile: FC<ContactProfileProps> = ({ contactId, conversatio
       <ContactConversations contact={contact} />
       <ContactDeals contact={contact} />
       <ContactMerge contact={contact} onMerged={onSaved} />
+      {/* No atendimento a ficha ocupa o painel inteiro: a linha do tempo vem logo abaixo; na página dela fica ao lado */}
+      {compact && <ContactTimeline contactId={contact.id} compact />}
     </div>
   );
 };
