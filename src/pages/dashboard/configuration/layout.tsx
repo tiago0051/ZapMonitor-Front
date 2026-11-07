@@ -10,6 +10,7 @@ import {
   Code2,
   Columns3,
   KeyRound,
+  Mail,
   Megaphone,
   MessageSquareText,
   Phone,
@@ -30,6 +31,7 @@ import { PermissionGroups } from "./permissionGroup/permissionGroups";
 import { Pipelines } from "./pipeline/pipelines";
 import { LostReasons } from "./lostReason/lostReasons";
 import { CrmFields } from "./crmField/crmFields";
+import { EmailSettings } from "./emailSending/emailSenders";
 import { MetaAdsSettings } from "./metaAds/metaAdsSettings";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { ServiceGroups } from "./serviceGroup/serviceGroup";
@@ -73,7 +75,7 @@ const configurationGroups: { label: string; sections: ConfigurationSection[] }[]
       { id: "pipeline", label: "Funis", icon: Columns3, content: <Pipelines />, permission: "crm.manage", requiresCrm: true },
       {
         id: "crmField",
-        label: "Campos do negócio",
+        label: "Campos personalizados",
         icon: TextCursorInput,
         content: <CrmFields />,
         permission: "crm.manage",
@@ -112,6 +114,13 @@ const configurationGroups: { label: string; sections: ConfigurationSection[] }[]
         content: <MetaAdsSettings />,
         permission: "ads.manage",
         requiresAds: true,
+      },
+      {
+        id: "email",
+        label: "Envio de e-mail",
+        icon: Mail,
+        content: <EmailSettings />,
+        permission: "emailSettings.manage",
       },
       {
         id: "numbers",

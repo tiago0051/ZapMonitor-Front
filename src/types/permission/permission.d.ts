@@ -3,6 +3,7 @@ type TenantRole = "IMPLANTER" | "ADMIN" | "SUPERVISOR" | "ATTENDANT" | "CUSTOM";
 type Permission =
   | "whatsapp.chat"
   | "email.view"
+  | "emailSettings.manage"
   | "reports.view"
   | "members.manage"
   | "management.view"
