@@ -18,7 +18,8 @@ export const CrmPage = () => {
       <Tabs
         value={tab}
         onValueChange={(value) => setSearchParams({ tab: value }, { replace: true })}
-        className="flex h-full flex-col gap-0 overflow-hidden"
+        // contain: o conteúdo largo (filtros, colunas do kanban) rola aqui dentro em vez de alargar a página toda
+        className="flex h-full min-w-0 flex-col gap-0 overflow-hidden [contain:inline-size]"
       >
         <div className="flex flex-wrap items-center gap-4 border-b px-4 pt-4 pb-3">
           <h1 className="text-2xl font-semibold">CRM</h1>

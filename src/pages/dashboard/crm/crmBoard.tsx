@@ -12,7 +12,7 @@ import { crmService } from "@/services/api/crmService";
 import { whatsappService } from "@/services/api/whatsappService";
 import { useQuery } from "@tanstack/react-query";
 import { endOfDay, startOfDay } from "date-fns";
-import { ChevronDown, Columns3, List, Users } from "lucide-react";
+import { ChevronDown, Columns3, List, SlidersHorizontal, Users } from "lucide-react";
 import { useState, type DragEvent } from "react";
 import { Link } from "react-router";
 import { useLocalStorage } from "usehooks-ts";
@@ -144,150 +144,160 @@ export const CrmBoard = () => {
         ? visibleServiceGroups.find((group) => group.id === selectedServiceGroupIds[0])?.name
         : `${selectedServiceGroupIds.length} grupos`;
 
+  // Filtros guardados em "Mais filtros", contados no botão
+  const extraFilterCount = [categoryId, origin, startDate || endDate].filter(Boolean).length;
+  const clearExtraFilters = () => {
+    setCategoryId("");
+    setOrigin("");
+    setStartDate("");
+    setEndDate("");
+  };
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <div className="flex flex-wrap items-end gap-3 border-b p-4">
-        <div className="grid gap-1">
-          <Label htmlFor="crm-pipeline" className="text-xs">
-            Funil
-          </Label>
-          <select
-            id="crm-pipeline"
-            value={pipeline?.id}
-            onChange={(event) => setStoredPipelineId(event.target.value)}
-            className={cn(crmSelectClassName, "w-48")}
-          >
-            {activePipelines.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div className="flex flex-wrap items-center gap-2 border-b px-4 py-3">
+        <select
+          aria-label="Funil"
+          title="Funil"
+          value={pipeline?.id}
+          onChange={(event) => setStoredPipelineId(event.target.value)}
+          className={cn(crmSelectClassName, "w-44 font-medium")}
+        >
+          {activePipelines.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name}
+            </option>
+          ))}
+        </select>
 
-        <div className="grid gap-1">
-          <span className="text-xs font-medium">Grupos</span>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="w-48 justify-between font-normal">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="w-44 justify-between font-normal" aria-label="Grupos de atendimento">
+              <span className="flex min-w-0 items-center gap-1.5">
+                <Users className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">{serviceGroupLabel}</span>
-                <ChevronDown className="h-4 w-4 opacity-50" />
+              </span>
+              <ChevronDown className="h-4 w-4 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-64 space-y-2">
+            {visibleServiceGroups.length === 0 && <p className="text-muted-foreground text-sm">Nenhum grupo cadastrado.</p>}
+            {visibleServiceGroups.map((group) => (
+              <label key={group.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                <Checkbox
+                  checked={selectedServiceGroupIds.includes(group.id)}
+                  onCheckedChange={(checked) => toggleServiceGroup(group.id, checked === true)}
+                />
+                <span className="truncate">{group.name}</span>
+              </label>
+            ))}
+            {selectedServiceGroupIds.length > 0 && (
+              <Button variant="link" size="sm" className="h-auto px-0" onClick={() => setStoredServiceGroupIds([])}>
+                Limpar seleção
               </Button>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-64 space-y-2">
-              {visibleServiceGroups.length === 0 && <p className="text-muted-foreground text-sm">Nenhum grupo cadastrado.</p>}
-              {visibleServiceGroups.map((group) => (
-                <label key={group.id} className="flex cursor-pointer items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={selectedServiceGroupIds.includes(group.id)}
-                    onCheckedChange={(checked) => toggleServiceGroup(group.id, checked === true)}
-                  />
-                  <span className="truncate">{group.name}</span>
-                </label>
-              ))}
-              {selectedServiceGroupIds.length > 0 && (
-                <Button variant="link" size="sm" className="h-auto px-0" onClick={() => setStoredServiceGroupIds([])}>
-                  Limpar seleção
-                </Button>
-              )}
-              <p className="text-muted-foreground text-xs">
-                {canViewAll
-                  ? "Sem seleção, aparecem todos os negócios, inclusive os sem grupo."
-                  : "Sem seleção, aparecem os negócios de todos os seus grupos."}
-              </p>
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        <div className="grid gap-1">
-          <Label htmlFor="crm-owner" className="text-xs">
-            Responsável
-          </Label>
-          <select
-            id="crm-owner"
-            value={onlyMine ? "" : ownerUserId}
-            disabled={onlyMine}
-            onChange={(event) => setOwnerUserId(event.target.value)}
-            className={cn(crmSelectClassName, "w-44")}
-          >
-            <option value="">Todos</option>
-            {members.map((member) => (
-              <option key={member.id} value={member.id}>
-                {member.name ?? member.email}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="grid gap-1">
-          <Label htmlFor="crm-category" className="text-xs">
-            Categoria
-          </Label>
-          <select
-            id="crm-category"
-            value={categoryId}
-            onChange={(event) => setCategoryId(event.target.value)}
-            className={cn(crmSelectClassName, "w-40")}
-          >
-            <option value="">Todas</option>
-            {categoriesQuery.data?.items.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="grid gap-1">
-          <Label htmlFor="crm-origin" className="text-xs">
-            Origem
-          </Label>
-          <select
-            id="crm-origin"
-            value={origin}
-            onChange={(event) => setOrigin(event.target.value)}
-            className={cn(crmSelectClassName, "w-44")}
-          >
-            <option value="">Todas</option>
-            <option value="AD_MESSAGE">Anúncio no WhatsApp</option>
-            <option value="LEAD_FORM">Formulário de cadastro</option>
-            <option value="NONE">Sem anúncio</option>
-            {!!originCampaignsQuery.data?.length && (
-              <optgroup label="Campanha">
-                {originCampaignsQuery.data.map((campaign) => (
-                  <option key={campaign.metaCampaignId} value={`campaign:${campaign.metaCampaignId}`}>
-                    {campaign.name ?? `Campanha ${campaign.metaCampaignId}`}
-                  </option>
-                ))}
-              </optgroup>
             )}
-          </select>
-        </div>
+            <p className="text-muted-foreground text-xs">
+              {canViewAll
+                ? "Sem seleção, aparecem todos os negócios, inclusive os sem grupo."
+                : "Sem seleção, aparecem os negócios de todos os seus grupos."}
+            </p>
+          </PopoverContent>
+        </Popover>
 
-        <div className="grid gap-1">
-          <span className="text-xs font-medium">Criados entre</span>
-          <div className="flex items-center gap-1">
-            <Input
-              type="date"
-              aria-label="Criados a partir de"
-              value={startDate}
-              onChange={(event) => setStartDate(event.target.value)}
-              className="w-36"
-            />
-            <Input
-              type="date"
-              aria-label="Criados até"
-              value={endDate}
-              onChange={(event) => setEndDate(event.target.value)}
-              className="w-36"
-            />
-          </div>
-        </div>
+        <select
+          aria-label="Responsável"
+          title="Responsável"
+          value={onlyMine ? "" : ownerUserId}
+          disabled={onlyMine}
+          onChange={(event) => setOwnerUserId(event.target.value)}
+          className={cn(crmSelectClassName, "w-44")}
+        >
+          <option value="">Todos os responsáveis</option>
+          {members.map((member) => (
+            <option key={member.id} value={member.id}>
+              {member.name ?? member.email}
+            </option>
+          ))}
+        </select>
 
-        <label className="flex h-9 cursor-pointer items-center gap-2 text-sm">
+        <label className="flex h-9 cursor-pointer items-center gap-2 px-1 text-sm whitespace-nowrap">
           <Checkbox checked={onlyMine} onCheckedChange={(checked) => setOnlyMine(checked === true)} />
           Só os meus
         </label>
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="font-normal">
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              Mais filtros
+              {extraFilterCount > 0 && (
+                <span className="bg-primary text-primary-foreground rounded-full px-1.5 text-[11px] font-semibold tabular-nums">
+                  {extraFilterCount}
+                </span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-80 space-y-3">
+            <div className="grid gap-1">
+              <Label htmlFor="crm-category" className="text-xs">
+                Categoria
+              </Label>
+              <select
+                id="crm-category"
+                value={categoryId}
+                onChange={(event) => setCategoryId(event.target.value)}
+                className={crmSelectClassName}
+              >
+                <option value="">Todas</option>
+                {categoriesQuery.data?.items.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid gap-1">
+              <Label htmlFor="crm-origin" className="text-xs">
+                Origem
+              </Label>
+              <select id="crm-origin" value={origin} onChange={(event) => setOrigin(event.target.value)} className={crmSelectClassName}>
+                <option value="">Todas</option>
+                <option value="AD_MESSAGE">Anúncio no WhatsApp</option>
+                <option value="LEAD_FORM">Formulário de cadastro</option>
+                <option value="NONE">Sem anúncio</option>
+                {!!originCampaignsQuery.data?.length && (
+                  <optgroup label="Campanha">
+                    {originCampaignsQuery.data.map((campaign) => (
+                      <option key={campaign.metaCampaignId} value={`campaign:${campaign.metaCampaignId}`}>
+                        {campaign.name ?? `Campanha ${campaign.metaCampaignId}`}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
+            </div>
+
+            <div className="grid gap-1">
+              <span className="text-xs font-medium">Criados entre</span>
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  type="date"
+                  aria-label="Criados a partir de"
+                  value={startDate}
+                  onChange={(event) => setStartDate(event.target.value)}
+                />
+                <Input type="date" aria-label="Criados até" value={endDate} onChange={(event) => setEndDate(event.target.value)} />
+              </div>
+            </div>
+
+            {extraFilterCount > 0 && (
+              <Button variant="link" size="sm" className="h-auto px-0" onClick={clearExtraFilters}>
+                Limpar estes filtros
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
 
         <div className="ml-auto flex rounded-md border p-0.5" role="group" aria-label="Visualização">
           {(["board", "list"] as const).map((option) => (
