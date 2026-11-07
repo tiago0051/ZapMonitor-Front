@@ -8,7 +8,9 @@ type BillingResource =
   | "CRM_ACCESS"
   | "CRM_PIPELINES"
   | "ADS_ACCESS"
-  | "ADS_ACCOUNTS";
+  | "ADS_ACCOUNTS"
+  // Milhares de e-mails por mês
+  | "EMAIL_SENDS";
 
 type PriceTableStatus = "IN_FORCE" | "SCHEDULED" | "PAST";
 

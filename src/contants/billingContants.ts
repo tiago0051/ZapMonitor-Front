@@ -9,6 +9,7 @@ export const billingResources: BillingResource[] = [
   "CRM_PIPELINES",
   "ADS_ACCESS",
   "ADS_ACCOUNTS",
+  "EMAIL_SENDS",
 ];
 
 export const billingResourceLabel: Record<BillingResource, string> = {
@@ -22,6 +23,7 @@ export const billingResourceLabel: Record<BillingResource, string> = {
   CRM_PIPELINES: "Funis do CRM",
   ADS_ACCESS: "Módulo de anúncios",
   ADS_ACCOUNTS: "Contas de anúncio",
+  EMAIL_SENDS: "E-mails por mês",
 };
 
 // Como uma unidade aparece na tabela de preços
@@ -36,6 +38,7 @@ export const billingResourceUnit: Record<BillingResource, string> = {
   CRM_PIPELINES: "por funil",
   ADS_ACCESS: "por acesso",
   ADS_ACCOUNTS: "por conta",
+  EMAIL_SENDS: "por mil e-mails",
 };
 
 // Recursos liga/desliga: quantidade 0 ou 1
