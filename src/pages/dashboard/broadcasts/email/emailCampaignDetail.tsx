@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { formatCount, rate } from "../broadcastUtils";
 import { BroadcastScheduling, type SchedulingApi } from "../components/broadcastScheduling";
 import { downloadBlob, emailCampaignStatusInfo, emailProgressOf, emailRecipientStatusInfo } from "./emailCampaignUtils";
+import { EmailAbResults } from "./emailAbResults";
 import { EmailPreviewFrame } from "./emailPreviewFrame";
 
 const TAKE = 50;
@@ -268,6 +269,8 @@ export const EmailCampaignDetail = () => {
         Aberturas são aproximadas: alguns aplicativos de e-mail abrem as imagens sozinhos e outros bloqueiam. Cliques são mais confiáveis.
       </p>
 
+      {campaign.abTest && <EmailAbResults campaign={campaign} subjectA={campaign.subject} />}
+
       <section className="grid gap-2">
         <Button variant="ghost" size="sm" className="justify-self-start" onClick={() => setShowPreview(!showPreview)}>
           {showPreview ? "Esconder o e-mail" : "Ver o e-mail enviado"}
@@ -333,6 +336,7 @@ export const EmailCampaignDetail = () => {
                     <p className="truncate">
                       <span className="font-medium">{recipient.email}</span>
                       {recipient.name && <span className="text-muted-foreground"> · {recipient.name}</span>}
+                      {recipient.variant && <span className="text-muted-foreground"> · assunto {recipient.variant}</span>}
                     </p>
                     {reason && <p className={cn("text-xs", problem ? "text-destructive" : "text-muted-foreground")}>{reason}</p>}
                   </div>

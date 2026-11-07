@@ -14,6 +14,8 @@ type FlowNodeType =
   | "flow"
   // Manda um modelo de e-mail para o e-mail da ficha do contato
   | "email"
+  // Coloca a ficha do contato numa sequência de e-mails
+  | "emailSequence"
   | "end"
   // Pontos de entrada do fluxo de fila
   | "queueTimer"
@@ -62,6 +64,8 @@ type FlowNodeData = {
   // "Enviar e-mail": remetente verificado e modelo
   senderId?: string;
   templateId?: string;
+  // "Sequência de e-mails"
+  sequenceId?: string;
 };
 
 type FlowDefinitionNode = {

@@ -5,6 +5,7 @@ import {
   Flag,
   GitBranch,
   Hourglass,
+  ListOrdered,
   Mail,
   MessageCircleReply,
   MessageSquareText,
@@ -138,6 +139,13 @@ export const flowNodeConfigs: Record<FlowNodeType, FlowNodeConfig> = {
     colorClassName: "text-blue-600 border-blue-500/60",
     defaultData: () => ({ senderId: "", templateId: "" }),
   },
+  emailSequence: {
+    label: "Sequência de e-mails",
+    description: "Coloca a ficha numa sequência de e-mails e segue",
+    icon: ListOrdered,
+    colorClassName: "text-blue-600 border-blue-500/60",
+    defaultData: () => ({ sequenceId: "" }),
+  },
   end: {
     label: "Encerrar atendimento",
     description: "Envia uma despedida e finaliza",
@@ -192,6 +200,11 @@ export function getFlowNodeOutputs(type: FlowNodeType, data: FlowNodeData): Flow
       return [
         { id: FLOW_OUTPUT_NEXT, label: "E-mail enviado" },
         { id: FLOW_OUTPUT_NOT_SENT, label: "Não enviado" },
+      ];
+    case "emailSequence":
+      return [
+        { id: FLOW_OUTPUT_NEXT, label: "Na sequência" },
+        { id: "notEnrolled", label: "Não entrou" },
       ];
     case "condition":
       return [...(data.options ?? []), { id: FLOW_OUTPUT_OTHER, label: "Outra resposta" }];

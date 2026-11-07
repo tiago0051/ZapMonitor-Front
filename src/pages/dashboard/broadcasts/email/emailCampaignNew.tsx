@@ -42,6 +42,11 @@ export const EmailCampaignNew = () => {
   const [clickPipelineId, setClickPipelineId] = useState("");
   const [clickStageId, setClickStageId] = useState("");
   const [consent, setConsent] = useState(false);
+  const [abEnabled, setAbEnabled] = useState(false);
+  const [subjectB, setSubjectB] = useState("");
+  const [abPercent, setAbPercent] = useState(20);
+  const [abMetric, setAbMetric] = useState<EmailAbMetric>("OPEN");
+  const [abWaitHours, setAbWaitHours] = useState(4);
   const [confirmSend, setConfirmSend] = useState(false);
 
   const optionsQuery = useQuery({
@@ -89,6 +94,7 @@ export const EmailCampaignNew = () => {
         frequencyCapDays: capDays ? Number(capDays) : null,
         clickPipelineId: clickPipelineId || null,
         clickStageId: clickStageId || null,
+        abTest: abEnabled ? { subjectB: subjectB.trim(), testPercent: abPercent, metric: abMetric, waitMinutes: abWaitHours * 60 } : null,
         consentConfirmed: consent,
         start: action === "now",
         scheduledAt: action === "schedule" ? new Date(scheduledAt).toISOString() : undefined,
@@ -117,8 +123,22 @@ export const EmailCampaignNew = () => {
           : null;
   const capError = capDays && !(Number(capDays) >= 1 && Number(capDays) <= 90) ? "O limite vai de 1 a 90 dias" : null;
   const clickError = clickPipelineId && !clickStageId ? "Escolha a etapa do funil para quem clicar" : null;
+  // Metade do teste com cada assunto; cada versão precisa de pelo menos 10 pessoas
+  const abSize = Math.floor((summary.ready.length * abPercent) / 100 / 2) * 2;
+  const abError = !abEnabled
+    ? null
+    : !subjectB.trim()
+      ? "Escreva o assunto B"
+      : abSize < 20
+        ? `Com ${formatCount(summary.ready.length)} pessoas o teste fica pequeno: aumente a parte da lista ou tire o teste`
+        : null;
   const settingsError =
-    sendWindowError(sendWindow) ?? capError ?? clickError ?? (!consent ? "Confirme que as pessoas aceitaram receber e-mails" : null);
+    sendWindowError(sendWindow) ??
+    capError ??
+    clickError ??
+    abError ??
+    (!consent ? "Confirme que as pessoas aceitaram receber e-mails" : null);
+  const template = templates.find((item) => item.id === templateId);
   const reviewError = settingsError ?? scheduleError;
   const sender = senders.find((item) => item.id === senderId);
 
@@ -348,6 +368,106 @@ export const EmailCampaignNew = () => {
                 )}
 
                 <div className="grid gap-3 rounded-lg border p-3">
+                  <label className="flex items-start gap-2 text-sm">
+                    <Checkbox
+                      id="email-campaign-ab"
+                      checked={abEnabled}
+                      disabled={busy}
+                      onCheckedChange={(checked) => setAbEnabled(checked === true)}
+                    />
+                    <span>
+                      <span className="font-medium">Teste A/B de assunto</span>
+                      <span className="text-muted-foreground block text-xs">
+                        Uma parte da lista recebe o assunto A ou o B; depois da espera, o que tiver mais aberturas (ou cliques) vai para o
+                        resto.
+                      </span>
+                    </span>
+                  </label>
+                  {abEnabled && (
+                    <div className="grid gap-3 pl-6">
+                      <p className="text-sm">
+                        <span className="text-muted-foreground">Assunto A (do modelo): </span>
+                        {template?.subject || "sem assunto"}
+                      </p>
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="email-campaign-subject-b" className="text-xs">
+                          Assunto B
+                        </Label>
+                        <Input
+                          id="email-campaign-subject-b"
+                          value={subjectB}
+                          maxLength={300}
+                          disabled={busy}
+                          placeholder="Ex.: {{contato.primeiro_nome}}, sua condição especial acaba hoje"
+                          onChange={(event) => setSubjectB(event.target.value)}
+                        />
+                        <p className="text-muted-foreground text-xs">
+                          Aceita as mesmas variáveis do modelo, como {"{{contato.primeiro_nome}}"}.
+                        </p>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="grid gap-1.5">
+                          <Label htmlFor="email-campaign-ab-percent" className="text-xs">
+                            Parte da lista no teste
+                          </Label>
+                          <select
+                            id="email-campaign-ab-percent"
+                            className={selectClassName}
+                            value={abPercent}
+                            disabled={busy}
+                            onChange={(event) => setAbPercent(Number(event.target.value))}
+                          >
+                            {[10, 20, 30, 40, 50].map((value) => (
+                              <option key={value} value={value}>
+                                {value}%
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="grid gap-1.5">
+                          <Label htmlFor="email-campaign-ab-metric" className="text-xs">
+                            Vence quem tiver mais
+                          </Label>
+                          <select
+                            id="email-campaign-ab-metric"
+                            className={selectClassName}
+                            value={abMetric}
+                            disabled={busy}
+                            onChange={(event) => setAbMetric(event.target.value as EmailAbMetric)}
+                          >
+                            <option value="OPEN">Aberturas</option>
+                            <option value="CLICK">Cliques</option>
+                          </select>
+                        </div>
+                        <div className="grid gap-1.5">
+                          <Label htmlFor="email-campaign-ab-wait" className="text-xs">
+                            Esperar o resultado
+                          </Label>
+                          <select
+                            id="email-campaign-ab-wait"
+                            className={selectClassName}
+                            value={abWaitHours}
+                            disabled={busy}
+                            onChange={(event) => setAbWaitHours(Number(event.target.value))}
+                          >
+                            {[1, 2, 4, 8, 12, 24, 48].map((value) => (
+                              <option key={value} value={value}>
+                                {value} {value === 1 ? "hora" : "horas"}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <p className="text-muted-foreground text-xs">
+                        {formatCount(abSize / 2)} recebem o A, {formatCount(abSize / 2)} recebem o B e{" "}
+                        {formatCount(summary.ready.length - abSize)} recebem o vencedor.
+                        {abMetric === "OPEN" && " Aberturas são aproximadas; com links no e-mail, cliques decidem melhor."}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid gap-3 rounded-lg border p-3">
                   <p className="text-sm font-medium">Cuidados com o domínio</p>
                   <div className="grid gap-1.5">
                     <Label htmlFor="email-campaign-cap-days" className="text-xs">
@@ -388,8 +508,9 @@ export const EmailCampaignNew = () => {
                       {when === "schedule" ? "Agendar" : "Enviar agora"} para {formatCount(summary.ready.length)}{" "}
                       {summary.ready.length === 1 ? "pessoa" : "pessoas"} como {sender?.fromEmail}
                       {when === "schedule" && scheduleDate && `, começando em ${format(scheduleDate, "dd/MM/yyyy 'às' HH:mm")}`}
-                      {sendWindow && ` (${describeSendWindow(sendWindow).toLowerCase()})`}? Dá para pausar depois, mas o que já saiu não
-                      volta.
+                      {sendWindow && ` (${describeSendWindow(sendWindow).toLowerCase()})`}
+                      {abEnabled && `, com teste A/B em ${abPercent}% da lista e o vencedor depois de ${abWaitHours}h`}? Dá para pausar
+                      depois, mas o que já saiu não volta.
                     </p>
                     <div className="flex flex-wrap gap-2">
                       <Button disabled={busy} onClick={() => createMutation.mutate(when)}>

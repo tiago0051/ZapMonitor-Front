@@ -29,6 +29,7 @@ type EmailCampaign = {
   frequencyCapDays: number | null;
   clickPipelineId: string | null;
   clickStageId: string | null;
+  abTest: EmailAbTest | null;
   audienceConsentAt: string | null;
   pausedReason: string | null;
   scheduledAt: string | null;
@@ -45,6 +46,7 @@ type EmailCampaignRecipient = {
   contactId: string | null;
   dealId: string | null;
   status: EmailRecipientStatus;
+  variant: "A" | "B" | null;
   skipReason: string | null;
   error: string | null;
   sentAt: string | null;
@@ -57,9 +59,23 @@ type EmailCampaignRecipientInput = { email: string; name?: string | null; contac
 
 type EmailAudienceContact = { contactId: string; dealId: string | null; email: string; name: string | null };
 
+type EmailAbMetric = "OPEN" | "CLICK";
+
+type EmailAbTestConfig = { subjectB: string; testPercent: number; metric: EmailAbMetric; waitMinutes: number };
+
+type EmailAbTest = EmailAbTestConfig & {
+  phase: "TESTING" | "DECIDED";
+  winner: "A" | "B" | null;
+  decideAt: string | null;
+  // Só no detalhe da campanha
+  results: { A: EmailCampaignTotals; B: EmailCampaignTotals } | null;
+};
+
 type EmailCampaignOptions = {
   senders: { id: string; fromName: string; fromEmail: string }[];
   templates: { id: string; name: string; subject: string }[];
+  // Só nas opções do editor de fluxos
+  sequences?: { id: string; name: string; active: boolean }[];
 };
 
 type EmailCampaignPage<T> = { total: number; page: number; take: number; items: T[] };

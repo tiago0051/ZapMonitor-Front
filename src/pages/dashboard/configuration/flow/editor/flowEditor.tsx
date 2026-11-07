@@ -55,6 +55,7 @@ const queuePaletteNodeTypes: FlowNodeType[] = [
   "crm",
   "crmAnalysis",
   "email",
+  "emailSequence",
   "aiAgent",
   "end",
 ];
@@ -70,6 +71,7 @@ const paletteNodeTypes: FlowNodeType[] = [
   "crm",
   "crmAnalysis",
   "email",
+  "emailSequence",
   "flow",
   "end",
 ];

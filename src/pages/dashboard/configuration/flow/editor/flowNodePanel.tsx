@@ -467,6 +467,23 @@ export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, on
           </>
         )}
 
+        {type === "emailSequence" && (
+          <Field
+            label="Sequência"
+            hint='A ficha do contato entra na sequência e o fluxo segue por "Na sequência" (também quando ela já estava). Sem e-mail na ficha, descadastrado ou com a sequência desligada, segue por "Não entrou". Monte as sequências em Campanhas › Sequências de e-mail.'
+          >
+            <select className={selectClassName} value={data.sequenceId ?? ""} onChange={(e) => update({ sequenceId: e.target.value })}>
+              <option value="">{emailOptions.sequences?.length ? "Selecione..." : "Nenhuma sequência criada"}</option>
+              {(emailOptions.sequences ?? []).map((sequence) => (
+                <option key={sequence.id} value={sequence.id}>
+                  {sequence.name}
+                  {sequence.active ? "" : " (desligada)"}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
+
         {type === "crmAnalysis" && (
           <>
             <Field

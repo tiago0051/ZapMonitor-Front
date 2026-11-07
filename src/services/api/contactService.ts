@@ -8,6 +8,11 @@ export const contactService = {
     return response.data;
   },
 
+  timeline: async (clientId: string, contactId: string, before?: string): Promise<ContactTimelinePage> => {
+    const response = await api.get(`/client/${clientId}/contact/${contactId}/timeline`, { params: { before, take: 30 } });
+    return response.data;
+  },
+
   findOne: async (clientId: string, contactId: string): Promise<ContactDetail> => {
     const response = await api.get(`${base(clientId)}/${contactId}`);
     return response.data;

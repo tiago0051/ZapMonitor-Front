@@ -14,6 +14,7 @@ import { Link, useSearchParams } from "react-router";
 import { broadcastStatusInfo, formatCount, progressOf, rate } from "./broadcastUtils";
 import { OptOutList } from "./components/optOutList";
 import { EmailCampaignList } from "./email/emailCampaignList";
+import { EmailSequenceList } from "./sequences/emailSequenceList";
 
 const TAKE = 20;
 
@@ -171,6 +172,7 @@ export const Broadcasts = () => {
         <TabsList>
           <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
           <TabsTrigger value="email">E-mail</TabsTrigger>
+          <TabsTrigger value="sequencias">Sequências de e-mail</TabsTrigger>
           <TabsTrigger value="optOut">Descadastrados do WhatsApp</TabsTrigger>
         </TabsList>
         <TabsContent value="whatsapp" className="pt-2">
@@ -178,6 +180,9 @@ export const Broadcasts = () => {
         </TabsContent>
         <TabsContent value="email" className="pt-2">
           <EmailCampaignList />
+        </TabsContent>
+        <TabsContent value="sequencias" className="pt-2">
+          <EmailSequenceList />
         </TabsContent>
         <TabsContent value="optOut" className="pt-2">
           <OptOutList />

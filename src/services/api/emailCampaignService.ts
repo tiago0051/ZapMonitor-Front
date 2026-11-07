@@ -42,6 +42,7 @@ export const emailCampaignService = {
       frequencyCapDays?: number | null;
       clickPipelineId?: string | null;
       clickStageId?: string | null;
+      abTest?: EmailAbTestConfig | null;
       consentConfirmed: boolean;
       start?: boolean;
       scheduledAt?: string;
@@ -53,6 +54,9 @@ export const emailCampaignService = {
 
   schedule: async (clientId: string, id: string, scheduledAt: string): Promise<EmailCampaign> =>
     (await api.post(`${base(clientId)}/${id}/schedule`, { scheduledAt })).data,
+
+  chooseAbWinner: async (clientId: string, id: string, variant: "A" | "B"): Promise<EmailCampaign> =>
+    (await api.post(`${base(clientId)}/${id}/ab-winner`, { variant })).data,
 
   setSendWindow: async (clientId: string, id: string, sendWindow: BroadcastSendWindow | null): Promise<EmailCampaign> =>
     (await api.put(`${base(clientId)}/${id}/send-window`, { sendWindow })).data,
