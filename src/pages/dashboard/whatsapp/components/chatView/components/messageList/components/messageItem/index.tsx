@@ -90,7 +90,7 @@ export const MessageItem: FC<MessageItemProps> = ({ message, contactName, onRepl
       transition={{ duration: 0.22, ease: "easeOut" }}
       data-type={message.type}
       data-reacted={!!message.contactReaction}
-      className="group bg-secondary text-secondary-foreground relative max-w-[85%] min-w-[300px] rounded p-2 pt-2 pb-6 data-[reacted=true]:mb-3 data-[type=1]:self-end data-[type=1]:bg-green-100/50"
+      className="group bg-secondary text-secondary-foreground relative max-w-[85%] min-w-[min(300px,100%)] rounded p-2 pt-2 pb-6 [overflow-wrap:anywhere] data-[reacted=true]:mb-3 data-[type=1]:self-end data-[type=1]:bg-green-100/50"
     >
       {onReply && (
         <Button
