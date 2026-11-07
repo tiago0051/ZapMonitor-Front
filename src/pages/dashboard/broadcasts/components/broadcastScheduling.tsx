@@ -12,23 +12,43 @@ import { toast } from "sonner";
 import { describeSendWindow, isFutureSchedule, sendWindowError, toLocalInputValue } from "../broadcastUtils";
 import { SendWindowFields } from "./sendWindowFields";
 
+type SchedulableCampaign = Pick<Broadcast, "id" | "scheduledAt" | "startedAt" | "sendWindow"> & { status: BroadcastStatus };
+
+/** Chamadas de agendamento; o padrão é o da campanha de WhatsApp, a de e-mail passa as suas. */
+export type SchedulingApi = {
+  queryKey: string;
+  schedule: (clientId: string, id: string, scheduledAt: string) => Promise<unknown>;
+  unschedule: (clientId: string, id: string) => Promise<unknown>;
+  action: (clientId: string, id: string, action: "start" | "pause") => Promise<{ status: string }>;
+  setSendWindow: (clientId: string, id: string, sendWindow: BroadcastSendWindow | null) => Promise<unknown>;
+};
+
+const broadcastSchedulingApi: SchedulingApi = {
+  queryKey: "broadcasts",
+  schedule: broadcastService.schedule,
+  unschedule: broadcastService.unschedule,
+  action: broadcastService.action,
+  setSendWindow: broadcastService.setSendWindow,
+};
+
 type BroadcastSchedulingProps = {
-  broadcast: Broadcast;
+  broadcast: SchedulableCampaign;
   canSend: boolean;
+  api?: SchedulingApi;
 };
 
 /** Agendamento e janela de envio da campanha: quando começa, quando espera e como trocar. */
-export const BroadcastScheduling: FC<BroadcastSchedulingProps> = ({ broadcast, canSend }) => {
+export const BroadcastScheduling: FC<BroadcastSchedulingProps> = ({ broadcast, canSend, api = broadcastSchedulingApi }) => {
   const { client } = useClientContext();
   const queryClient = useQueryClient();
   const [scheduledAt, setScheduledAt] = useState(() => toLocalInputValue(new Date(Date.now() + 60 * 60 * 1000)));
   const [editingWindow, setEditingWindow] = useState(false);
   const [draftWindow, setDraftWindow] = useState<BroadcastSendWindow | null>(broadcast.sendWindow);
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ["broadcasts", client.id] });
+  const refresh = () => queryClient.invalidateQueries({ queryKey: [api.queryKey, client.id] });
 
   const scheduleMutation = useMutation({
-    mutationFn: () => broadcastService.schedule(client.id, broadcast.id, new Date(scheduledAt).toISOString()),
+    mutationFn: () => api.schedule(client.id, broadcast.id, new Date(scheduledAt).toISOString()),
     onError: requestErrorHandling,
     onSuccess: () => {
       refresh();
@@ -37,7 +57,7 @@ export const BroadcastScheduling: FC<BroadcastSchedulingProps> = ({ broadcast, c
   });
 
   const unscheduleMutation = useMutation({
-    mutationFn: () => broadcastService.unschedule(client.id, broadcast.id),
+    mutationFn: () => api.unschedule(client.id, broadcast.id),
     onError: requestErrorHandling,
     onSuccess: () => {
       refresh();
@@ -46,7 +66,7 @@ export const BroadcastScheduling: FC<BroadcastSchedulingProps> = ({ broadcast, c
   });
 
   const actionMutation = useMutation({
-    mutationFn: (action: "start" | "pause") => broadcastService.action(client.id, broadcast.id, action),
+    mutationFn: (action: "start" | "pause") => api.action(client.id, broadcast.id, action),
     onError: requestErrorHandling,
     onSuccess: (updated, action) => {
       refresh();
@@ -57,7 +77,7 @@ export const BroadcastScheduling: FC<BroadcastSchedulingProps> = ({ broadcast, c
   });
 
   const windowMutation = useMutation({
-    mutationFn: () => broadcastService.setSendWindow(client.id, broadcast.id, draftWindow),
+    mutationFn: () => api.setSendWindow(client.id, broadcast.id, draftWindow),
     onError: requestErrorHandling,
     onSuccess: () => {
       refresh();

@@ -70,6 +70,8 @@ const describeEvent = (event: DealEvent) => {
       return `Criou a tarefa "${payload.taskTitle}"`;
     case "TASK_COMPLETED":
       return `Concluiu a tarefa "${payload.taskTitle}"`;
+    case "EMAIL_CLICKED":
+      return `Clicou no e-mail da campanha "${payload.campaignName}"`;
   }
 };
 

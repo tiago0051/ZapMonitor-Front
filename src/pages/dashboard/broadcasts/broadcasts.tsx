@@ -10,9 +10,10 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Plus } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { broadcastStatusInfo, formatCount, progressOf, rate } from "./broadcastUtils";
 import { OptOutList } from "./components/optOutList";
+import { EmailCampaignList } from "./email/emailCampaignList";
 
 const TAKE = 20;
 
@@ -63,7 +64,7 @@ const BroadcastList = () => {
           <Button asChild>
             <Link to={`${baseUrl}/broadcasts/new`}>
               <Plus className="mr-2 h-4 w-4" />
-              Nova campanha
+              Nova campanha de WhatsApp
             </Link>
           </Button>
         )}
@@ -153,26 +154,35 @@ const BroadcastList = () => {
   );
 };
 
-export const Broadcasts = () => (
-  <div className="flex h-full flex-col gap-4 overflow-auto p-4 md:p-6">
-    <div>
-      <h1 className="text-2xl font-semibold">Campanhas</h1>
-      <p className="text-muted-foreground text-sm">
-        Disparos em massa de modelos do WhatsApp, com entrega, leitura e respostas de cada pessoa.
-      </p>
-    </div>
+export const Broadcasts = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get("canal") ?? "whatsapp";
 
-    <Tabs defaultValue="broadcasts">
-      <TabsList>
-        <TabsTrigger value="broadcasts">Campanhas</TabsTrigger>
-        <TabsTrigger value="optOut">Descadastrados</TabsTrigger>
-      </TabsList>
-      <TabsContent value="broadcasts" className="pt-2">
-        <BroadcastList />
-      </TabsContent>
-      <TabsContent value="optOut" className="pt-2">
-        <OptOutList />
-      </TabsContent>
-    </Tabs>
-  </div>
-);
+  return (
+    <div className="flex h-full flex-col gap-4 overflow-auto p-4 md:p-6">
+      <div>
+        <h1 className="text-2xl font-semibold">Campanhas</h1>
+        <p className="text-muted-foreground text-sm">
+          Disparos em massa pelo WhatsApp ou por e-mail, com entrega, leitura, cliques e respostas de cada pessoa.
+        </p>
+      </div>
+
+      <Tabs value={tab} onValueChange={(value) => setSearchParams(value === "whatsapp" ? {} : { canal: value }, { replace: true })}>
+        <TabsList>
+          <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
+          <TabsTrigger value="email">E-mail</TabsTrigger>
+          <TabsTrigger value="optOut">Descadastrados do WhatsApp</TabsTrigger>
+        </TabsList>
+        <TabsContent value="whatsapp" className="pt-2">
+          <BroadcastList />
+        </TabsContent>
+        <TabsContent value="email" className="pt-2">
+          <EmailCampaignList />
+        </TabsContent>
+        <TabsContent value="optOut" className="pt-2">
+          <OptOutList />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};

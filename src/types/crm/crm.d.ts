@@ -3,7 +3,15 @@ type PipelineStageType = "OPEN" | "WON" | "LOST";
 type DealStatus = "OPEN" | "WON" | "LOST";
 
 type DealEventType =
-  "CREATED" | "UPDATED" | "STAGE_CHANGED" | "GROUP_CHANGED" | "REOPENED" | "FLOW_TRIGGERED" | "TASK_CREATED" | "TASK_COMPLETED";
+  | "CREATED"
+  | "UPDATED"
+  | "STAGE_CHANGED"
+  | "GROUP_CHANGED"
+  | "REOPENED"
+  | "FLOW_TRIGGERED"
+  | "TASK_CREATED"
+  | "TASK_COMPLETED"
+  | "EMAIL_CLICKED";
 
 type CrmFieldType = "TEXT" | "NUMBER" | "DATE" | "SELECT";
 

@@ -3,6 +3,8 @@ import { PermissionRoute } from "@/components/permission-route";
 import { BroadcastDetail } from "@/pages/dashboard/broadcasts/broadcastDetail";
 import { BroadcastNew } from "@/pages/dashboard/broadcasts/broadcastNew";
 import { Broadcasts } from "@/pages/dashboard/broadcasts/broadcasts";
+import { EmailCampaignDetail } from "@/pages/dashboard/broadcasts/email/emailCampaignDetail";
+import { EmailCampaignNew } from "@/pages/dashboard/broadcasts/email/emailCampaignNew";
 import { Route, Routes } from "react-router";
 
 const BroadcastsRouter = () => {
@@ -17,6 +19,15 @@ const BroadcastsRouter = () => {
           </PermissionRoute>
         }
       />
+      <Route
+        path="email/new"
+        element={
+          <PermissionRoute permission="broadcasts.send">
+            <EmailCampaignNew />
+          </PermissionRoute>
+        }
+      />
+      <Route path="email/:campaignId" element={<EmailCampaignDetail />} />
       <Route path=":broadcastId" element={<BroadcastDetail />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
