@@ -10,6 +10,7 @@ import { ChevronDown, ChevronUp, Megaphone, Reply } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "motion/react";
 import { MessageReplyPreview } from "../../../messageReplyPreview";
+import { TemplateMessage } from "../templateMessage";
 
 type MessageFileContent = { url: string; filename: string };
 
@@ -126,7 +127,12 @@ export const MessageItem: FC<MessageItemProps> = ({ message, contactName, onRepl
           Campanha: {message.broadcast.name}
         </p>
       )}
-      {message.contentType === WhatsappMessageContentType.TEMPLATE && <MessageTemplate message={message as WhatsappMessage<string>} />}
+      {message.contentType === WhatsappMessageContentType.TEMPLATE &&
+        (message.template ? (
+          <TemplateMessage template={message.template} />
+        ) : (
+          <MessageTemplate message={message as WhatsappMessage<string>} />
+        ))}
 
       {!supportedContentTypes.includes(message.contentType) && (
         <p className="text-muted-foreground text-sm italic">Tipo de mensagem não suportado</p>

@@ -19,5 +19,18 @@ type WhatsappMessage<C = unknown> = {
   replyTo?: WhatsappMessageReplyTo | null;
   // Campanha que enviou a mensagem
   broadcast?: { id: string; name: string } | null;
+  // Modelo enviado em partes; só em mensagens de modelo
+  template?: WhatsappTemplateMessageView | null;
   createdAt: string;
+};
+
+type WhatsappTemplateMessageView = {
+  name: string | null;
+  // url nula quando o envio não guardou o link do arquivo
+  media: { type: "IMAGE" | "VIDEO" | "DOCUMENT"; url: string | null; filename: string | null } | null;
+  header: string | null;
+  body: string | null;
+  footer: string | null;
+  // QUICK_REPLY, URL, PHONE_NUMBER, COPY_CODE...
+  buttons: { type: string; text: string }[];
 };
