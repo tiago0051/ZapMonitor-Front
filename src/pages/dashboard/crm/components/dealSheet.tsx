@@ -5,14 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useClientContext } from "@/context/ClientContext/clientContext";
+import { useBaseUrl } from "@/hooks/use-baseUrl";
 import { crmService } from "@/services/api/crmService";
 import { formatPhoneNumber } from "@/utils/formatString";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { PhoneOff, RotateCcw } from "lucide-react";
+import { PhoneOff, RotateCcw, UserRound } from "lucide-react";
 import { useState, type FC } from "react";
+import { Link } from "react-router";
 import { toast } from "sonner";
 import {
   crmSelectClassName,
@@ -170,6 +172,7 @@ const DealDetailsForm: FC<{ deal: Deal }> = ({ deal }) => {
 
 export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
   const { client, can } = useClientContext();
+  const baseUrl = useBaseUrl();
   const { pipelines, allServiceGroups } = useCrmOptions();
   const actions = useDealActions();
 
@@ -226,9 +229,14 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
           <SheetDescription>
             {!deal
               ? "Carregando..."
-              : deal.contact
-                ? `${dealContactName(deal.contact)} · ${formatPhoneNumber(deal.contact.phoneNumber)}`
-                : "Sem telefone"}
+              : [
+                  deal.contact
+                    ? `${dealContactName(deal.contact)} · ${formatPhoneNumber(deal.contact.phoneNumber)}`
+                    : deal.person?.name || "Sem telefone",
+                  deal.person?.email,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
           </SheetDescription>
         </SheetHeader>
 
@@ -241,6 +249,14 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
                 {dealStatusLabel[deal.status]}
               </Badge>
               <span className="text-muted-foreground text-xs">{pipeline?.name}</span>
+              {deal.person && can("contacts.view") && (
+                <Button variant="ghost" size="sm" className={deal.contact ? undefined : "ml-auto"} asChild>
+                  <Link to={`${baseUrl}/contacts/${deal.person.id}`}>
+                    <UserRound className="h-3.5 w-3.5" />
+                    Ver ficha
+                  </Link>
+                </Button>
+              )}
               {deal.contact && (
                 // Com a janela no rodapé, a ficha fecha para a conversa ficar visível
                 <OpenChatButton contact={deal.contact} className="ml-auto" onOpened={onClose} />

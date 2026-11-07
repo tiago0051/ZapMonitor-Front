@@ -1,5 +1,6 @@
 import { ContactAvatar } from "@/components/contact-avatar";
-import { Bot, Briefcase, FileAudio, FileText, Film, Image as ImageIcon, Paperclip, Tag } from "lucide-react";
+import { Bot, Briefcase, FileAudio, FileText, Film, Image as ImageIcon, Paperclip, Tag, UserRound } from "lucide-react";
+import { ContactProfile } from "@/pages/dashboard/contacts/components/contactProfile";
 import { ContactDeals } from "@/pages/dashboard/crm/components/contactDeals";
 import { formatWhatsappText, formatPhoneNumber, formatShortId } from "@/utils/formatString";
 import { useInfiniteQuery } from "@tanstack/react-query";
@@ -52,7 +53,7 @@ function StatusDot({ status }: { status: ProtocolStatus }) {
   return <span className={`h-2 w-2 flex-shrink-0 rounded-full ${colors[status]}`} />;
 }
 
-export type InfoPanelTab = "summary" | "history" | "files" | "deals";
+export type InfoPanelTab = "summary" | "contact" | "history" | "files" | "deals";
 
 export function InfoPanel({
   selected,
@@ -63,7 +64,7 @@ export function InfoPanel({
   rightPanel: InfoPanelTab;
   setRightPanel: (p: InfoPanelTab) => void;
 }) {
-  const { client, canUseCrm } = useClientContext();
+  const { client, canUseCrm, can } = useClientContext();
   const { socket, isConnected } = useSocketContext();
 
   const findAllServicesHistoryByContact = useInfiniteQuery({
@@ -131,6 +132,18 @@ export function InfoPanel({
           Resumo IA
           {rightPanel === "summary" && <span className="absolute right-0 bottom-0 left-0 h-0.5 rounded-full bg-green-500" />}
         </button>
+        {can("contacts.view") && (
+          <button
+            onClick={() => setRightPanel("contact")}
+            className={`relative flex flex-1 items-center justify-center gap-1.5 py-3 text-xs font-medium transition-colors ${
+              rightPanel === "contact" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <UserRound className="h-3.5 w-3.5" />
+            Ficha
+            {rightPanel === "contact" && <span className="absolute right-0 bottom-0 left-0 h-0.5 rounded-full bg-green-500" />}
+          </button>
+        )}
         <button
           onClick={() => setRightPanel("history")}
           className={`relative flex flex-1 items-center justify-center gap-1.5 py-3 text-xs font-medium transition-colors ${
@@ -208,6 +221,8 @@ export function InfoPanel({
               </div>
             )}
           </div>
+        ) : rightPanel === "contact" && can("contacts.view") ? (
+          <ContactProfile key={selected.id} conversationId={selected.id} compact />
         ) : rightPanel === "deals" && canUseCrm ? (
           <div>
             <p className="text-muted-foreground mb-3 text-[11px] font-semibold tracking-wider uppercase">Negócios do contato</p>

@@ -140,6 +140,8 @@ type SetLostReasonActiveRequestData = {
 type SaveCrmFieldRequestBody = {
   name: string;
   type: CrmFieldType;
+  // Só na criação; o escopo não muda depois
+  scope?: CrmFieldScope;
   options?: string[];
 };
 

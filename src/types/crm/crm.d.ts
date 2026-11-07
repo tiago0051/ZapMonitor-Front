@@ -76,6 +76,8 @@ type Deal = {
   stageId: string;
   // Nulo quando o negócio veio de um lead de formulário sem telefone
   contact: DealContact | null;
+  // Ficha da pessoa, com o e-mail principal; existe também no lead sem telefone
+  person: { id: string; name: string | null; email: string | null } | null;
   serviceGroup: NamedSummary | null;
   owner: NamedSummary | null;
   title: string;
@@ -117,10 +119,14 @@ type LostReason = {
   active: boolean;
 };
 
+// Campo do negócio ou da ficha do contato
+type CrmFieldScope = "DEAL" | "CONTACT";
+
 type CrmField = {
   id: string;
   name: string;
   type: CrmFieldType;
+  scope: CrmFieldScope;
   options: string[];
   active: boolean;
 };

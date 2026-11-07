@@ -18,12 +18,14 @@ const DialogSaveCrmField: FC<{ clientId: string; field?: CrmField }> = ({ client
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [type, setType] = useState<CrmFieldType>("TEXT");
+  const [scope, setScope] = useState<CrmFieldScope>("DEAL");
   // Uma opção por linha
   const [optionsText, setOptionsText] = useState("");
   const queryClient = useQueryClient();
 
   const onSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ["crm", "fields", clientId] });
+    queryClient.invalidateQueries({ queryKey: ["contacts", "fields", clientId] });
     toast.success(field ? "Campo atualizado" : "Campo criado");
     setIsOpen(false);
   };
@@ -42,6 +44,7 @@ const DialogSaveCrmField: FC<{ clientId: string; field?: CrmField }> = ({ client
     if (open) {
       setName(field?.name ?? "");
       setType(field?.type ?? "TEXT");
+      setScope(field?.scope ?? "DEAL");
       setOptionsText(field?.options.join("\n") ?? "");
     }
 
@@ -51,7 +54,12 @@ const DialogSaveCrmField: FC<{ clientId: string; field?: CrmField }> = ({ client
   const handleSubmit = () => {
     if (!isValid) return;
 
-    const body: SaveCrmFieldRequestBody = { name: name.trim(), type, ...(type === "SELECT" && { options }) };
+    const body: SaveCrmFieldRequestBody = {
+      name: name.trim(),
+      type,
+      ...(!field && { scope }),
+      ...(type === "SELECT" && { options }),
+    };
     if (field) updateField.mutate({ params: { clientId, fieldId: field.id }, body });
     else createField.mutate({ params: { clientId }, body });
   };
@@ -71,7 +79,8 @@ const DialogSaveCrmField: FC<{ clientId: string; field?: CrmField }> = ({ client
         <DialogHeader>
           <DialogTitle>{field ? "Editar campo" : "Novo campo"}</DialogTitle>
           <DialogDescription>
-            O campo aparece no detalhe de todos os negócios do tenant. O tipo não muda depois de criado.
+            Campo do negócio muda a cada oportunidade (ex.: produto); campo do contato vale para a pessoa e aparece na ficha (ex.: CPF). O
+            tipo e o lugar não mudam depois de criado.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
@@ -84,6 +93,19 @@ const DialogSaveCrmField: FC<{ clientId: string; field?: CrmField }> = ({ client
               onChange={(event) => setName(event.target.value)}
               placeholder="Ex.: CPF"
             />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="crm-field-scope">Onde aparece</Label>
+            <select
+              id="crm-field-scope"
+              value={scope}
+              disabled={!!field}
+              onChange={(event) => setScope(event.target.value as CrmFieldScope)}
+              className={crmSelectClassName}
+            >
+              <option value="DEAL">No negócio</option>
+              <option value="CONTACT">Na ficha do contato</option>
+            </select>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="crm-field-type">Tipo</Label>
@@ -130,8 +152,8 @@ export const CrmFields = () => {
 
   const findAllFieldsQuery = useSuspenseQuery({
     meta: { errorHandledInline: true },
-    queryKey: ["crm", "fields", clientId],
-    queryFn: () => crmService.findAllCrmFields({ params: { clientId: clientId! } }),
+    queryKey: ["crm", "fields", clientId, "all"],
+    queryFn: () => crmService.findAllCrmFields({ params: { clientId: clientId! }, includeContactFields: true }),
   });
 
   const setFieldActive = useMutation({
@@ -139,6 +161,7 @@ export const CrmFields = () => {
     onError: requestErrorHandling,
     onSuccess: (field) => {
       queryClient.invalidateQueries({ queryKey: ["crm", "fields", clientId] });
+      queryClient.invalidateQueries({ queryKey: ["contacts", "fields", clientId] });
       toast.success(field.active ? "Campo reativado" : "Campo desativado");
     },
   });
@@ -149,10 +172,11 @@ export const CrmFields = () => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <div>
-          <CardTitle>Campos do negócio</CardTitle>
+          <CardTitle>Campos personalizados</CardTitle>
           <CardDescription>
-            Informações extras de cada negócio, como CPF ou produto. Cada etapa do funil pode exigir que alguns campos estejam preenchidos
-            antes de receber um negócio. Desativar um campo tira ele dos formulários e das exigências, sem apagar os valores.
+            Informações extras do negócio (como produto) ou da ficha do contato (como CPF). Cada etapa do funil pode exigir campos do
+            negócio preenchidos antes de receber um negócio. Desativar um campo tira ele dos formulários e das exigências, sem apagar os
+            valores.
           </CardDescription>
         </div>
         <DialogSaveCrmField clientId={clientId!} />
@@ -169,7 +193,7 @@ export const CrmFields = () => {
                 <div className="min-w-0 flex-1">
                   <p className={field.active ? "text-sm font-medium" : "text-muted-foreground text-sm line-through"}>{field.name}</p>
                   <p className="text-muted-foreground truncate text-xs">
-                    {crmFieldTypeLabel[field.type]}
+                    {field.scope === "CONTACT" ? "Ficha do contato" : "Negócio"} · {crmFieldTypeLabel[field.type]}
                     {field.type === "SELECT" && `: ${field.options.join(", ")}`}
                   </p>
                 </div>

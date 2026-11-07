@@ -21,8 +21,14 @@ export const crmService = {
     return response.data;
   },
 
-  findAllCrmFields: async ({ params }: FindAllLostReasonsRequestData): Promise<CrmField[]> => {
-    const response = await api.get<CrmField[]>(`/client/${params.clientId}/crm/field`);
+  // Sem includeContactFields, só os campos dos negócios
+  findAllCrmFields: async ({
+    params,
+    includeContactFields,
+  }: FindAllLostReasonsRequestData & { includeContactFields?: boolean }): Promise<CrmField[]> => {
+    const response = await api.get<CrmField[]>(`/client/${params.clientId}/crm/field`, {
+      params: includeContactFields ? { scope: "ALL" } : undefined,
+    });
     return response.data;
   },
 

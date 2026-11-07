@@ -14,6 +14,7 @@ import {
 import { useUserContext } from "@/context/UserContext/userContext";
 import {
   FiActivity,
+  FiBook,
   FiBriefcase,
   FiColumns,
   FiLogOut,
@@ -54,6 +55,12 @@ const navMain: {
     icon: FaWhatsapp,
     url: "whatsapp",
     permission: "whatsapp.chat",
+  },
+  {
+    title: "Contatos",
+    icon: FiBook,
+    url: "contacts",
+    permission: "contacts.view",
   },
   {
     title: "Campanhas",

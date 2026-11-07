@@ -15,6 +15,8 @@ type Permission =
   | "channels.manage"
   | "aiConfig.manage"
   | "api.manage"
+  | "contacts.view"
+  | "contacts.manage"
   | "crm.view"
   | "crm.viewAll"
   | "crm.manage"
