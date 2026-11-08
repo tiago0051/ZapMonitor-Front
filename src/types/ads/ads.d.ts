@@ -205,6 +205,8 @@ type ConversionSettingsValues = {
   enabled: boolean;
   // Negócio criado a partir de anúncio manda LeadSubmitted
   leadSubmittedOnCreate: boolean;
+  // Nota da IA acima do corte calibrado manda QualifiedLead na hora
+  qualifiedLeadByScore: boolean;
   // Conjunto de dados (pixel) dos leads de formulário
   leadsDatasetId: string | null;
   // Código de teste do Gerenciador de Eventos
@@ -661,4 +663,32 @@ type AdEvidenceThresholds = {
   custom: { [K in keyof AdEvidenceThresholdValues]: number | null };
   effective: AdEvidenceThresholdValues;
   defaults: AdEvidenceThresholdValues;
+};
+
+// Corte de nota do lead qualificado; DEFAULT enquanto o cliente não tem vendas suficientes
+type AdSignalCalibration = {
+  cutoff: number;
+  source: "CLIENT" | "DEFAULT";
+  sampleSize: number;
+  wonCount: number;
+  // Dos negócios acima do corte, quantos compraram (0 a 1)
+  saleRate: number | null;
+  // Dos que compraram, quantos estavam acima do corte (0 a 1)
+  recall: number | null;
+  avgTicket: number | null;
+  calibratedAt: string | null;
+  minSamples: number;
+  minWon: number;
+  windowDays: number;
+};
+
+type AdSignalReadiness = {
+  adSetId: string;
+  name: string;
+  campaignName: string | null;
+  optimizationGoal: string | null;
+  qualified: number;
+  purchases: number;
+  ready: "PURCHASE" | "QUALIFIED_LEAD" | null;
+  missingQualified: number;
 };

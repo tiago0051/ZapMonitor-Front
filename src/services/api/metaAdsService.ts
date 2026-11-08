@@ -132,6 +132,15 @@ export const metaAdsService = {
     return response.data;
   },
 
+  findSignal: async ({ params }: MetaAdsClientParams): Promise<AdSignalCalibration> =>
+    (await api.get<AdSignalCalibration>(`/client/${params.clientId}/meta-ads/signal`)).data,
+
+  recalibrateSignal: async ({ params }: MetaAdsClientParams): Promise<AdSignalCalibration> =>
+    (await api.post<AdSignalCalibration>(`/client/${params.clientId}/meta-ads/signal/calibrate`)).data,
+
+  findSignalReadiness: async (clientId: string, accountId: string): Promise<AdSignalReadiness[]> =>
+    (await api.get<AdSignalReadiness[]>(`/client/${clientId}/meta-ads/account/${accountId}/signal-readiness`)).data,
+
   saveConversionSettings: async ({
     params,
     body,

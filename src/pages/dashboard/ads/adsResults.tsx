@@ -21,6 +21,8 @@ import {
   todayInTimeZone,
 } from "./adsUtils";
 
+import { AdsSignalReadiness } from "./adsSignalReadiness";
+
 const PRESETS = [7, 14, 30, 90] as const;
 
 const Total: FC<{ label: string; value: string; hint?: string }> = ({ label, value, hint }) => (
@@ -126,6 +128,22 @@ export const AdsResults: FC<{ account: AdAccount }> = ({ account }) => {
 
       {report && (
         <>
+          <div className="bg-primary/5 border-primary/30 flex flex-wrap items-end justify-between gap-4 rounded-lg border p-4">
+            <div>
+              <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Custo por venda</p>
+              <p className="text-3xl font-semibold tabular-nums">{formatMoney(report.total.costPerWonDeal, currency)}</p>
+              <p className="text-muted-foreground text-xs">
+                {report.total.wonDeals
+                  ? `${formatMoney(report.total.spend, currency)} gastos ÷ ${formatCount(report.total.wonDeals)} venda(s) ganha(s) no CRM`
+                  : "Nenhuma venda de anúncio ganha no CRM no período"}
+              </p>
+            </div>
+            <p className="text-muted-foreground max-w-md text-xs">
+              É a medida principal: as sugestões, o piloto e os testes comparam campanhas, conjuntos e anúncios por ela. A Meta mostra o
+              custo por conversa ({formatMoney(report.total.costPerConversation, currency)}), que não diz quem comprou.
+            </p>
+          </div>
+
           <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-7">
             <Total label="Gasto" value={formatMoney(report.total.spend, currency)} />
             <Total
@@ -249,8 +267,9 @@ export const AdsResults: FC<{ account: AdAccount }> = ({ account }) => {
           )}
           <p className="text-muted-foreground text-xs">
             Conversas e leads são contados pela Meta. Negócios, qualificados e ganhos vêm do CRM: negócios criados no período a partir de um
-            anúncio, e qualificados são os que entraram numa etapa do funil com o evento QualifiedLead configurado.
+            anúncio, e qualificados são os que entraram numa etapa com o evento QualifiedLead ou passaram do corte de nota da IA.
           </p>
+          <AdsSignalReadiness account={account} />
         </>
       )}
     </section>

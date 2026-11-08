@@ -49,6 +49,7 @@ const ConversionForm: FC<{ settings: ConversionSettings }> = ({ settings }) => {
   const [values, setValues] = useState<ConversionSettingsValues>({
     enabled: settings.enabled,
     leadSubmittedOnCreate: settings.leadSubmittedOnCreate,
+    qualifiedLeadByScore: settings.qualifiedLeadByScore,
     leadsDatasetId: settings.leadsDatasetId,
     testEventCode: settings.testEventCode,
   });
@@ -88,6 +89,22 @@ const ConversionForm: FC<{ settings: ConversionSettings }> = ({ settings }) => {
         <span>
           Mandar LeadSubmitted quando o negócio é criado
           <span className="text-muted-foreground block text-xs">Desligue se alguma etapa aberta já manda esse evento.</span>
+        </span>
+      </label>
+
+      <label className="flex cursor-pointer items-start gap-2 text-sm">
+        <Checkbox
+          className="mt-0.5"
+          checked={values.qualifiedLeadByScore}
+          disabled={!values.enabled}
+          onCheckedChange={(checked) => setValues({ ...values, qualifiedLeadByScore: checked === true })}
+        />
+        <span>
+          Mandar QualifiedLead pela nota da IA
+          <span className="text-muted-foreground block text-xs">
+            Quando a nota da conversa passa do corte que separa quem compra, o evento vai na hora, sem esperar a etapa, com o valor previsto
+            da venda. Cada negócio manda um só.
+          </span>
         </span>
       </label>
 
@@ -137,6 +154,79 @@ const ConversionForm: FC<{ settings: ConversionSettings }> = ({ settings }) => {
   );
 };
 
+const percent = (value: number | null) => (value === null ? "—" : `${Math.round(value * 100)}%`);
+const currency = (value: number | null) =>
+  value === null ? "—" : value.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+
+/** Corte de nota do lead qualificado: de onde veio, o que ele pega e o que falta para calibrar com as vendas. */
+const SignalCalibrationCard = () => {
+  const { client, can } = useClientContext();
+  const queryClient = useQueryClient();
+  const queryKey = ["metaAds", "signal", client.id];
+  const query = useQuery({ queryKey, queryFn: () => metaAdsService.findSignal({ params: { clientId: client.id } }) });
+  const recalibrate = useMutation({
+    mutationFn: () => metaAdsService.recalibrateSignal({ params: { clientId: client.id } }),
+    onError: requestErrorHandling,
+    onSuccess: (data) => {
+      queryClient.setQueryData(queryKey, data);
+      toast.success(data.source === "CLIENT" ? `Corte calibrado em ${data.cutoff}` : "Ainda sem vendas suficientes; segue o corte padrão");
+    },
+  });
+  const signal = query.data;
+  if (!signal) return null;
+
+  const calibrated = signal.source === "CLIENT";
+  return (
+    <div className="space-y-2 rounded-lg border p-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p className="text-sm font-medium">
+          Corte do lead qualificado: <span className="tabular-nums">nota {signal.cutoff}</span>
+        </p>
+        <span className="text-muted-foreground text-xs">
+          {calibrated ? "calibrado com as vendas do cliente" : "padrão, até ter vendas suficientes"}
+          {signal.calibratedAt && ` · ${new Date(signal.calibratedAt).toLocaleDateString("pt-BR")}`}
+        </span>
+      </div>
+      {calibrated ? (
+        <dl className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+          <div>
+            <dt className="text-muted-foreground">Acima do corte que compraram</dt>
+            <dd className="font-medium tabular-nums">{percent(signal.saleRate)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Compradores que o corte pega</dt>
+            <dd className="font-medium tabular-nums">{percent(signal.recall)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Ticket médio</dt>
+            <dd className="font-medium tabular-nums">{currency(signal.avgTicket)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Negócios analisados</dt>
+            <dd className="font-medium tabular-nums">
+              {signal.sampleSize} ({signal.wonCount} vendas)
+            </dd>
+          </div>
+        </dl>
+      ) : (
+        <p className="text-muted-foreground text-xs">
+          Para calibrar, o cliente precisa de pelo menos {signal.minSamples} negócios fechados com nota da IA nos últimos{" "}
+          {signal.windowDays} dias, {signal.minWon} deles ganhos. Hoje: {signal.sampleSize} fechados, {signal.wonCount} ganhos. Sem
+          calibração o lead qualificado vai sem valor previsto.
+        </p>
+      )}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-muted-foreground text-xs">Recalibra sozinho toda segunda de manhã.</p>
+        {can("ads.manage") && (
+          <Button size="sm" variant="outline" disabled={recalibrate.isPending} onClick={() => recalibrate.mutate()}>
+            {recalibrate.isPending ? "Calibrando..." : "Recalibrar agora"}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
+
 /** Envio dos eventos do funil para a Meta (Conversions API) e a saúde dos últimos 7 dias. */
 export const MetaAdsConversions = () => {
   const { client } = useClientContext();
@@ -160,7 +250,7 @@ export const MetaAdsConversions = () => {
       {settings && (
         <>
           <ConversionForm
-            key={`${settings.enabled}-${settings.leadSubmittedOnCreate}-${settings.leadsDatasetId}-${settings.testEventCode}`}
+            key={`${settings.enabled}-${settings.leadSubmittedOnCreate}-${settings.qualifiedLeadByScore}-${settings.leadsDatasetId}-${settings.testEventCode}`}
             settings={settings}
           />
           {settings.testEventCode && (
@@ -172,6 +262,7 @@ export const MetaAdsConversions = () => {
             <p className="text-muted-foreground text-xs font-medium">Últimos 7 dias</p>
             <ConversionHealth health={settings.health} />
           </div>
+          {settings.enabled && settings.qualifiedLeadByScore && <SignalCalibrationCard />}
         </>
       )}
     </section>
