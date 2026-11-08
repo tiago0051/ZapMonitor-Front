@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { changeStateLabel, changeStatusInfo, suggestionActionLabel, targetLevelLabel } from "./adsUtils";
 
 const PENDING: AdChangeStatus[] = ["PENDING_APPROVAL", "BLOCKED", "FAILED"];
-const HISTORY: AdChangeStatus[] = ["APPLIED", "REVERTED", "REJECTED"];
+const HISTORY: AdChangeStatus[] = ["APPLIED", "REVERTED", "REJECTED", "EXPIRED"];
 
 const ChangeCard: FC<{ change: AdChange; currency: string }> = ({ change, currency }) => {
   const { client, can } = useClientContext();
@@ -44,11 +44,15 @@ const ChangeCard: FC<{ change: AdChange; currency: string }> = ({ change, curren
   const isPending = approve.isPending || reject.isPending || revert.isPending;
   const origin = change.revertOfChangeId
     ? "Desfazer de uma mudança"
-    : change.ruleName
-      ? `Regra "${change.ruleName}"`
-      : change.suggestionTitle
-        ? `Sugestão: ${change.suggestionTitle}`
-        : "Mudança";
+    : change.origin === "ATTENDANCE"
+      ? "Fila do atendimento cheia"
+      : change.origin === "ATTENDANCE_RESTORE"
+        ? "Fila do atendimento normalizou"
+        : change.ruleName
+          ? `Regra "${change.ruleName}"`
+          : change.suggestionTitle
+            ? `Sugestão: ${change.suggestionTitle}`
+            : "Mudança";
 
   return (
     <article className="bg-card space-y-2 rounded-lg border p-3">
@@ -65,6 +69,12 @@ const ChangeCard: FC<{ change: AdChange; currency: string }> = ({ change, curren
         </div>
         <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-medium whitespace-nowrap", status.className)}>{status.label}</span>
       </header>
+      {change.reason && <p className="text-sm">{change.reason}</p>}
+      {change.expiresAt && change.status === "PENDING_APPROVAL" && (
+        <p className="text-muted-foreground text-xs">
+          Vale até {format(new Date(change.expiresAt), "HH:mm")}; depois disso a fila é conferida de novo.
+        </p>
+      )}
 
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <span className="bg-muted rounded px-2 py-1">{changeStateLabel(change.type, change.before, currency)}</span>

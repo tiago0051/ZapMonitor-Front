@@ -311,7 +311,7 @@ type AdChatMessage = {
 
 type AdChatConversation = { chat: AdChat; messages: AdChatMessage[]; suggestions: AdSuggestion[] };
 
-type AdChangeStatus = "PENDING_APPROVAL" | "APPLIED" | "FAILED" | "BLOCKED" | "REJECTED" | "REVERTED";
+type AdChangeStatus = "PENDING_APPROVAL" | "APPLIED" | "FAILED" | "BLOCKED" | "REJECTED" | "REVERTED" | "EXPIRED";
 
 // Só os campos que a mudança toca; orçamento na moeda da conta
 type AdChangeState = {
@@ -338,6 +338,11 @@ type AdChange = {
   ruleName: string | null;
   // Mudança desfeita por esta
   revertOfChangeId: string | null;
+  // Proposta pela fila do atendimento: ATTENDANCE (reduzir) ou ATTENDANCE_RESTORE (voltar)
+  origin: "ATTENDANCE" | "ATTENDANCE_RESTORE" | null;
+  reason: string | null;
+  // Depois disso a proposta vence e não pode ser aprovada
+  expiresAt: string | null;
   requestedByName: string | null;
   approvedByName: string | null;
   approvedAt: string | null;
@@ -691,4 +696,34 @@ type AdSignalReadiness = {
   purchases: number;
   ready: "PURCHASE" | "QUALIFIED_LEAD" | null;
   missingQualified: number;
+};
+
+type AdAttendanceSettings = {
+  enabled: boolean;
+  queueLimit: number;
+  maxWaitMinutes: number;
+  reducePercent: number;
+  hours: BroadcastSendWindow;
+};
+
+type AdAttendanceQueue = { serviceGroupId: string; name: string; waiting: number; oldestWaitMinutes: number | null };
+
+type AdResponseBucket = "UP_TO_5" | "UP_TO_15" | "UP_TO_60" | "OVER_60" | "NO_REPLY";
+
+type AdResponseAnalysis = {
+  buckets: { bucket: AdResponseBucket; deals: number; won: number; winRate: number | null; spend: number }[];
+  slowSpend: number;
+  lostSales: number | null;
+  deals: number;
+  spend: number;
+};
+
+type AdHourAnalysis = {
+  hours: { hour: number; deals: number; won: number; winRate: number | null; teamOpen: boolean }[];
+  overallWinRate: number | null;
+  outsideShare: number | null;
+  outsideWinRate: number | null;
+  insideWinRate: number | null;
+  deals: number;
+  teamHours: BroadcastSendWindow;
 };

@@ -194,6 +194,7 @@ export const changeStatusInfo: Record<AdChangeStatus, { label: string; className
   BLOCKED: { label: "Barrada por trava", className: "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300" },
   REJECTED: { label: "Recusada", className: "bg-muted text-muted-foreground" },
   REVERTED: { label: "Desfeita", className: "bg-muted text-muted-foreground" },
+  EXPIRED: { label: "Venceu", className: "bg-muted text-muted-foreground" },
 };
 
 /** Valor do antes ou do depois no campo que a mudança altera. */

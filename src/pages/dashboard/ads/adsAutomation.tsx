@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { Pencil, Play, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { useState, type FC } from "react";
 import { toast } from "sonner";
+import { AdsAttendance } from "./adsAttendance";
 import { formatMoney, ruleActionLabel, ruleMetricLabel, targetLevelLabel } from "./adsUtils";
 
 const selectClassName = cn(crmSelectClassName, "h-8 text-xs");
@@ -340,6 +341,7 @@ export const AdsAutomation: FC<{ account: AdAccount }> = ({ account }) => {
   return (
     <section className="space-y-4">
       {guardrailsQuery.data && <GuardrailsForm key={JSON.stringify(guardrailsQuery.data)} guardrails={guardrailsQuery.data} />}
+      <AdsAttendance />
 
       <div className="space-y-3">
         <div className="flex items-center gap-2">

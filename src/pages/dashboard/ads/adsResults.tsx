@@ -22,6 +22,7 @@ import {
 } from "./adsUtils";
 
 import { AdsSignalReadiness } from "./adsSignalReadiness";
+import { AdsAttendanceInsights } from "./adsAttendanceInsights";
 
 const PRESETS = [7, 14, 30, 90] as const;
 
@@ -270,6 +271,7 @@ export const AdsResults: FC<{ account: AdAccount }> = ({ account }) => {
             anúncio, e qualificados são os que entraram numa etapa com o evento QualifiedLead ou passaram do corte de nota da IA.
           </p>
           <AdsSignalReadiness account={account} />
+          <AdsAttendanceInsights account={account} startDate={startDate} endDate={endDate} />
         </>
       )}
     </section>

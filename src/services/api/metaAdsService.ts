@@ -277,6 +277,25 @@ export const metaAdsService = {
     return response.data;
   },
 
+  findAttendanceSettings: async (clientId: string): Promise<AdAttendanceSettings> =>
+    (await api.get<AdAttendanceSettings>(`/client/${clientId}/meta-ads/attendance-settings`)).data,
+
+  saveAttendanceSettings: async (clientId: string, body: AdAttendanceSettings): Promise<AdAttendanceSettings> =>
+    (await api.put<AdAttendanceSettings>(`/client/${clientId}/meta-ads/attendance-settings`, body)).data,
+
+  findAttendanceQueues: async (clientId: string): Promise<AdAttendanceQueue[]> =>
+    (await api.get<AdAttendanceQueue[]>(`/client/${clientId}/meta-ads/attendance-queues`)).data,
+
+  findResponseAnalysis: async (
+    clientId: string,
+    accountId: string,
+    queries: { startDate: string; endDate: string },
+  ): Promise<AdResponseAnalysis> =>
+    (await api.get<AdResponseAnalysis>(`/client/${clientId}/meta-ads/account/${accountId}/response-time`, { params: queries })).data,
+
+  findHourAnalysis: async (clientId: string, accountId: string, queries: { startDate: string; endDate: string }): Promise<AdHourAnalysis> =>
+    (await api.get<AdHourAnalysis>(`/client/${clientId}/meta-ads/account/${accountId}/hours`, { params: queries })).data,
+
   findGuardrails: async ({ params }: MetaAdsClientParams): Promise<AdGuardrails> => {
     const response = await api.get<AdGuardrails>(`/client/${params.clientId}/meta-ads/guardrails`);
     return response.data;

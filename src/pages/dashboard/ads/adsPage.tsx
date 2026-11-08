@@ -13,7 +13,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ChevronDown, ChevronRight, Megaphone, RefreshCw } from "lucide-react";
 import { Fragment, useEffect, useRef, useState, type FC } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { useLocalStorage } from "usehooks-ts";
 import {
@@ -161,6 +161,14 @@ export const AdsPage = () => {
   const queryClient = useQueryClient();
   const [storedAccountId, setStoredAccountId] = useLocalStorage<string | null>(`ads:account:${client.id}`, null);
   const [tab, setTab] = useLocalStorage<string>(`ads:tab:${client.id}`, "results");
+  // Aviso no celular abre direto numa aba (ex.: ?tab=changes para aprovar uma proposta de verba)
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const requested = searchParams.get("tab");
+    if (!requested) return;
+    setTab(requested);
+    setSearchParams({}, { replace: true });
+  }, [searchParams, setSearchParams, setTab]);
   const tabsListRef = useRef<HTMLDivElement>(null);
 
   // A aba escolhida fica visível na barra que rola para o lado (no celular)
