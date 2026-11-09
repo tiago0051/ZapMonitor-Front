@@ -1,6 +1,8 @@
 type BillingResource =
   | "ACTIVE_USERS"
   | "WHATSAPP_NUMBERS"
+  // Números conectados por QR code (WhatsApp Web, não oficial)
+  | "WHATSAPP_WEB_NUMBERS"
   | "MONTHLY_SERVICES"
   | "STORAGE_GB"
   | "AI_TOKENS"

@@ -51,6 +51,7 @@ import {
 } from "./audienceSources";
 import { AudienceStep } from "./components/audienceStep";
 import { VariablesStep } from "./components/variablesStep";
+import { formatConfigurationPhoneNumber, isWhatsappWeb, WHATSAPP_WEB_TEMPLATE_HINT } from "@/utils/whatsappConfiguration";
 
 const STEPS = ["Mensagem", "Público", "Variáveis", "Revisão"] as const;
 
@@ -81,7 +82,10 @@ export const BroadcastNew = () => {
     queryKey: ["whatsappConfigurations", client.id],
     queryFn: () => whatsappService.findAllConfigurations({ params: { clientId: client.id }, queries: { page: 1, take: 100 } }),
   });
-  const configurations = (configurationsQuery.data?.items ?? []).filter((configuration) => configuration.enabled);
+  const enabledConfigurations = (configurationsQuery.data?.items ?? []).filter((configuration) => configuration.enabled);
+  // Campanha usa modelos da Meta, que só a API oficial envia
+  const configurations = enabledConfigurations.filter((configuration) => !isWhatsappWeb(configuration));
+  const whatsappWebConfigurations = enabledConfigurations.filter(isWhatsappWeb);
 
   const templatesQuery = useQuery({
     queryKey: ["whatsappTemplates", client.id, configurationId],
@@ -275,7 +279,15 @@ export const BroadcastNew = () => {
                         {configuration.phoneNumber}
                       </option>
                     ))}
+                    {whatsappWebConfigurations.map((configuration) => (
+                      <option key={configuration.id} value={configuration.id} disabled>
+                        {formatConfigurationPhoneNumber(configuration)} (QR code)
+                      </option>
+                    ))}
                   </select>
+                  {whatsappWebConfigurations.length > 0 && (
+                    <p className="text-muted-foreground text-xs">{WHATSAPP_WEB_TEMPLATE_HINT}.</p>
+                  )}
                 </div>
                 {configurationId && (
                   <div className="grid gap-2">

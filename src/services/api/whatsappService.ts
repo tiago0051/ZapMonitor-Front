@@ -28,6 +28,22 @@ export const whatsappService = {
     const response = await api.post(`/client/${params.clientId}/whatsapp/configuration/embedded-signup`, body);
     return response.data;
   },
+  createWhatsappWebConfiguration: async ({ params }: CreateWhatsappWebConfigurationRequestData): Promise<WhatsappConfiguration> => {
+    const response = await api.post(`/client/${params.clientId}/whatsapp/configuration/whatsapp-web`, {});
+    return response.data;
+  },
+  findWhatsappWebStatus: async ({ params }: WhatsappWebConfigurationRequestData): Promise<WhatsappWebStatus> => {
+    const response = await api.get(`/client/${params.clientId}/whatsapp/configuration/${params.configurationId}/whatsapp-web`);
+    return response.data;
+  },
+  reconnectWhatsappWeb: async ({ params }: WhatsappWebConfigurationRequestData): Promise<WhatsappConfiguration> => {
+    const response = await api.post(`/client/${params.clientId}/whatsapp/configuration/${params.configurationId}/whatsapp-web/reconnect`);
+    return response.data;
+  },
+  disconnectWhatsappWeb: async ({ params }: WhatsappWebConfigurationRequestData): Promise<WhatsappConfiguration> => {
+    const response = await api.post(`/client/${params.clientId}/whatsapp/configuration/${params.configurationId}/whatsapp-web/disconnect`);
+    return response.data;
+  },
   findAllMessageCategoriesByClient: async ({
     params,
     queries,
