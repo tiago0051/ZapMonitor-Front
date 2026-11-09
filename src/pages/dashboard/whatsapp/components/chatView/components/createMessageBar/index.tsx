@@ -5,7 +5,7 @@ import { whatsappContants } from "@/contants/whatsappContants";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { WhatsappMessageContentType } from "@/enums/whatsappMessageContentType.enum";
 import { whatsappService } from "@/services/api/whatsappService";
-import { convertWavToMp3 } from "@/utils/fileConvert";
+import { convertImageForWhatsapp, convertWavToMp3 } from "@/utils/fileConvert";
 import { requestErrorHandling } from "@/utils/request";
 import { BlockBlobClient } from "@azure/storage-blob";
 import { useMutation } from "@tanstack/react-query";
@@ -132,7 +132,8 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
     }
 
     if (messageIsDocument || messageIsImage) {
-      const fileId = await uploadFileMutation.mutateAsync({ file: message.value as File, fileType: message.type });
+      const file = messageIsImage ? await prepareImage(message.value as File) : (message.value as File);
+      const fileId = await uploadFileMutation.mutateAsync({ file, fileType: message.type });
 
       await createMessageMutate.mutateAsync({
         params: {
@@ -161,6 +162,16 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
           replyToMessageId,
         },
       });
+    }
+  }
+
+  // A Meta só aceita JPEG/PNG de 8 bits em RGB; a conversão no navegador evita a falha depois do envio
+  async function prepareImage(file: File) {
+    try {
+      return await convertImageForWhatsapp(file);
+    } catch (conversionError) {
+      toast.error((conversionError as Error).message);
+      throw conversionError;
     }
   }
 

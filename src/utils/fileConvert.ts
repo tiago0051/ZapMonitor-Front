@@ -42,3 +42,47 @@ export async function convertWavToMp3(wavBlob: Blob): Promise<Blob> {
     reader.readAsArrayBuffer(wavBlob);
   });
 }
+
+// Limite da Meta para imagem na API oficial
+const WHATSAPP_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+// Lado maior: acima disso o WhatsApp reduz de qualquer forma e o arquivo só fica mais pesado
+const WHATSAPP_IMAGE_MAX_SIDE = 4096;
+const WHATSAPP_IMAGE_QUALITIES = [0.85, 0.75, 0.65, 0.5];
+
+/**
+ * Converte a imagem para o que a Meta aceita: JPEG estático, sRGB, 8 bits por canal e até 5 MB (sem isso ela recusa
+ * com o code 131053). O canvas resolve CMYK, PNG de 16 bits e animação (fica o primeiro quadro) e aplica a rotação
+ * do EXIF; a transparência vira fundo branco. Falha se o navegador não souber abrir o arquivo (HEIC fora do Safari).
+ */
+export async function convertImageForWhatsapp(file: File): Promise<File> {
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+  } catch {
+    throw new Error("Não foi possível abrir a imagem. Envie um arquivo JPG ou PNG.");
+  }
+
+  const scale = Math.min(1, WHATSAPP_IMAGE_MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Não foi possível preparar a imagem para envio.");
+
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+
+  const name = `${file.name.replace(/\.[^.]+$/, "") || "imagem"}.jpg`;
+
+  for (const quality of WHATSAPP_IMAGE_QUALITIES) {
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+    if (!blob) throw new Error("Não foi possível preparar a imagem para envio.");
+
+    if (blob.size <= WHATSAPP_IMAGE_MAX_BYTES) return new File([blob], name, { type: "image/jpeg" });
+  }
+
+  throw new Error("A imagem ficou maior que 5 MB mesmo comprimida. Envie uma imagem menor.");
+}
