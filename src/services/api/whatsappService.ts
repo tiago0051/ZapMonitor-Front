@@ -44,6 +44,10 @@ export const whatsappService = {
     const response = await api.post(`/client/${params.clientId}/whatsapp/configuration/${params.configurationId}/whatsapp-web/disconnect`);
     return response.data;
   },
+  // Exclusão lógica; o número por QR code também é desconectado do celular
+  deleteConfiguration: async ({ params }: DeleteWhatsappConfigurationRequestData): Promise<void> => {
+    await api.delete(`/client/${params.clientId}/whatsapp/configuration/${params.configurationId}`);
+  },
   findAllMessageCategoriesByClient: async ({
     params,
     queries,

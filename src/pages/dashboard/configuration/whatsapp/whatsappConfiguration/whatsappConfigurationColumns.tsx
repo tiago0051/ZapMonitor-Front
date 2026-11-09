@@ -3,6 +3,7 @@ import { type DataTablePaginateColumnDef } from "@/components/ui/dataTablePagina
 import { format } from "date-fns";
 import { DialogManageWhatsappConfiguration } from "./components/dialogManageWhatsappConfiguration";
 import { WhatsappWebActions } from "./components/whatsappWebActions";
+import { DeleteWhatsappConfigurationButton } from "./components/deleteWhatsappConfigurationButton";
 import {
   formatConfigurationPhoneNumber,
   isWhatsappWeb,
@@ -68,6 +69,7 @@ export const getColumns = (clientId: string) => {
           ) : (
             <DialogManageWhatsappConfiguration clientId={clientId} whatsappConfiguration={row.original} />
           )}
+          <DeleteWhatsappConfigurationButton clientId={clientId} whatsappConfiguration={row.original} />
         </div>
       ),
     },
