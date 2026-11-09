@@ -6,14 +6,17 @@ import { ImplanterRouter } from "./implanterRouter";
 import { OwnerRouter } from "./ownerRouter";
 import { useUserContext } from "@/context/UserContext/userContext";
 import { PrivacyPolicy } from "@/pages/legal/privacyPolicy";
+import { TermsOfService } from "@/pages/legal/termsOfService";
 
 export const Router: FC = () => {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Pública, com ou sem login: link da tela de consentimento do Google */}
+        {/* Públicas, com ou sem login: links da tela de consentimento do Google */}
         <Route path="privacidade" element={<PrivacyPolicy />} />
         <Route path="politica-de-privacidade" element={<Navigate to="/privacidade" replace />} />
+        <Route path="termos" element={<TermsOfService />} />
+        <Route path="termos-de-servico" element={<Navigate to="/termos" replace />} />
         <Route path="dashboard/*" element={<PrivateRouter />} />
         <Route path="*" element={<PublicRouter />} />
       </Routes>
