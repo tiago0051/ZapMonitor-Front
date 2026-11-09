@@ -37,6 +37,18 @@ type FindWhatsappNumberUsageRequestData = {
   params: { clientId: string };
 };
 
+type CreateWhatsappWebConfigurationRequestData = {
+  params: { clientId: string };
+};
+
+type WhatsappWebConfigurationRequestData = {
+  params: WhatsappConfigurationRequestParams;
+};
+
+type DeleteWhatsappConfigurationRequestData = {
+  params: { clientId: string; configurationId: string };
+};
+
 type FindWhatsappConfigurationWebhookRequestData = {
   params: WhatsappConfigurationRequestParams;
 };

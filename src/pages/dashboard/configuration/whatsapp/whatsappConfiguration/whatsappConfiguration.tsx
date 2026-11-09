@@ -10,6 +10,7 @@ import { useParams } from "react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DialogCreateWhatsappConfiguration } from "./components/dialogCreateWhatsappConfiguration";
 import { WhatsappEmbeddedSignupButton } from "../whatsappEmbeddedSignup/whatsappEmbeddedSignup";
+import { WhatsappWebConnectButton } from "./components/whatsappWebConnectButton";
 
 export const WhatsappConfiguration = () => {
   const { clientId } = useParams();
@@ -40,8 +41,15 @@ export const WhatsappConfiguration = () => {
     queryFn: () => whatsappService.findNumberUsage({ params: { clientId: clientId! } }),
   });
 
-  const { used, limit } = findNumberUsageQuery.data;
+  const { used, limit, whatsappWeb } = findNumberUsageQuery.data;
+  // API oficial e QR code têm limites separados no plano
   const isAtLimit = limit !== null && used >= limit;
+  const isWhatsappWebAtLimit = whatsappWeb.limit !== null && whatsappWeb.used >= whatsappWeb.limit;
+
+  const usageParts = [
+    limit !== null && `${used} de ${limit} ${limit === 1 ? "número" : "números"} da API oficial`,
+    whatsappWeb.limit !== null && `${whatsappWeb.used} de ${whatsappWeb.limit} por QR code`,
+  ].filter(Boolean);
 
   const columns = getColumns(clientId!);
 
@@ -51,24 +59,28 @@ export const WhatsappConfiguration = () => {
         <div>
           <CardTitle>Números de WhatsApp</CardTitle>
           <CardDescription>
-            Conecte os números que recebem e enviam mensagens. Pela Meta, as credenciais são configuradas automaticamente.
+            Conecte os números que recebem e enviam mensagens. Pela Meta, as credenciais são configuradas automaticamente; por QR code, basta
+            ler o código no celular.
           </CardDescription>
-          {limit !== null && (
-            <p className={cn("mt-2 text-sm", isAtLimit ? "text-destructive" : "text-muted-foreground")}>
-              {used} de {limit} {limit === 1 ? "número" : "números"} do plano
+          {usageParts.length > 0 && (
+            <p className={cn("mt-2 text-sm", isAtLimit || isWhatsappWebAtLimit ? "text-destructive" : "text-muted-foreground")}>
+              {usageParts.join(" · ")}
               {isAtLimit &&
-                ". Para conectar outro, fale com o seu implantador. Ainda dá para reconectar pela Meta um número já cadastrado."}
+                ". Para conectar outro pela API oficial, fale com o seu implantador. Ainda dá para reconectar pela Meta um número já cadastrado"}
+              {isWhatsappWebAtLimit && ". Para conectar outro por QR code, fale com o seu implantador"}
+              {(isAtLimit || isWhatsappWebAtLimit) && "."}
             </p>
           )}
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
           <DialogCreateWhatsappConfiguration clientId={clientId!} disabled={isAtLimit} />
           <WhatsappEmbeddedSignupButton />
+          <WhatsappWebConnectButton clientId={clientId!} disabled={isWhatsappWebAtLimit} />
         </div>
       </CardHeader>
       <CardContent>
         {listWhatsappConfigurations.total === 0 ? (
-          <EmptyState title="Nenhum número conectado" description='Comece por "Conectar com a Meta".' />
+          <EmptyState title="Nenhum número conectado" description='Comece por "Conectar com a Meta" ou "Conectar por QR code".' />
         ) : (
           <DataTablePaginate
             columns={columns}

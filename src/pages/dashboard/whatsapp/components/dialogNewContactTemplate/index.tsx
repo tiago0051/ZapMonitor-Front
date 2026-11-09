@@ -20,6 +20,7 @@ import {
   templateDraftError,
   type TemplateDraft,
 } from "@/components/whatsappTemplate/templateUtils";
+import { formatConfigurationPhoneNumber, isWhatsappWeb, WHATSAPP_WEB_TEMPLATE_HINT } from "@/utils/whatsappConfiguration";
 
 type DialogNewContactTemplateProps = {
   onSent: (contact: WhatsappContactMessage) => void;
@@ -56,7 +57,10 @@ export const DialogNewContactTemplate: FC<DialogNewContactTemplateProps> = ({ on
     enabled: isOpen,
   });
 
-  const configurations = (configurationsQuery.data?.items || []).filter((configuration) => configuration.enabled);
+  const enabledConfigurations = (configurationsQuery.data?.items || []).filter((configuration) => configuration.enabled);
+  // Modelos da Meta só saem pela API oficial
+  const configurations = enabledConfigurations.filter((configuration) => !isWhatsappWeb(configuration));
+  const whatsappWebConfigurations = enabledConfigurations.filter(isWhatsappWeb);
 
   const sendTemplateToNewContact = useMutation({
     mutationFn: async (data: SchemaType) =>
@@ -188,8 +192,16 @@ export const DialogNewContactTemplate: FC<DialogNewContactTemplateProps> = ({ on
                           {configuration.phoneNumber}
                         </option>
                       ))}
+                      {whatsappWebConfigurations.map((configuration) => (
+                        <option key={configuration.id} value={configuration.id} disabled>
+                          {formatConfigurationPhoneNumber(configuration)} (QR code)
+                        </option>
+                      ))}
                     </select>
                   </FormControl>
+                  {whatsappWebConfigurations.length > 0 && (
+                    <p className="text-muted-foreground text-xs">{WHATSAPP_WEB_TEMPLATE_HINT}.</p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
