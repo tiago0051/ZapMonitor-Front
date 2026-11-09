@@ -5,11 +5,15 @@ import { DashboardRouter } from "./dashboardRouter";
 import { ImplanterRouter } from "./implanterRouter";
 import { OwnerRouter } from "./ownerRouter";
 import { useUserContext } from "@/context/UserContext/userContext";
+import { PrivacyPolicy } from "@/pages/legal/privacyPolicy";
 
 export const Router: FC = () => {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Pública, com ou sem login: link da tela de consentimento do Google */}
+        <Route path="privacidade" element={<PrivacyPolicy />} />
+        <Route path="politica-de-privacidade" element={<Navigate to="/privacidade" replace />} />
         <Route path="dashboard/*" element={<PrivateRouter />} />
         <Route path="*" element={<PublicRouter />} />
       </Routes>
