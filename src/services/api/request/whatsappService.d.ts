@@ -33,6 +33,10 @@ type UpdateWhatsappConfigurationTokenRequestData = {
   body: { authorizationToken: string };
 };
 
+type FindWhatsappNumberUsageRequestData = {
+  params: { clientId: string };
+};
+
 type FindWhatsappConfigurationWebhookRequestData = {
   params: WhatsappConfigurationRequestParams;
 };

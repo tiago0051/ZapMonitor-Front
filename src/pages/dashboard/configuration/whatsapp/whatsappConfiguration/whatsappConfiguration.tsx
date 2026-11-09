@@ -1,4 +1,5 @@
 import { EmptyState } from "@/components/state-message";
+import { cn } from "@/lib/utils";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getColumns } from "./whatsappConfigurationColumns";
 import { DataTablePaginate } from "@/components/ui/dataTablePaginate";
@@ -32,6 +33,16 @@ export const WhatsappConfiguration = () => {
 
   const listWhatsappConfigurations = findAllWhatsappConfigurationsQuery.data;
 
+  // Fica sob a chave dos números para ser atualizado quando um número é conectado
+  const findNumberUsageQuery = useSuspenseQuery({
+    meta: { errorHandledInline: true },
+    queryKey: ["whatsappConfigurations", clientId, "usage"],
+    queryFn: () => whatsappService.findNumberUsage({ params: { clientId: clientId! } }),
+  });
+
+  const { used, limit } = findNumberUsageQuery.data;
+  const isAtLimit = limit !== null && used >= limit;
+
   const columns = getColumns(clientId!);
 
   return (
@@ -42,9 +53,16 @@ export const WhatsappConfiguration = () => {
           <CardDescription>
             Conecte os números que recebem e enviam mensagens. Pela Meta, as credenciais são configuradas automaticamente.
           </CardDescription>
+          {limit !== null && (
+            <p className={cn("mt-2 text-sm", isAtLimit ? "text-destructive" : "text-muted-foreground")}>
+              {used} de {limit} {limit === 1 ? "número" : "números"} do plano
+              {isAtLimit &&
+                ". Para conectar outro, fale com o seu implantador. Ainda dá para reconectar pela Meta um número já cadastrado."}
+            </p>
+          )}
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
-          <DialogCreateWhatsappConfiguration clientId={clientId!} />
+          <DialogCreateWhatsappConfiguration clientId={clientId!} disabled={isAtLimit} />
           <WhatsappEmbeddedSignupButton />
         </div>
       </CardHeader>

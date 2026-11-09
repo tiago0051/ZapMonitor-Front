@@ -15,6 +15,7 @@ import z from "zod";
 type DialogCreateWhatsappConfigurationProps = {
   className?: string;
   clientId: string;
+  disabled?: boolean;
 };
 
 const schema = z.object({
@@ -28,7 +29,7 @@ const schema = z.object({
 
 type SchemaType = z.infer<typeof schema>;
 
-export const DialogCreateWhatsappConfiguration = ({ className, clientId }: DialogCreateWhatsappConfigurationProps) => {
+export const DialogCreateWhatsappConfiguration = ({ className, clientId, disabled }: DialogCreateWhatsappConfigurationProps) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
   const queryClient = useQueryClient();
@@ -37,6 +38,7 @@ export const DialogCreateWhatsappConfiguration = ({ className, clientId }: Dialo
     mutationFn: whatsappService.createConfiguration,
     onError: requestErrorHandling,
     onSuccess: () => {
+      // Também atualiza o uso do plano, que fica sob a mesma chave
       queryClient.invalidateQueries({
         queryKey: ["whatsappConfigurations", clientId],
       });
@@ -78,7 +80,7 @@ export const DialogCreateWhatsappConfiguration = ({ className, clientId }: Dialo
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className={className}>
+        <Button variant="outline" className={className} disabled={disabled}>
           Cadastro manual
         </Button>
       </DialogTrigger>

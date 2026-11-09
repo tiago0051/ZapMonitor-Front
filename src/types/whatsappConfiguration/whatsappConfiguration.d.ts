@@ -17,3 +17,9 @@ type WhatsappConfigurationWebhook = {
     phoneNumber: string | null;
   };
 };
+
+type WhatsappNumberUsage = {
+  used: number;
+  // Números que o plano permite; nulo quando o tenant não tem plano (sem limite)
+  limit: number | null;
+};

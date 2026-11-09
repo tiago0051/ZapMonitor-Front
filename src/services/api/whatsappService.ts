@@ -20,6 +20,10 @@ export const whatsappService = {
     const response = await api.get(`/client/${params.clientId}/whatsapp/configuration/${params.configurationId}/webhook`);
     return response.data;
   },
+  findNumberUsage: async ({ params }: FindWhatsappNumberUsageRequestData): Promise<WhatsappNumberUsage> => {
+    const response = await api.get(`/client/${params.clientId}/whatsapp/configuration/usage`);
+    return response.data;
+  },
   createEmbeddedSignup: async ({ body, params }: CreateWhatsappEmbeddedSignupRequestData): Promise<WhatsappConfiguration> => {
     const response = await api.post(`/client/${params.clientId}/whatsapp/configuration/embedded-signup`, body);
     return response.data;
