@@ -16,6 +16,7 @@ import {
   Phone,
   ShieldCheck,
   Sparkles,
+  CalendarDays,
   Tags,
   TextCursorInput,
   Users,
@@ -25,6 +26,7 @@ import {
 import { Suspense, type ReactNode } from "react";
 import { useParams, useSearchParams } from "react-router";
 import { AiAgents } from "./aiAgent/aiAgents";
+import { GoogleCalendarSettings } from "./googleCalendar/googleCalendarSettings";
 import { ClientConfiguration } from "./client";
 import { Flows } from "./flow/flows";
 import { PermissionGroups } from "./permissionGroup/permissionGroups";
@@ -134,6 +136,13 @@ const configurationGroups: { label: string; sections: ConfigurationSection[] }[]
         label: "Inteligência artificial",
         icon: Sparkles,
         content: <WhatsappAiConfiguration />,
+        permission: "aiConfig.manage",
+      },
+      {
+        id: "googleCalendar",
+        label: "Google Agenda",
+        icon: CalendarDays,
+        content: <GoogleCalendarSettings />,
         permission: "aiConfig.manage",
       },
       { id: "api", label: "API", icon: Code2, content: <ClientConfiguration />, permission: "api.manage" },

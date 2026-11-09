@@ -5,6 +5,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Bot } from "lucide-react";
 import { useParams } from "react-router";
+import { DialogAiAgentTools } from "./components/dialogAiAgentTools";
 import { DialogDeleteAiAgent } from "./components/dialogDeleteAiAgent";
 import { DialogSaveAiAgent } from "./components/dialogSaveAiAgent";
 
@@ -45,6 +46,7 @@ export const AiAgents = () => {
                     <h3 className="truncate text-base font-semibold">{aiAgent.name}</h3>
                   </div>
                   <div className="flex shrink-0">
+                    <DialogAiAgentTools clientId={clientId!} aiAgent={aiAgent} />
                     <DialogSaveAiAgent clientId={clientId!} aiAgent={aiAgent} />
                     <DialogDeleteAiAgent clientId={clientId!} aiAgent={aiAgent} />
                   </div>
