@@ -65,6 +65,10 @@ export const TermsOfService: FC = () => (
           de mensagem e de janela de atendimento;
         </li>
         <li>enganar, assediar, discriminar ou fraudar pessoas, ou divulgar conteúdo ilegal;</li>
+        <li>
+          criar, pedir à inteligência artificial ou divulgar imagens íntimas, sexuais ou de nudez, inclusive imagens íntimas não consensuais
+          geradas por IA, ou imagens que retratem pessoas reais sem consentimento;
+        </li>
         <li>tratar dados pessoais sem base legal ou em desacordo com a LGPD;</li>
         <li>
           tentar acessar dados de outros clientes, contornar limites do plano, explorar falhas de segurança ou sobrecarregar a plataforma;
