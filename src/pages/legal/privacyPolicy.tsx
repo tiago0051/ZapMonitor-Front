@@ -2,7 +2,7 @@ import type { FC } from "react";
 import { COMPANY } from "./legalCompany";
 import { LegalPage, LegalSection as Section } from "./legalInfo";
 
-const UPDATED_AT = "9 de novembro de 2026";
+const UPDATED_AT = "10 de novembro de 2026";
 
 /** Política de privacidade pública, sem login; é o link informado na tela de consentimento do Google. */
 export const PrivacyPolicy: FC = () => (
@@ -39,8 +39,9 @@ export const PrivacyPolicy: FC = () => (
           dados que as empresas registram nas fichas de contato e no CRM.
         </li>
         <li>
-          <strong>Integrações conectadas pela empresa cliente:</strong> dados das contas de anúncio da Meta, números de WhatsApp e, quando
-          conectado, o Google Agenda (detalhado na seção 4).
+          <strong>Integrações conectadas pela empresa cliente:</strong> dados das contas de anúncio da Meta, do Google Ads (YouTube) e do
+          TikTok, números de WhatsApp e, quando conectados, o Google Agenda e o canal do YouTube (os dados do Google estão detalhados na
+          seção 4).
         </li>
         <li>
           <strong>Dados técnicos:</strong> endereço IP, navegador, dispositivo, registros de erro e de uso do painel, usados para segurança,
@@ -62,7 +63,13 @@ export const PrivacyPolicy: FC = () => (
       </p>
     </Section>
 
-    <Section id="google" title="4. Dados do Google (Google Agenda)">
+    <Section id="google" title="4. Dados do Google (Google Agenda, Google Ads e YouTube)">
+      <p>
+        A empresa cliente pode conectar uma conta Google para três funções, cada uma com a própria permissão pedida no login do Google: a
+        agenda dos agentes de IA, a gestão dos anúncios do YouTube pelo Google Ads e, opcionalmente, o envio de vídeos de anúncio ao canal
+        do YouTube. A conexão é feita por um usuário com permissão de administração no painel e pode ser desfeita a qualquer momento.
+      </p>
+      <h3 className="font-semibold">4.1 Google Agenda</h3>
       <p>
         A empresa cliente pode conectar uma conta Google para que os agentes de IA do {COMPANY.product} controlem a agenda dela: consultar
         horários livres, marcar, remarcar e desmarcar sessões com os contatos atendidos. A conexão é feita pelo login do Google, por um
@@ -93,6 +100,48 @@ export const PrivacyPolicy: FC = () => (
           compromissos da agenda.
         </li>
       </ul>
+      <h3 className="font-semibold">4.2 Google Ads (anúncios do YouTube)</h3>
+      <p>
+        Com a permissão do Google Ads, o {COMPANY.product} acessa as contas de anúncio que a própria empresa cliente escolhe vincular, para
+        mostrar os resultados dos anúncios ao lado das vendas registradas no CRM, sugerir melhorias e aplicar mudanças.
+      </p>
+      <ul className="list-disc space-y-2 pl-6">
+        <li>
+          <strong>Dados acessados:</strong> a lista de contas de anúncio que a conta Google alcança; as campanhas, grupos de anúncios,
+          anúncios, listas de público e ações de conversão das contas vinculadas; e as métricas diárias (gasto, impressões, cliques,
+          visualizações de vídeo e conversões).
+        </li>
+        <li>
+          <strong>Alterações:</strong> pausar ou ativar campanhas, grupos e anúncios, mudar o orçamento diário, criar campanhas de vídeo
+          (sempre criadas pausadas) e criar ações de conversão. Nenhuma alteração é feita sem a aprovação de um usuário da empresa cliente
+          com essa permissão no painel.
+        </li>
+        <li>
+          <strong>Conversões:</strong> quando uma conversa vinda de um anúncio avança no funil de vendas, enviamos ao Google Ads a conversão
+          com o identificador do clique (gclid) ou, sem ele, o telefone do contato transformado em código (hash SHA-256), nunca o telefone
+          em texto.
+        </li>
+        <li>
+          <strong>Inteligência artificial:</strong> para escrever as sugestões e os textos de campanha que a empresa cliente vê no painel,
+          enviamos ao provedor de IA as métricas e os textos dos anúncios da própria empresa.
+        </li>
+        <li>
+          <strong>Comparação por segmento:</strong> estatísticas agregadas e anônimas de desempenho dos criativos (por exemplo, que tipo de
+          abertura de vídeo vende mais) podem ser combinadas entre empresas do mesmo segmento, sem identificar empresas, contas ou pessoas.
+          A empresa cliente pode desligar essa participação no painel.
+        </li>
+        <li>
+          Guardamos o token de acesso concedido pelo Google, criptografado, e uma cópia da estrutura e das métricas das contas vinculadas,
+          apagada ao desconectar.
+        </li>
+      </ul>
+      <h3 className="font-semibold">4.3 Envio de vídeos ao YouTube (opcional)</h3>
+      <p>
+        Com a permissão de envio de vídeos do YouTube, o {COMPANY.product} publica no canal da conta Google conectada, como vídeo não
+        listado, apenas os vídeos de anúncio que a empresa cliente escolhe enviar pelo painel, para usá-los nas campanhas. Não lemos, não
+        alteramos e não apagamos outros vídeos do canal. Essa permissão pode ser recusada no login: nesse caso, a empresa cola o link de um
+        vídeo que já está no canal.
+      </p>
       <h3 className="font-semibold">Uso Limitado</h3>
       <p>
         O uso e a transferência, para qualquer outro aplicativo, de informações recebidas das APIs do Google seguem a{" "}
@@ -107,8 +156,13 @@ export const PrivacyPolicy: FC = () => (
         , incluindo os requisitos de Uso Limitado. Em especial:
       </p>
       <ul className="list-disc space-y-2 pl-6">
-        <li>usamos os dados do Google apenas para oferecer e melhorar a função de agenda visível para a empresa cliente;</li>
-        <li>não vendemos esses dados e não os usamos para publicidade, perfilamento ou avaliação de crédito;</li>
+        <li>
+          usamos os dados do Google apenas para oferecer e melhorar as funções visíveis para a empresa cliente (agenda, gestão de anúncios e
+          envio de vídeos);
+        </li>
+        <li>
+          não vendemos esses dados e não os usamos para publicidade nossa ou de terceiros, para perfilamento ou para avaliação de crédito;
+        </li>
         <li>não usamos esses dados para treinar modelos de inteligência artificial;</li>
         <li>
           não os transferimos a terceiros, exceto quando necessário para prestar o serviço, por exigência legal ou em fusão ou aquisição,
@@ -121,7 +175,8 @@ export const PrivacyPolicy: FC = () => (
       </ul>
       <h3 className="font-semibold">Como revogar o acesso</h3>
       <p>
-        No painel, em Configurações → Google Agenda → Desconectar, ou na página de permissões da conta Google (
+        No painel, em Configurações → Google Agenda → Desconectar ou Configurações → Anúncios do YouTube → Desconectar, ou na página de
+        permissões da conta Google (
         <a
           className="text-primary underline underline-offset-2"
           href="https://myaccount.google.com/permissions"
@@ -130,7 +185,8 @@ export const PrivacyPolicy: FC = () => (
         >
           myaccount.google.com/permissions
         </a>
-        ). Ao desconectar, o token é revogado e apagado; as sessões já marcadas continuam na agenda do Google.
+        ). Ao desconectar, o token é revogado e apagado, e a cópia dos dados do Google Ads é excluída; as sessões já marcadas continuam na
+        agenda do Google, e as campanhas e vídeos continuam na conta do cliente.
       </p>
     </Section>
 
@@ -141,7 +197,10 @@ export const PrivacyPolicy: FC = () => (
       <ul className="list-disc space-y-2 pl-6">
         <li>infraestrutura em nuvem e armazenamento de arquivos (Microsoft Azure);</li>
         <li>Meta, para envio e recebimento de mensagens do WhatsApp e integrações de anúncios conectadas pela empresa;</li>
-        <li>Google, para os recursos de inteligência artificial (Gemini) e para o Google Agenda, quando conectado;</li>
+        <li>
+          Google, para os recursos de inteligência artificial (Gemini) e, quando conectados, para o Google Agenda, o Google Ads e o YouTube;
+        </li>
+        <li>TikTok, para as integrações de anúncios conectadas pela empresa;</li>
         <li>Amazon Web Services, para envio de e-mails;</li>
         <li>ferramentas de monitoramento de erros e de uso do painel (Microsoft Application Insights e Microsoft Clarity).</li>
       </ul>
@@ -159,8 +218,8 @@ export const PrivacyPolicy: FC = () => (
       <p>
         Mantemos os dados enquanto a empresa cliente usar o serviço e pelo tempo necessário para cumprir obrigações legais ou exercer
         direitos. Ao fim do contrato, ou a pedido da empresa cliente, os dados são excluídos ou anonimizados, salvo quando a lei exigir a
-        guarda. Os dados do Google são apagados quando a conta Google é desconectada, e os registros das sessões marcadas são apagados com a
-        conta da empresa cliente.
+        guarda. Os dados do Google são apagados quando a conta Google é desconectada (a agenda e os anúncios têm conexões separadas), e os
+        registros das sessões marcadas são apagados com a conta da empresa cliente.
       </p>
     </Section>
 
