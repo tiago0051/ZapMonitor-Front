@@ -325,7 +325,7 @@ export const audienceDeliveryLabel = (status: string | null | undefined) => {
   return status;
 };
 
-export type GlossaryTerm = "CTR" | "ROAS" | "CPA" | "ADVANTAGE" | "CPC" | "CPM" | "SALES_SHARE";
+export type GlossaryTerm = "CTR" | "ROAS" | "CPA" | "ADVANTAGE" | "CPC" | "CPM" | "SALES_SHARE" | "OPTIMIZATION" | "TEAM_HOURS";
 
 /** Explicações curtas para as siglas da Meta, mostradas pelo botão "o que é isso". */
 export const metricGlossary: Record<GlossaryTerm, { title: string; description: string }> = {
@@ -359,5 +359,15 @@ export const metricGlossary: Record<GlossaryTerm, { title: string; description: 
     title: "Vende Nx a sua parte da verba",
     description:
       "Compara a fatia das vendas com a fatia do gasto. Se os anúncios com essa característica levaram 20% da verba e trouxeram 32% das vendas, eles vendem 1,6x a sua parte. 1x é a média; abaixo de 1x vendem menos do que custam.",
+  },
+  OPTIMIZATION: {
+    title: "Otimizar por",
+    description:
+      "O que a Meta procura entregar. Por conversas, ela mostra o anúncio para quem tende a chamar no WhatsApp. Por vendas, ela usa as vendas marcadas como ganhas no CRM para achar quem tende a comprar; precisa de vendas suficientes toda semana para aprender.",
+  },
+  TEAM_HOURS: {
+    title: "Só no horário da equipe",
+    description:
+      "Os anúncios param fora do horário em que a equipe atende, para ninguém chamar e ficar sem resposta. A Meta só permite isso com verba total e data de fim, por isso precisa de um prazo.",
   },
 };

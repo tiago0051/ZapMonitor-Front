@@ -436,6 +436,24 @@ type AdCampaignPlan = {
   adSets: AdPlanAdSet[];
   creatives: AdPlanCreative[];
   abTest: { enabled: boolean; variable: "creative" | "audience" };
+  // O que a Meta otimiza; sem o campo (rascunho antigo) vale conversas
+  optimizationEvent?: AdOptimizationEvent;
+  // Anúncios só no horário da equipe (orçamento total com prazo); sem o campo vale desligado
+  teamHoursOnly?: boolean;
+};
+
+// CONVERSATIONS: conversas no WhatsApp; PURCHASE: vendas registradas no CRM e mandadas à Meta
+type AdOptimizationEvent = "CONVERSATIONS" | "PURCHASE";
+
+type AdDeliveryOptions = {
+  // Eventos recebidos pela Meta nos últimos 7 dias
+  readiness: { qualified: number; purchases: number; ready: "PURCHASE" | "QUALIFIED_LEAD" | null; missingQualified: number };
+  // Compras por semana que a Meta precisa para aprender bem
+  minWeeklyPurchases: number;
+  conversionsEnabled: boolean;
+  // Horário da equipe (configurações do atendimento); nulo sem dias definidos
+  teamHours: BroadcastSendWindow | null;
+  suggestedOptimizationEvent: AdOptimizationEvent;
 };
 
 type AdDraftRouting = {

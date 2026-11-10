@@ -138,6 +138,9 @@ export const metaAdsService = {
   recalibrateSignal: async ({ params }: MetaAdsClientParams): Promise<AdSignalCalibration> =>
     (await api.post<AdSignalCalibration>(`/client/${params.clientId}/meta-ads/signal/calibrate`)).data,
 
+  findDeliveryOptions: async ({ params }: MetaAdsClientParams): Promise<AdDeliveryOptions> =>
+    (await api.get<AdDeliveryOptions>(`/client/${params.clientId}/meta-ads/delivery-options`)).data,
+
   findSignalReadiness: async (clientId: string, accountId: string): Promise<AdSignalReadiness[]> =>
     (await api.get<AdSignalReadiness[]>(`/client/${clientId}/meta-ads/account/${accountId}/signal-readiness`)).data,
 

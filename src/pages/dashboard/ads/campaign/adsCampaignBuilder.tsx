@@ -19,6 +19,7 @@ import { effectiveStatusInfo, formatCount, formatMoney, statusToneClassName } fr
 import { AdStatusToggle } from "../components/adStatusToggle";
 import { SteppedProgress } from "../components/steppedProgress";
 import { AdsAssetLibrary } from "./adsAssetLibrary";
+import { DeliveryFields } from "./deliveryFields";
 import { BriefFields, RoutingFields } from "./draftFields";
 import { PlanEditor } from "./planEditor";
 import { PublishChecklist } from "./publishChecklist";
@@ -223,7 +224,18 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
   const canUndo =
     can("ads.manage") && !!draft.published?.campaignId && (draft.status === "FAILED" || draft.status === "PUBLISHED") && !draft.activatedAt;
   const canPublish = can("ads.manage") && (draft.status === "DRAFT" || draft.status === "FAILED");
-  const checklist = buildPublishChecklist({ routing, plan, assets: options.assets });
+  const deliveryQuery = useQuery({
+    queryKey: ["metaAds", "deliveryOptions", client.id],
+    queryFn: () => metaAdsService.findDeliveryOptions({ params: { clientId: client.id } }),
+    enabled: !!plan && !draft.published?.campaignId,
+  });
+  const checklist = buildPublishChecklist({
+    routing,
+    plan,
+    assets: options.assets,
+    durationDays: brief.durationDays,
+    delivery: deliveryQuery.data,
+  });
   const missingCount = checklist.filter((item) => !item.ok).length;
 
   const confirmRemove = async () => {
@@ -336,6 +348,17 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
             assets={options.assets}
             disabled={isLocked}
             onChange={setPlan}
+          />
+        )}
+        {plan && (
+          <DeliveryFields
+            plan={plan}
+            durationDays={brief.durationDays}
+            currency={account.currency}
+            options={deliveryQuery.data}
+            disabled={isLocked}
+            onChange={(changes) => setPlan({ ...plan, ...changes })}
+            onDurationChange={(durationDays) => setBrief({ ...brief, durationDays })}
           />
         )}
       </section>
@@ -545,7 +568,11 @@ export const AdsCampaignBuilder: FC<{ account: AdAccount; initialDraftId?: strin
                 >
                   <span className="min-w-0 flex-1 truncate text-sm font-medium">{draft.name}</span>
                   {draft.plan && (
-                    <span className="text-muted-foreground text-xs">{formatMoney(draft.plan.dailyBudget, account.currency)}/dia</span>
+                    <span className="text-muted-foreground text-xs">
+                      {draft.plan.teamHoursOnly && draft.brief.durationDays
+                        ? `${formatMoney(draft.plan.dailyBudget * draft.brief.durationDays, account.currency)} no total`
+                        : `${formatMoney(draft.plan.dailyBudget, account.currency)}/dia`}
+                    </span>
                   )}
                   <span className={cn("rounded px-1.5 py-0.5 text-xs font-medium", draftStatusDisplay(draft).className)}>
                     {draftStatusDisplay(draft).label}

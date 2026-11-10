@@ -1,9 +1,16 @@
 export type ChecklistItem = { label: string; ok: boolean; details: string[] };
 
+/** A Meta exige data de fim para veicular só em alguns horários; o servidor pede pelo menos 2 dias de prazo. */
+export const SCHEDULE_MIN_DAYS = 2;
+
 type ChecklistInput = {
   routing: AdDraftRouting;
   plan: AdCampaignPlan | null;
   assets: AdCreativeAsset[];
+  // Prazo do pedido, em dias
+  durationDays: number | null;
+  // Ainda carregando: só o servidor confere conversões e horário da equipe
+  delivery: AdDeliveryOptions | undefined;
 };
 
 /**
@@ -11,7 +18,7 @@ type ChecklistInput = {
  * Segue as mesmas regras que o servidor confere ao publicar (publishErrors); públicos que sumiram da conta só o
  * servidor sabe, por isso a lista dele continua aparecendo.
  */
-export const buildPublishChecklist = ({ routing, plan, assets }: ChecklistInput): ChecklistItem[] => {
+export const buildPublishChecklist = ({ routing, plan, assets, durationDays, delivery }: ChecklistInput): ChecklistItem[] => {
   const items: ChecklistItem[] = [
     { label: "Número de WhatsApp que recebe as conversas", ok: !!routing.whatsappConfigurationId, details: [] },
     { label: "Página do Facebook ligada ao número", ok: !!routing.metaPageId, details: [] },
@@ -49,6 +56,18 @@ export const buildPublishChecklist = ({ routing, plan, assets }: ChecklistInput)
   }
   items.push({ label: "Textos, títulos e mensagem de boas-vindas dos anúncios", ok: textDetails.length === 0, details: textDetails });
   items.push({ label: "Imagem ou vídeo em cada anúncio", ok: creativeDetails.length === 0, details: creativeDetails });
+
+  // Mesmas regras de findDeliveryErrors no servidor
+  const deliveryDetails: string[] = [];
+  if (plan.optimizationEvent === "PURCHASE" && delivery && !delivery.conversionsEnabled)
+    deliveryDetails.push("Para otimizar por vendas, ligue o envio de eventos para a Meta nas configurações");
+  if (plan.teamHoursOnly) {
+    if (!durationDays || durationDays < SCHEDULE_MIN_DAYS)
+      deliveryDetails.push(`Para mostrar só no horário da equipe, informe um prazo de pelo menos ${SCHEDULE_MIN_DAYS} dias`);
+    if (delivery && !delivery.teamHours) deliveryDetails.push("Para mostrar só no horário da equipe, defina o horário e os dias da equipe");
+  }
+  if (plan.optimizationEvent === "PURCHASE" || plan.teamHoursOnly)
+    items.push({ label: "Otimização e horário dos anúncios", ok: deliveryDetails.length === 0, details: deliveryDetails });
 
   return items;
 };
