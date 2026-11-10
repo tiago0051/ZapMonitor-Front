@@ -338,8 +338,8 @@ type AdChange = {
   ruleName: string | null;
   // Mudança desfeita por esta
   revertOfChangeId: string | null;
-  // Proposta pela fila do atendimento: ATTENDANCE (reduzir) ou ATTENDANCE_RESTORE (voltar)
-  origin: "ATTENDANCE" | "ATTENDANCE_RESTORE" | null;
+  // Proposta pela fila do atendimento (ATTENDANCE reduz, ATTENDANCE_RESTORE volta) ou por um teste (EXPERIMENT)
+  origin: "ATTENDANCE" | "ATTENDANCE_RESTORE" | "EXPERIMENT" | null;
   reason: string | null;
   // Depois disso a proposta vence e não pode ser aprovada
   expiresAt: string | null;
@@ -435,7 +435,8 @@ type AdCampaignPlan = {
   reasoning: string;
   adSets: AdPlanAdSet[];
   creatives: AdPlanCreative[];
-  abTest: { enabled: boolean; variable: "creative" | "audience" };
+  // A hipótese vira o teste depois de publicar; a IA sugere e o usuário pode editar
+  abTest: { enabled: boolean; variable: "creative" | "audience"; hypothesis?: string | null };
   // O que a Meta otimiza; sem o campo (rascunho antigo) vale conversas
   optimizationEvent?: AdOptimizationEvent;
   // Anúncios só no horário da equipe (orçamento total com prazo); sem o campo vale desligado
@@ -506,7 +507,8 @@ type AdCreativeAsset = {
 
 type AdCrmAudienceKind = "CUSTOM" | "LOOKALIKE";
 
-type AdCrmAudienceSource = "WON" | "OPEN" | "ALL";
+// REENGAGE: veio dos anúncios nos últimos 90 dias, conversou e não comprou
+type AdCrmAudienceSource = "WON" | "OPEN" | "ALL" | "REENGAGE";
 
 type AdCrmAudience = {
   id: string;
@@ -818,4 +820,57 @@ type AdSegmentIntelligence = {
   optOut: boolean;
   computedAt: string | null;
   insights: AdSegmentInsight[];
+};
+
+type AdExperimentStatus = "RUNNING" | "WINNER" | "INCONCLUSIVE" | "STOPPED";
+
+type AdExperimentLevel = "AD_SET" | "AD";
+
+type AdExperimentArm = { metaId: string; label: string };
+
+type AdExperimentArmResult = {
+  metaId: string;
+  label: string;
+  spend: number;
+  conversations: number;
+  sales: number;
+  costPerSale: number | null;
+  // Chance (0 a 1) de ser o lado que mais vende por real gasto
+  probBest: number;
+  // Parte da verba que o sistema sugere para este lado (0 a 1)
+  budgetShare: number;
+};
+
+type AdExperiment = {
+  id: string;
+  name: string;
+  hypothesis: string;
+  level: AdExperimentLevel;
+  arms: AdExperimentArm[];
+  status: AdExperimentStatus;
+  // YYYY-MM-DD
+  startDate: string;
+  endsAt: string;
+  results: AdExperimentArmResult[] | null;
+  winnerMetaId: string | null;
+  // Por que ainda roda ou por que acabou
+  conclusion: string | null;
+  lastEvaluatedAt: string | null;
+  concludedAt: string | null;
+  draftId: string | null;
+  createdAt: string;
+};
+
+type AdExperimentInput = { name: string; hypothesis: string; level: AdExperimentLevel; metaIds: string[]; days?: number };
+
+type AdLearningEntryKind = "EXPERIMENT" | "TRAIT";
+
+type AdLearningEntry = {
+  id: string;
+  kind: AdLearningEntryKind;
+  title: string;
+  // Várias linhas
+  detail: string;
+  experimentId: string | null;
+  createdAt: string;
 };

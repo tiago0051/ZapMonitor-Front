@@ -611,4 +611,38 @@ export const metaAdsService = {
     const response = await api.post(`/client/${params.clientId}/meta-ads/pilot/refresh/${params.refreshId}/reject`);
     return response.data;
   },
+
+  findExperiments: async ({ params }: MetaAdsAccountParams): Promise<AdExperiment[]> => {
+    const response = await api.get<AdExperiment[]>(`/client/${params.clientId}/meta-ads/account/${params.accountId}/experiments`);
+    return response.data;
+  },
+
+  createExperiment: async ({ params, body }: MetaAdsAccountParams & { body: AdExperimentInput }): Promise<AdExperiment> => {
+    const response = await api.post<AdExperiment>(`/client/${params.clientId}/meta-ads/account/${params.accountId}/experiments`, body);
+    return response.data;
+  },
+
+  // Avalia agora: lê os resultados, recalcula a chance de cada lado e pode criar propostas em Mudanças
+  evaluateExperiment: async ({
+    params,
+  }: {
+    params: { clientId: string; accountId: string; experimentId: string };
+  }): Promise<AdExperiment> => {
+    const response = await api.post<AdExperiment>(
+      `/client/${params.clientId}/meta-ads/account/${params.accountId}/experiments/${params.experimentId}/evaluate`,
+    );
+    return response.data;
+  },
+
+  stopExperiment: async ({ params }: { params: { clientId: string; accountId: string; experimentId: string } }): Promise<AdExperiment> => {
+    const response = await api.post<AdExperiment>(
+      `/client/${params.clientId}/meta-ads/account/${params.accountId}/experiments/${params.experimentId}/stop`,
+    );
+    return response.data;
+  },
+
+  findLearningDiary: async ({ params }: MetaAdsAccountParams): Promise<AdLearningEntry[]> => {
+    const response = await api.get<AdLearningEntry[]>(`/client/${params.clientId}/meta-ads/account/${params.accountId}/diary`);
+    return response.data;
+  },
 };

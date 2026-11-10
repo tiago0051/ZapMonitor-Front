@@ -325,7 +325,8 @@ export const audienceDeliveryLabel = (status: string | null | undefined) => {
   return status;
 };
 
-export type GlossaryTerm = "CTR" | "ROAS" | "CPA" | "ADVANTAGE" | "CPC" | "CPM" | "SALES_SHARE" | "OPTIMIZATION" | "TEAM_HOURS";
+export type GlossaryTerm =
+  "CTR" | "ROAS" | "CPA" | "ADVANTAGE" | "CPC" | "CPM" | "SALES_SHARE" | "OPTIMIZATION" | "TEAM_HOURS" | "PROB_BEST";
 
 /** Explicações curtas para as siglas da Meta, mostradas pelo botão "o que é isso". */
 export const metricGlossary: Record<GlossaryTerm, { title: string; description: string }> = {
@@ -369,5 +370,10 @@ export const metricGlossary: Record<GlossaryTerm, { title: string; description: 
     title: "Só no horário da equipe",
     description:
       "Os anúncios param fora do horário em que a equipe atende, para ninguém chamar e ficar sem resposta. A Meta só permite isso com verba total e data de fim, por isso precisa de um prazo.",
+  },
+  PROB_BEST: {
+    title: "Chance de ser o melhor",
+    description:
+      "Olhando as vendas e o gasto de cada lado até agora, quantas vezes em 100 este lado seria o que vende mais barato. Com poucas vendas as chances ficam parecidas; o teste só declara vencedor quando um lado passa de 95%, com pelo menos 10 vendas e 7 dias.",
   },
 };

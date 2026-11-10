@@ -18,6 +18,16 @@ const sourceLabel: Record<AdCrmAudienceSource, string> = {
   WON: "Clientes (negócios ganhos)",
   OPEN: "Em negociação (negócios abertos)",
   ALL: "Todos os contatos com negócio",
+  REENGAGE: "Conversou e não comprou",
+};
+
+// Uma linha explicando quem entra em cada opção
+const sourceHelp: Record<AdCrmAudienceSource, string> = {
+  WON: "Quem já comprou. Bom para excluir das campanhas de venda ou achar parecidos.",
+  OPEN: "Quem está negociando agora.",
+  ALL: "Todo contato que tem algum negócio no CRM.",
+  REENGAGE:
+    "Chegou pelos anúncios nos últimos 90 dias, conversou e não comprou. Quem comprou ou pediu para não receber mensagens fica de fora.",
 };
 
 const selectClassName = cn(crmSelectClassName, "h-8 text-xs");
@@ -132,6 +142,7 @@ export const AdsCrmAudiences: FC<{ account: AdAccount }> = ({ account }) => {
                       </option>
                     ))}
                   </select>
+                  <p className="text-muted-foreground text-xs">{sourceHelp[source]}</p>
                 </div>
                 <div className="grid gap-1">
                   <Label htmlFor="crm-audience-pipeline" className="text-xs">

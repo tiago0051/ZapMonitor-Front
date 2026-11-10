@@ -284,7 +284,26 @@ export const PlanEditor: FC<PlanEditorProps> = ({ account, plan, audiences, asse
         )}
       </label>
       {plan.abTest.enabled && (
-        <p className="text-muted-foreground text-xs">A verba é dividida igualmente entre os dois conjuntos para a comparação ser justa.</p>
+        <div className="space-y-1">
+          <p className="text-muted-foreground text-xs">
+            A verba é dividida igualmente entre os dois conjuntos para a comparação ser justa.
+          </p>
+          <Label htmlFor="ab-test-hypothesis" className="text-xs">
+            O que você quer descobrir (hipótese)
+          </Label>
+          <textarea
+            id="ab-test-hypothesis"
+            className={textarea}
+            maxLength={2000}
+            disabled={disabled}
+            placeholder="O anúncio com preço vende com menor custo por venda que o de dor"
+            value={plan.abTest.hypothesis ?? ""}
+            onChange={(event) => set({ abTest: { ...plan.abTest, hypothesis: event.target.value || null } })}
+          />
+          <p className="text-muted-foreground text-xs">
+            Depois de publicar, a campanha vira um teste na aba Testes e o resultado vai para o diário.
+          </p>
+        </div>
       )}
 
       {plan.adSets.map((adSet, index) => (

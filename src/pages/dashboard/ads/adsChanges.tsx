@@ -48,11 +48,13 @@ const ChangeCard: FC<{ change: AdChange; currency: string }> = ({ change, curren
       ? "Fila do atendimento cheia"
       : change.origin === "ATTENDANCE_RESTORE"
         ? "Fila do atendimento normalizou"
-        : change.ruleName
-          ? `Regra "${change.ruleName}"`
-          : change.suggestionTitle
-            ? `Sugestão: ${change.suggestionTitle}`
-            : "Mudança";
+        : change.origin === "EXPERIMENT"
+          ? "Teste"
+          : change.ruleName
+            ? `Regra "${change.ruleName}"`
+            : change.suggestionTitle
+              ? `Sugestão: ${change.suggestionTitle}`
+              : "Mudança";
 
   return (
     <article className="bg-card space-y-2 rounded-lg border p-3">

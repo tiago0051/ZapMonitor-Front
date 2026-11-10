@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { useState, type FC } from "react";
 import { ConversationLearnings } from "./conversationLearnings";
+import { LearningDiary } from "./learningDiary";
 import { LEARNING_PERIODS, type LearningPeriod } from "./learningsUtils";
 import { SegmentIntelligence } from "./segmentIntelligence";
 import { TraitScoreboard } from "./traitScoreboard";
@@ -38,6 +39,7 @@ export const AdsLearnings: FC<{ account: AdAccount }> = ({ account }) => {
       <TraitScoreboard account={account} days={days} />
       <ConversationLearnings account={account} days={days} />
       <SegmentIntelligence />
+      <LearningDiary account={account} />
     </div>
   );
 };

@@ -43,6 +43,7 @@ import { AdsPilot } from "./pilot/adsPilot";
 import { AdStatusToggle } from "./components/adStatusToggle";
 import { AdBudgetEditor } from "./components/adBudgetEditor";
 import { AdsLearnings } from "./learnings/adsLearnings";
+import { AdsExperiments } from "./experiments/adsExperiments";
 
 const StatusChip: FC<{ status: string }> = ({ status }) => {
   const info = effectiveStatusInfo(status);
@@ -157,11 +158,11 @@ const CampaignRows: FC<{ campaign: MetaCampaign; currency: string; accountId: st
 
 type TabGroup = { id: string; label: string; tabs: string[] };
 
-// Doze abas em quatro grupos: o grupo fica em cima e as abas dele numa segunda linha menor
+// Treze abas em quatro grupos: o grupo fica em cima e as abas dele numa segunda linha menor
 const TAB_GROUPS: TabGroup[] = [
   { id: "overview", label: "Visão geral", tabs: ["results", "campaigns", "audiences", "leads"] },
   { id: "create", label: "Criar", tabs: ["create", "pilot"] },
-  { id: "ai", label: "IA", tabs: ["suggestions", "learnings", "strategy", "changes"] },
+  { id: "ai", label: "IA", tabs: ["suggestions", "experiments", "learnings", "strategy", "changes"] },
   { id: "settings", label: "Configurar", tabs: ["automation", "conversions"] },
 ];
 
@@ -173,6 +174,7 @@ const TAB_LABEL: Record<string, string> = {
   create: "Criar campanha",
   pilot: "Piloto automático",
   suggestions: "Sugestões",
+  experiments: "Testes",
   learnings: "Aprendizados",
   strategy: "Estratégia",
   changes: "Mudanças",
@@ -417,6 +419,10 @@ export const AdsPage = () => {
 
         <TabsContent value="suggestions" className={tabContentClassName}>
           <AdsSuggestions key={currentAccount.id} account={currentAccount} />
+        </TabsContent>
+
+        <TabsContent value="experiments" className={tabContentClassName}>
+          <AdsExperiments key={currentAccount.id} account={currentAccount} />
         </TabsContent>
 
         <TabsContent value="learnings" className={tabContentClassName}>
