@@ -6,11 +6,12 @@ import { useUserContext } from "@/context/UserContext/userContext";
 import { useGoogleCalendarLogin } from "@/hooks/use-googleCalendarLogin";
 import { googleCalendarService } from "@/services/api/googleCalendarService";
 import { requestErrorHandling } from "@/utils/request";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { AppointmentReminders } from "./appointmentReminders";
 
 /** Conta Google cuja agenda os agentes de IA controlam; a ferramenta é ligada em cada agente. */
 export const GoogleCalendarSettings = () => {
@@ -26,6 +27,13 @@ export const GoogleCalendarSettings = () => {
   });
   const connection = connectionQuery.data;
   const isRevoked = connection.status === "REVOKED";
+  const isUsable = connection.connected && !isRevoked;
+
+  const calendarsQuery = useQuery({
+    queryKey: ["googleCalendar", "calendars", client.id],
+    queryFn: () => googleCalendarService.findCalendars({ params: { clientId: client.id } }),
+    enabled: isUsable,
+  });
 
   // A ferramenta dos agentes mostra a conexão e as agendas; tudo muda junto
   const invalidate = () => {
@@ -60,81 +68,86 @@ export const GoogleCalendarSettings = () => {
   const canLaunch = isConfigured && connection.configured && isReady && !connect.isPending && !disconnect.isPending;
 
   return (
-    <Card>
-      <CardHeader className="flex flex-col items-start gap-4 space-y-0 sm:flex-row sm:justify-between">
-        <div>
-          <CardTitle>Google Agenda</CardTitle>
-          <CardDescription>
-            Conecte a conta Google da agenda que os agentes de IA vão controlar: ver horários livres, marcar, remarcar e desmarcar sessões.
-            Depois ligue o Google Agenda em cada agente, em Agentes de IA → Ferramentas.
-          </CardDescription>
-        </div>
-        <Button variant={connection.connected && !isRevoked ? "outline" : "default"} onClick={launch} disabled={!canLaunch}>
-          {connection.connected ? "Reconectar" : "Conectar com o Google"}
-        </Button>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
-        {(!isConfigured || !connection.configured) && (
-          <div className="space-y-1 text-sm">
-            <p className="text-destructive">A integração com o Google Agenda está indisponível no momento. Fale com o suporte.</p>
-            {/* O detalhe técnico só interessa a quem administra o ambiente */}
-            {(user?.isOwner || user?.isImplanter) && (
-              <p className="text-muted-foreground text-xs">
-                Detalhe técnico: o login com o Google não está configurado neste ambiente (VITE_GOOGLE_OAUTH_CLIENT_ID no painel e
-                GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET no servidor).
-              </p>
-            )}
+    <div className="grid gap-4">
+      <Card>
+        <CardHeader className="flex flex-col items-start gap-4 space-y-0 sm:flex-row sm:justify-between">
+          <div>
+            <CardTitle>Google Agenda</CardTitle>
+            <CardDescription>
+              Conecte a conta Google da agenda que os agentes de IA vão controlar: ver horários livres, marcar, remarcar e desmarcar
+              sessões. Depois ligue o Google Agenda em cada agente, em Agentes de IA → Ferramentas, e configure os lembretes por WhatsApp
+              abaixo.
+            </CardDescription>
           </div>
-        )}
+          <Button variant={connection.connected && !isRevoked ? "outline" : "default"} onClick={launch} disabled={!canLaunch}>
+            {connection.connected ? "Reconectar" : "Conectar com o Google"}
+          </Button>
+        </CardHeader>
 
-        {!connection.connected && (
-          <EmptyState
-            title="O Google Agenda ainda não está conectado"
-            description="Entre com a conta Google dona da agenda (ou com acesso para editá-la) e marque todas as permissões pedidas."
-          />
-        )}
-
-        {connection.connected && (
-          <>
+        <CardContent className="space-y-4">
+          {(!isConfigured || !connection.configured) && (
             <div className="space-y-1 text-sm">
-              <p>
-                Conectado como <span className="font-medium">{connection.googleEmail}</span>
-                {connection.connectedAt && ` · desde ${format(new Date(connection.connectedAt), "dd/MM/yyyy")}`}
-              </p>
-              {isRevoked && (
-                <p className="flex items-start gap-1.5 text-amber-700 dark:text-amber-400">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />O Google recusou o acesso (permissão removida ou senha trocada).
-                  Enquanto não reconectar, os agentes avisam o contato e passam a conversa para a equipe.
+              <p className="text-destructive">A integração com o Google Agenda está indisponível no momento. Fale com o suporte.</p>
+              {/* O detalhe técnico só interessa a quem administra o ambiente */}
+              {(user?.isOwner || user?.isImplanter) && (
+                <p className="text-muted-foreground text-xs">
+                  Detalhe técnico: o login com o Google não está configurado neste ambiente (VITE_GOOGLE_OAUTH_CLIENT_ID no painel e
+                  GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET no servidor).
                 </p>
               )}
             </div>
+          )}
 
-            <div className="flex flex-wrap items-center gap-2 border-t pt-4">
-              {isConfirmingDisconnect ? (
-                <>
-                  <p className="text-sm">Os agentes deixam de usar a agenda. As sessões já marcadas continuam no Google Agenda.</p>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    disabled={disconnect.isPending}
-                    onClick={() => disconnect.mutate({ params: { clientId: client.id } })}
-                  >
-                    Desconectar
+          {!connection.connected && (
+            <EmptyState
+              title="O Google Agenda ainda não está conectado"
+              description="Entre com a conta Google dona da agenda (ou com acesso para editá-la) e marque todas as permissões pedidas."
+            />
+          )}
+
+          {connection.connected && (
+            <>
+              <div className="space-y-1 text-sm">
+                <p>
+                  Conectado como <span className="font-medium">{connection.googleEmail}</span>
+                  {connection.connectedAt && ` · desde ${format(new Date(connection.connectedAt), "dd/MM/yyyy")}`}
+                </p>
+                {isRevoked && (
+                  <p className="flex items-start gap-1.5 text-amber-700 dark:text-amber-400">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />O Google recusou o acesso (permissão removida ou senha trocada).
+                    Enquanto não reconectar, os agentes avisam o contato e passam a conversa para a equipe.
+                  </p>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 border-t pt-4">
+                {isConfirmingDisconnect ? (
+                  <>
+                    <p className="text-sm">Os agentes deixam de usar a agenda. As sessões já marcadas continuam no Google Agenda.</p>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      disabled={disconnect.isPending}
+                      onClick={() => disconnect.mutate({ params: { clientId: client.id } })}
+                    >
+                      Desconectar
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setIsConfirmingDisconnect(false)}>
+                      Cancelar
+                    </Button>
+                  </>
+                ) : (
+                  <Button size="sm" variant="outline" onClick={() => setIsConfirmingDisconnect(true)}>
+                    Desconectar o Google Agenda
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setIsConfirmingDisconnect(false)}>
-                    Cancelar
-                  </Button>
-                </>
-              ) : (
-                <Button size="sm" variant="outline" onClick={() => setIsConfirmingDisconnect(true)}>
-                  Desconectar o Google Agenda
-                </Button>
-              )}
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+                )}
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {isUsable && calendarsQuery.data && <AppointmentReminders clientId={client.id} calendars={calendarsQuery.data} />}
+    </div>
   );
 };

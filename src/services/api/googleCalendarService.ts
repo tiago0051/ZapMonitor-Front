@@ -32,4 +32,31 @@ export const googleCalendarService = {
     );
     return response.data;
   },
+
+  findReminderSettings: async ({ params }: GoogleCalendarClientRequestData): Promise<AppointmentReminderSettings> => {
+    const response = await api.get<AppointmentReminderSettings>(`/client/${params.clientId}/google-calendar/reminders/settings`);
+    return response.data;
+  },
+
+  saveReminderSettings: async ({
+    params,
+    body,
+  }: GoogleCalendarClientRequestData & { body: AppointmentReminderSettings }): Promise<AppointmentReminderSettings> => {
+    const response = await api.put<AppointmentReminderSettings>(`/client/${params.clientId}/google-calendar/reminders/settings`, body);
+    return response.data;
+  },
+
+  findReminders: async ({ params }: GoogleCalendarClientRequestData): Promise<AppointmentReminder[]> => {
+    const response = await api.get<AppointmentReminder[]>(`/client/${params.clientId}/google-calendar/reminders`);
+    return response.data;
+  },
+
+  /** Cria na Meta o modelo de lembrete sugerido (Utilidade, com Confirmar/Remarcar) e já o deixa escolhido. */
+  createReminderTemplate: async ({
+    params,
+    body,
+  }: GoogleCalendarClientRequestData & { body: { configurationId: string; askConfirmation: boolean } }): Promise<WhatsappTemplate> => {
+    const response = await api.post<WhatsappTemplate>(`/client/${params.clientId}/google-calendar/reminders/template`, body);
+    return response.data;
+  },
 };
