@@ -15,7 +15,6 @@ import {
   MessageSquareText,
   Phone,
   ShieldCheck,
-  Sparkles,
   CalendarDays,
   Tags,
   TextCursorInput,
@@ -38,7 +37,6 @@ import { EmailSettings } from "./emailSending/emailSenders";
 import { MetaAdsSettings } from "./metaAds/metaAdsSettings";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { ServiceGroups } from "./serviceGroup/serviceGroup";
-import { WhatsappAiConfiguration } from "./whatsapp/whatsappAi/whatsappAiConfiguration";
 import { WhatsappCategory } from "./whatsapp/whatsappCategory/whatsappCategory";
 import { WhatsappConfiguration } from "./whatsapp/whatsappConfiguration/whatsappConfiguration";
 import { WhatsappTemplate } from "./whatsapp/whatsappTemplate/whatsappTemplate";
@@ -133,13 +131,6 @@ const configurationGroups: { label: string; sections: ConfigurationSection[] }[]
         icon: Phone,
         content: <WhatsappConfiguration />,
         permission: "channels.manage",
-      },
-      {
-        id: "ai",
-        label: "Inteligência artificial",
-        icon: Sparkles,
-        content: <WhatsappAiConfiguration />,
-        permission: "aiConfig.manage",
       },
       {
         id: "googleCalendar",

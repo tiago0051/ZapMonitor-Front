@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { cn } from "@/lib/utils";
-import { aiService } from "@/services/api/aiService";
 import { flowService } from "@/services/api/flowService";
 import { serviceGroupService } from "@/services/api/serviceGroupService";
 import { whatsappService } from "@/services/api/whatsappService";
@@ -23,7 +22,7 @@ const readDismissed = (clientId: string) => {
 type Step = { id: string; label: string; description: string; tab: string; done: boolean; permission: Permission };
 
 /**
- * Roteiro de implantação para clientes novos: número → IA → grupo → fluxo.
+ * Roteiro de implantação para clientes novos: número → grupo → fluxo. A IA é do sistema e não precisa de configuração.
  * Reaproveita as mesmas chaves de consulta das seções, então os passos se atualizam quando a seção muda os dados.
  */
 export const FirstStepsChecklist = ({ clientId, onSelectTab }: { clientId: string; onSelectTab: (tab: string) => void }) => {
@@ -31,22 +30,15 @@ export const FirstStepsChecklist = ({ clientId, onSelectTab }: { clientId: strin
   const [isDismissed, setIsDismissed] = useState(() => readDismissed(clientId));
 
   const canNumbers = can("channels.manage");
-  const canAi = can("aiConfig.manage");
   const canGroups = can("serviceGroups.manage");
   const canFlows = can("flows.manage");
-  const isVisible = !isDismissed && (canNumbers || canAi || canGroups || canFlows);
+  const isVisible = !isDismissed && (canNumbers || canGroups || canFlows);
 
   const usageQuery = useQuery({
     meta: { errorHandledInline: true },
     queryKey: ["whatsappConfigurations", clientId, "usage"],
     queryFn: () => whatsappService.findNumberUsage({ params: { clientId } }),
     enabled: isVisible && canNumbers,
-  });
-  const aiConfigQuery = useQuery({
-    meta: { errorHandledInline: true },
-    queryKey: ["aiConfig", clientId],
-    queryFn: () => aiService.getClientAiConfig({ params: { clientId } }),
-    enabled: isVisible && canAi,
   });
   const serviceGroupsQuery = useQuery({
     meta: { errorHandledInline: true },
@@ -63,9 +55,7 @@ export const FirstStepsChecklist = ({ clientId, onSelectTab }: { clientId: strin
 
   if (!isVisible) return null;
 
-  const enabledQueries = [canNumbers && usageQuery, canAi && aiConfigQuery, canGroups && serviceGroupsQuery, canFlows && flowsQuery].filter(
-    (query) => !!query,
-  );
+  const enabledQueries = [canNumbers && usageQuery, canGroups && serviceGroupsQuery, canFlows && flowsQuery].filter((query) => !!query);
   // Só aparece com tudo carregado, para não piscar passos errados; com erro, some sem atrapalhar a tela
   if (enabledQueries.some((query) => !query.isSuccess)) return null;
 
@@ -78,14 +68,6 @@ export const FirstStepsChecklist = ({ clientId, onSelectTab }: { clientId: strin
       tab: "numbers",
       permission: "channels.manage" as const,
       done: !!usage && usage.used + usage.whatsappWeb.used > 0,
-    },
-    {
-      id: "ai",
-      label: "Configurar a inteligência artificial",
-      description: "Cadastre a chave de API usada pelos agentes, transcrições e resumos.",
-      tab: "ai",
-      permission: "aiConfig.manage" as const,
-      done: !!aiConfigQuery.data,
     },
     {
       id: "serviceGroup",

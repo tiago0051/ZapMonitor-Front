@@ -14,7 +14,6 @@ type Permission =
   | "templates.manage"
   | "categories.manage"
   | "channels.manage"
-  | "aiConfig.manage"
   | "googleCalendar.manage"
   | "api.manage"
   | "contacts.view"
