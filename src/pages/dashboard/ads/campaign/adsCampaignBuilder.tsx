@@ -236,13 +236,15 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
     queryFn: () => metaAdsService.findDraftCompliance({ params }),
     enabled: !!draft.plan && !draft.published?.campaignId,
   });
+  const planChanged = JSON.stringify(plan) !== JSON.stringify(draft.plan);
   const checklist = buildPublishChecklist({
     routing,
     plan,
     assets: options.assets,
     durationDays: brief.durationDays,
     delivery: deliveryQuery.data,
-    complianceIssues: complianceQuery.data,
+    // Com o plano alterado e não salvo, a revisão está velha: não trava aqui e o servidor revisa ao publicar
+    complianceIssues: planChanged ? undefined : complianceQuery.data,
   });
   const missingCount = checklist.filter((item) => !item.ok).length;
 
@@ -387,7 +389,7 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
       <section className="space-y-3 rounded-lg border p-3">
         <h3 className="text-sm font-semibold">4. Revisão e publicação</h3>
         {plan && draft.plan && !draft.published?.campaignId && (
-          <CompliancePanel query={complianceQuery} plan={plan} isStale={JSON.stringify(plan) !== JSON.stringify(draft.plan)} />
+          <CompliancePanel query={complianceQuery} plan={plan} isStale={planChanged} />
         )}
         {canPublish && (
           <div className="space-y-2">

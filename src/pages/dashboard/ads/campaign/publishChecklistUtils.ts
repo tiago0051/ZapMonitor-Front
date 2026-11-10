@@ -11,7 +11,7 @@ type ChecklistInput = {
   durationDays: number | null;
   // Ainda carregando: só o servidor confere conversões e horário da equipe
   delivery: AdDeliveryOptions | undefined;
-  // Revisão de políticas da última versão salva; ainda carregando fica de fora
+  // Revisão de políticas da versão salva; carregando ou com o plano alterado fica de fora (o servidor barra ao publicar)
   complianceIssues: AdComplianceIssue[] | undefined;
 };
 
