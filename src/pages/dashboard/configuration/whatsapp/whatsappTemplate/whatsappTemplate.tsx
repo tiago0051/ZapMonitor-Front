@@ -9,9 +9,10 @@ import { templateService } from "@/services/api/templateService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { RefreshCw } from "lucide-react";
+import { Plus, RefreshCw, Wrench } from "lucide-react";
 import { useState } from "react";
-import { useParams } from "react-router";
+import { Link, useParams } from "react-router";
+import { useBaseUrl } from "@/hooks/use-baseUrl";
 import { toast } from "sonner";
 import { DialogCreateWhatsappTemplate } from "./components/dialogCreateWhatsappTemplate";
 import { DialogDeleteWhatsappTemplate } from "./components/dialogDeleteWhatsappTemplate";
@@ -27,6 +28,7 @@ const syncMessage = (result: WhatsappTemplateSyncResult) => {
 export const WhatsappTemplate = () => {
   const { clientId } = useParams();
   const queryClient = useQueryClient();
+  const baseUrl = useBaseUrl();
   const [search, setSearch] = useState("");
 
   const findAllWhatsappTemplatesQuery = useSuspenseQuery({
@@ -75,8 +77,8 @@ export const WhatsappTemplate = () => {
         <div className="min-w-0">
           <CardTitle>Templates</CardTitle>
           <CardDescription>
-            Modelos aprovados pela Meta para iniciar conversas ou retomar quando a janela de 24 horas fechou. Crie e edite os modelos no
-            Gerenciador do WhatsApp e sincronize aqui.
+            Modelos aprovados pela Meta para iniciar conversas ou retomar quando a janela de 24 horas fechou. Crie aqui, com ajuda da IA, e
+            acompanhe a aprovação sem abrir o Gerenciador do WhatsApp.
           </CardDescription>
           {lastSync && (
             <p className="text-muted-foreground mt-1 text-xs">
@@ -85,18 +87,24 @@ export const WhatsappTemplate = () => {
           )}
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
-          <DialogCreateWhatsappTemplate clientId={clientId!} />
-          <Button onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending}>
+          <Button asChild>
+            <Link to={`${baseUrl}/configuration/templates/new`}>
+              <Plus className="mr-2 h-4 w-4" />
+              Novo modelo
+            </Link>
+          </Button>
+          <Button variant="outline" onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending}>
             <RefreshCw className={cn("mr-2 h-4 w-4", syncMutation.isPending && "animate-spin")} />
             {syncMutation.isPending ? "Sincronizando..." : "Sincronizar com a Meta"}
           </Button>
+          <DialogCreateWhatsappTemplate clientId={clientId!} />
         </div>
       </CardHeader>
       <CardContent className="grid gap-4">
         {templates.length === 0 && (
           <EmptyState
             title="Nenhum modelo ainda"
-            description="Sincronize com a Meta para trazer os modelos da conta do WhatsApp dos seus números."
+            description="Crie o primeiro modelo com ajuda da IA ou sincronize para trazer os que já existem na conta do WhatsApp."
           />
         )}
 
@@ -138,7 +146,7 @@ export const WhatsappTemplate = () => {
                         )}
                       </div>
                     </div>
-                    {!template.synced && <DialogDeleteWhatsappTemplate clientId={clientId!} templateId={template.id} />}
+                    <DialogDeleteWhatsappTemplate clientId={clientId!} templateId={template.id} synced={template.synced} />
                   </div>
 
                   {template.description && <p className="text-muted-foreground text-sm">{template.description}</p>}
@@ -146,6 +154,14 @@ export const WhatsappTemplate = () => {
                   <TemplatePreview template={template} />
 
                   {template.rejectedReason && <p className="text-destructive text-xs">Motivo da Meta: {template.rejectedReason}</p>}
+                  {template.status === "REJECTED" && (
+                    <Button variant="outline" size="sm" className="self-start" asChild>
+                      <Link to={`${baseUrl}/configuration/templates/new`} state={{ template }}>
+                        <Wrench className="mr-2 h-4 w-4" />
+                        Corrigir e reenviar
+                      </Link>
+                    </Button>
+                  )}
                   {template.sendable === false && !template.rejectedReason && template.unavailableReason && (
                     <p className="text-muted-foreground text-xs">{template.unavailableReason}</p>
                   )}

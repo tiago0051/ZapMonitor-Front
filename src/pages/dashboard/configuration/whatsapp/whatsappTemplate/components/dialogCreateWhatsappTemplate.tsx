@@ -72,7 +72,7 @@ export const DialogCreateWhatsappTemplate: FC<DialogCreateWhatsappTemplateProps>
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">
+        <Button variant="ghost">
           <Plus className="mr-2 h-4 w-4" />
           Cadastro manual
         </Button>

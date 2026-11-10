@@ -34,3 +34,24 @@ type DeleteWhatsappTemplateRequestParams = {
   clientId: string;
   templateId: string;
 };
+
+type CreateMetaWhatsappTemplateRequestData = {
+  params: CreateWhatsappTemplateRequestParams;
+  body: {
+    configurationId: string;
+    draft: WhatsappTemplateDraft;
+    headerFileId?: string;
+    description?: string;
+  };
+};
+
+type AssistWhatsappTemplateRequestData = {
+  params: CreateWhatsappTemplateRequestParams;
+  body: {
+    mode: "generate" | "review";
+    objective?: string;
+    refinement?: string;
+    draft?: WhatsappTemplateDraft;
+    language: string;
+  };
+};

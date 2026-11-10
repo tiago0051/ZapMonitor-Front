@@ -10,9 +10,11 @@ import { toast } from "sonner";
 type DialogDeleteWhatsappTemplateProps = {
   clientId: string;
   templateId: string;
+  /** Veio da Meta: é apagado também na conta do WhatsApp */
+  synced?: boolean;
 };
 
-export const DialogDeleteWhatsappTemplate: FC<DialogDeleteWhatsappTemplateProps> = ({ clientId, templateId }) => {
+export const DialogDeleteWhatsappTemplate: FC<DialogDeleteWhatsappTemplateProps> = ({ clientId, templateId, synced }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const queryClient = useQueryClient();
 
@@ -59,7 +61,9 @@ export const DialogDeleteWhatsappTemplate: FC<DialogDeleteWhatsappTemplateProps>
 
           <DialogTitle className="text-center">Excluir template</DialogTitle>
           <DialogDescription className="text-center">
-            Tem certeza que deseja excluir este template? Esta ação não poderá ser desfeita.
+            {synced
+              ? "O modelo será apagado também na conta do WhatsApp (Meta). O mesmo nome só poderá ser usado de novo depois de 30 dias."
+              : "Tem certeza que deseja excluir este template? Esta ação não poderá ser desfeita."}
           </DialogDescription>
         </DialogHeader>
 

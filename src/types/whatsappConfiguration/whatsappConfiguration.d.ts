@@ -7,6 +7,8 @@ type WhatsappConfiguration = {
   updatedAt: string;
   enabled: boolean;
   provider: WhatsappProvider;
+  /** Conta do WhatsApp (WABA); preenchida na primeira mensagem recebida */
+  wabaId?: string | null;
   // Só números por QR code têm conexão própria; nulo na API oficial
   connectionStatus: WhatsappWebConnectionStatus | null;
   connectionError: string | null;

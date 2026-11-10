@@ -6,6 +6,18 @@ export const templateService = {
     return response.data;
   },
 
+  /** Cria o modelo na conta do WhatsApp do número e manda para aprovação da Meta. */
+  createMeta: async ({ body, params }: CreateMetaWhatsappTemplateRequestData): Promise<WhatsappTemplate> => {
+    const response = await api.post<WhatsappTemplate>(`/client/${params.clientId}/template/meta`, body);
+    return response.data;
+  },
+
+  /** IA escreve (generate) ou revisa (review) o modelo e confere a categoria. */
+  assist: async ({ body, params }: AssistWhatsappTemplateRequestData): Promise<WhatsappTemplateAssistResult> => {
+    const response = await api.post<WhatsappTemplateAssistResult>(`/client/${params.clientId}/template/assist`, body);
+    return response.data;
+  },
+
   /** Com configurationId, só os modelos que o número pode enviar (da WABA dele e os manuais). */
   findAll: async ({ params, queries }: FindAllWhatsappTemplatesRequestData): Promise<WhatsappTemplate[]> => {
     const response = await api.get<WhatsappTemplate[]>(`/client/${params.clientId}/template`, { params: queries });

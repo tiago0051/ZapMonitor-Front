@@ -1,6 +1,7 @@
 import { NotFound } from "@/components/not-found";
 import { PermissionRoute } from "@/components/permission-route";
 import { EditClientLayout } from "@/pages/dashboard/configuration/layout";
+import { WhatsappTemplateNew } from "@/pages/dashboard/configuration/whatsapp/whatsappTemplate/whatsappTemplateNew";
 import { lazy } from "react";
 import { Route, Routes } from "react-router";
 
@@ -18,6 +19,14 @@ const ConfigurationRouter = () => {
         element={
           <PermissionRoute permission="flows.manage">
             <FlowEditor />
+          </PermissionRoute>
+        }
+      />
+      <Route
+        path="templates/new"
+        element={
+          <PermissionRoute permission="templates.manage">
+            <WhatsappTemplateNew />
           </PermissionRoute>
         }
       />
