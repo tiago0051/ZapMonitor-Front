@@ -27,4 +27,10 @@ type OwnerClient = {
   services: number;
   // Vencimento do plano
   plan?: PlanStatus;
+  // Segmento da inteligência de anúncios (definido pela equipe do ZapMonitor)
+  adSegment: string | null;
+  // O cliente pediu para não participar da inteligência compartilhada
+  adIntelligenceOptOut: boolean;
 };
+
+type OwnerAdSegment = { value: string; label: string };

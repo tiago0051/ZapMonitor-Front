@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { useState, type FC } from "react";
 import { useDebounceValue } from "usehooks-ts";
 import { formatNumber } from "../ownerFormat";
+import { ClientAdSegmentSelect } from "./clientAdSegmentSelect";
 import { DialogChangeImplanter } from "./dialogChangeImplanter";
 import { DialogClientPlan } from "./dialogClientPlan";
 
@@ -29,6 +30,7 @@ const ImplanterName = ({ client }: { client: OwnerClient }) =>
 const columns: DataTablePaginateColumnDef<OwnerClient>[] = [
   { accessorKey: "name", header: "Tenant" },
   { header: "Responsável", cell: ({ row }) => <ImplanterName client={row.original} /> },
+  { header: "Segmento", cell: ({ row }) => <ClientAdSegmentSelect client={row.original} /> },
   { header: "Vencimento", cell: ({ row }) => (row.original.plan ? <PlanStatusBadge status={row.original.plan} /> : "—") },
   { accessorKey: "createdAt", header: "Criado em", cell: ({ row }) => format(row.original.createdAt, "dd/MM/yyyy") },
   { accessorKey: "activeUsers", header: "Usuários ativos", cell: ({ row }) => formatNumber(row.original.activeUsers) },
@@ -149,6 +151,10 @@ export const ClientsTab: FC<ClientsTabProps> = ({ period, implanters, implanterF
                     <dd className="font-semibold tabular-nums">{formatNumber(client.services)}</dd>
                   </div>
                 </dl>
+                <div className="space-y-1">
+                  <p className="text-muted-foreground text-sm">Segmento dos anúncios</p>
+                  <ClientAdSegmentSelect client={client} className="w-full max-w-none" />
+                </div>
                 <div className="flex flex-wrap gap-1">
                   <DialogClientPlan client={client} />
                   <DialogChangeImplanter client={client} />

@@ -42,6 +42,7 @@ import { AdsResults } from "./adsResults";
 import { AdsPilot } from "./pilot/adsPilot";
 import { AdStatusToggle } from "./components/adStatusToggle";
 import { AdBudgetEditor } from "./components/adBudgetEditor";
+import { AdsLearnings } from "./learnings/adsLearnings";
 
 const StatusChip: FC<{ status: string }> = ({ status }) => {
   const info = effectiveStatusInfo(status);
@@ -156,11 +157,11 @@ const CampaignRows: FC<{ campaign: MetaCampaign; currency: string; accountId: st
 
 type TabGroup = { id: string; label: string; tabs: string[] };
 
-// Onze abas em quatro grupos: o grupo fica em cima e as abas dele numa segunda linha menor
+// Doze abas em quatro grupos: o grupo fica em cima e as abas dele numa segunda linha menor
 const TAB_GROUPS: TabGroup[] = [
   { id: "overview", label: "Visão geral", tabs: ["results", "campaigns", "audiences", "leads"] },
   { id: "create", label: "Criar", tabs: ["create", "pilot"] },
-  { id: "ai", label: "IA", tabs: ["suggestions", "strategy", "changes"] },
+  { id: "ai", label: "IA", tabs: ["suggestions", "learnings", "strategy", "changes"] },
   { id: "settings", label: "Configurar", tabs: ["automation", "conversions"] },
 ];
 
@@ -172,6 +173,7 @@ const TAB_LABEL: Record<string, string> = {
   create: "Criar campanha",
   pilot: "Piloto automático",
   suggestions: "Sugestões",
+  learnings: "Aprendizados",
   strategy: "Estratégia",
   changes: "Mudanças",
   automation: "Automação",
@@ -415,6 +417,10 @@ export const AdsPage = () => {
 
         <TabsContent value="suggestions" className={tabContentClassName}>
           <AdsSuggestions key={currentAccount.id} account={currentAccount} />
+        </TabsContent>
+
+        <TabsContent value="learnings" className={tabContentClassName}>
+          <AdsLearnings key={currentAccount.id} account={currentAccount} />
         </TabsContent>
 
         {can("ads.manage") && (

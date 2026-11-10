@@ -727,3 +727,77 @@ type AdHourAnalysis = {
   deals: number;
   teamHours: BroadcastSendWindow;
 };
+
+// ---------- Aprendizados (o anúncio aprende com a conversa) ----------
+
+type AdTraitVerdict = "WINNER" | "LOSER" | "NEUTRAL" | "LEARNING";
+
+type AdTraitValueScore = {
+  value: string;
+  label: string;
+  ads: number;
+  spend: number;
+  conversations: number;
+  sales: number;
+  costPerSale: number | null;
+  costPerConversation: number | null;
+  // Fatia das vendas ÷ fatia da verba: 1 = na média; 1,6 = vende 1,6x a sua parte da verba
+  salesIndex: number | null;
+  verdict: AdTraitVerdict;
+};
+
+type AdTraitScore = { trait: string; label: string; values: AdTraitValueScore[] };
+
+type AdCreativeDnaCoverage = { analyzed: number; pending: number; total: number };
+
+type AdTraitScoreboard = {
+  traits: AdTraitScore[];
+  totals: { ads: number; analyzedAds: number; spend: number; sales: number; costPerSale: number | null };
+  coverage: AdCreativeDnaCoverage;
+};
+
+type AdLearningCountItem = { value: string; label: string; count: number };
+
+type AdLearningRow = {
+  metaAdId: string;
+  name: string;
+  deals: number;
+  won: number;
+  lost: number;
+  analyzed: number;
+  attractions: AdLearningCountItem[];
+  objections: AdLearningCountItem[];
+  lostReasons: AdLearningCountItem[];
+  quotes: string[];
+};
+
+type AdLearnings = {
+  totals: {
+    deals: number;
+    analyzed: number;
+    attractions: AdLearningCountItem[];
+    objections: AdLearningCountItem[];
+    lostReasons: AdLearningCountItem[];
+  };
+  ads: AdLearningRow[];
+};
+
+type AdSegmentInsight = {
+  trait: string;
+  value: string;
+  clients: number;
+  ads: number;
+  sales: number;
+  // Em características: vende Nx a sua parte da verba; na objeção ('objection'): fatia dos negócios com ela (0 a 1)
+  salesIndex: number;
+  label: string;
+  valueLabel: string;
+};
+
+type AdSegmentIntelligence = {
+  segment: string | null;
+  segmentLabel: string | null;
+  optOut: boolean;
+  computedAt: string | null;
+  insights: AdSegmentInsight[];
+};

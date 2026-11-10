@@ -38,3 +38,8 @@ type ChangeClientImplanterRequestParams = {
 type ChangeClientImplanterRequestBody = {
   implanterUserId: string;
 };
+
+type ChangeClientAdSegmentRequestData = {
+  params: { clientId: string };
+  body: { segment: string | null };
+};

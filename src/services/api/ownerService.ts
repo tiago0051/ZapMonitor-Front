@@ -16,4 +16,11 @@ export const ownerService = {
   changeClientImplanter: async ({ params, body }: ChangeClientImplanterRequestData): Promise<void> => {
     await api.put(`/owner/clients/${params.clientId}/implanter`, body);
   },
+  findAdSegments: async (): Promise<OwnerAdSegment[]> => {
+    const response = await api.get<OwnerAdSegment[]>("/owner/ad-segments");
+    return response.data;
+  },
+  changeClientAdSegment: async ({ params, body }: ChangeClientAdSegmentRequestData): Promise<void> => {
+    await api.put(`/owner/clients/${params.clientId}/ad-segment`, body);
+  },
 };

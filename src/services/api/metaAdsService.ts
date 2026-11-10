@@ -277,6 +277,26 @@ export const metaAdsService = {
     return response.data;
   },
 
+  findTraitScoreboard: async (clientId: string, accountId: string, queries: { days: number }): Promise<AdTraitScoreboard> =>
+    (await api.get<AdTraitScoreboard>(`/client/${clientId}/meta-ads/account/${accountId}/trait-scoreboard`, { params: queries })).data,
+
+  // Lê os criativos com IA; pode levar até um minuto
+  analyzeCreativeDna: async (clientId: string, accountId: string): Promise<AdCreativeDnaCoverage> =>
+    (
+      await api.post<AdCreativeDnaCoverage>(`/client/${clientId}/meta-ads/account/${accountId}/creative-dna`, undefined, {
+        timeout: 180000,
+      })
+    ).data,
+
+  findAdLearnings: async (clientId: string, accountId: string, queries: { days: number }): Promise<AdLearnings> =>
+    (await api.get<AdLearnings>(`/client/${clientId}/meta-ads/account/${accountId}/learnings`, { params: queries })).data,
+
+  findSegmentIntelligence: async (clientId: string): Promise<AdSegmentIntelligence> =>
+    (await api.get<AdSegmentIntelligence>(`/client/${clientId}/meta-ads/segment-intelligence`)).data,
+
+  saveIntelligenceSettings: async (clientId: string, body: { optOut: boolean }): Promise<AdSegmentIntelligence> =>
+    (await api.put<AdSegmentIntelligence>(`/client/${clientId}/meta-ads/intelligence-settings`, body)).data,
+
   findAttendanceSettings: async (clientId: string): Promise<AdAttendanceSettings> =>
     (await api.get<AdAttendanceSettings>(`/client/${clientId}/meta-ads/attendance-settings`)).data,
 

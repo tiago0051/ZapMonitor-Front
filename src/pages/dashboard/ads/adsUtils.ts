@@ -325,7 +325,7 @@ export const audienceDeliveryLabel = (status: string | null | undefined) => {
   return status;
 };
 
-export type GlossaryTerm = "CTR" | "ROAS" | "CPA" | "ADVANTAGE" | "CPC" | "CPM";
+export type GlossaryTerm = "CTR" | "ROAS" | "CPA" | "ADVANTAGE" | "CPC" | "CPM" | "SALES_SHARE";
 
 /** Explicações curtas para as siglas da Meta, mostradas pelo botão "o que é isso". */
 export const metricGlossary: Record<GlossaryTerm, { title: string; description: string }> = {
@@ -354,5 +354,10 @@ export const metricGlossary: Record<GlossaryTerm, { title: string; description: 
   CPM: {
     title: "CPM (custo por mil)",
     description: "Quanto custa mostrar o anúncio mil vezes.",
+  },
+  SALES_SHARE: {
+    title: "Vende Nx a sua parte da verba",
+    description:
+      "Compara a fatia das vendas com a fatia do gasto. Se os anúncios com essa característica levaram 20% da verba e trouxeram 32% das vendas, eles vendem 1,6x a sua parte. 1x é a média; abaixo de 1x vendem menos do que custam.",
   },
 };
