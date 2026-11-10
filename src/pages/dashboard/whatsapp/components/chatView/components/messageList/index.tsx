@@ -20,7 +20,7 @@ export const MessageList = ({ contact, onReply }: MessageListProps) => {
       <div onScroll={onScrollChat} className="flex max-h-full flex-col-reverse gap-2 overflow-auto px-4">
         <AnimatePresence initial={false}>
           {messages.map((message) => (
-            <MessageItem message={message} key={message.id} contactName={contactName} onReply={onReply} />
+            <MessageItem message={message} key={message.id} contactId={contact.id} contactName={contactName} onReply={onReply} />
           ))}
         </AnimatePresence>
 

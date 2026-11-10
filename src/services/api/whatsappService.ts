@@ -131,6 +131,11 @@ export const whatsappService = {
     );
     return response.data;
   },
+  // Pede à IA a leitura de uma imagem ou PDF recebido; a leitura chega pelo socket, como as transcrições
+  describeMessageMedia: async ({ params }: DescribeWhatsappMessageMediaRequestData): Promise<{ queued: boolean }> => {
+    const response = await api.post(`/client/${params.clientId}/whatsapp/contact/${params.contactId}/message/${params.messageId}/describe`);
+    return response.data;
+  },
   createWhatsappMessage: async ({ body, params }: CreateWhatsappMessageRequestData): Promise<WhatsappMessage> => {
     const response = await api.post(
       `/client/${params.clientId}/whatsapp/contact/${params.contactId}/configuration/${params.configurationId}/message`,

@@ -4,14 +4,17 @@ import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
 import { formatShortName, formatWhatsappText } from "@/utils/formatString";
 import { format } from "date-fns";
 import { useEffect, useState, type FC, type ReactNode } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FiAlertTriangle, FiDownload } from "react-icons/fi";
 import { IoCheckmarkDoneOutline, IoCheckmarkOutline, IoTimeOutline } from "react-icons/io5";
-import { ChevronDown, ChevronUp, Megaphone, Reply, RotateCw } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, Megaphone, Reply, RotateCw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "motion/react";
 import { MessageReplyPreview } from "../../../messageReplyPreview";
 import { TemplateMessage } from "../templateMessage";
+import { useClientContext } from "@/context/ClientContext/clientContext";
+import { whatsappService } from "@/services/api/whatsappService";
+import { requestErrorHandling } from "@/utils/request";
 
 type MessageFileContent = { url: string; filename: string };
 
@@ -125,13 +128,62 @@ const supportedContentTypes: string[] = [
   WhatsappMessageContentType.TEMPLATE,
 ];
 
+// Sem resposta da IA nesse tempo, o botão volta para tentar de novo
+const DESCRIBE_WAIT_MS = 90 * 1000;
+
+const isPdf = (content: MessageFileContent | null) => !!content?.filename?.toLowerCase().endsWith(".pdf");
+
+/**
+ * Imagem e PDF recebidos só são lidos pela IA quando uma etapa de IA precisa; aqui o atendente pede a leitura. O
+ * resultado chega pelo socket e aparece como transcrição.
+ */
+const DescribeMediaButton: FC<{ contactId: string; messageId: string }> = ({ contactId, messageId }) => {
+  const { client } = useClientContext();
+  const [isWaiting, setIsWaiting] = useState(false);
+
+  useEffect(() => {
+    if (!isWaiting) return;
+    const timer = setTimeout(() => setIsWaiting(false), DESCRIBE_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, [isWaiting]);
+
+  const describe = useMutation({
+    mutationFn: () => whatsappService.describeMessageMedia({ params: { clientId: client.id, contactId, messageId } }),
+    onSuccess: () => setIsWaiting(true),
+    onError: requestErrorHandling,
+  });
+
+  if (isWaiting)
+    return (
+      <p role="status" className="text-muted-foreground mt-2 flex items-center gap-1 border-t pt-2 text-xs">
+        <Loader2 className="size-3 animate-spin" />
+        Lendo com a IA…
+      </p>
+    );
+
+  return (
+    <div className="mt-2 border-t pt-2">
+      <button
+        type="button"
+        onClick={() => describe.mutate()}
+        disabled={describe.isPending}
+        className="text-primary inline-flex items-center gap-1 text-xs font-medium hover:underline disabled:opacity-60"
+      >
+        <Sparkles className="size-3" />
+        Ler com IA
+      </button>
+    </div>
+  );
+};
+
 type MessageItemProps = {
   message: WhatsappMessage;
+  contactId: string;
   contactName: string;
   onReply?: (message: WhatsappMessage) => void;
 };
 
-export const MessageItem: FC<MessageItemProps> = ({ message, contactName, onReply }) => {
+export const MessageItem: FC<MessageItemProps> = ({ message, contactId, contactName, onReply }) => {
   const [isTranscriptionOpen, setIsTranscriptionOpen] = useState(false);
 
   const status = message.status;
@@ -198,6 +250,13 @@ export const MessageItem: FC<MessageItemProps> = ({ message, contactName, onRepl
       {!supportedContentTypes.includes(message.contentType) && (
         <p className="text-muted-foreground text-sm italic">Tipo de mensagem não suportado</p>
       )}
+
+      {!transcribedContent &&
+        message.type === WhatsappMessageType.INCOMING &&
+        (message.contentType === WhatsappMessageContentType.IMAGE ||
+          (message.contentType === WhatsappMessageContentType.DOCUMENT && isPdf(mediaProps.content))) && (
+          <DescribeMediaButton contactId={contactId} messageId={message.id} />
+        )}
 
       {transcribedContent && (
         <div className="mt-2 border-t pt-2">

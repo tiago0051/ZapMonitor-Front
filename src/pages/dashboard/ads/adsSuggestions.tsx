@@ -17,15 +17,11 @@ import { AdvisorText } from "./components/advisorText";
 import { SteppedProgress } from "./components/steppedProgress";
 
 const STATUSES: AdSuggestionStatus[] = ["OPEN", "ACCEPTED", "POSTPONED", "REJECTED"];
-const AUDIT_STEPS = [
-  "Lendo as métricas da conta…",
-  "Analisando públicos e criativos…",
-  "Cruzando o gasto com as vendas do CRM…",
-  "Escrevendo as sugestões…",
-];
+// A auditoria confere a configuração por regras, sem IA
+const AUDIT_STEPS = ["Lendo a estrutura da conta…", "Conferindo públicos, posicionamentos e orçamentos…", "Montando as sugestões…"];
 const DAILY_STEPS = ["Lendo as métricas de ontem…", "Comparando com os dias anteriores…", "Escrevendo as sugestões…"];
 
-/** Auditoria da IA, análise diária e as sugestões da conta. */
+/** Auditoria de configuração (por regras), análise diária da IA e as sugestões da conta. */
 export const AdsSuggestions: FC<{ account: AdAccount }> = ({ account }) => {
   const { client, can } = useClientContext();
   const queryClient = useQueryClient();
@@ -71,7 +67,8 @@ export const AdsSuggestions: FC<{ account: AdAccount }> = ({ account }) => {
         <div className="min-w-0 flex-1 space-y-2">
           {!advisor?.aiEnabled && (
             <p className="text-sm text-amber-700 dark:text-amber-400">
-              A inteligência artificial não está ativa ou a cota do mês acabou. As sugestões já registradas continuam aqui.
+              A inteligência artificial não está ativa ou a cota do mês acabou: a análise diária e a conversa ficam paradas. A auditoria de
+              configuração continua funcionando, e as sugestões já registradas continuam aqui.
             </p>
           )}
           <SteppedProgress
@@ -92,8 +89,8 @@ export const AdsSuggestions: FC<{ account: AdAccount }> = ({ account }) => {
           )}
           {!analysis && (
             <p className="text-sm">
-              A IA revisa a conta contra as boas práticas da Meta e cruza o gasto com as vendas do CRM. Cada sugestão traz o problema, os
-              números e a mudança proposta.
+              A auditoria confere a configuração da conta contra as boas práticas da Meta, sem gastar a cota de IA. A análise diária usa a
+              IA para cruzar o gasto com as vendas do CRM. Cada sugestão traz o problema, os números e a mudança proposta.
             </p>
           )}
           {can("ads.manage") && (
@@ -108,11 +105,7 @@ export const AdsSuggestions: FC<{ account: AdAccount }> = ({ account }) => {
           )}
         </div>
         {can("ads.manage") && (
-          <Button
-            size="sm"
-            disabled={!advisor?.aiEnabled || isRunning || requestAudit.isPending}
-            onClick={() => requestAudit.mutate({ params })}
-          >
+          <Button size="sm" disabled={isRunning || requestAudit.isPending} onClick={() => requestAudit.mutate({ params })}>
             <Sparkles className="h-4 w-4" />
             Auditar conta
           </Button>

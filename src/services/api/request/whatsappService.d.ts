@@ -388,3 +388,7 @@ type CreateWhatsappEmbeddedSignupRequestBody = {
   wabaId: string;
   businessId?: string;
 };
+
+type DescribeWhatsappMessageMediaRequestData = {
+  params: { clientId: string; contactId: string; messageId: string };
+};
