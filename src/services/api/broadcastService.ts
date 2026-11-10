@@ -3,7 +3,10 @@ import api from "./api";
 const base = (clientId: string) => `/client/${clientId}/broadcast`;
 
 export const broadcastService = {
-  findAll: async (clientId: string, queries: { page?: number; take?: number; status?: string }): Promise<BroadcastPage<Broadcast>> => {
+  findAll: async (
+    clientId: string,
+    queries: { page?: number; take?: number; status?: string; search?: string },
+  ): Promise<BroadcastPage<Broadcast>> => {
     const response = await api.get(base(clientId), { params: queries });
     return response.data;
   },

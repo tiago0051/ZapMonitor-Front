@@ -5,7 +5,7 @@ const base = (clientId: string) => `/client/${clientId}/email-campaign`;
 export const emailCampaignService = {
   findAll: async (
     clientId: string,
-    queries: { page?: number; take?: number; status?: string },
+    queries: { page?: number; take?: number; status?: string; search?: string },
   ): Promise<EmailCampaignPage<EmailCampaign>> => (await api.get(base(clientId), { params: queries })).data,
 
   findOne: async (clientId: string, id: string): Promise<EmailCampaign> => (await api.get(`${base(clientId)}/${id}`)).data,

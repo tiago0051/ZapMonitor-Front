@@ -11,6 +11,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Plus } from "lucide-react";
 import { useState } from "react";
+import { useDebounceValue } from "usehooks-ts";
 import { Link, useSearchParams } from "react-router";
 import { broadcastStatusInfo, formatCount, progressOf, rate } from "./broadcastUtils";
 import { OptOutList } from "./components/optOutList";
@@ -34,19 +35,18 @@ const BroadcastList = () => {
   const [page, setPage] = useState(1);
   const [nameFilter, setNameFilter] = useState("");
 
+  const [search] = useDebounceValue(nameFilter.trim(), 400);
+
   const query = useQuery({
-    queryKey: ["broadcasts", client.id, status, page],
-    queryFn: () => broadcastService.findAll(client.id, { page, take: TAKE, status: status || undefined }),
+    queryKey: ["broadcasts", client.id, status, page, search],
+    queryFn: () => broadcastService.findAll(client.id, { page, take: TAKE, status: status || undefined, search: search || undefined }),
     // Enquanto há envio em andamento, os totais se atualizam sozinhos
     refetchInterval: (current) => (current.state.data?.items.some((item) => item.status === "SENDING") ? 5000 : false),
   });
 
   const total = query.data?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / TAKE));
-  // A API ainda não busca por nome: o filtro vale só para a página carregada
-  const normalizedFilter = nameFilter.trim().toLowerCase();
-  const pageItems = query.data?.items ?? [];
-  const items = normalizedFilter ? pageItems.filter((item) => item.name.toLowerCase().includes(normalizedFilter)) : pageItems;
+  const items = query.data?.items ?? [];
 
   return (
     <div className="grid gap-4">
@@ -87,14 +87,14 @@ const BroadcastList = () => {
               id="broadcast-name-filter"
               type="search"
               value={nameFilter}
-              onChange={(event) => setNameFilter(event.target.value)}
-              placeholder={pages > 1 ? "Filtrar por nome nesta página" : "Filtrar por nome"}
-              aria-label={pages > 1 ? "Filtrar por nome nesta página" : "Filtrar por nome"}
+              onChange={(event) => {
+                setNameFilter(event.target.value);
+                setPage(1);
+              }}
+              placeholder="Buscar por nome ou modelo"
+              aria-label="Buscar campanha por nome ou modelo"
               className="h-9 sm:w-64"
             />
-            {pages > 1 && normalizedFilter && (
-              <p className="text-muted-foreground text-xs">O filtro procura só nas campanhas desta página.</p>
-            )}
           </div>
         </div>
       )}
@@ -103,13 +103,10 @@ const BroadcastList = () => {
       {query.isError && (
         <ErrorState message="Não foi possível buscar as campanhas." onRetry={() => query.refetch()} isRetrying={query.isFetching} />
       )}
-      {query.isSuccess && pageItems.length > 0 && items.length === 0 && (
-        <EmptyState
-          title="Nenhuma campanha com esse nome"
-          description={pages > 1 ? "Tente outra página ou outro nome." : "Tente outro nome."}
-        />
+      {query.isSuccess && items.length === 0 && search && (
+        <EmptyState title="Nenhuma campanha encontrada" description="Tente outro nome ou parte do nome do modelo." />
       )}
-      {query.isSuccess && pageItems.length === 0 && (
+      {query.isSuccess && items.length === 0 && !search && (
         <EmptyState
           title={status ? "Nenhuma campanha com esse status" : "Nenhuma campanha ainda"}
           description="Monte uma campanha com um modelo aprovado e o público do CRM, das etiquetas ou de uma planilha."

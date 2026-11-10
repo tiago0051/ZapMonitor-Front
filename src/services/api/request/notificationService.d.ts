@@ -1,5 +1,5 @@
 type FindAllEmailsRequestData = {
-  query: PaginateRequestQuery;
+  query: PaginateRequestQuery & { search?: string };
   params: FindAllEmailsRequestParams;
 };
 
