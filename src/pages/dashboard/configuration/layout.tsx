@@ -146,7 +146,7 @@ const configurationGroups: { label: string; sections: ConfigurationSection[] }[]
         label: "Google Agenda",
         icon: CalendarDays,
         content: <GoogleCalendarSettings />,
-        permission: "aiConfig.manage",
+        permission: "googleCalendar.manage",
       },
       { id: "api", label: "API", icon: Code2, content: <ClientConfiguration />, permission: "api.manage" },
     ],
