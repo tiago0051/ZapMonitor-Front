@@ -31,7 +31,7 @@ const COPY: Record<ConnectablePlatform, { title: string; description: string; co
     connect: "Conectar com o Google",
     empty:
       "Entre com uma conta Google que acesse o Google Ads da empresa (direto ou por uma conta de administrador) e autorize o Google Ads.",
-    env: "VITE_GOOGLE_OAUTH_CLIENT_ID no painel e GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET e GOOGLE_ADS_DEVELOPER_TOKEN no servidor",
+    env: "VITE_GOOGLE_OAUTH_CLIENT_ID no painel e GOOGLE_OAUTH_CLIENT_ID e GOOGLE_OAUTH_CLIENT_SECRET no servidor, com a Google Ads API ativada no projeto do Google Cloud",
   },
   TIKTOK: {
     title: "Anúncios do TikTok",
