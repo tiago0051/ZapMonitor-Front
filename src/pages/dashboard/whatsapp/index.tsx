@@ -16,6 +16,7 @@ import { useNewContactNotifications } from "./notifications/useNewContactNotific
 import { useSearchParams } from "react-router";
 import { whatsappService } from "@/services/api/whatsappService";
 import { useClientContext } from "@/context/ClientContext/clientContext";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes";
 
 // ── Shared sub-panels ────────────────────────────────────────────────────────
 
@@ -83,7 +84,7 @@ function ContactListPanel({
     return (
       <>
         {contacts.items.map((c) => (
-          <ContactCard key={c.id} contact={c} active={selected?.id === c.id} onClick={() => onSelectContact(c)} />
+          <ContactCard key={c.id} contact={c} active={selected?.id === c.id} highlight={search} onClick={() => onSelectContact(c)} />
         ))}
         {contacts.isFetchingNextPage && Array.from({ length: 3 }).map((_, index) => <ContactCardSkeleton key={`next-${index}`} />)}
         {contacts.hasNextPage && !contacts.isFetchingNextPage && <LoadMoreSentinel onVisible={() => contacts.fetchNextPage()} />}
@@ -101,7 +102,7 @@ function ContactListPanel({
             value={selectedServiceGroupId}
             onChange={(e) => serviceGroupSelection.setSelectedServiceGroupId(e.target.value)}
             disabled={serviceGroups.length === 1}
-            className="text-foreground flex-1 truncate bg-transparent text-sm font-medium outline-none disabled:cursor-not-allowed disabled:opacity-100"
+            className="text-foreground min-w-0 flex-1 truncate bg-transparent text-base font-medium outline-none disabled:cursor-not-allowed disabled:opacity-100 md:text-sm"
           >
             {serviceGroups.map((group) => (
               <option key={group.id} value={group.id}>
@@ -132,6 +133,8 @@ function ContactListPanel({
           return (
             <button
               key={t}
+              type="button"
+              aria-pressed={tab === t}
               onClick={() => setTab(t)}
               className={`relative flex flex-1 items-center justify-center py-3 text-sm font-medium transition-colors ${
                 tab === t ? "text-foreground" : "text-muted-foreground hover:text-foreground"
@@ -152,16 +155,17 @@ function ContactListPanel({
       </div>
 
       <div className="border-border flex flex-shrink-0 items-center gap-2 border-b px-3 py-2.5">
-        <div className="bg-muted flex flex-1 items-center gap-2 rounded-lg px-3 py-1.5">
+        <div className="bg-muted flex min-w-0 flex-1 items-center gap-2 rounded-lg px-3 py-1.5">
           <Search className="text-muted-foreground h-3.5 w-3.5 flex-shrink-0" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar contato..."
-            className="text-foreground placeholder:text-muted-foreground flex-1 bg-transparent text-sm outline-none"
+            aria-label="Buscar conversas"
+            placeholder="Buscar por nome ou telefone"
+            className="text-foreground placeholder:text-muted-foreground min-w-0 flex-1 bg-transparent text-base outline-none md:text-sm"
           />
           {search && (
-            <button onClick={() => setSearch("")}>
+            <button onClick={() => setSearch("")} aria-label="Limpar busca" className="-m-1.5 p-1.5">
               <X className="text-muted-foreground h-3.5 w-3.5" />
             </button>
           )}
@@ -213,7 +217,7 @@ function ConnectionNotice({ isConnected }: { isConnected: boolean }) {
   return (
     <div
       role="status"
-      className="flex flex-shrink-0 items-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
+      className="flex flex-shrink-0 flex-wrap items-center gap-x-2 gap-y-0.5 border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
     >
       <WifiOff className="h-4 w-4 flex-shrink-0" />
       <span className="font-medium">Sem conexão em tempo real.</span>
@@ -243,13 +247,26 @@ export function Whatsapp() {
   const [rightPanel, setRightPanel] = useState<InfoPanelTab>("summary");
   const [[mobileView, mobileViewDirection], setMobileViewState] = useState<[MobileView, number]>(["list", 0]);
 
+  // A ficha (aba "Ficha" do painel) avisa se tem edição pendente; trocar de aba/contato a desmontaria
+  const [isProfileDirty, setIsProfileDirty] = useState(false);
+  const { guard, guardDialog } = useUnsavedChangesGuard(isProfileDirty);
+
   const goToMobileView = (view: MobileView) => {
     setMobileViewState(([current]) => [view, mobileViewIndex[view] > mobileViewIndex[current] ? 1 : -1]);
   };
 
   const handleSelectContact = (contact: WhatsappContactMessage) => {
-    setSelected(contact);
-    goToMobileView("chat");
+    const open = () => {
+      setSelected(contact);
+      goToMobileView("chat");
+    };
+    if (contact.id === selected?.id) return open();
+    guard(open);
+  };
+
+  const changeRightPanel = (panel: InfoPanelTab) => {
+    if (panel === rightPanel) return;
+    guard(() => setRightPanel(panel));
   };
 
   // Links de fora da tela (como o card do CRM) abrem a conversa do contato pela aba Todos
@@ -284,9 +301,10 @@ export function Whatsapp() {
   });
 
   return (
-    <>
+    <div className="flex h-full flex-col">
+      {guardDialog}
       <ConnectionNotice isConnected={isConnected} />
-      <div className="flex h-full overflow-hidden" style={{ fontFamily: "Inter, sans-serif" }}>
+      <div className="flex min-h-0 flex-1 overflow-hidden" style={{ fontFamily: "Inter, sans-serif" }}>
         {/* ════ DESKTOP LAYOUT (md+) ════ */}
         {!isMobile && (
           <div className="flex h-full w-full">
@@ -302,7 +320,12 @@ export function Whatsapp() {
                   <ChatView key={selected.id} contact={selected} onServiceAssumed={() => setTab("mine")} />
                 </div>
                 <aside className="border-border w-72 flex-shrink-0 border-l">
-                  <InfoPanel selected={selected} rightPanel={rightPanel} setRightPanel={setRightPanel} />
+                  <InfoPanel
+                    selected={selected}
+                    rightPanel={rightPanel}
+                    setRightPanel={changeRightPanel}
+                    onProfileDirtyChange={setIsProfileDirty}
+                  />
                 </aside>
               </div>
             ) : (
@@ -351,15 +374,23 @@ export function Whatsapp() {
                       {/* Back to chat */}
                       <div className="border-border bg-card flex flex-shrink-0 items-center gap-2 border-b px-4 py-3">
                         <button
-                          className="hover:bg-muted text-muted-foreground flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
-                          onClick={() => goToMobileView("chat")}
+                          aria-label="Voltar para a conversa"
+                          className="hover:bg-muted text-muted-foreground flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
+                          onClick={() => guard(() => goToMobileView("chat"))}
                         >
                           <ArrowLeft className="h-4 w-4" />
                         </button>
                         <span className="text-foreground text-sm font-semibold">Informações</span>
                       </div>
                       <div className="min-h-0 flex-1">
-                        {selected ? <InfoPanel selected={selected} rightPanel={rightPanel} setRightPanel={setRightPanel} /> : null}
+                        {selected ? (
+                          <InfoPanel
+                            selected={selected}
+                            rightPanel={rightPanel}
+                            setRightPanel={changeRightPanel}
+                            onProfileDirtyChange={setIsProfileDirty}
+                          />
+                        ) : null}
                       </div>
                     </div>
                   )}
@@ -369,6 +400,6 @@ export function Whatsapp() {
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }

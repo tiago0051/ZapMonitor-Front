@@ -75,7 +75,7 @@ const StageRow: FC<StageRowProps> = ({ stage, flows, fields, onChange, disabled,
       />
       {children}
     </div>
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pl-11 text-xs">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs sm:pl-11">
       <label className="flex min-w-0 flex-1 items-center gap-2">
         <span className="text-muted-foreground shrink-0">Ao entrar, rodar</span>
         <select
@@ -253,7 +253,13 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {isEditing ? (
-          <Button variant="ghost" size="icon" className="text-muted-foreground h-8 w-8 shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground h-8 w-8 shrink-0"
+            aria-label={`Editar ${pipeline?.name ?? "funil"}`}
+            title="Editar"
+          >
             <Pencil className="h-4 w-4" />
           </Button>
         ) : (
@@ -261,7 +267,7 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
         )}
       </DialogTrigger>
 
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar funil" : "Novo funil"}</DialogTitle>
           <DialogDescription>

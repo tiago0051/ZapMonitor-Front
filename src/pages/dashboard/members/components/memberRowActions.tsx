@@ -24,7 +24,7 @@ export const MemberRowActions: FC<MemberRowActionsProps> = ({ member, clientId }
   return (
     <div className="flex gap-1">
       <DialogChangeMemberRole clientId={clientId} member={member} />
-      <DialogChangeMemberStatus clientId={clientId} userId={member.id} action={member.status === "ACTIVE" ? "deactivate" : "activate"} />
+      <DialogChangeMemberStatus clientId={clientId} member={member} action={member.status === "ACTIVE" ? "deactivate" : "activate"} />
     </div>
   );
 };

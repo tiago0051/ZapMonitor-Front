@@ -40,7 +40,14 @@ export const DeleteWhatsappConfigurationButton: FC<DeleteWhatsappConfigurationBu
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8" title="Excluir" disabled={deleteMutation.isPending}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          aria-label="Excluir número"
+          title="Excluir"
+          disabled={deleteMutation.isPending}
+        >
           {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
         </Button>
       </AlertDialogTrigger>

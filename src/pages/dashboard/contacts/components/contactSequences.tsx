@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useClientContext } from "@/context/ClientContext/clientContext";
@@ -19,6 +20,7 @@ export const ContactSequences: FC<{ contactId: string; hasEmail: boolean }> = ({
   const baseUrl = useBaseUrl();
   const queryClient = useQueryClient();
   const [sequenceId, setSequenceId] = useState("");
+  const { confirm, confirmDialog } = useConfirm();
   const canSend = can("broadcasts.send");
 
   const enrollmentsKey = ["emailSequences", client.id, "enrollments", "contact", contactId];
@@ -61,8 +63,19 @@ export const ContactSequences: FC<{ contactId: string; hasEmail: boolean }> = ({
 
   if (!enrollments.length && !canSend) return null;
 
+  const onStop = async (enrollmentId: string, sequenceName: string) => {
+    const ok = await confirm({
+      title: "Tirar da sequência?",
+      description: `A pessoa deixa de receber os próximos e-mails de "${sequenceName}". Para voltar, será preciso colocá-la de novo.`,
+      confirmLabel: "Tirar",
+      destructive: true,
+    });
+    if (ok) stop.mutate(enrollmentId);
+  };
+
   return (
     <section className="grid gap-3 rounded-xl border p-4">
+      {confirmDialog}
       <h2 className="text-lg font-semibold">Sequências de e-mail</h2>
       {enrollments.length === 0 && <p className="text-muted-foreground text-sm">Não está em nenhuma sequência.</p>}
       {enrollments.length > 0 && (
@@ -85,7 +98,7 @@ export const ContactSequences: FC<{ contactId: string; hasEmail: boolean }> = ({
                 </div>
                 <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-medium", status.className)}>{status.label}</span>
                 {canSend && item.status === "ACTIVE" && (
-                  <Button variant="ghost" size="sm" disabled={stop.isPending} onClick={() => stop.mutate(item.id)}>
+                  <Button variant="ghost" size="sm" disabled={stop.isPending} onClick={() => onStop(item.id, item.sequenceName)}>
                     Tirar
                   </Button>
                 )}

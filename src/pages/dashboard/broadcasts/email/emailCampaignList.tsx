@@ -1,5 +1,6 @@
 import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useBaseUrl } from "@/hooks/use-baseUrl";
@@ -32,6 +33,7 @@ export const EmailCampaignList = () => {
   const baseUrl = useBaseUrl();
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
+  const [nameFilter, setNameFilter] = useState("");
 
   const query = useQuery({
     queryKey: ["emailCampaigns", client.id, status, page],
@@ -39,8 +41,12 @@ export const EmailCampaignList = () => {
     refetchInterval: (current) => (current.state.data?.items.some((item) => item.status === "SENDING") ? 5000 : false),
   });
 
-  const items = query.data?.items ?? [];
-  const pages = Math.max(1, Math.ceil((query.data?.total ?? 0) / TAKE));
+  const total = query.data?.total ?? 0;
+  const pages = Math.max(1, Math.ceil(total / TAKE));
+  // A API ainda não busca por nome: o filtro vale só para a página carregada
+  const normalizedFilter = nameFilter.trim().toLowerCase();
+  const pageItems = query.data?.items ?? [];
+  const items = normalizedFilter ? pageItems.filter((item) => item.name.toLowerCase().includes(normalizedFilter)) : pageItems;
 
   return (
     <div className="grid gap-4">
@@ -71,11 +77,39 @@ export const EmailCampaignList = () => {
         )}
       </div>
 
+      {query.isSuccess && (total > 0 || nameFilter) && (
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-muted-foreground text-sm tabular-nums">
+            {formatCount(total)} {total === 1 ? "campanha" : "campanhas"}
+          </p>
+          <div className="grid gap-1 sm:justify-items-end">
+            <Input
+              id="email-campaign-name-filter"
+              type="search"
+              value={nameFilter}
+              onChange={(event) => setNameFilter(event.target.value)}
+              placeholder={pages > 1 ? "Filtrar por nome nesta página" : "Filtrar por nome"}
+              aria-label={pages > 1 ? "Filtrar por nome nesta página" : "Filtrar por nome"}
+              className="h-9 sm:w-64"
+            />
+            {pages > 1 && normalizedFilter && (
+              <p className="text-muted-foreground text-xs">O filtro procura só nas campanhas desta página.</p>
+            )}
+          </div>
+        </div>
+      )}
+
       {query.isLoading && <LoadingState label="Carregando campanhas..." />}
       {query.isError && (
         <ErrorState message="Não foi possível buscar as campanhas." onRetry={() => query.refetch()} isRetrying={query.isFetching} />
       )}
-      {query.isSuccess && items.length === 0 && (
+      {query.isSuccess && pageItems.length > 0 && items.length === 0 && (
+        <EmptyState
+          title="Nenhuma campanha com esse nome"
+          description={pages > 1 ? "Tente outra página ou outro nome." : "Tente outro nome."}
+        />
+      )}
+      {query.isSuccess && pageItems.length === 0 && (
         <EmptyState
           title={status ? "Nenhuma campanha com esse status" : "Nenhuma campanha de e-mail ainda"}
           description="Escolha um remetente verificado e um modelo, e envie para as fichas do CRM, das etiquetas ou de uma planilha."

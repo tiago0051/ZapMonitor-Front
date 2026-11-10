@@ -93,7 +93,13 @@ export const DialogSaveAiAgent: FC<DialogSaveAiAgentProps> = ({ clientId, aiAgen
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         {isEditing ? (
-          <Button variant="ghost" size="icon" className="text-muted-foreground h-8 w-8 shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground h-8 w-8 shrink-0"
+            aria-label={`Editar ${aiAgent?.name ?? "agente"}`}
+            title="Editar"
+          >
             <Pencil className="h-4 w-4" />
           </Button>
         ) : (
@@ -101,7 +107,7 @@ export const DialogSaveAiAgent: FC<DialogSaveAiAgentProps> = ({ clientId, aiAgen
         )}
       </DialogTrigger>
 
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-5xl">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-5xl">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar agente de IA" : "Novo agente de IA"}</DialogTitle>
           <DialogDescription>Cada agente tem o próprio system prompt, que define como ele conduz o atendimento.</DialogDescription>

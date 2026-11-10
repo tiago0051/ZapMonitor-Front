@@ -287,7 +287,7 @@ export const DialogSavePriceTable: FC<DialogSavePriceTableProps> = ({ table, bas
                 </Button>
               </div>
               {fixedCosts.fields.map((fixedCost, index) => (
-                <div key={fixedCost.id} className="grid grid-cols-[1fr_9rem_auto] items-start gap-2">
+                <div key={fixedCost.id} className="grid grid-cols-[1fr_7rem_auto] items-start gap-2 sm:grid-cols-[1fr_9rem_auto]">
                   <FormField
                     control={form.control}
                     name={`fixedCosts.${index}.name`}

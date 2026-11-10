@@ -66,7 +66,7 @@ export const DialogCreateAiConfig: FC<DialogCreateAiConfigProps> = ({ clientId, 
         <Button className={className}>Criar Configuração de IA</Button>
       </DialogTrigger>
 
-      <DialogContent className="max-h-screen overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Nova Configuração de IA</DialogTitle>
           <DialogDescription>Informe a chave de API usada pelos agentes de IA, transcrições e resumos deste cliente.</DialogDescription>

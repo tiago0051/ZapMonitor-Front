@@ -1,3 +1,5 @@
+import { useConfirm } from "@/components/confirm-dialog";
+import { DisabledReason } from "@/components/disabled-reason";
 import { LoadingState } from "@/components/state-message";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -16,7 +18,11 @@ import { toast } from "sonner";
 import { AdsAttendance } from "./adsAttendance";
 import { formatMoney, ruleActionLabel, ruleMetricLabel, targetLevelLabel } from "./adsUtils";
 
-const selectClassName = cn(crmSelectClassName, "h-8 text-xs");
+// Selects no meio da frase: só a largura do texto, quebrando a linha junto com as palavras
+const selectClassName = cn(crmSelectClassName, "h-8 w-auto max-w-full text-xs");
+const hourLabel = (hour: number) => `${String(hour).padStart(2, "0")}:00`;
+const START_HOURS = Array.from({ length: 24 }, (_, hour) => hour);
+const END_HOURS = Array.from({ length: 24 }, (_, hour) => hour + 1);
 const PERIODS = [1, 3, 7, 14, 30];
 const MONEY_METRICS: AdRuleMetric[] = ["SPEND", "COST_PER_CONVERSATION", "COST_PER_DEAL", "COST_PER_WON_DEAL"];
 
@@ -40,6 +46,7 @@ const GuardrailsForm: FC<{ guardrails: AdGuardrails }> = ({ guardrails }) => {
   const queryClient = useQueryClient();
   const [values, setValues] = useState(guardrails);
   const canEdit = can("ads.approve");
+  const hoursInvalid = values.allowedStartHour >= values.allowedEndHour;
 
   const save = useMutation({
     mutationFn: metaAdsService.saveGuardrails,
@@ -78,28 +85,35 @@ const GuardrailsForm: FC<{ guardrails: AdGuardrails }> = ({ guardrails }) => {
         <div className="grid gap-1">
           <span className="text-xs font-medium">Horário permitido (fuso da conta)</span>
           <div className="flex items-center gap-1">
-            <Input
-              type="number"
+            <select
               aria-label="Hora inicial"
-              min={0}
-              max={23}
               disabled={!canEdit}
               value={values.allowedStartHour}
-              onChange={(event) => setValues({ ...values, allowedStartHour: event.target.valueAsNumber || 0 })}
-              className="w-20"
-            />
+              onChange={(event) => setValues({ ...values, allowedStartHour: Number(event.target.value) })}
+              className={cn(crmSelectClassName, "w-24")}
+            >
+              {START_HOURS.map((hour) => (
+                <option key={hour} value={hour}>
+                  {hourLabel(hour)}
+                </option>
+              ))}
+            </select>
             <span className="text-xs">até</span>
-            <Input
-              type="number"
+            <select
               aria-label="Hora final"
-              min={1}
-              max={24}
               disabled={!canEdit}
               value={values.allowedEndHour}
-              onChange={(event) => setValues({ ...values, allowedEndHour: event.target.valueAsNumber || 0 })}
-              className="w-20"
-            />
+              onChange={(event) => setValues({ ...values, allowedEndHour: Number(event.target.value) })}
+              className={cn(crmSelectClassName, "w-24")}
+            >
+              {END_HOURS.map((hour) => (
+                <option key={hour} value={hour}>
+                  {hourLabel(hour)}
+                </option>
+              ))}
+            </select>
           </div>
+          {hoursInvalid && <DisabledReason>A hora final precisa ser depois da inicial.</DisabledReason>}
         </div>
         <div className="grid content-end gap-2">
           <label className="flex items-center gap-2 text-xs">
@@ -123,7 +137,7 @@ const GuardrailsForm: FC<{ guardrails: AdGuardrails }> = ({ guardrails }) => {
       {canEdit && (
         <Button
           size="sm"
-          disabled={save.isPending || values.allowedStartHour >= values.allowedEndHour}
+          disabled={save.isPending || hoursInvalid}
           onClick={() => save.mutate({ params: { clientId: client.id }, body: values })}
         >
           Salvar travas
@@ -131,6 +145,15 @@ const GuardrailsForm: FC<{ guardrails: AdGuardrails }> = ({ guardrails }) => {
       )}
     </div>
   );
+};
+
+const describeRule = (rule: AdRuleValues, currency: string) => {
+  const threshold = MONEY_METRICS.includes(rule.metric) ? formatMoney(rule.threshold, currency) : rule.threshold.toLocaleString("pt-BR");
+  const action = rule.action === "PAUSE" ? "pausar" : `${ruleActionLabel[rule.action].toLowerCase()} em ${rule.actionValue}%`;
+
+  return `Se ${targetLevelLabel[rule.level].toLowerCase()} tiver ${ruleMetricLabel[rule.metric].toLowerCase()} ${
+    rule.operator === "GREATER_THAN" ? "acima de" : "abaixo de"
+  } ${threshold} nos últimos ${rule.periodDays} dia(s), ${action}.`;
 };
 
 type RuleFormProps = { account: AdAccount; rule?: AdRule; onDone: () => void };
@@ -253,6 +276,10 @@ const RuleForm: FC<RuleFormProps> = ({ account, rule, onDone }) => {
           </>
         )}
       </div>
+      <p className="bg-muted/50 rounded-md px-2 py-1.5 text-xs" aria-live="polite">
+        <span className="text-muted-foreground">Como fica: </span>
+        {describeRule({ ...values, actionValue: isBudget ? values.actionValue : null }, account.currency)}
+      </p>
       {isBudget && values.level === "ad" && (
         <p className="text-destructive text-xs">Anúncio não tem orçamento; use campanha ou conjunto.</p>
       )}
@@ -298,19 +325,11 @@ const RuleForm: FC<RuleFormProps> = ({ account, rule, onDone }) => {
   );
 };
 
-const describeRule = (rule: AdRule, currency: string) => {
-  const threshold = MONEY_METRICS.includes(rule.metric) ? formatMoney(rule.threshold, currency) : rule.threshold.toLocaleString("pt-BR");
-  const action = rule.action === "PAUSE" ? "pausar" : `${ruleActionLabel[rule.action].toLowerCase()} em ${rule.actionValue}%`;
-
-  return `Se ${targetLevelLabel[rule.level].toLowerCase()} tiver ${ruleMetricLabel[rule.metric].toLowerCase()} ${
-    rule.operator === "GREATER_THAN" ? "acima de" : "abaixo de"
-  } ${threshold} nos últimos ${rule.periodDays} dia(s), ${action}.`;
-};
-
 /** Travas do cliente e regras automáticas da conta, avaliadas todo dia às 9h. */
 export const AdsAutomation: FC<{ account: AdAccount }> = ({ account }) => {
   const { client, can } = useClientContext();
   const queryClient = useQueryClient();
+  const { confirm, confirmDialog } = useConfirm();
   const [editingRuleId, setEditingRuleId] = useState<string | "new" | null>(null);
 
   const guardrailsQuery = useQuery({
@@ -340,13 +359,16 @@ export const AdsAutomation: FC<{ account: AdAccount }> = ({ account }) => {
 
   return (
     <section className="space-y-4">
+      {confirmDialog}
       {guardrailsQuery.data && <GuardrailsForm key={JSON.stringify(guardrailsQuery.data)} guardrails={guardrailsQuery.data} />}
       <AdsAttendance />
 
       <div className="space-y-3">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <h3 className="text-sm font-semibold">Regras automáticas</h3>
-          <span className="text-muted-foreground text-xs">avaliadas todo dia às 9h com os dias completos até ontem</span>
+          <span className="text-muted-foreground order-last basis-full text-xs sm:order-none sm:basis-auto">
+            avaliadas todo dia às 9h com os dias completos até ontem
+          </span>
           {can("ads.manage") && editingRuleId === null && (
             <Button size="sm" variant="outline" className="ml-auto" onClick={() => setEditingRuleId("new")}>
               <Plus className="h-4 w-4" />
@@ -407,7 +429,15 @@ export const AdsAutomation: FC<{ account: AdAccount }> = ({ account }) => {
                     className="h-8 w-8"
                     aria-label={`Apagar ${rule.name}`}
                     disabled={deleteRule.isPending}
-                    onClick={() => deleteRule.mutate({ params: { clientId: client.id, ruleId: rule.id } })}
+                    onClick={async () => {
+                      const ok = await confirm({
+                        title: `Apagar a regra "${rule.name}"?`,
+                        description: "Ela deixa de ser avaliada. Mudanças já criadas por ela continuam em Mudanças.",
+                        confirmLabel: "Apagar regra",
+                        destructive: true,
+                      });
+                      if (ok) deleteRule.mutate({ params: { clientId: client.id, ruleId: rule.id } });
+                    }}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

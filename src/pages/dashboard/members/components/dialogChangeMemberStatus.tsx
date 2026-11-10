@@ -1,13 +1,5 @@
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { memberService } from "@/services/api/memberService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -17,34 +9,34 @@ import { toast } from "sonner";
 
 type DialogChangeMemberStatusProps = {
   clientId: string;
-  userId: string;
+  member: Pick<Member, "id" | "name" | "email">;
   action: "activate" | "deactivate";
 };
 
 const content = {
   activate: {
     trigger: "Ativar",
-    title: "Ativar membro",
-    description: "Tem certeza que deseja ativar este membro? Ele voltará a ter acesso a este cliente.",
+    title: "Ativar usuário",
+    description: "Este usuário voltará a ter acesso a este cliente.",
     confirm: "Ativar",
     icon: UserCheck,
     iconClassName: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
     buttonVariant: "default" as const,
-    successMessage: "Membro ativado com sucesso",
+    successMessage: "Usuário ativado",
   },
   deactivate: {
     trigger: "Desativar",
-    title: "Desativar membro",
-    description: "Tem certeza que deseja desativar este membro? Ele perderá o acesso a este cliente.",
+    title: "Desativar usuário",
+    description: "Este usuário perderá o acesso a este cliente.",
     confirm: "Desativar",
     icon: UserX,
     iconClassName: "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
     buttonVariant: "destructive" as const,
-    successMessage: "Membro desativado com sucesso",
+    successMessage: "Usuário desativado",
   },
 };
 
-export const DialogChangeMemberStatus: FC<DialogChangeMemberStatusProps> = ({ clientId, userId, action }) => {
+export const DialogChangeMemberStatus: FC<DialogChangeMemberStatusProps> = ({ clientId, member, action }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const queryClient = useQueryClient();
   const config = content[action];
@@ -61,7 +53,7 @@ export const DialogChangeMemberStatus: FC<DialogChangeMemberStatusProps> = ({ cl
   });
 
   const handleConfirm = () => {
-    changeStatus.mutate({ params: { clientId, userId } });
+    changeStatus.mutate({ params: { clientId, userId: member.id } });
   };
 
   return (
@@ -81,6 +73,11 @@ export const DialogChangeMemberStatus: FC<DialogChangeMemberStatusProps> = ({ cl
           <DialogTitle className="text-center">{config.title}</DialogTitle>
           <DialogDescription className="text-center">{config.description}</DialogDescription>
         </DialogHeader>
+
+        <div className="bg-muted/50 rounded-lg border px-3 py-2 text-center text-sm">
+          <p className="truncate font-medium">{member.name ?? "Sem nome"}</p>
+          <p className="text-muted-foreground truncate">{member.email}</p>
+        </div>
 
         <DialogFooter className="gap-2 sm:justify-end">
           <Button type="button" variant="outline" onClick={() => setIsOpen(false)} disabled={changeStatus.isPending}>

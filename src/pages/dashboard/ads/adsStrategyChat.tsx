@@ -1,6 +1,7 @@
 import { EmptyState, LoadingState } from "@/components/state-message";
 import { Button } from "@/components/ui/button";
 import { useClientContext } from "@/context/ClientContext/clientContext";
+import { undoableAction } from "@/lib/undoToast";
 import { cn } from "@/lib/utils";
 import { metaAdsService } from "@/services/api/metaAdsService";
 import { requestErrorHandling } from "@/utils/request";
@@ -25,6 +26,8 @@ export const AdsStrategyChat: FC<{ account: AdAccount; aiEnabled: boolean }> = (
   const [message, setMessage] = useState("");
   // Pergunta mostrada enquanto a IA responde
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  // Conversas escondidas enquanto o "Desfazer" está na tela
+  const [hiddenChatIds, setHiddenChatIds] = useState<string[]>([]);
   const endRef = useRef<HTMLDivElement>(null);
 
   const chatsQuery = useQuery({
@@ -54,12 +57,22 @@ export const AdsStrategyChat: FC<{ account: AdAccount; aiEnabled: boolean }> = (
   });
   const deleteChat = useMutation({
     mutationFn: metaAdsService.deleteChat,
-    onError: requestErrorHandling,
-    onSuccess: () => {
-      setChatId(null);
-      queryClient.invalidateQueries({ queryKey: ["metaAds", "chats"] });
+    onError: (error, variables) => {
+      setHiddenChatIds((ids) => ids.filter((id) => id !== variables.params.chatId));
+      requestErrorHandling(error);
     },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["metaAds", "chats"] }),
   });
+
+  const removeChat = (chat: { id: string; title: string }) => {
+    setHiddenChatIds((ids) => [...ids, chat.id]);
+    if (chat.id === chatId) setChatId(null);
+    undoableAction({
+      message: "Conversa apagada",
+      commit: () => deleteChat.mutate({ params: { clientId: client.id, chatId: chat.id } }),
+      onUndo: () => setHiddenChatIds((ids) => ids.filter((id) => id !== chat.id)),
+    });
+  };
 
   const conversation = chatId ? conversationQuery.data : undefined;
   const suggestionsById = new Map(conversation?.suggestions.map((suggestion) => [suggestion.id, suggestion]));
@@ -89,32 +102,34 @@ export const AdsStrategyChat: FC<{ account: AdAccount; aiEnabled: boolean }> = (
           Nova conversa
         </Button>
         {chatsQuery.isLoading && <LoadingState className="justify-start py-2" />}
-        <ul className="space-y-1">
-          {chatsQuery.data?.map((chat) => (
-            <li key={chat.id} className="group flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setChatId(chat.id)}
-                className={cn(
-                  "min-w-0 flex-1 truncate rounded px-2 py-1.5 text-left text-sm",
-                  chat.id === chatId ? "bg-muted font-medium" : "hover:bg-muted/60",
-                )}
-                title={chat.title}
-              >
-                {chat.title}
-              </button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8 shrink-0 md:h-7 md:w-7 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100"
-                aria-label={`Apagar a conversa ${chat.title}`}
-                disabled={deleteChat.isPending}
-                onClick={() => deleteChat.mutate({ params: { clientId: client.id, chatId: chat.id } })}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </li>
-          ))}
+        <ul className="max-h-40 space-y-1 overflow-y-auto md:max-h-none md:overflow-visible">
+          {chatsQuery.data
+            ?.filter((chat) => !hiddenChatIds.includes(chat.id))
+            .map((chat) => (
+              <li key={chat.id} className="group flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setChatId(chat.id)}
+                  className={cn(
+                    "min-w-0 flex-1 truncate rounded px-2 py-1.5 text-left text-sm",
+                    chat.id === chatId ? "bg-muted font-medium" : "hover:bg-muted/60",
+                  )}
+                  title={chat.title}
+                >
+                  {chat.title}
+                </button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  // Discreto no computador e sempre visível em telas de toque (sem hover)
+                  className="h-8 w-8 shrink-0 md:h-7 md:w-7 md:opacity-60 md:group-hover:opacity-100 md:focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+                  aria-label={`Apagar a conversa ${chat.title}`}
+                  onClick={() => removeChat(chat)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </li>
+            ))}
         </ul>
       </aside>
 
@@ -182,7 +197,7 @@ export const AdsStrategyChat: FC<{ account: AdAccount; aiEnabled: boolean }> = (
           <div ref={endRef} />
         </div>
 
-        <form onSubmit={handleSubmit} className="flex items-end gap-2 border-t p-2">
+        <form onSubmit={handleSubmit} className="bg-background sticky bottom-0 flex items-end gap-2 rounded-b-lg border-t p-2 md:static">
           <textarea
             aria-label="Mensagem para a IA"
             value={message}

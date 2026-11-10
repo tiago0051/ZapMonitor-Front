@@ -28,7 +28,7 @@ export const ClientList = () => {
       <CardHeader>
         <CardTitle>Lista de clientes</CardTitle>
         {(user?.isImplanter || user?.isOwner) && (
-          <CardAction className="flex gap-2">
+          <CardAction className="flex flex-wrap justify-end gap-2">
             {user.isImplanter && (
               <Button variant="outline" size="sm" asChild>
                 <Link to="/dashboard/implanter">Painel do implantador</Link>

@@ -2,16 +2,18 @@ import { EmptyState, ErrorState, LoadingState } from "@/components/state-message
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useClientContext } from "@/context/ClientContext/clientContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { metaAdsService } from "@/services/api/metaAdsService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Sparkles, Trophy } from "lucide-react";
+import { ChevronDown, Sparkles, Trophy } from "lucide-react";
 import { useState, type FC } from "react";
 import { toast } from "sonner";
 import { fieldSelectClassName } from "../campaign/campaignUtils";
 import { formatCount, formatMoney } from "../adsUtils";
+import { MetricHelp } from "../components/metricHelp";
 import { scoreVerdictInfo } from "./pilotUtils";
 
 type Props = { account: AdAccount; brand: AdBrandProfile; onChange: (brand: AdBrandProfile) => void };
@@ -30,11 +32,65 @@ const PatternList: FC<{ title: string; items: string[] }> = ({ title, items }) =
     </div>
   );
 
+const CardMetric: FC<{ label: string; value: string; highlight?: boolean }> = ({ label, value, highlight }) => (
+  <div>
+    <dt className="text-muted-foreground text-[11px]">{label}</dt>
+    <dd className={cn("tabular-nums", highlight ? "text-base font-semibold" : "text-sm")}>{value}</dd>
+  </div>
+);
+
+/** No celular cada criativo vira um cartão com custo por venda, gasto e vendas; o resto abre em "ver mais". */
+const ScoreCard: FC<{ score: AdCreativeScore; currency: string }> = ({ score, currency }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const verdict = scoreVerdictInfo(score);
+
+  return (
+    <li className="space-y-2 rounded-lg border p-3">
+      <div className="flex items-start gap-3">
+        {score.imageUrl ? (
+          <img src={score.imageUrl} alt="" className="h-12 w-12 shrink-0 rounded object-cover" loading="lazy" />
+        ) : (
+          <div className="bg-muted h-12 w-12 shrink-0 rounded" />
+        )}
+        <div className="min-w-0 flex-1 space-y-1">
+          <p className="truncate text-sm font-medium">{score.name}</p>
+          {score.title && <p className="text-muted-foreground truncate text-xs">{score.title}</p>}
+          <span className={cn("inline-block rounded px-1.5 py-0.5 text-xs font-medium", verdict.className)}>{verdict.label}</span>
+        </div>
+      </div>
+      {score.missingData && <p className="text-muted-foreground text-xs">{score.missingData}</p>}
+      <dl className="grid grid-cols-3 gap-2">
+        <CardMetric label="Custo por venda" value={formatMoney(score.costPerWonDeal, currency)} highlight />
+        <CardMetric label="Gasto" value={formatMoney(score.spend, currency)} highlight />
+        <CardMetric label="Vendas" value={formatCount(score.wonDeals)} highlight />
+      </dl>
+      {isOpen && (
+        <dl className="grid grid-cols-2 gap-2 border-t pt-2">
+          <CardMetric label="Conversas" value={formatCount(score.conversations)} />
+          <CardMetric label="Custo por conversa" value={formatMoney(score.costPerConversation, currency)} />
+          <CardMetric label="Negócios" value={formatCount(score.deals)} />
+          <CardMetric label="CTR" value={score.ctr === null ? "—" : `${formatCount(score.ctr, 2)}%`} />
+        </dl>
+      )}
+      <button
+        type="button"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((value) => !value)}
+        className="text-primary focus-visible:ring-ring/50 flex items-center gap-1 rounded text-xs font-medium outline-none focus-visible:ring-[3px]"
+      >
+        <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isOpen && "rotate-180")} />
+        {isOpen ? "Ver menos" : "Ver mais"}
+      </button>
+    </li>
+  );
+};
+
 /** Cada anúncio com a imagem, o texto e o resultado até a venda no CRM, e os padrões que a IA tirou deles. */
 export const PilotScoreboard: FC<Props> = ({ account, brand, onChange }) => {
   const { client, can } = useClientContext();
   const params = { clientId: client.id, accountId: account.id };
   const [days, setDays] = useState(90);
+  const isMobile = useIsMobile();
 
   const scoreboardQuery = useQuery({
     queryKey: ["metaAds", "pilotScoreboard", client.id, account.id, days],
@@ -112,7 +168,14 @@ export const PilotScoreboard: FC<Props> = ({ account, brand, onChange }) => {
           description="Sem histórico, o piloto monta uma campanha de teste com ângulos diferentes para descobrir o que funciona."
         />
       )}
-      {scores.length > 0 && (
+      {scores.length > 0 && isMobile && (
+        <ul className="space-y-2" aria-label="Placar de criativos">
+          {scores.map((score) => (
+            <ScoreCard key={score.metaAdId} score={score} currency={account.currency} />
+          ))}
+        </ul>
+      )}
+      {scores.length > 0 && !isMobile && (
         <div className="overflow-x-auto rounded-lg border">
           <Table>
             <TableHeader>
@@ -120,12 +183,22 @@ export const PilotScoreboard: FC<Props> = ({ account, brand, onChange }) => {
                 <TableHead>Criativo</TableHead>
                 <TableHead>Veredito</TableHead>
                 <TableHead className="text-right">Gasto</TableHead>
-                <TableHead className="text-right">CTR</TableHead>
+                <TableHead className="text-right">
+                  <span className="inline-flex items-center gap-1">
+                    CTR
+                    <MetricHelp term="CTR" />
+                  </span>
+                </TableHead>
                 <TableHead className="text-right">Conversas</TableHead>
                 <TableHead className="text-right">Negócios</TableHead>
                 <TableHead className="text-right">Vendas</TableHead>
                 <TableHead className="text-right">Custo por conversa</TableHead>
-                <TableHead className="text-right">Custo por venda</TableHead>
+                <TableHead className="text-right">
+                  <span className="inline-flex items-center gap-1">
+                    Custo por venda
+                    <MetricHelp term="CPA" />
+                  </span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -138,7 +211,7 @@ export const PilotScoreboard: FC<Props> = ({ account, brand, onChange }) => {
                       ) : (
                         <div className="bg-muted h-12 w-12 shrink-0 rounded" />
                       )}
-                      <div className="max-w-72 min-w-0">
+                      <div className="max-w-40 min-w-0 sm:max-w-72">
                         <p className="truncate text-sm font-medium">{score.name}</p>
                         {score.title && <p className="text-muted-foreground truncate text-xs">{score.title}</p>}
                       </div>
@@ -151,7 +224,9 @@ export const PilotScoreboard: FC<Props> = ({ account, brand, onChange }) => {
                     >
                       {scoreVerdictInfo(score).label}
                     </span>
-                    {score.missingData && <p className="text-muted-foreground mt-1 max-w-56 text-xs">{score.missingData}</p>}
+                    {score.missingData && (
+                      <p className="text-muted-foreground mt-1 max-w-56 text-xs whitespace-normal">{score.missingData}</p>
+                    )}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">{formatMoney(score.spend, account.currency)}</TableCell>
                   <TableCell className="text-right tabular-nums">{score.ctr === null ? "—" : `${formatCount(score.ctr, 2)}%`}</TableCell>

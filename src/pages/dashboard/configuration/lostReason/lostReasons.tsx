@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/confirm-dialog";
 import { EmptyState } from "@/components/state-message";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { toast } from "sonner";
 export const LostReasons = () => {
   const { clientId } = useParams();
   const queryClient = useQueryClient();
+  const { confirm, confirmDialog } = useConfirm();
 
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -72,8 +74,26 @@ export const LostReasons = () => {
     updateLostReason.mutate({ params: { clientId: clientId!, lostReasonId: lostReason.id }, body: { name: editingName.trim() } });
   };
 
+  const toggleLostReason = async (lostReason: LostReason) => {
+    if (
+      lostReason.active &&
+      !(await confirm({
+        title: `Desativar o motivo "${lostReason.name}"?`,
+        description: "Ele sai da lista ao marcar um negócio como perdido. Os negócios que já usaram este motivo não mudam.",
+        confirmLabel: "Desativar",
+        destructive: true,
+      }))
+    )
+      return;
+    setLostReasonActive.mutate({
+      params: { clientId: clientId!, lostReasonId: lostReason.id },
+      body: { active: !lostReason.active },
+    });
+  };
+
   return (
     <Card>
+      {confirmDialog}
       <CardHeader>
         <CardTitle>Motivos de perda</CardTitle>
         <CardDescription>
@@ -127,7 +147,13 @@ export const LostReasons = () => {
                   </>
                 ) : (
                   <>
-                    <span className={lostReason.active ? "flex-1 text-sm" : "text-muted-foreground flex-1 text-sm line-through"}>
+                    <span
+                      className={
+                        lostReason.active
+                          ? "min-w-0 flex-1 text-sm break-words"
+                          : "text-muted-foreground min-w-0 flex-1 text-sm break-words line-through"
+                      }
+                    >
                       {lostReason.name}
                     </span>
                     {!lostReason.active && <Badge variant="secondary">Inativo</Badge>}
@@ -143,17 +169,7 @@ export const LostReasons = () => {
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={isPending}
-                      onClick={() =>
-                        setLostReasonActive.mutate({
-                          params: { clientId: clientId!, lostReasonId: lostReason.id },
-                          body: { active: !lostReason.active },
-                        })
-                      }
-                    >
+                    <Button size="sm" variant="outline" disabled={isPending} onClick={() => void toggleLostReason(lostReason)}>
                       {lostReason.active ? "Desativar" : "Reativar"}
                     </Button>
                   </>

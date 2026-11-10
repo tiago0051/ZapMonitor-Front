@@ -11,6 +11,7 @@ import { useEffect } from "react";
 import { WhatsappMessageContentType } from "@/enums/whatsappMessageContentType.enum";
 import { IsTopScrolled } from "@/utils/scroll";
 import { format } from "date-fns";
+import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
 
 type MessageFileContent = { url: string; filename: string };
 
@@ -38,7 +39,7 @@ function FileListItem({ message }: { message: WhatsappMessage<MessageFileContent
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-foreground truncate text-xs font-medium">{content?.filename || "Arquivo"}</p>
-        <p className="text-muted-foreground text-[10px]">{format(new Date(message.createdAt), "PPp")}</p>
+        <p className="text-muted-foreground text-[10px]">{format(new Date(message.createdAt), "dd/MM/yyyy HH:mm")}</p>
       </div>
     </a>
   );
@@ -53,16 +54,28 @@ function StatusDot({ status }: { status: ProtocolStatus }) {
   return <span className={`h-2 w-2 flex-shrink-0 rounded-full ${colors[status]}`} />;
 }
 
+// Tipos de ação do atendimento (mesmos números do back-end)
+const serviceActionInfo: Record<number, { label: string; className: string }> = {
+  1: { label: "Início", className: "bg-blue-50 dark:bg-blue-950/40" },
+  2: { label: "Transferência", className: "bg-yellow-50 dark:bg-yellow-950/40" },
+  3: { label: "Encerramento", className: "bg-green-50 dark:bg-green-950/40" },
+  4: { label: "Encerrado por tempo", className: "bg-green-50 dark:bg-green-950/40" },
+  5: { label: "Etapa do fluxo", className: "bg-muted/60" },
+};
+
 export type InfoPanelTab = "summary" | "contact" | "history" | "files" | "deals";
 
 export function InfoPanel({
   selected,
   rightPanel,
   setRightPanel,
+  onProfileDirtyChange,
 }: {
   selected: WhatsappContactMessage;
   rightPanel: InfoPanelTab;
   setRightPanel: (p: InfoPanelTab) => void;
+  /** Avisa se a ficha aberta na aba "Ficha" tem alterações não salvas */
+  onProfileDirtyChange?: (isDirty: boolean) => void;
 }) {
   const { client, canUseCrm, can } = useClientContext();
   const { socket, isConnected } = useSocketContext();
@@ -121,10 +134,12 @@ export function InfoPanel({
 
   return (
     <div className="bg-card flex h-full flex-col">
-      <div className="border-border flex flex-shrink-0 border-b">
+      <div className="border-border scrollbar-hide flex flex-shrink-0 overflow-x-auto border-b">
         <button
+          type="button"
+          aria-pressed={rightPanel === "summary"}
           onClick={() => setRightPanel("summary")}
-          className={`relative flex flex-1 items-center justify-center gap-1.5 py-3 text-xs font-medium transition-colors ${
+          className={`relative flex flex-1 shrink-0 items-center justify-center gap-1.5 px-2 py-3 text-xs font-medium whitespace-nowrap transition-colors ${
             rightPanel === "summary" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -134,8 +149,10 @@ export function InfoPanel({
         </button>
         {can("contacts.view") && (
           <button
+            type="button"
+            aria-pressed={rightPanel === "contact"}
             onClick={() => setRightPanel("contact")}
-            className={`relative flex flex-1 items-center justify-center gap-1.5 py-3 text-xs font-medium transition-colors ${
+            className={`relative flex flex-1 shrink-0 items-center justify-center gap-1.5 px-2 py-3 text-xs font-medium whitespace-nowrap transition-colors ${
               rightPanel === "contact" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -145,8 +162,10 @@ export function InfoPanel({
           </button>
         )}
         <button
+          type="button"
+          aria-pressed={rightPanel === "history"}
           onClick={() => setRightPanel("history")}
-          className={`relative flex flex-1 items-center justify-center gap-1.5 py-3 text-xs font-medium transition-colors ${
+          className={`relative flex flex-1 shrink-0 items-center justify-center gap-1.5 px-2 py-3 text-xs font-medium whitespace-nowrap transition-colors ${
             rightPanel === "history" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -155,8 +174,10 @@ export function InfoPanel({
           {rightPanel === "history" && <span className="absolute right-0 bottom-0 left-0 h-0.5 rounded-full bg-green-500" />}
         </button>
         <button
+          type="button"
+          aria-pressed={rightPanel === "files"}
           onClick={() => setRightPanel("files")}
-          className={`relative flex flex-1 items-center justify-center gap-1.5 py-3 text-xs font-medium transition-colors ${
+          className={`relative flex flex-1 shrink-0 items-center justify-center gap-1.5 px-2 py-3 text-xs font-medium whitespace-nowrap transition-colors ${
             rightPanel === "files" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -166,8 +187,10 @@ export function InfoPanel({
         </button>
         {canUseCrm && (
           <button
+            type="button"
+            aria-pressed={rightPanel === "deals"}
             onClick={() => setRightPanel("deals")}
-            className={`relative flex flex-1 items-center justify-center gap-1.5 py-3 text-xs font-medium transition-colors ${
+            className={`relative flex flex-1 shrink-0 items-center justify-center gap-1.5 px-2 py-3 text-xs font-medium whitespace-nowrap transition-colors ${
               rightPanel === "deals" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -181,8 +204,8 @@ export function InfoPanel({
       <div className="border-border bg-muted/40 flex-shrink-0 border-b px-4 py-3">
         <div className="flex items-center gap-3">
           <ContactAvatar contact={selected} size="sm" />
-          <div>
-            <p className="text-foreground text-xs font-semibold">{selected.name}</p>
+          <div className="min-w-0">
+            <p className="text-foreground truncate text-xs font-semibold">{selected.name}</p>
             <p className="text-muted-foreground text-[11px]">{formatPhoneNumber(selected.phoneNumber)}</p>
           </div>
         </div>
@@ -222,7 +245,7 @@ export function InfoPanel({
             )}
           </div>
         ) : rightPanel === "contact" && can("contacts.view") ? (
-          <ContactProfile key={selected.id} conversationId={selected.id} compact />
+          <ContactProfile key={selected.id} conversationId={selected.id} compact onDirtyChange={onProfileDirtyChange} />
         ) : rightPanel === "deals" && canUseCrm ? (
           <div>
             <p className="text-muted-foreground mb-3 text-[11px] font-semibold tracking-wider uppercase">Negócios do contato</p>
@@ -231,8 +254,16 @@ export function InfoPanel({
         ) : rightPanel === "history" ? (
           <div>
             <p className="text-muted-foreground mb-3 text-[11px] font-semibold tracking-wider uppercase">Atendimentos anteriores</p>
-            {services.length === 0 ? (
-              <p className="text-muted-foreground text-xs">Sem histórico.</p>
+            {findAllServicesHistoryByContact.isLoading ? (
+              <LoadingState label="Carregando histórico..." />
+            ) : findAllServicesHistoryByContact.isError ? (
+              <ErrorState
+                message="Não foi possível carregar o histórico."
+                onRetry={() => findAllServicesHistoryByContact.refetch()}
+                isRetrying={findAllServicesHistoryByContact.isFetching}
+              />
+            ) : services.length === 0 ? (
+              <EmptyState icon={FileText} title="Sem histórico" description="Os atendimentos deste contato aparecem aqui." />
             ) : (
               <div className="space-y-3">
                 {services.map((p) => (
@@ -250,18 +281,22 @@ export function InfoPanel({
                       </pre>
                     )}
 
-                    {p.actions.map((action) => (
-                      <div
-                        key={action.id}
-                        data-type={action.type}
-                        className="rounded border p-2 data-[type='1']:bg-blue-50 data-[type='2']:bg-yellow-50 data-[type='3']:bg-green-50"
-                      >
-                        <div className="mb-1 flex items-center justify-between">
-                          <span className="text-foreground/50 text-sm">{new Date(action.createdAt).toLocaleString()}</span>
-                        </div>
-                        <p className="text-sm">{action.annotation}</p>
-                      </div>
-                    ))}
+                    <div className="space-y-1.5">
+                      {p.actions.map((action) => {
+                        const info = serviceActionInfo[action.type];
+                        return (
+                          <div key={action.id} className={`rounded border p-2 ${info?.className ?? ""}`}>
+                            <div className="mb-1 flex items-center justify-between gap-2">
+                              <span className="text-foreground text-xs font-semibold">{info?.label ?? "Ação"}</span>
+                              <span className="text-muted-foreground text-[11px] tabular-nums">
+                                {format(new Date(action.createdAt), "dd/MM/yyyy HH:mm")}
+                              </span>
+                            </div>
+                            {action.annotation && <p className="text-sm">{action.annotation}</p>}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -270,8 +305,20 @@ export function InfoPanel({
         ) : (
           <div>
             <p className="text-muted-foreground mb-3 text-[11px] font-semibold tracking-wider uppercase">Arquivos compartilhados</p>
-            {files.length === 0 ? (
-              <p className="text-muted-foreground text-xs">Sem arquivos.</p>
+            {findAllFilesByContact.isLoading ? (
+              <LoadingState label="Carregando arquivos..." />
+            ) : findAllFilesByContact.isError && files.length === 0 ? (
+              <ErrorState
+                message="Não foi possível carregar os arquivos."
+                onRetry={() => findAllFilesByContact.refetch()}
+                isRetrying={findAllFilesByContact.isFetching}
+              />
+            ) : files.length === 0 ? (
+              <EmptyState
+                icon={Paperclip}
+                title="Sem arquivos"
+                description="Fotos, vídeos, áudios e documentos da conversa aparecem aqui."
+              />
             ) : (
               <div className="space-y-2">
                 {files.map((file) => (

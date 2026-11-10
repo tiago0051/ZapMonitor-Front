@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { whatsappService } from "@/services/api/whatsappService";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import type { PaginationState } from "@tanstack/react-table";
-import { useState } from "react";
+import { useDeferredValue, useState } from "react";
 import { useParams } from "react-router";
 import { getColumns } from "./whatsappCategoryColumns";
 import { Label } from "@/components/ui/label";
@@ -19,7 +19,9 @@ export const WhatsappCategory = () => {
     pageIndex: 0,
     pageSize: 10,
   });
-  const [textSearch, setTextSearch] = useDebounceValue<string>("", globalContants.DEBOUNCE_DELAY);
+  const [debouncedSearch, setTextSearch] = useDebounceValue<string>("", globalContants.DEBOUNCE_DELAY);
+  // Mantém a lista atual na tela enquanto a busca carrega, sem cair no esqueleto do Suspense
+  const textSearch = useDeferredValue(debouncedSearch);
 
   const findAllWhatsappCategoriesQuery = useSuspenseQuery({
     meta: { errorHandledInline: true },
@@ -48,14 +50,23 @@ export const WhatsappCategory = () => {
         <CardDescription>Etiquetas aplicadas aos contatos durante o atendimento para organizar e filtrar conversas.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="mb-4 grid grid-cols-6 items-end gap-4 lg:grid-cols-8">
-          <div className="col-span-2 lg:col-span-4">
+        <div className="mb-4 grid grid-cols-1 items-end gap-4 sm:grid-cols-6 lg:grid-cols-8">
+          <div className="sm:col-span-2 lg:col-span-4">
             <div className="space-y-2">
-              <Label htmlFor="search">Buscar</Label>
-              <Input name="search" placeholder="Nome da categoria" onChange={(event) => setTextSearch(event.currentTarget.value)} />
+              <Label htmlFor="category-search">Buscar</Label>
+              <Input
+                id="category-search"
+                name="search"
+                type="search"
+                placeholder="Nome da categoria"
+                onChange={(event) => {
+                  setTextSearch(event.currentTarget.value);
+                  setPagination((current) => (current.pageIndex === 0 ? current : { ...current, pageIndex: 0 }));
+                }}
+              />
             </div>
           </div>
-          <DialogCreateMessageCategory clientId={clientId!} className="col-span-2 col-start-5 lg:col-start-8" />
+          <DialogCreateMessageCategory clientId={clientId!} className="sm:col-span-2 sm:col-start-5 lg:col-start-8" />
         </div>
         <DataTablePaginate columns={columns} data={listWhatsappCategories} onPaginationChange={setPagination} pagination={pagination} />
       </CardContent>

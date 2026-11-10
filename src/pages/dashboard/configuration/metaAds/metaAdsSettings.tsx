@@ -9,7 +9,7 @@ import { metaAdsService } from "@/services/api/metaAdsService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { AlertTriangle, ChevronRight, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { MetaAdsLeadPages } from "./metaAdsLeadPages";
@@ -115,7 +115,7 @@ export const MetaAdsSettings = () => {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+      <CardHeader className="flex flex-col items-start justify-between gap-4 space-y-0 sm:flex-row">
         <div>
           <CardTitle>Anúncios da Meta</CardTitle>
           <CardDescription>
@@ -123,10 +123,7 @@ export const MetaAdsSettings = () => {
             lidas e copiadas a cada 6 horas.
           </CardDescription>
         </div>
-        <div className="flex flex-wrap justify-end gap-2">
-          <Button variant="outline" onClick={() => setIsTokenDialogOpen(true)} disabled={isPending}>
-            Vincular com token
-          </Button>
+        <div className="flex flex-wrap gap-2 sm:justify-end">
           {!connection.connected ? (
             <Button onClick={launch} disabled={!isConfigured || !isSdkReady || isPending}>
               Conectar com a Meta
@@ -150,7 +147,7 @@ export const MetaAdsSettings = () => {
         {!connection.connected && (
           <EmptyState
             title="A Meta ainda não está conectada"
-            description="Ao conectar, entre com uma pessoa que tenha acesso às contas de anúncio no portfólio da empresa e autorize os anúncios. Se preferir, vincule as contas com um token de usuário do sistema."
+            description="Ao conectar, entre com uma pessoa que tenha acesso às contas de anúncio no portfólio da empresa e autorize os anúncios. Se preferir, vincule as contas com um token de usuário do sistema em Opções avançadas, no fim da página."
           />
         )}
 
@@ -184,7 +181,7 @@ export const MetaAdsSettings = () => {
 
                   return (
                     <li key={available.metaAccountId} className="flex flex-wrap items-center gap-3 px-3 py-2">
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0 flex-1 break-words">
                         <p className="truncate text-sm font-medium">{available.name}</p>
                         <p className="text-muted-foreground text-xs">
                           {available.metaAccountId} · {available.currency} ·{" "}
@@ -208,7 +205,8 @@ export const MetaAdsSettings = () => {
                         )}
                         {!available.granted && !linked?.hasOwnToken && (
                           <p className="text-destructive text-xs">
-                            Não liberada para o app. Reconecte e marque esta conta em editar acesso na Meta, ou vincule com token.
+                            Não liberada para o app. Reconecte e marque esta conta em editar acesso na Meta, ou vincule com token (em Opções
+                            avançadas).
                           </p>
                         )}
                       </div>
@@ -289,6 +287,23 @@ export const MetaAdsSettings = () => {
             </div>
           </>
         )}
+
+        {/* Token de usuário do sistema: caminho técnico, fica recolhido para não competir com o "Conectar com a Meta" */}
+        <details className="group border-t pt-4">
+          <summary className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 flex w-fit cursor-pointer list-none items-center gap-1 rounded text-sm font-medium outline-none focus-visible:ring-[3px] [&::-webkit-details-marker]:hidden">
+            <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
+            Opções avançadas
+          </summary>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <p className="text-muted-foreground max-w-xl text-xs">
+              Vincule uma conta de anúncio com um token de usuário do sistema do Gerenciador de Negócios, quando o login com a Meta não
+              libera a conta.
+            </p>
+            <Button variant="outline" size="sm" onClick={() => setIsTokenDialogOpen(true)} disabled={isPending}>
+              Vincular com token
+            </Button>
+          </div>
+        </details>
       </CardContent>
     </Card>
   );

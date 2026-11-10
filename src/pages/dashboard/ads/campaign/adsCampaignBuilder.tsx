@@ -1,22 +1,28 @@
+import { useConfirm } from "@/components/confirm-dialog";
+import { DisabledReason } from "@/components/disabled-reason";
 import { EmptyState, LoadingState } from "@/components/state-message";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useClientContext } from "@/context/ClientContext/clientContext";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes";
 import { cn } from "@/lib/utils";
 import { metaAdsService } from "@/services/api/metaAdsService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { AlertTriangle, ArrowLeft, Loader2, Megaphone, Play, Plus, Rocket, Save, Sparkles, Trash2, Undo2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, Loader2, Megaphone, Play, Plus, Rocket, Save, Sparkles, Trash2, Undo2 } from "lucide-react";
 import { useState, type FC } from "react";
 import { toast } from "sonner";
 import { effectiveStatusInfo, formatCount, formatMoney, statusToneClassName } from "../adsUtils";
 import { AdStatusToggle } from "../components/adStatusToggle";
+import { SteppedProgress } from "../components/steppedProgress";
 import { AdsAssetLibrary } from "./adsAssetLibrary";
 import { BriefFields, RoutingFields } from "./draftFields";
 import { PlanEditor } from "./planEditor";
+import { PublishChecklist } from "./publishChecklist";
+import { buildPublishChecklist } from "./publishChecklistUtils";
 import { useCampaignOptions } from "./useCampaignOptions";
 
 const statusInfo: Record<AdDraftStatus, { label: string; className: string }> = {
@@ -39,6 +45,8 @@ const draftStatusDisplay = (draft: AdCampaignDraft) => {
 
   return statusInfo[draft.status];
 };
+
+const GENERATE_STEPS = ["Lendo o pedido e as métricas da conta…", "Analisando públicos e criativos…", "Montando o plano…"];
 
 const emptyBrief = (): AdCampaignBrief => ({
   goal: "",
@@ -121,6 +129,9 @@ const AbTestResult: FC<{ draft: AdCampaignDraft; currency: string }> = ({ draft,
   );
 };
 
+const isDraftLocked = (draft: AdCampaignDraft, canManage: boolean) =>
+  !!draft.published?.campaignId || draft.status === "PUBLISHING" || !canManage;
+
 type DraftEditorProps = { account: AdAccount; draft: AdCampaignDraft; onBack: () => void };
 
 const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
@@ -129,17 +140,24 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
   const options = useCampaignOptions(account);
   const [name, setName] = useState(draft.name);
   const [brief, setBrief] = useState(draft.brief);
-  const [routing, setRouting] = useState<AdDraftRouting>({
+  const savedRouting: AdDraftRouting = {
     whatsappConfigurationId: draft.whatsappConfigurationId,
     metaPageId: draft.metaPageId,
     flowId: draft.flowId,
     pipelineId: draft.pipelineId,
     stageId: draft.stageId,
     serviceGroupId: draft.serviceGroupId,
-  });
+  };
+  const [routing, setRouting] = useState<AdDraftRouting>(savedRouting);
   const [plan, setPlan] = useState(draft.plan);
+  // O editor remonta a cada versão salva (key = updatedAt), então o rascunho do servidor é a referência
+  const isDirty =
+    JSON.stringify({ name, brief, routing, plan }) !==
+    JSON.stringify({ name: draft.name, brief: draft.brief, routing: savedRouting, plan: draft.plan });
+  const { guard, guardDialog } = useUnsavedChangesGuard(isDirty && !isDraftLocked(draft, can("ads.manage")));
+  const { confirm, confirmDialog } = useConfirm();
   const params = { clientId: client.id, draftId: draft.id };
-  const isLocked = !!draft.published?.campaignId || draft.status === "PUBLISHING" || !can("ads.manage");
+  const isLocked = isDraftLocked(draft, can("ads.manage"));
   const status = draftStatusDisplay(draft);
 
   const refresh = (updated: AdCampaignDraft) => {
@@ -204,11 +222,26 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
   // Criada (ou criada pela metade) e ainda não ativada: dá para excluir da Meta e voltar ao rascunho
   const canUndo =
     can("ads.manage") && !!draft.published?.campaignId && (draft.status === "FAILED" || draft.status === "PUBLISHED") && !draft.activatedAt;
+  const canPublish = can("ads.manage") && (draft.status === "DRAFT" || draft.status === "FAILED");
+  const checklist = buildPublishChecklist({ routing, plan, assets: options.assets });
+  const missingCount = checklist.filter((item) => !item.ok).length;
+
+  const confirmRemove = async () => {
+    const ok = await confirm({
+      title: `Apagar a campanha "${draft.name}"?`,
+      description: "O rascunho, o plano e os textos montados aqui são apagados. Nada foi criado na Meta.",
+      confirmLabel: "Apagar campanha",
+      destructive: true,
+    });
+    if (ok) remove.mutate({ params });
+  };
 
   return (
     <div className="space-y-6">
+      {guardDialog}
+      {confirmDialog}
       <div className="flex flex-wrap items-center gap-2">
-        <Button size="sm" variant="ghost" onClick={onBack}>
+        <Button size="sm" variant="ghost" onClick={() => guard(onBack)}>
           <ArrowLeft className="h-4 w-4" />
           Campanhas
         </Button>
@@ -221,6 +254,24 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
           onChange={(event) => setName(event.target.value)}
         />
         <span className={cn("rounded px-1.5 py-0.5 text-xs font-medium", status.className)}>{status.label}</span>
+        {!isLocked && (
+          <span
+            aria-live="polite"
+            className={cn("flex items-center gap-1 text-xs", isDirty ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground")}
+          >
+            {isDirty ? (
+              <>
+                <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                Alterações não salvas
+              </>
+            ) : (
+              <>
+                <Check className="h-3.5 w-3.5" />
+                Salvo
+              </>
+            )}
+          </span>
+        )}
         {!draft.published?.campaignId && can("ads.manage") && (
           <Button
             size="icon"
@@ -228,7 +279,7 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
             className="ml-auto h-8 w-8"
             aria-label="Apagar a campanha"
             disabled={remove.isPending}
-            onClick={() => remove.mutate({ params })}
+            onClick={confirmRemove}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -272,9 +323,7 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
             </Button>
           )}
         </div>
-        {generate.isPending && (
-          <p className="text-muted-foreground text-sm">A IA está montando a campanha a partir do pedido e do histórico da conta…</p>
-        )}
+        <SteppedProgress active={generate.isPending} steps={GENERATE_STEPS} />
         {!plan && !generate.isPending && (
           <p className="text-muted-foreground text-sm">Descreva o pedido e gere o plano. Você revisa e muda tudo antes de criar na Meta.</p>
         )}
@@ -306,20 +355,31 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
 
       <section className="space-y-3 rounded-lg border p-3">
         <h3 className="text-sm font-semibold">4. Revisão e publicação</h3>
+        {canPublish && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium">
+              {missingCount === 0 ? "Pronto para criar" : `Pronto para criar? Falta${missingCount > 1 ? "m" : ""} ${missingCount} item(ns)`}
+            </p>
+            <PublishChecklist items={checklist} />
+          </div>
+        )}
         {draft.publishErrors.length > 0 && !draft.published?.campaignId && (
-          <ul className="list-disc space-y-1 pl-5 text-sm text-amber-700 dark:text-amber-400">
-            {draft.publishErrors.map((error) => (
-              <li key={error}>{error}</li>
-            ))}
-          </ul>
+          <div className="space-y-1">
+            <p className="text-muted-foreground text-xs">Conferido pelo servidor na última versão salva:</p>
+            <ul className="list-disc space-y-1 pl-5 text-sm text-amber-700 dark:text-amber-400">
+              {draft.publishErrors.map((error) => (
+                <li key={error}>{error}</li>
+              ))}
+            </ul>
+          </div>
         )}
         <p className="text-muted-foreground text-xs">
           Tudo nasce pausado na Meta. Depois de conferir no Gerenciador de Anúncios, ative por aqui. A conversa de quem clicar vai para o
           fluxo e o funil escolhidos.
         </p>
         <div className="flex flex-wrap gap-2">
-          {can("ads.manage") && (draft.status === "DRAFT" || draft.status === "FAILED") && (
-            <Button disabled={isBusy} onClick={() => publish.mutate()}>
+          {canPublish && (
+            <Button disabled={isBusy || missingCount > 0} onClick={() => publish.mutate()}>
               {publish.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
               {draft.status === "FAILED" ? "Continuar a criação" : "Criar pausada na Meta"}
             </Button>
@@ -361,6 +421,9 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
                 Excluir da Meta e voltar ao rascunho
               </Button>
             ))}
+          {canPublish && missingCount > 0 && (
+            <DisabledReason className="basis-full">Complete os itens acima para criar a campanha na Meta.</DisabledReason>
+          )}
           {draft.status === "PUBLISHED" && !can("ads.approve") && (
             <p className="text-muted-foreground text-sm">Quem aprova anúncios ativa a campanha.</p>
           )}
@@ -471,26 +534,28 @@ export const AdsCampaignBuilder: FC<{ account: AdAccount; initialDraftId?: strin
             description="Descreva o objetivo, o produto e a verba; a IA propõe a estrutura, os públicos e os textos, e você publica pausada para revisar."
           />
         )}
-        <ul className="divide-y rounded-lg border">
-          {draftsQuery.data?.map((draft) => (
-            <li key={draft.id}>
-              <button
-                type="button"
-                className="hover:bg-muted/50 flex w-full flex-wrap items-center gap-2 px-3 py-2 text-left"
-                onClick={() => setOpenDraftId(draft.id)}
-              >
-                <span className="min-w-0 flex-1 truncate text-sm font-medium">{draft.name}</span>
-                {draft.plan && (
-                  <span className="text-muted-foreground text-xs">{formatMoney(draft.plan.dailyBudget, account.currency)}/dia</span>
-                )}
-                <span className={cn("rounded px-1.5 py-0.5 text-xs font-medium", draftStatusDisplay(draft).className)}>
-                  {draftStatusDisplay(draft).label}
-                </span>
-                <span className="text-muted-foreground text-xs">{format(new Date(draft.updatedAt), "dd/MM HH:mm")}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
+        {!!draftsQuery.data?.length && (
+          <ul className="divide-y rounded-lg border">
+            {draftsQuery.data.map((draft) => (
+              <li key={draft.id}>
+                <button
+                  type="button"
+                  className="hover:bg-muted/50 flex w-full flex-wrap items-center gap-2 px-3 py-2 text-left"
+                  onClick={() => setOpenDraftId(draft.id)}
+                >
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{draft.name}</span>
+                  {draft.plan && (
+                    <span className="text-muted-foreground text-xs">{formatMoney(draft.plan.dailyBudget, account.currency)}/dia</span>
+                  )}
+                  <span className={cn("rounded px-1.5 py-0.5 text-xs font-medium", draftStatusDisplay(draft).className)}>
+                    {draftStatusDisplay(draft).label}
+                  </span>
+                  <span className="text-muted-foreground text-xs">{format(new Date(draft.updatedAt), "dd/MM HH:mm")}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <div className="space-y-2">

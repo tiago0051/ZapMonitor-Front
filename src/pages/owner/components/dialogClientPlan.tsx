@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/confirm-dialog";
 import { LoadingState } from "@/components/state-message";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -101,6 +102,7 @@ export const DialogClientPlan: FC<{ client: OwnerClient }> = ({ client }) => {
     },
   });
 
+  const { confirm, confirmDialog } = useConfirm();
   const endPlan = useMutation({
     mutationFn: billingService.endClientPlan,
     onError: requestErrorHandling,
@@ -324,13 +326,23 @@ export const DialogClientPlan: FC<{ client: OwnerClient }> = ({ client }) => {
           </div>
         )}
 
+        {confirmDialog}
         <DialogFooter className="gap-2">
           {isActive && (
             <Button
               type="button"
               variant="outline"
               disabled={endPlan.isPending || savePlan.isPending}
-              onClick={() => endPlan.mutate({ params: { clientId: client.id } })}
+              onClick={async () => {
+                const ok = await confirm({
+                  title: `Encerrar o plano de ${client.name}?`,
+                  description:
+                    "O plano termina agora: todos os limites do tenant passam a zero (números, usuários e demais recursos), o que bloqueia o uso. O plano não pode ser renovado depois de encerrado; para liberar de novo, será preciso salvar um novo plano.",
+                  confirmLabel: "Encerrar plano",
+                  destructive: true,
+                });
+                if (ok) endPlan.mutate({ params: { clientId: client.id } });
+              }}
             >
               Encerrar plano
             </Button>

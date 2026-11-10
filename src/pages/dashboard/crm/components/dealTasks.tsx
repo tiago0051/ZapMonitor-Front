@@ -3,6 +3,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useClientContext } from "@/context/ClientContext/clientContext";
+import { undoableAction } from "@/lib/undoToast";
 import { cn } from "@/lib/utils";
 import { crmService } from "@/services/api/crmService";
 import { requestErrorHandling } from "@/utils/request";
@@ -27,6 +28,8 @@ export const DealTasks: FC<{ deal: Deal }> = ({ deal }) => {
   const [title, setTitle] = useState("");
   const [dueAt, setDueAt] = useState(() => toDateTimeInput(new Date(Date.now() + 24 * 60 * 60 * 1000)));
   const [assigneeUserId, setAssigneeUserId] = useState("");
+  // Tarefas excluídas aguardando o prazo do "Desfazer"
+  const [hiddenTaskIds, setHiddenTaskIds] = useState<string[]>([]);
 
   const tasksQuery = useQuery({
     queryKey: ["crm", "deals", "tasks", deal.id],
@@ -61,11 +64,23 @@ export const DealTasks: FC<{ deal: Deal }> = ({ deal }) => {
     });
   };
 
-  const tasks = tasksQuery.data ?? [];
+  const handleDelete = (task: DealTask) => {
+    setHiddenTaskIds((ids) => [...ids, task.id]);
+    undoableAction({
+      message: "Tarefa excluída",
+      commit: () =>
+        deleteTask.mutateAsync({ params: { clientId: client.id, taskId: task.id } }).catch(() => {
+          setHiddenTaskIds((ids) => ids.filter((id) => id !== task.id));
+        }),
+      onUndo: () => setHiddenTaskIds((ids) => ids.filter((id) => id !== task.id)),
+    });
+  };
+
+  const tasks = (tasksQuery.data ?? []).filter((task) => !hiddenTaskIds.includes(task.id));
 
   return (
     <section className="space-y-3">
-      <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Tarefas</p>
+      <h3 className="sr-only">Tarefas</h3>
 
       {tasks.length === 0 && !tasksQuery.isLoading && <p className="text-muted-foreground text-sm">Nenhuma tarefa neste negócio.</p>}
 
@@ -96,8 +111,7 @@ export const DealTasks: FC<{ deal: Deal }> = ({ deal }) => {
                 size="icon"
                 className="text-muted-foreground h-7 w-7"
                 aria-label={`Excluir ${task.title}`}
-                disabled={deleteTask.isPending}
-                onClick={() => deleteTask.mutate({ params: { clientId: client.id, taskId: task.id } })}
+                onClick={() => handleDelete(task)}
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>

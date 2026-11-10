@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import type { PanelControlProps } from "./flowPublishing";
 import { flowService } from "@/services/api/flowService";
 import { formatPhoneNumber } from "@/utils/formatString";
 import { requestErrorHandling } from "@/utils/request";
@@ -21,13 +22,13 @@ const showPhone = (digits: string) => {
 type Props = {
   clientId: string;
   flow: Flow;
-};
+} & PanelControlProps;
 
 /**
  * Números de teste: quando um deles escreve para qualquer WhatsApp do cliente, o atendimento roda o rascunho deste
  * fluxo (ou a versão publicada, sem rascunho). Os demais contatos continuam na versão publicada.
  */
-export const FlowTestContacts: FC<Props> = ({ clientId, flow }) => {
+export const FlowTestContacts: FC<Props> = ({ clientId, flow, open, onOpenChange, anchorOnly }) => {
   const queryClient = useQueryClient();
   const params = { clientId, flowId: flow.id };
   const queryKey = ["flowTestContacts", clientId, flow.id];
@@ -64,14 +65,20 @@ export const FlowTestContacts: FC<Props> = ({ clientId, flow }) => {
   const contacts = contactsQuery.data ?? [];
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" title="Números que caem no rascunho deste fluxo">
-          <FlaskConical className="h-4 w-4" />
-          Testar{contacts.length > 0 && ` (${contacts.length})`}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-96 space-y-3">
+    <Popover open={open} onOpenChange={onOpenChange}>
+      {anchorOnly ? (
+        <PopoverAnchor asChild>
+          <span aria-hidden className="pointer-events-none absolute inset-0" />
+        </PopoverAnchor>
+      ) : (
+        <PopoverTrigger asChild>
+          <Button variant="outline" title="Números que caem no rascunho deste fluxo">
+            <FlaskConical className="h-4 w-4" />
+            Testar{contacts.length > 0 && ` (${contacts.length})`}
+          </Button>
+        </PopoverTrigger>
+      )}
+      <PopoverContent align="end" className="max-h-[min(36rem,calc(100dvh-8rem))] w-96 max-w-[calc(100vw-2rem)] space-y-3 overflow-y-auto">
         <div className="space-y-1">
           <p className="text-sm font-medium">Números de teste</p>
           <p className="text-muted-foreground text-xs">

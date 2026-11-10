@@ -4,6 +4,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useUserContext } from "@/context/UserContext/userContext";
 import { useBaseUrl } from "@/hooks/use-baseUrl";
@@ -12,7 +13,7 @@ import { crmService } from "@/services/api/crmService";
 import { whatsappService } from "@/services/api/whatsappService";
 import { useQuery } from "@tanstack/react-query";
 import { endOfDay, startOfDay } from "date-fns";
-import { ChevronDown, Columns3, List, SlidersHorizontal, Users } from "lucide-react";
+import { ChevronDown, Columns3, List, SlidersHorizontal, Users, X } from "lucide-react";
 import { useState, type DragEvent } from "react";
 import { Link } from "react-router";
 import { useLocalStorage } from "usehooks-ts";
@@ -30,6 +31,19 @@ const parseDateInput = (value: string) => {
   return new Date(year, month - 1, day);
 };
 
+// Filtros lembrados por cliente, como o funil e os grupos
+type CrmBoardFilters = {
+  ownerUserId: string;
+  onlyMine: boolean;
+  categoryId: string;
+  startDate: string;
+  endDate: string;
+  // "" todas; NONE sem anúncio; AD_MESSAGE e LEAD_FORM pelo tipo; campaign:<id> uma campanha
+  origin: string;
+};
+
+const emptyFilters: CrmBoardFilters = { ownerUserId: "", onlyMine: false, categoryId: "", startDate: "", endDate: "", origin: "" };
+
 export const CrmBoard = () => {
   const { client, can } = useClientContext();
   const { user } = useUserContext();
@@ -40,13 +54,10 @@ export const CrmBoard = () => {
   const [storedPipelineId, setStoredPipelineId] = useLocalStorage<string | null>(`crm:pipeline:${client.id}`, null);
   // Vazio = todos os grupos que o usuário pode ver
   const [storedServiceGroupIds, setStoredServiceGroupIds] = useLocalStorage<string[]>(`crm:serviceGroups:${client.id}`, []);
-  const [ownerUserId, setOwnerUserId] = useState("");
-  const [onlyMine, setOnlyMine] = useState(false);
-  const [categoryId, setCategoryId] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  // "" todas; NONE sem anúncio; AD_MESSAGE e LEAD_FORM pelo tipo; campaign:<id> uma campanha
-  const [origin, setOrigin] = useState("");
+  const [storedFilters, setStoredFilters] = useLocalStorage<CrmBoardFilters>(`crm:filters:${client.id}`, emptyFilters);
+  const { ownerUserId, onlyMine, categoryId, startDate, endDate, origin } = { ...emptyFilters, ...storedFilters };
+  const setFilter = <K extends keyof CrmBoardFilters>(key: K, value: CrmBoardFilters[K]) =>
+    setStoredFilters((current) => ({ ...emptyFilters, ...current, [key]: value }));
   const [openDealId, setOpenDealId] = useState<string | null>(null);
   const [dropStageId, setDropStageId] = useState<string | null>(null);
   const [view, setView] = useLocalStorage<"board" | "list">(`crm:view:${client.id}`, "board");
@@ -146,12 +157,121 @@ export const CrmBoard = () => {
 
   // Filtros guardados em "Mais filtros", contados no botão
   const extraFilterCount = [categoryId, origin, startDate || endDate].filter(Boolean).length;
-  const clearExtraFilters = () => {
-    setCategoryId("");
-    setOrigin("");
-    setStartDate("");
-    setEndDate("");
+  const clearExtraFilters = () =>
+    setStoredFilters((current) => ({ ...emptyFilters, ...current, categoryId: "", origin: "", startDate: "", endDate: "" }));
+  // Tudo que não é funil nem visualização, contado no botão "Filtros" do celular
+  const activeFilterCount = (selectedServiceGroupIds.length > 0 ? 1 : 0) + (onlyMine || ownerUserId ? 1 : 0) + extraFilterCount;
+  const clearAllFilters = () => {
+    setStoredFilters(emptyFilters);
+    setStoredServiceGroupIds([]);
   };
+
+  const serviceGroupOptions = (
+    <>
+      {visibleServiceGroups.length === 0 && <p className="text-muted-foreground text-sm">Nenhum grupo cadastrado.</p>}
+      {visibleServiceGroups.map((group) => (
+        <label key={group.id} className="flex cursor-pointer items-center gap-2 text-sm">
+          <Checkbox
+            checked={selectedServiceGroupIds.includes(group.id)}
+            onCheckedChange={(checked) => toggleServiceGroup(group.id, checked === true)}
+          />
+          <span className="truncate">{group.name}</span>
+        </label>
+      ))}
+      {selectedServiceGroupIds.length > 0 && (
+        <Button variant="link" size="sm" className="h-auto justify-self-start px-0" onClick={() => setStoredServiceGroupIds([])}>
+          Limpar seleção
+        </Button>
+      )}
+      <p className="text-muted-foreground text-xs">
+        {canViewAll
+          ? "Sem seleção, aparecem todos os negócios, inclusive os sem grupo."
+          : "Sem seleção, aparecem os negócios de todos os seus grupos."}
+      </p>
+    </>
+  );
+
+  const ownerSelect = (className: string) => (
+    <select
+      aria-label="Responsável"
+      title="Responsável"
+      value={onlyMine ? "" : ownerUserId}
+      disabled={onlyMine}
+      onChange={(event) => setFilter("ownerUserId", event.target.value)}
+      className={cn(crmSelectClassName, className)}
+    >
+      <option value="">Todos os responsáveis</option>
+      {members.map((member) => (
+        <option key={member.id} value={member.id}>
+          {member.name ?? member.email}
+        </option>
+      ))}
+    </select>
+  );
+
+  const onlyMineCheckbox = (
+    <label className="flex h-9 cursor-pointer items-center gap-2 px-1 text-sm whitespace-nowrap">
+      <Checkbox checked={onlyMine} onCheckedChange={(checked) => setFilter("onlyMine", checked === true)} />
+      Só os meus
+    </label>
+  );
+
+  const extraFilterFields = (
+    <>
+      <div className="grid gap-1">
+        <Label htmlFor="crm-category" className="text-xs">
+          Categoria
+        </Label>
+        <select
+          id="crm-category"
+          value={categoryId}
+          onChange={(event) => setFilter("categoryId", event.target.value)}
+          className={crmSelectClassName}
+        >
+          <option value="">Todas</option>
+          {categoriesQuery.data?.items.map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="grid gap-1">
+        <Label htmlFor="crm-origin" className="text-xs">
+          Origem
+        </Label>
+        <select id="crm-origin" value={origin} onChange={(event) => setFilter("origin", event.target.value)} className={crmSelectClassName}>
+          <option value="">Todas</option>
+          <option value="AD_MESSAGE">Anúncio no WhatsApp</option>
+          <option value="LEAD_FORM">Formulário de cadastro</option>
+          <option value="NONE">Sem anúncio</option>
+          {!!originCampaignsQuery.data?.length && (
+            <optgroup label="Campanha">
+              {originCampaignsQuery.data.map((campaign) => (
+                <option key={campaign.metaCampaignId} value={`campaign:${campaign.metaCampaignId}`}>
+                  {campaign.name ?? `Campanha ${campaign.metaCampaignId}`}
+                </option>
+              ))}
+            </optgroup>
+          )}
+        </select>
+      </div>
+
+      <div className="grid gap-1">
+        <span className="text-xs font-medium">Criados entre</span>
+        <div className="grid grid-cols-2 gap-2">
+          <Input
+            type="date"
+            aria-label="Criados a partir de"
+            value={startDate}
+            onChange={(event) => setFilter("startDate", event.target.value)}
+          />
+          <Input type="date" aria-label="Criados até" value={endDate} onChange={(event) => setFilter("endDate", event.target.value)} />
+        </div>
+      </div>
+    </>
+  );
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -161,7 +281,7 @@ export const CrmBoard = () => {
           title="Funil"
           value={pipeline?.id}
           onChange={(event) => setStoredPipelineId(event.target.value)}
-          className={cn(crmSelectClassName, "w-44 font-medium")}
+          className={cn(crmSelectClassName, "w-full font-medium sm:w-44")}
         >
           {activePipelines.map((item) => (
             <option key={item.id} value={item.id}>
@@ -170,134 +290,96 @@ export const CrmBoard = () => {
           ))}
         </select>
 
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="w-44 justify-between font-normal" aria-label="Grupos de atendimento">
-              <span className="flex min-w-0 items-center gap-1.5">
-                <Users className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">{serviceGroupLabel}</span>
-              </span>
-              <ChevronDown className="h-4 w-4 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent align="start" className="w-64 space-y-2">
-            {visibleServiceGroups.length === 0 && <p className="text-muted-foreground text-sm">Nenhum grupo cadastrado.</p>}
-            {visibleServiceGroups.map((group) => (
-              <label key={group.id} className="flex cursor-pointer items-center gap-2 text-sm">
-                <Checkbox
-                  checked={selectedServiceGroupIds.includes(group.id)}
-                  onCheckedChange={(checked) => toggleServiceGroup(group.id, checked === true)}
-                />
-                <span className="truncate">{group.name}</span>
-              </label>
-            ))}
-            {selectedServiceGroupIds.length > 0 && (
-              <Button variant="link" size="sm" className="h-auto px-0" onClick={() => setStoredServiceGroupIds([])}>
-                Limpar seleção
-              </Button>
-            )}
-            <p className="text-muted-foreground text-xs">
-              {canViewAll
-                ? "Sem seleção, aparecem todos os negócios, inclusive os sem grupo."
-                : "Sem seleção, aparecem os negócios de todos os seus grupos."}
-            </p>
-          </PopoverContent>
-        </Popover>
-
-        <select
-          aria-label="Responsável"
-          title="Responsável"
-          value={onlyMine ? "" : ownerUserId}
-          disabled={onlyMine}
-          onChange={(event) => setOwnerUserId(event.target.value)}
-          className={cn(crmSelectClassName, "w-44")}
-        >
-          <option value="">Todos os responsáveis</option>
-          {members.map((member) => (
-            <option key={member.id} value={member.id}>
-              {member.name ?? member.email}
-            </option>
-          ))}
-        </select>
-
-        <label className="flex h-9 cursor-pointer items-center gap-2 px-1 text-sm whitespace-nowrap">
-          <Checkbox checked={onlyMine} onCheckedChange={(checked) => setOnlyMine(checked === true)} />
-          Só os meus
-        </label>
-
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="font-normal">
+        {/* Celular: os filtros ficam numa gaveta para o funil e a visualização caberem na barra */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" className="font-normal sm:hidden">
               <SlidersHorizontal className="h-3.5 w-3.5" />
-              Mais filtros
-              {extraFilterCount > 0 && (
+              Filtros
+              {activeFilterCount > 0 && (
                 <span className="bg-primary text-primary-foreground rounded-full px-1.5 text-[11px] font-semibold tabular-nums">
-                  {extraFilterCount}
+                  {activeFilterCount}
                 </span>
               )}
             </Button>
-          </PopoverTrigger>
-          <PopoverContent align="start" className="w-80 space-y-3">
-            <div className="grid gap-1">
-              <Label htmlFor="crm-category" className="text-xs">
-                Categoria
-              </Label>
-              <select
-                id="crm-category"
-                value={categoryId}
-                onChange={(event) => setCategoryId(event.target.value)}
-                className={crmSelectClassName}
-              >
-                <option value="">Todas</option>
-                {categoriesQuery.data?.items.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="grid gap-1">
-              <Label htmlFor="crm-origin" className="text-xs">
-                Origem
-              </Label>
-              <select id="crm-origin" value={origin} onChange={(event) => setOrigin(event.target.value)} className={crmSelectClassName}>
-                <option value="">Todas</option>
-                <option value="AD_MESSAGE">Anúncio no WhatsApp</option>
-                <option value="LEAD_FORM">Formulário de cadastro</option>
-                <option value="NONE">Sem anúncio</option>
-                {!!originCampaignsQuery.data?.length && (
-                  <optgroup label="Campanha">
-                    {originCampaignsQuery.data.map((campaign) => (
-                      <option key={campaign.metaCampaignId} value={`campaign:${campaign.metaCampaignId}`}>
-                        {campaign.name ?? `Campanha ${campaign.metaCampaignId}`}
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
-              </select>
-            </div>
-
-            <div className="grid gap-1">
-              <span className="text-xs font-medium">Criados entre</span>
-              <div className="grid grid-cols-2 gap-2">
-                <Input
-                  type="date"
-                  aria-label="Criados a partir de"
-                  value={startDate}
-                  onChange={(event) => setStartDate(event.target.value)}
-                />
-                <Input type="date" aria-label="Criados até" value={endDate} onChange={(event) => setEndDate(event.target.value)} />
+          </SheetTrigger>
+          <SheetContent side="bottom" className="max-h-[85dvh] gap-0 overflow-y-auto">
+            <SheetHeader className="pr-10">
+              <SheetTitle>Filtros</SheetTitle>
+              <SheetDescription>Ficam guardados neste aparelho para a próxima vez.</SheetDescription>
+            </SheetHeader>
+            <div className="grid gap-5 px-4">
+              <fieldset className="grid gap-2">
+                <legend className="mb-2 text-xs font-medium">Grupos de atendimento</legend>
+                {serviceGroupOptions}
+              </fieldset>
+              <div className="grid gap-1">
+                <span className="text-xs font-medium">Responsável</span>
+                {ownerSelect("w-full")}
+                {onlyMineCheckbox}
               </div>
+              {extraFilterFields}
             </div>
+            <SheetFooter>
+              {activeFilterCount > 0 && (
+                <Button variant="outline" onClick={clearAllFilters}>
+                  Limpar filtros
+                </Button>
+              )}
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
 
-            {extraFilterCount > 0 && (
-              <Button variant="link" size="sm" className="h-auto px-0" onClick={clearExtraFilters}>
-                Limpar estes filtros
+        <div className="hidden sm:contents">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-44 justify-between font-normal" aria-label="Grupos de atendimento">
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <Users className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">{serviceGroupLabel}</span>
+                </span>
+                <ChevronDown className="h-4 w-4 opacity-50" />
               </Button>
-            )}
-          </PopoverContent>
-        </Popover>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="grid w-64 gap-2">
+              {serviceGroupOptions}
+            </PopoverContent>
+          </Popover>
+
+          {ownerSelect("w-44")}
+
+          {onlyMineCheckbox}
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="font-normal">
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                Mais filtros
+                {extraFilterCount > 0 && (
+                  <span className="bg-primary text-primary-foreground rounded-full px-1.5 text-[11px] font-semibold tabular-nums">
+                    {extraFilterCount}
+                  </span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-80 space-y-3">
+              {extraFilterFields}
+
+              {extraFilterCount > 0 && (
+                <Button variant="link" size="sm" className="h-auto px-0" onClick={clearExtraFilters}>
+                  Limpar estes filtros
+                </Button>
+              )}
+            </PopoverContent>
+          </Popover>
+
+          {activeFilterCount > 0 && (
+            <Button variant="ghost" className="text-muted-foreground font-normal" onClick={clearAllFilters}>
+              <X className="h-3.5 w-3.5" />
+              Limpar filtros
+            </Button>
+          )}
+        </div>
 
         <div className="ml-auto flex rounded-md border p-0.5" role="group" aria-label="Visualização">
           {(["board", "list"] as const).map((option) => (
@@ -375,6 +457,8 @@ export const CrmBoard = () => {
                       stage={stage}
                       draggable={deal.status === "OPEN"}
                       onOpen={(item) => setOpenDealId(item.id)}
+                      stages={pipeline.stages}
+                      onMove={(target) => actions.requestMove(deal, target)}
                     />
                   ))}
                 </div>

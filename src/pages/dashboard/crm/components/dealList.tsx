@@ -82,7 +82,17 @@ export const DealList: FC<DealListProps> = ({ deals, pipeline, onOpen }) => {
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <div className="min-w-0">
-                        <p className="font-medium">{deal.title}</p>
+                        {/* Botão para a linha abrir pelo teclado (Tab + Enter/Espaço), como o card do quadro */}
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onOpen(deal);
+                          }}
+                          className="focus-visible:ring-ring/50 rounded-sm text-left font-medium outline-none hover:underline focus-visible:ring-[3px]"
+                        >
+                          {deal.title}
+                        </button>
                         <p className="text-muted-foreground text-xs">{dealContactName(deal.contact)}</p>
                       </div>
                       {deal.contact && <OpenChatButton contact={deal.contact} variant="icon" className="ml-auto" />}

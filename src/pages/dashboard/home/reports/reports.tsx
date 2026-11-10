@@ -6,7 +6,23 @@ import { useQuery } from "@tanstack/react-query";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { reportService } from "@/services/api/reportService";
 import { memberService } from "@/services/api/memberService";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import { cn } from "@/lib/utils";
+import { selectClassName } from "@/pages/dashboard/broadcasts/audienceSources";
+
+// Gráficos usam os tokens do tema para funcionar no modo escuro
+const chartTooltipProps = {
+  contentStyle: {
+    background: "var(--popover)",
+    border: "1px solid var(--border)",
+    borderRadius: 8,
+    color: "var(--popover-foreground)",
+  },
+  labelFormatter: (day: ReactNode) => `Dia ${String(day)}`,
+  cursor: { fill: "var(--muted)", opacity: 0.5 },
+};
+const axisTick = { fill: "var(--muted-foreground)", fontSize: 12 };
+const dayAxisLabel = { value: "Dia do mês", position: "insideBottom" as const, offset: -5, fill: "var(--muted-foreground)" };
 
 export function Reports() {
   const { client } = useClientContext();
@@ -97,19 +113,20 @@ export function Reports() {
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="mb-2 text-3xl">Dashboard de atendimentos</h1>
-            <p className="text-gray-600">Visualização de mensagens e contatos do mês</p>
+            <p className="text-muted-foreground">Mensagens e atendimentos do mês</p>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">
             {/* Attendant Filter */}
-            <div className="flex items-center gap-3 rounded-lg bg-white p-4 shadow">
-              <Users className="shrink-0 text-gray-600" size={20} />
+            <div className="bg-card flex items-center gap-3 rounded-lg border p-4 shadow-sm">
+              <Users className="text-muted-foreground shrink-0" size={20} />
               <select
+                aria-label="Atendente"
                 value={userSelected}
                 onChange={(e) => setUserSelected(e.target.value)}
-                className="w-[calc(100%-20px)] rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className={cn(selectClassName, "min-w-0")}
               >
-                <option value="">Todos</option>
+                <option value="">Todos os atendentes</option>
                 {atendentes.map((user) => (
                   <option key={user.id} value={user.id}>
                     {user.name}
@@ -119,12 +136,13 @@ export function Reports() {
             </div>
 
             {/* Month and Year Selector */}
-            <div className="flex items-center gap-3 rounded-lg bg-white p-4 shadow">
-              <Calendar className="text-gray-600" size={20} />
+            <div className="bg-card flex items-center gap-3 rounded-lg border p-4 shadow-sm">
+              <Calendar className="text-muted-foreground shrink-0" size={20} />
               <select
+                aria-label="Mês"
                 value={mesSelecionado}
                 onChange={(e) => setMesSelecionado(Number(e.target.value))}
-                className="rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className={cn(selectClassName, "min-w-0")}
               >
                 {meses.map((mes, index) => (
                   <option key={index} value={index} disabled={!isMesValido(index, anoSelecionado)}>
@@ -133,9 +151,10 @@ export function Reports() {
                 ))}
               </select>
               <select
+                aria-label="Ano"
                 value={anoSelecionado}
                 onChange={(e) => handleAnoChange(Number(e.target.value))}
-                className="rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className={cn(selectClassName, "w-auto")}
               >
                 {anos.map((ano) => (
                   <option key={ano} value={ano}>
@@ -151,17 +170,17 @@ export function Reports() {
       {/* Summary Cards */}
       <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
         {/* Sent Messages Card */}
-        <div className="rounded-lg bg-white p-6 shadow">
+        <div className="bg-card rounded-lg border p-6 shadow-sm">
           <div className="mb-4 flex items-start justify-between">
             <div>
-              <p className="mb-1 text-sm text-gray-600">Mensagens Enviadas</p>
+              <p className="text-muted-foreground mb-1 text-sm">Mensagens enviadas</p>
               {isLoadingReport ? (
                 <Skeleton className="h-9 w-24" />
               ) : (
                 <p className="text-3xl">{formatNumber(monthlyReport?.current.totalMessagesSent)}</p>
               )}
             </div>
-            <div className="rounded-lg bg-blue-100 p-3">
+            <div className="rounded-lg bg-blue-100 p-3 dark:bg-blue-500/15">
               <TrendingUp className="text-blue-600" size={24} />
             </div>
           </div>
@@ -172,23 +191,23 @@ export function Reports() {
               <span className={(monthlyReport?.variation.totalMessagesSentPercentage ?? 0) >= 0 ? "text-green-600" : "text-red-600"}>
                 {formatPercentage(monthlyReport?.variation.totalMessagesSentPercentage)}
               </span>
-              <span className="text-gray-600">vs. previous month</span>
+              <span className="text-muted-foreground">em relação ao mês anterior</span>
             </div>
           )}
         </div>
 
         {/* Received Messages Card */}
-        <div className="rounded-lg bg-white p-6 shadow">
+        <div className="bg-card rounded-lg border p-6 shadow-sm">
           <div className="mb-4 flex items-start justify-between">
             <div>
-              <p className="mb-1 text-sm text-gray-600">Mensagens Recebidas</p>
+              <p className="text-muted-foreground mb-1 text-sm">Mensagens recebidas</p>
               {isLoadingReport ? (
                 <Skeleton className="h-9 w-24" />
               ) : (
                 <p className="text-3xl">{formatNumber(monthlyReport?.current.totalMessagesReceived)}</p>
               )}
             </div>
-            <div className="rounded-lg bg-green-100 p-3">
+            <div className="rounded-lg bg-green-100 p-3 dark:bg-green-500/15">
               <MessageSquare className="text-green-600" size={24} />
             </div>
           </div>
@@ -199,23 +218,23 @@ export function Reports() {
               <span className={(monthlyReport?.variation.totalMessagesReceivedPercentage ?? 0) >= 0 ? "text-green-600" : "text-red-600"}>
                 {formatPercentage(monthlyReport?.variation.totalMessagesReceivedPercentage)}
               </span>
-              <span className="text-gray-600">vs. previous month</span>
+              <span className="text-muted-foreground">em relação ao mês anterior</span>
             </div>
           )}
         </div>
 
         {/* Services Card */}
-        <div className="rounded-lg bg-white p-6 shadow">
+        <div className="bg-card rounded-lg border p-6 shadow-sm">
           <div className="mb-4 flex items-start justify-between">
             <div>
-              <p className="mb-1 text-sm text-gray-600">Serviços com Atendimento Humano</p>
+              <p className="text-muted-foreground mb-1 text-sm">Atendimentos com atendente humano</p>
               {isLoadingReport ? (
                 <Skeleton className="h-9 w-24" />
               ) : (
                 <p className="text-3xl">{formatNumber(monthlyReport?.current.servicesWithHumanAttendance)}</p>
               )}
             </div>
-            <div className="rounded-lg bg-purple-100 p-3">
+            <div className="rounded-lg bg-purple-100 p-3 dark:bg-purple-500/15">
               <Users className="text-purple-600" size={24} />
             </div>
           </div>
@@ -224,35 +243,35 @@ export function Reports() {
           ) : (
             <div className="flex items-center gap-2 text-sm">
               <span className="text-purple-600">{formatPercentage(monthlyReport?.current.humanAttendancePercentage)}</span>
-              <span className="text-gray-600">of {formatNumber(monthlyReport?.current.totalServices)} services</span>
+              <span className="text-muted-foreground">de {formatNumber(monthlyReport?.current.totalServices)} atendimentos</span>
             </div>
           )}
         </div>
       </div>
 
       {/* Messages Chart */}
-      <div className="rounded-lg bg-white p-6 shadow">
-        <h2 className="mb-6 text-xl">Sent vs Received Messages</h2>
+      <div className="bg-card rounded-lg border p-6 shadow-sm">
+        <h2 className="mb-6 text-xl">Mensagens enviadas e recebidas por dia</h2>
         {isLoadingDailyMessages ? (
           <Skeleton className="h-[300px] w-full" />
         ) : (
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={mensagensData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="day" label={{ value: "Day of Month", position: "insideBottom", offset: -5 }} />
-              <YAxis />
-              <Tooltip />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="day" tick={axisTick} label={dayAxisLabel} />
+              <YAxis tick={axisTick} />
+              <Tooltip {...chartTooltipProps} />
               <Legend />
-              <Bar key="bar-enviadas" dataKey="sent" fill="#3b82f6" name="Sent" />
-              <Bar key="bar-recebidas" dataKey="received" fill="#10b981" name="Received" />
+              <Bar key="bar-enviadas" dataKey="sent" fill="#3b82f6" name="Enviadas" />
+              <Bar key="bar-recebidas" dataKey="received" fill="#10b981" name="Recebidas" />
             </BarChart>
           </ResponsiveContainer>
         )}
       </div>
 
       {/* Combined Chart */}
-      <div className="mt-6 rounded-lg bg-white p-6 shadow">
-        <h2 className="mb-6 text-xl">Monthly Overview</h2>
+      <div className="bg-card mt-6 rounded-lg border p-6 shadow-sm">
+        <h2 className="mb-6 text-xl">Visão geral do mês</h2>
         {isLoadingDailyMessages ? (
           <Skeleton className="h-[400px] w-full" />
         ) : (
@@ -265,13 +284,13 @@ export function Reports() {
                 received: msg.received,
               }))}
             >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="day" label={{ value: "Day of Month", position: "insideBottom", offset: -5 }} />
-              <YAxis />
-              <Tooltip />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="day" tick={axisTick} label={dayAxisLabel} />
+              <YAxis tick={axisTick} />
+              <Tooltip {...chartTooltipProps} />
               <Legend />
-              <Line key="line-enviadas" type="monotone" dataKey="sent" stroke="#3b82f6" strokeWidth={2} name="Sent" />
-              <Line key="line-recebidas" type="monotone" dataKey="received" stroke="#10b981" strokeWidth={2} name="Received" />
+              <Line key="line-enviadas" type="monotone" dataKey="sent" stroke="#3b82f6" strokeWidth={2} name="Enviadas" />
+              <Line key="line-recebidas" type="monotone" dataKey="received" stroke="#10b981" strokeWidth={2} name="Recebidas" />
             </LineChart>
           </ResponsiveContainer>
         )}

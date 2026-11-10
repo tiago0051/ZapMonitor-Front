@@ -119,3 +119,12 @@
     @apply bg-background;
   }
 }
+
+/* Esconde a barra de rolagem mantendo a rolagem (abas e listas horizontais no celular) */
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

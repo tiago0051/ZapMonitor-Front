@@ -48,7 +48,7 @@ const Entry: FC<{ icon: ReactNode; title: ReactNode; at: string; children?: Reac
         <p className="min-w-0 text-sm font-medium break-words">{title}</p>
         <span className="text-muted-foreground shrink-0 text-xs tabular-nums">{time(at)}</span>
       </div>
-      {children && <div className="text-muted-foreground mt-0.5 grid gap-0.5 text-xs">{children}</div>}
+      {children && <div className="text-muted-foreground mt-0.5 grid gap-0.5 text-xs [overflow-wrap:anywhere]">{children}</div>}
     </div>
   </li>
 );
@@ -180,6 +180,19 @@ export const ContactTimeline: FC<{ contactId: string; compact?: boolean }> = ({ 
         <EmptyState title="Nada por aqui ainda" description="Atendimentos, e-mails e movimentos dos negócios aparecem aqui." />
       )}
 
+      {/* O filtro só olha as páginas já carregadas: pode haver itens desse tipo mais para trás */}
+      {query.isSuccess && items.length === 0 && query.hasNextPage && (
+        <EmptyState
+          title="Nenhum item desse tipo nos registros recentes"
+          description="Carregue registros mais antigos para continuar procurando."
+          action={
+            <Button variant="outline" size="sm" disabled={query.isFetchingNextPage} onClick={() => query.fetchNextPage()}>
+              {query.isFetchingNextPage ? "Carregando..." : "Carregar mais antigos"}
+            </Button>
+          }
+        />
+      )}
+
       {items.length > 0 && (
         <ol className="before:bg-border relative grid before:absolute before:top-2 before:bottom-2 before:left-[0.8125rem] before:w-px">
           {items.map((item, index) => {
@@ -194,7 +207,7 @@ export const ContactTimeline: FC<{ contactId: string; compact?: boolean }> = ({ 
         </ol>
       )}
 
-      {query.hasNextPage && (
+      {query.hasNextPage && items.length > 0 && (
         <Button
           variant="outline"
           size="sm"

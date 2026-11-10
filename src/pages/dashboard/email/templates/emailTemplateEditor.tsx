@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useBaseUrl } from "@/hooks/use-baseUrl";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes";
+import { undoableAction } from "@/lib/undoToast";
 import { cn } from "@/lib/utils";
 import { crmSelectClassName } from "@/pages/dashboard/crm/crmUtils";
 import { contactService } from "@/services/api/contactService";
@@ -14,7 +16,7 @@ import { emailTemplateService } from "@/services/api/emailTemplateService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowLeft, ArrowUp, Copy, Monitor, Plus, Smartphone, Trash2 } from "lucide-react";
-import { useEffect, useState, type FC, type FormEvent } from "react";
+import { useState, type FC, type FormEvent } from "react";
 import { Link, useParams } from "react-router";
 import { toast } from "sonner";
 import { useDebounceValue } from "usehooks-ts";
@@ -38,9 +40,9 @@ const ContactPicker: FC<{ value: ContactListItem | null; onChange: (contact: Con
 
   if (value)
     return (
-      <div className="flex items-center gap-2 text-sm">
-        <span className="text-muted-foreground">Dados de</span>
-        <span className="truncate font-medium">{value.name || value.email || value.phone}</span>
+      <div className="flex min-w-0 items-center gap-2 text-sm">
+        <span className="text-muted-foreground shrink-0">Dados de</span>
+        <span className="min-w-0 truncate font-medium">{value.name || value.email || value.phone}</span>
         <Button variant="link" size="sm" className="h-auto px-0" onClick={() => onChange(null)}>
           trocar
         </Button>
@@ -48,7 +50,7 @@ const ContactPicker: FC<{ value: ContactListItem | null; onChange: (contact: Con
     );
 
   return (
-    <div className="relative w-64">
+    <div className="relative w-full sm:w-64">
       <Input
         aria-label="Ver com os dados de um contato"
         placeholder="Ver com os dados de um contato"
@@ -181,13 +183,8 @@ const EditorForm: FC<{ template: EmailTemplate }> = ({ template }) => {
 
   const isDirty = JSON.stringify(draft) !== saved;
 
-  // Avisa antes de fechar a aba com alterações não salvas
-  useEffect(() => {
-    if (!isDirty) return;
-    const handler = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [isDirty]);
+  // Pergunta antes de sair (fechar a aba, "Voltar" ou menu lateral) com alterações não salvas
+  const { guardDialog } = useUnsavedChangesGuard(isDirty);
 
   const preview = useQuery({
     queryKey: ["emailTemplates", "preview", client.id, debouncedDraft, previewContact?.id],
@@ -216,8 +213,26 @@ const EditorForm: FC<{ template: EmailTemplate }> = ({ template }) => {
     setSelectedId(block.id);
   };
 
+  // Remove na hora e deixa desfazer pelo toast, devolvendo o bloco à mesma posição
+  const removeBlock = (block: EmailBlock, index: number) => {
+    setBlocks(draft.blocks.filter((item) => item.id !== block.id));
+    if (selectedId === block.id) setSelectedId(null);
+    undoableAction({
+      message: `Bloco "${blockLabels[block.type]}" removido`,
+      commit: () => {},
+      onUndo: () => {
+        setDraft((current) => ({
+          ...current,
+          blocks: [...current.blocks.slice(0, index), block, ...current.blocks.slice(index)],
+        }));
+        setSelectedId(block.id);
+      },
+    });
+  };
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
+      {guardDialog}
       <div className="flex flex-wrap items-center gap-3 border-b px-4 py-3">
         <Link
           to={`${baseUrl}/email?tab=templates`}
@@ -231,7 +246,7 @@ const EditorForm: FC<{ template: EmailTemplate }> = ({ template }) => {
           value={draft.name}
           maxLength={191}
           onChange={(event) => setDraft({ ...draft, name: event.target.value })}
-          className="w-64 font-medium"
+          className="w-[calc(100%-2rem)] font-medium sm:w-64"
         />
         <span className="text-muted-foreground text-xs">{isDirty ? "Alterações não salvas" : "Salvo"}</span>
         <div className="ml-auto flex gap-2">
@@ -308,7 +323,8 @@ const EditorForm: FC<{ template: EmailTemplate }> = ({ template }) => {
                     size="icon"
                     variant="ghost"
                     className="h-6 w-6"
-                    aria-label="Subir"
+                    aria-label={`Subir o bloco ${index + 1} (${blockLabels[block.type]})`}
+                    disabled={index === 0}
                     onClick={() => setBlocks(moveItem(draft.blocks, index, index - 1))}
                   >
                     <ArrowUp className="h-3.5 w-3.5" />
@@ -318,7 +334,8 @@ const EditorForm: FC<{ template: EmailTemplate }> = ({ template }) => {
                     size="icon"
                     variant="ghost"
                     className="h-6 w-6"
-                    aria-label="Descer"
+                    aria-label={`Descer o bloco ${index + 1} (${blockLabels[block.type]})`}
+                    disabled={index === draft.blocks.length - 1}
                     onClick={() => setBlocks(moveItem(draft.blocks, index, index + 1))}
                   >
                     <ArrowDown className="h-3.5 w-3.5" />
@@ -328,7 +345,7 @@ const EditorForm: FC<{ template: EmailTemplate }> = ({ template }) => {
                     size="icon"
                     variant="ghost"
                     className="h-6 w-6"
-                    aria-label="Duplicar"
+                    aria-label={`Duplicar o bloco ${index + 1} (${blockLabels[block.type]})`}
                     onClick={() => setBlocks([...draft.blocks.slice(0, index + 1), cloneBlock(block), ...draft.blocks.slice(index + 1)])}
                   >
                     <Copy className="h-3.5 w-3.5" />
@@ -338,8 +355,8 @@ const EditorForm: FC<{ template: EmailTemplate }> = ({ template }) => {
                     size="icon"
                     variant="ghost"
                     className="text-muted-foreground h-6 w-6"
-                    aria-label="Remover"
-                    onClick={() => setBlocks(draft.blocks.filter((item) => item.id !== block.id))}
+                    aria-label={`Remover o bloco ${index + 1} (${blockLabels[block.type]})`}
+                    onClick={() => removeBlock(block, index)}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
@@ -350,9 +367,10 @@ const EditorForm: FC<{ template: EmailTemplate }> = ({ template }) => {
         </aside>
 
         {/* Prévia */}
-        <section className="bg-muted/40 flex min-h-[480px] flex-col gap-3 overflow-y-auto p-4">
+        <section className="bg-muted/40 order-3 flex min-h-[480px] flex-col gap-3 overflow-y-auto p-4 lg:order-none">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex gap-1" role="group" aria-label="Tamanho da prévia">
+            {/* No celular a prévia já tem a largura da tela; o seletor só faz sentido do md para cima */}
+            <div className="hidden gap-1 md:flex" role="group" aria-label="Tamanho da prévia">
               <Button
                 size="sm"
                 variant={device === "desktop" ? "secondary" : "ghost"}
@@ -390,14 +408,14 @@ const EditorForm: FC<{ template: EmailTemplate }> = ({ template }) => {
               srcDoc={preview.data?.html ?? ""}
               className={cn(
                 "bg-background min-h-[640px] rounded-lg border shadow-sm transition-[width]",
-                device === "desktop" ? "w-full max-w-[680px]" : "w-[375px]",
+                device === "desktop" ? "w-full max-w-[680px]" : "w-full max-w-[680px] md:w-[375px]",
               )}
             />
           </div>
         </section>
 
         {/* Propriedades */}
-        <aside className="flex min-h-0 flex-col gap-4 overflow-y-auto border-t p-3 lg:border-t-0 lg:border-l">
+        <aside className="order-2 flex min-h-0 flex-col gap-4 overflow-y-auto border-b p-3 lg:order-none lg:border-b-0 lg:border-l">
           {selected ? (
             <>
               <h2 className="text-sm font-semibold">{blockLabels[selected.type]}</h2>

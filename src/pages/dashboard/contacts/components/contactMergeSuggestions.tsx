@@ -67,7 +67,7 @@ export const ContactMergeSuggestions: FC<ContactMergeSuggestionsProps> = ({ cont
               {contactDisplayName(suggestion.other)}
             </Link>{" "}
             tem o mesmo {suggestion.reason === "EMAIL" ? "e-mail" : "telefone"}:{" "}
-            <span className="font-medium">{suggestion.sharedValue}</span>
+            <span className="font-medium break-all">{suggestion.sharedValue}</span>
           </p>
           <p className="text-muted-foreground text-xs">
             Veio de {sourceLabel[suggestion.source] ?? suggestion.source}. Juntar traz telefones, e-mails, conversas e negócios da outra

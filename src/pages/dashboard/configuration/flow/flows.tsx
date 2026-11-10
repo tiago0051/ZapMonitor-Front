@@ -1,7 +1,8 @@
 import { EmptyState } from "@/components/state-message";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ExpandableDescription } from "../components/expandableDescription";
 import { flowService } from "@/services/api/flowService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
@@ -52,14 +53,13 @@ export const Flows = () => {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+      <CardHeader className="flex flex-col items-start gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle>Fluxos de atendimento</CardTitle>
-          <CardDescription>
-            Monte o caminho que cada novo atendimento percorre: mensagens, perguntas, agentes de IA e grupos. Cada número de WhatsApp inicia
-            um fluxo; fluxos sem número continuam o atendimento quando outro fluxo os aciona pelo nó "Ir para fluxo". Sem fluxo ativo no
-            número, os atendimentos vão direto para a fila do grupo do número.
-          </CardDescription>
+          <ExpandableDescription summary="Monte o caminho que cada novo atendimento percorre: mensagens, perguntas, agentes de IA e grupos.">
+            Cada número de WhatsApp inicia um fluxo; fluxos sem número continuam o atendimento quando outro fluxo os aciona pelo nó "Ir para
+            fluxo". Sem fluxo ativo no número, os atendimentos vão direto para a fila do grupo do número.
+          </ExpandableDescription>
         </div>
         <DialogCreateFlow clientId={clientId!} />
       </CardHeader>
@@ -97,7 +97,7 @@ export const Flows = () => {
                         <Copy className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="icon" className="text-muted-foreground h-8 w-8" asChild>
-                        <Link to={`flow/${flow.id}`}>
+                        <Link to={`flow/${flow.id}`} aria-label={`Editar ${flow.name}`} title="Editar">
                           <Pencil className="h-4 w-4" />
                         </Link>
                       </Button>

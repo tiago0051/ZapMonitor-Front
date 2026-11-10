@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { billingResourceLabel } from "@/contants/billingContants";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { billingService } from "@/services/api/billingService";
 import { useQuery } from "@tanstack/react-query";
@@ -26,8 +27,25 @@ const Section = ({ title, description, children }: { title: string; description:
   </Card>
 );
 
-export const FinanceTab = () => {
-  const [month, setMonth] = useState<string>(format(new Date(), "yyyy-MM"));
+/** Linha "rótulo: valor" dos cards que substituem as tabelas largas no celular. */
+const MobileValue = ({ label, children }: { label: string; children: ReactNode }) => (
+  <div>
+    <dt className="text-muted-foreground text-xs">{label}</dt>
+    <dd className="text-sm font-semibold tabular-nums">{children}</dd>
+  </div>
+);
+
+type FinanceTabProps = {
+  // Controlado pela tela do dono, que guarda o mês na URL; sem ele, o mês fica só no estado
+  month?: string;
+  onMonthChange?: (month: string) => void;
+};
+
+export const FinanceTab = ({ month: controlledMonth, onMonthChange }: FinanceTabProps) => {
+  const isMobile = useIsMobile();
+  const [localMonth, setLocalMonth] = useState<string>(format(new Date(), "yyyy-MM"));
+  const month = controlledMonth ?? localMonth;
+  const setMonth = onMonthChange ?? setLocalMonth;
 
   // O mês inteiro no fuso do navegador
   const monthStart = month ? startOfMonth(parse(month, "yyyy-MM", new Date())) : null;
@@ -94,7 +112,7 @@ export const FinanceTab = () => {
               <Card key={item.label} className={cn("gap-1 py-4", item.highlight && "border-primary")}>
                 <CardHeader className="px-4">
                   <CardDescription>{item.label}</CardDescription>
-                  <CardTitle className="text-xl">
+                  <CardTitle className="text-lg break-words sm:text-xl">
                     <ProfitValue value={item.value} />
                   </CardTitle>
                 </CardHeader>
@@ -108,6 +126,36 @@ export const FinanceTab = () => {
           >
             {finance.implanters.length === 0 ? (
               <EmptyState title="Nenhum tenant com responsável e plano ativo neste mês" />
+            ) : isMobile ? (
+              <ul className="space-y-3">
+                {finance.implanters.map((implanter) => (
+                  <li key={implanter.id} className="rounded-lg border p-3">
+                    <div className="mb-2 flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{implanter.name}</p>
+                        <p className="text-muted-foreground truncate text-xs">{implanter.email}</p>
+                      </div>
+                      <p className="shrink-0 text-right text-sm font-semibold">
+                        <span className="text-muted-foreground block text-xs font-normal">Lucro</span>
+                        <ProfitValue value={implanter.profit} />
+                      </p>
+                    </div>
+                    <dl className="grid grid-cols-2 gap-2">
+                      <MobileValue label="Tenants (novos)">
+                        {implanter.clients} ({implanter.newClients})
+                      </MobileValue>
+                      <MobileValue label="Receita">{formatCurrency(implanter.revenue)}</MobileValue>
+                      <MobileValue label="Comissão de venda">{formatCurrency(implanter.saleCommission)}</MobileValue>
+                      <MobileValue label="Repasse do 1º pagamento">{formatCurrency(implanter.firstPaymentTransfer)}</MobileValue>
+                      <MobileValue label="CAC por tenant">{implanter.cac === null ? "–" : formatCurrency(implanter.cac)}</MobileValue>
+                      <MobileValue label="Comissão recorrente">{formatCurrency(implanter.recurringCommission)}</MobileValue>
+                      <MobileValue label="Custo total">
+                        {formatCurrency(implanter.saleCommission + implanter.firstPaymentTransfer + implanter.recurringCommission)}
+                      </MobileValue>
+                    </dl>
+                  </li>
+                ))}
+              </ul>
             ) : (
               <Table>
                 <TableHeader>
@@ -190,6 +238,42 @@ export const FinanceTab = () => {
           <Section title="Tenants" description="Mensalidade, custos rateados, comissões e lucro de cada tenant com plano ativo no mês.">
             {finance.clients.length === 0 ? (
               <EmptyState title="Nenhum tenant com plano ativo neste mês" />
+            ) : isMobile ? (
+              <ul className="space-y-3">
+                {finance.clients.map((client) => (
+                  <li key={client.id} className="rounded-lg border p-3">
+                    <div className="mb-2 flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-medium">
+                          {client.name} {client.isNew && <Badge variant="outline">Novo</Badge>}
+                        </p>
+                        <p className="text-muted-foreground truncate text-xs">
+                          {client.implanter?.name ?? <span className="italic">Sem responsável</span>}
+                        </p>
+                      </div>
+                      <p className="shrink-0 text-right text-sm font-semibold">
+                        <span className="text-muted-foreground block text-xs font-normal">Lucro</span>
+                        <ProfitValue value={client.profit} />
+                      </p>
+                    </div>
+                    <dl className="grid grid-cols-2 gap-2">
+                      <MobileValue label="Mensalidade">
+                        {formatCurrency(client.monthlyFee)}
+                        {client.listFee !== client.monthlyFee && (
+                          <span className="text-muted-foreground block text-[11px] font-normal">
+                            tabela {formatCurrency(client.listFee)}
+                          </span>
+                        )}
+                      </MobileValue>
+                      <MobileValue label="Custo dos recursos">{formatCurrency(client.variableCost)}</MobileValue>
+                      <MobileValue label="Custo fixo">{formatCurrency(client.fixedCostShare)}</MobileValue>
+                      <MobileValue label="Comissões e repasse">
+                        {formatCurrency(client.saleCommission + client.firstPaymentTransfer + client.recurringCommission)}
+                      </MobileValue>
+                    </dl>
+                  </li>
+                ))}
+              </ul>
             ) : (
               <Table>
                 <TableHeader>

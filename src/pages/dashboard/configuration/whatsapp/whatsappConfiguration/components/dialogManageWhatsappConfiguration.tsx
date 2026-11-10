@@ -54,7 +54,7 @@ export const DialogManageWhatsappConfiguration: FC<DialogManageWhatsappConfigura
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8" title="Gerenciar número">
+        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Gerenciar número" title="Gerenciar número">
           <Settings2 className="h-4 w-4" />
         </Button>
       </DialogTrigger>

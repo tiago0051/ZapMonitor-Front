@@ -241,3 +241,118 @@ export const ruleActionLabel: Record<AdRuleAction, string> = {
  */
 export const dateInputClassName =
   "h-9 w-full min-w-0 appearance-none text-left sm:h-8 sm:w-36 [&::-webkit-date-and-time-value]:text-left [&::-webkit-date-and-time-value]:whitespace-nowrap";
+
+/** Valor cru da Meta legível quando não há tradução: "LOWEST_COST_WITH_BID_CAP" → "Lowest cost with bid cap". */
+export const humanizeMetaValue = (value: string | null | undefined) => {
+  if (!value) return "—";
+  const text = value.replaceAll("_", " ").toLowerCase();
+  return text.charAt(0).toUpperCase() + text.slice(1);
+};
+
+/** Tradução de um valor da Meta pelo mapa, com o valor humanizado como reserva. */
+export const metaLabel = (labels: Record<string, string>, value: string | null | undefined) =>
+  value ? (labels[value] ?? humanizeMetaValue(value)) : "—";
+
+export const bidStrategyLabel: Record<string, string> = {
+  LOWEST_COST_WITHOUT_CAP: "Menor custo (automático)",
+  LOWEST_COST_WITH_BID_CAP: "Menor custo com lance máximo",
+  COST_CAP: "Custo por resultado máximo",
+  LOWEST_COST_WITH_MIN_ROAS: "Retorno mínimo (ROAS)",
+  TARGET_COST: "Custo alvo",
+};
+
+export const billingEventLabel: Record<string, string> = {
+  IMPRESSIONS: "Por impressão",
+  LINK_CLICKS: "Por clique no link",
+  CLICKS: "Por clique",
+  THRUPLAY: "Por ThruPlay (vídeo assistido)",
+  POST_ENGAGEMENT: "Por engajamento",
+  PAGE_LIKES: "Por curtida na página",
+  APP_INSTALLS: "Por instalação do app",
+  LISTING_INTERACTION: "Por interação",
+  PURCHASE: "Por compra",
+};
+
+export const callToActionLabel: Record<string, string> = {
+  WHATSAPP_MESSAGE: "Enviar mensagem no WhatsApp",
+  MESSAGE_PAGE: "Enviar mensagem",
+  SEND_MESSAGE: "Enviar mensagem",
+  LEARN_MORE: "Saiba mais",
+  SHOP_NOW: "Comprar agora",
+  SIGN_UP: "Cadastre-se",
+  CONTACT_US: "Fale conosco",
+  APPLY_NOW: "Candidate-se",
+  GET_QUOTE: "Pedir orçamento",
+  GET_OFFER: "Ver oferta",
+  BOOK_TRAVEL: "Reservar",
+  BOOK_NOW: "Reservar agora",
+  SUBSCRIBE: "Assinar",
+  DOWNLOAD: "Baixar",
+  ORDER_NOW: "Pedir agora",
+  CALL_NOW: "Ligar agora",
+  NO_BUTTON: "Sem botão",
+  INSTALL_MOBILE_APP: "Instalar o app",
+  WATCH_MORE: "Assistir mais",
+  SEE_MORE: "Ver mais",
+};
+
+export const audienceSubtypeLabel: Record<string, string> = {
+  CUSTOM: "Lista de clientes",
+  LOOKALIKE: "Semelhante",
+  WEBSITE: "Visitantes do site",
+  ENGAGEMENT: "Engajamento",
+  APP: "Usuários do app",
+  OFFLINE_CONVERSION: "Conversões offline",
+  VIDEO: "Quem viu vídeos",
+  LEAD_GENERATION: "Formulário de cadastro",
+  IG_BUSINESS: "Perfil do Instagram",
+  FB_EVENT: "Evento do Facebook",
+  MESSENGER: "Conversas no Messenger",
+  PAGE: "Página do Facebook",
+};
+
+/** delivery_status do público: a Meta devolve a descrição em inglês (ex.: "This audience is ready for use."). */
+export const audienceDeliveryLabel = (status: string | null | undefined) => {
+  if (!status) return "—";
+  const text = status.toLowerCase();
+  if (text.includes("too small") || text.includes("not large enough") || text.includes("not enough")) return "Público pequeno demais";
+  if (text.includes("expired")) return "Vencido";
+  if (text.includes("deleted")) return "Excluído";
+  if (text.includes("being updated") || text.includes("populating") || text.includes("not ready")) return "Ainda preparando";
+  if (text.includes("ready")) return "Pronto para uso";
+  if (text.includes("not available") || text.includes("can't be used") || text.includes("cannot be used")) return "Não pode ser usado";
+  // Sem tradução conhecida: mostra o texto da Meta
+  return status;
+};
+
+export type GlossaryTerm = "CTR" | "ROAS" | "CPA" | "ADVANTAGE" | "CPC" | "CPM";
+
+/** Explicações curtas para as siglas da Meta, mostradas pelo botão "o que é isso". */
+export const metricGlossary: Record<GlossaryTerm, { title: string; description: string }> = {
+  CTR: {
+    title: "CTR (taxa de cliques)",
+    description: "De cada 100 pessoas que viram o anúncio, quantas clicaram. Quanto maior, mais o anúncio chama atenção.",
+  },
+  ROAS: {
+    title: "ROAS (retorno sobre o gasto)",
+    description: "Quanto voltou em vendas para cada R$ 1 gasto em anúncio. ROAS 3 = R$ 3 vendidos para cada R$ 1 investido.",
+  },
+  CPA: {
+    title: "Custo por resultado",
+    description:
+      "Quanto custou, em média, cada resultado (conversa, cadastro ou venda): o gasto dividido pela quantidade de resultados. Quanto menor, melhor.",
+  },
+  ADVANTAGE: {
+    title: "Advantage+",
+    description:
+      "Recursos automáticos da Meta: a própria Meta ajusta público, posicionamentos ou o criativo para achar quem tem mais chance de responder.",
+  },
+  CPC: {
+    title: "CPC (custo por clique)",
+    description: "Quanto custou, em média, cada clique no anúncio.",
+  },
+  CPM: {
+    title: "CPM (custo por mil)",
+    description: "Quanto custa mostrar o anúncio mil vezes.",
+  },
+};

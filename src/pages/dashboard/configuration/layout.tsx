@@ -23,7 +23,8 @@ import {
   Workflow,
   type LucideIcon,
 } from "lucide-react";
-import { Suspense, type ReactNode } from "react";
+import { Suspense, useEffect, useRef, type ReactNode } from "react";
+import { FirstStepsChecklist } from "./components/firstStepsChecklist";
 import { useParams, useSearchParams } from "react-router";
 import { AiAgents } from "./aiAgent/aiAgents";
 import { GoogleCalendarSettings } from "./googleCalendar/googleCalendarSettings";
@@ -53,6 +54,8 @@ type ConfigurationSection = {
   requiresCrm?: boolean;
   // Só aparece quando o plano inclui o módulo de anúncios
   requiresAds?: boolean;
+  // Abre por link (?tab=), mas fica fora do menu; a troca de senha mora no menu do usuário, na sidebar
+  hiddenFromNav?: boolean;
 };
 
 // Grupos ordenados pela frequência de uso: atendimento muda toda semana; canais e integrações, só na implantação
@@ -162,7 +165,7 @@ const configurationGroups: { label: string; sections: ConfigurationSection[] }[]
   },
   {
     label: "Conta",
-    sections: [{ id: "account", label: "Senha", icon: KeyRound, content: <ChangePasswordForm /> }],
+    sections: [{ id: "account", label: "Senha", icon: KeyRound, content: <ChangePasswordForm />, hiddenFromNav: true }],
   },
 ];
 
@@ -194,6 +197,14 @@ export const EditClientLayout = () => {
     }))
     .filter((group) => group.sections.length > 0);
   const sections = allowedGroups.flatMap((group) => group.sections);
+  // Sem nenhuma outra seção liberada, a de senha continua no menu para a tela não ficar vazia
+  const hasNavSections = sections.some((section) => !section.hiddenFromNav);
+  const navGroups = hasNavSections
+    ? allowedGroups
+        .map((group) => ({ ...group, sections: group.sections.filter((section) => !section.hiddenFromNav) }))
+        .filter((group) => group.sections.length > 0)
+    : allowedGroups;
+  const navSections = navGroups.flatMap((group) => group.sections);
 
   const findClientByIdQuery = useQuery({
     queryKey: ["client", clientId],
@@ -203,9 +214,17 @@ export const EditClientLayout = () => {
   // Sem aba pedida (ou sem acesso a ela), abre a primeira que o usuário pode ver
   const requestedSectionId = searchParams.get("tab") ?? "";
   const activeSection =
-    sections.find((section) => section.id === (legacySectionIds[requestedSectionId] ?? requestedSectionId)) ?? sections[0];
+    sections.find((section) => section.id === (legacySectionIds[requestedSectionId] ?? requestedSectionId)) ?? navSections[0];
 
   const selectSection = (sectionId: string) => setSearchParams({ tab: sectionId }, { replace: true });
+
+  // No celular a faixa de seções rola sozinha até a aba ativa
+  const chipsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const activeChip = chipsRef.current?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!activeChip || activeChip.offsetParent === null) return;
+    activeChip.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+  }, [activeSection.id]);
 
   return (
     <div className="flex h-full flex-col overflow-auto p-4 md:p-6">
@@ -217,11 +236,12 @@ export const EditClientLayout = () => {
       <div className="flex flex-col gap-6 md:flex-row">
         <nav className="shrink-0 md:w-56">
           {/* Mobile: lista horizontal rolável */}
-          <div className="scrollbar-hide -mx-4 flex gap-2 overflow-x-auto px-4 md:hidden">
-            {sections.map((section) => (
+          <div ref={chipsRef} className="scrollbar-hide -mx-4 flex gap-2 overflow-x-auto px-4 md:hidden">
+            {navSections.map((section) => (
               <button
                 key={section.id}
                 onClick={() => selectSection(section.id)}
+                aria-current={section.id === activeSection.id ? "page" : undefined}
                 className={cn(
                   "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm whitespace-nowrap transition-colors",
                   section.id === activeSection.id ? "bg-primary text-primary-foreground border-primary" : "hover:bg-muted",
@@ -235,7 +255,7 @@ export const EditClientLayout = () => {
 
           {/* Desktop: menu lateral agrupado */}
           <div className="hidden space-y-5 md:block">
-            {allowedGroups.map((group) => (
+            {navGroups.map((group) => (
               <div key={group.label}>
                 <p className="text-muted-foreground mb-1.5 px-3 text-xs font-semibold tracking-wide uppercase">{group.label}</p>
                 <div className="space-y-0.5">
@@ -262,6 +282,8 @@ export const EditClientLayout = () => {
         </nav>
 
         <main className="min-w-0 flex-1 space-y-5">
+          {/* Só na entrada das configurações, sem aba escolhida */}
+          {!requestedSectionId && clientId && <FirstStepsChecklist clientId={clientId} onSelectTab={selectSection} />}
           {/* A key recria o boundary ao trocar de seção, limpando o erro da anterior */}
           <QueryErrorBoundary key={activeSection.id} message={`Não foi possível carregar a seção ${activeSection.label}.`}>
             <Suspense fallback={<SectionSkeleton />}>{activeSection.content}</Suspense>

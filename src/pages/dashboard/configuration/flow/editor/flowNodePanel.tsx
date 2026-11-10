@@ -83,6 +83,7 @@ const OutputsEditor: FC<OutputsEditorProps> = ({ label, hint, outputs, withDescr
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 shrink-0"
+                aria-label="Remover saída"
                 disabled={outputs.length <= minItems}
                 onClick={() => onChange(outputs.filter((_, outputIndex) => outputIndex !== index))}
               >
@@ -214,7 +215,7 @@ export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, on
       <div className="flex items-center gap-2 border-b px-4 py-3">
         <Icon className={`h-4 w-4 ${config.colorClassName}`} />
         <h3 className="flex-1 truncate text-sm font-semibold">{config.label}</h3>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
+        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Fechar painel" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>
       </div>

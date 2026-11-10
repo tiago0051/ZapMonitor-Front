@@ -33,7 +33,7 @@ export const ContactAvatar: FC<ContactAvatarProps> = ({ contact, size, className
   const sz = size === "sm" ? "w-8 h-8 text-xs" : "w-10 h-10 text-sm";
 
   return (
-    <Avatar size="default" className={cn("border-border/30 h-8 w-8 border", sz, className)}>
+    <Avatar size="default" aria-hidden className={cn("border-border/30 h-8 w-8 border", sz, className)}>
       <AvatarFallback className={cn("text-xs font-semibold", avatarColor)}>{contactInitial || "?"}</AvatarFallback>
     </Avatar>
   );

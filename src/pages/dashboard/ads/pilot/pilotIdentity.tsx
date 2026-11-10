@@ -128,7 +128,7 @@ export const PilotIdentity: FC<Props> = ({ account, brand, pages, onChange }) =>
       {brand.identityError && <p className="text-destructive text-sm">{brand.identityError}</p>}
 
       <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
-        <div className="space-y-2">
+        <div className="max-w-56 space-y-2">
           <div className="bg-muted/40 flex aspect-square items-center justify-center overflow-hidden rounded-lg border">
             {logoQuery.data?.dataUrl ? (
               <img src={logoQuery.data.dataUrl} alt="Logo da marca" className="h-full w-full object-contain" />

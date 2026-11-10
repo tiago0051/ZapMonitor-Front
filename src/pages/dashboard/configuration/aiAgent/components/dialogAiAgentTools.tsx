@@ -132,7 +132,7 @@ export const DialogAiAgentTools: FC<DialogAiAgentToolsProps> = ({ clientId, aiAg
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Ferramentas de {aiAgent.name}</DialogTitle>
           <DialogDescription>

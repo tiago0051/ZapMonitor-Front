@@ -158,7 +158,10 @@ export const AdsChanges: FC<{ account: AdAccount }> = ({ account }) => {
             type="button"
             aria-pressed={view === option}
             onClick={() => setView(option)}
-            className={cn("flex-1 rounded px-2 py-1 text-xs", view === option ? "bg-primary text-primary-foreground" : "hover:bg-muted")}
+            className={cn(
+              "focus-visible:ring-ring/50 flex-1 rounded px-2 py-1 text-xs outline-none focus-visible:ring-[3px]",
+              view === option ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+            )}
           >
             {option === "pending" ? "Para aprovar" : "Histórico"}
           </button>

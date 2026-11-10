@@ -66,13 +66,16 @@ export const AiFieldUpdates: FC<AiFieldUpdatesProps> = ({ owner, onAccepted }) =
       </h3>
 
       {pending.map((update) => (
-        <div key={update.id} className="border-primary/30 bg-primary/5 grid gap-1.5 rounded-lg border px-3 py-2 text-sm">
+        <div
+          key={update.id}
+          className="border-primary/30 bg-primary/5 grid gap-1.5 rounded-lg border px-3 py-2 text-sm [overflow-wrap:anywhere]"
+        >
           <p>
             <span className="font-medium">{update.label}:</span> {update.value}
             {update.previousValue && <span className="text-muted-foreground"> (hoje: {update.previousValue})</span>}
           </p>
           <Evidence text={update.evidence} />
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button size="sm" disabled={resolve.isPending} onClick={() => resolve.mutate({ id: update.id, accept: true })}>
               Usar este valor
             </Button>
@@ -96,7 +99,7 @@ export const AiFieldUpdates: FC<AiFieldUpdatesProps> = ({ owner, onAccepted }) =
       {showHistory && (
         <ul className="grid gap-2">
           {history.map((update) => (
-            <li key={update.id} className="grid gap-1 text-sm">
+            <li key={update.id} className="grid gap-1 text-sm [overflow-wrap:anywhere]">
               <p>
                 <span className="font-medium">{update.label}:</span> {update.value}
               </p>

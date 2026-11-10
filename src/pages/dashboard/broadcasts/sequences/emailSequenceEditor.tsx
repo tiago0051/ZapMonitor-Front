@@ -1,3 +1,5 @@
+import { useConfirm } from "@/components/confirm-dialog";
+import { DisabledReason } from "@/components/disabled-reason";
 import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +19,7 @@ import { useState, type FC } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import { selectClassName } from "../audienceSources";
-import { describeSendWindow, formatCount, sendWindowError } from "../broadcastUtils";
+import { describeSendWindow, focusPendingField, formatCount, sendWindowError } from "../broadcastUtils";
 import { SendWindowFields } from "../components/sendWindowFields";
 import { delayUnits, describeDelay, enrollmentStatusInfo, splitDelay, stopReasonLabel, type DelayUnit } from "./sequenceUtils";
 
@@ -152,20 +154,28 @@ const SequenceForm: FC<{ sequence: EmailSequence; isNew: boolean }> = ({ sequenc
       steps: sequence.steps,
     });
 
-  const stepError = steps
-    .map((step, index) => {
-      const minutes = draftMinutes(step);
-      if (step.amount === "" || !Number.isInteger(minutes) || minutes < 0 || minutes > MAX_DELAY_MINUTES)
-        return `A espera do e-mail ${index + 1} vai de 0 a 90 dias`;
-      return null;
-    })
-    .find(Boolean);
-  const formError = !name.trim() ? "Dê um nome para a sequência" : (stepError ?? sendWindowError(sendWindow));
+  const invalidStepIndex = steps.findIndex((step) => {
+    const minutes = draftMinutes(step);
+    return step.amount === "" || !Number.isInteger(minutes) || minutes < 0 || minutes > MAX_DELAY_MINUTES;
+  });
+  const stepError = invalidStepIndex >= 0 ? `A espera do e-mail ${invalidStepIndex + 1} vai de 0 a 90 dias` : null;
+  const windowError = sendWindowError(sendWindow);
+  const formError = !name.trim() ? "Dê um nome para a sequência" : (stepError ?? windowError);
+  const missingTemplateIndex = steps.findIndex((step) => !step.templateId);
   const activationError = !senderId
     ? "Escolha o remetente para ligar"
-    : steps.some((step) => !step.templateId)
+    : missingTemplateIndex >= 0
       ? "Escolha o modelo de todos os e-mails para ligar"
       : null;
+  // Campo que resolve o bloqueio atual, para levar a pessoa até ele
+  const formErrorField = !name.trim()
+    ? "sequence-name"
+    : stepError
+      ? `step-${invalidStepIndex}-amount`
+      : windowError
+        ? "sequence-window-start"
+        : null;
+  const activationErrorField = !senderId ? "sequence-sender" : missingTemplateIndex >= 0 ? `step-${missingTemplateIndex}-template` : null;
   const busy = save.isPending || toggle.isPending || remove.isPending;
   const disabled = !canEdit || busy;
 
@@ -207,18 +217,29 @@ const SequenceForm: FC<{ sequence: EmailSequence; isNew: boolean }> = ({ sequenc
         </div>
         {canEdit && (
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" disabled={disabled || !!formError || (!isNew && !dirty)} onClick={() => save.mutate()}>
-              {isNew ? "Criar sequência" : "Salvar"}
-            </Button>
-            {!isNew && (
-              <Button
-                variant={sequence.active ? "outline" : "default"}
-                disabled={disabled || (!sequence.active && (!!formError || !!activationError))}
-                title={!sequence.active ? (formError ?? activationError ?? undefined) : undefined}
-                onClick={() => toggle.mutate()}
-              >
-                {sequence.active ? "Desligar" : "Ligar"}
+            {/* O span recebe o toque quando o botão está bloqueado e leva ao campo pendente */}
+            <span onClick={() => !disabled && formError && focusPendingField(formErrorField)}>
+              <Button variant="outline" disabled={disabled || !!formError || (!isNew && !dirty)} onClick={() => save.mutate()}>
+                {isNew ? "Criar sequência" : "Salvar"}
               </Button>
+            </span>
+            {!isNew && (
+              <span
+                onClick={() =>
+                  !disabled &&
+                  !sequence.active &&
+                  (formError || activationError) &&
+                  focusPendingField(formErrorField ?? activationErrorField)
+                }
+              >
+                <Button
+                  variant={sequence.active ? "outline" : "default"}
+                  disabled={disabled || (!sequence.active && (!!formError || !!activationError))}
+                  onClick={() => toggle.mutate()}
+                >
+                  {sequence.active ? "Desligar" : "Ligar"}
+                </Button>
+              </span>
             )}
             {!isNew && !sequence.active && (
               <Button variant="ghost" disabled={disabled} onClick={() => setConfirmDelete(true)}>
@@ -244,7 +265,7 @@ const SequenceForm: FC<{ sequence: EmailSequence; isNew: boolean }> = ({ sequenc
       )}
 
       {(formError || (!sequence.active && activationError)) && canEdit && (
-        <p className="text-muted-foreground text-sm">{formError ?? activationError}</p>
+        <DisabledReason className="text-sm">{formError ?? activationError}</DisabledReason>
       )}
 
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
@@ -449,6 +470,7 @@ const SequenceEnrollments: FC<{ sequence: EmailSequence }> = ({ sequence }) => {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
+  const { confirm, confirmDialog } = useConfirm();
 
   const query = useQuery({
     queryKey: ["emailSequences", client.id, "enrollments", sequence.id, status, page],
@@ -470,6 +492,7 @@ const SequenceEnrollments: FC<{ sequence: EmailSequence }> = ({ sequence }) => {
 
   return (
     <Card>
+      {confirmDialog}
       <CardHeader>
         <CardTitle>Pessoas</CardTitle>
       </CardHeader>
@@ -528,7 +551,21 @@ const SequenceEnrollments: FC<{ sequence: EmailSequence }> = ({ sequence }) => {
                   </div>
                   <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-medium", info.className)}>{info.label}</span>
                   {can("broadcasts.send") && item.status === "ACTIVE" && (
-                    <Button variant="ghost" size="sm" disabled={stop.isPending} onClick={() => stop.mutate(item.id)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={stop.isPending}
+                      onClick={async () => {
+                        const ok = await confirm({
+                          title: `Tirar ${item.contactName || "esta pessoa"} da sequência?`,
+                          description:
+                            "Ela não recebe mais os próximos e-mails desta sequência. Para voltar, será preciso colocá-la de novo.",
+                          confirmLabel: "Tirar da sequência",
+                          destructive: true,
+                        });
+                        if (ok) stop.mutate(item.id);
+                      }}
+                    >
                       Tirar
                     </Button>
                   )}

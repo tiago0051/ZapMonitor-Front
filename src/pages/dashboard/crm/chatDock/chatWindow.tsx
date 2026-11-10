@@ -80,7 +80,7 @@ export const ChatWindow: FC<ChatWindowProps> = ({ contact, minimized, onToggleMi
       aria-label={`Conversa com ${contactName}`}
       className={cn(
         "bg-card pointer-events-auto flex shrink-0 flex-col overflow-hidden rounded-t-lg border border-b-0 shadow-xl",
-        !minimized && "h-[460px] max-h-[calc(100vh-7rem)]",
+        !minimized && "h-[460px] max-h-[calc(100dvh-7rem)]",
       )}
       style={{ width: minimized ? CHAT_WINDOW_MINIMIZED_WIDTH : CHAT_WINDOW_WIDTH }}
     >

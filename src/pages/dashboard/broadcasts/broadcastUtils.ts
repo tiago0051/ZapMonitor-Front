@@ -324,3 +324,15 @@ export function recipientsToCsv(recipients: BroadcastRecipient[]) {
   );
   return "\uFEFF" + [header.join(";"), ...lines].join("\r\n");
 }
+
+/**
+ * Leva a pessoa ao campo que falta preencher (rola até ele e dá foco).
+ * Usado quando ela toca em um botão de avançar/salvar que está bloqueado.
+ */
+export const focusPendingField = (id: string | null | undefined) => {
+  if (!id) return;
+  const element = document.getElementById(id);
+  if (!element) return;
+  element.scrollIntoView({ behavior: "smooth", block: "center" });
+  element.focus({ preventScroll: true });
+};

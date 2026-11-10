@@ -14,9 +14,9 @@ export const DashboardLayout = () => {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset>
+      <SidebarInset className="h-dvh min-w-0 overflow-hidden">
         {isMobile && (
-          <div className="bg-secondary grid h-10 grid-cols-[1fr_min-content_1fr] items-center gap-2 px-2">
+          <div className="bg-secondary grid h-10 shrink-0 grid-cols-[1fr_min-content_1fr] items-center gap-2 px-2">
             <SidebarTrigger className="justify-self-start" />
             <p className="bg-foreground rounded-sm px-2 text-2xl font-bold text-white">
               Zap<span className="text-primary">Monitor</span>
@@ -24,7 +24,7 @@ export const DashboardLayout = () => {
             <div></div>
           </div>
         )}
-        <div className="flex h-[calc(100dvh-40px)] flex-col overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <PlanDueBanner />
           <div className="min-h-0 flex-1">
             <Outlet />

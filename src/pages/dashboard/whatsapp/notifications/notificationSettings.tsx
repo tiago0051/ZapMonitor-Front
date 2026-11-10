@@ -43,7 +43,7 @@ export const NotificationSettings: FC = () => {
           {isAnyTabEnabled ? <Bell className="text-foreground h-4 w-4" /> : <BellOff className="h-4 w-4" />}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 space-y-3">
+      <PopoverContent align="end" className="max-h-[var(--radix-popover-content-available-height)] w-80 space-y-3 overflow-y-auto">
         <div>
           <p className="text-sm font-semibold">Notificações</p>
           <p className="text-muted-foreground text-xs">Escolha de quais abas você quer ser avisado. Vale para este navegador.</p>

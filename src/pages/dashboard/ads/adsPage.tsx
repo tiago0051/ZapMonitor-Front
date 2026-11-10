@@ -8,22 +8,27 @@ import { useBaseUrl } from "@/hooks/use-baseUrl";
 import { cn } from "@/lib/utils";
 import { crmSelectClassName } from "@/pages/dashboard/crm/crmUtils";
 import { metaAdsService } from "@/services/api/metaAdsService";
-import { requestErrorHandling } from "@/utils/request";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ChevronDown, ChevronRight, Megaphone, RefreshCw } from "lucide-react";
 import { Fragment, useEffect, useRef, useState, type FC } from "react";
 import { Link, useSearchParams } from "react-router";
-import { toast } from "sonner";
 import { useLocalStorage } from "usehooks-ts";
 import {
+  audienceDeliveryLabel,
+  audienceSubtypeLabel,
+  bidStrategyLabel,
+  billingEventLabel,
+  callToActionLabel,
   campaignObjectiveLabel,
   destinationTypeLabel,
   effectiveStatusInfo,
+  metaLabel,
   optimizationGoalLabel,
   statusToneClassName,
   syncStatusLabel,
 } from "./adsUtils";
+import { useSyncAccount } from "./components/useSyncAccount";
 import { AdsDailySummary } from "./adsDailySummary";
 import { AdsLeads } from "./adsLeads";
 import { AdsConversionEvents } from "./adsConversionEvents";
@@ -59,9 +64,7 @@ const AdRows: FC<{ adSet: MetaAdSet; accountId: string }> = ({ adSet, accountId 
             <AdStatusToggle accountId={accountId} level="ad" metaId={ad.metaId} status={ad.status} />
           </span>
         </TableCell>
-        <TableCell className="text-muted-foreground text-xs">
-          {ad.creative?.callToActionType?.replaceAll("_", " ").toLowerCase() ?? "—"}
-        </TableCell>
+        <TableCell className="text-muted-foreground text-xs">{metaLabel(callToActionLabel, ad.creative?.callToActionType)}</TableCell>
         <TableCell />
       </TableRow>
     ))}
@@ -93,7 +96,7 @@ const CampaignRows: FC<{ campaign: MetaCampaign; currency: string; accountId: st
             <AdStatusToggle accountId={accountId} level="campaign" metaId={campaign.metaId} status={campaign.status} />
           </span>
         </TableCell>
-        <TableCell className="text-xs">{campaign.bidStrategy?.replaceAll("_", " ").toLowerCase() ?? "—"}</TableCell>
+        <TableCell className="text-xs">{metaLabel(bidStrategyLabel, campaign.bidStrategy)}</TableCell>
         <TableCell className="text-right text-sm whitespace-nowrap tabular-nums">
           <AdBudgetEditor
             accountId={accountId}
@@ -132,7 +135,7 @@ const CampaignRows: FC<{ campaign: MetaCampaign; currency: string; accountId: st
                   <AdStatusToggle accountId={accountId} level="adset" metaId={adSet.metaId} status={adSet.status} />
                 </span>
               </TableCell>
-              <TableCell className="text-xs">{adSet.billingEvent?.replaceAll("_", " ").toLowerCase() ?? "—"}</TableCell>
+              <TableCell className="text-xs">{metaLabel(billingEventLabel, adSet.billingEvent)}</TableCell>
               <TableCell className="text-right text-sm whitespace-nowrap tabular-nums">
                 <AdBudgetEditor
                   accountId={accountId}
@@ -151,6 +154,46 @@ const CampaignRows: FC<{ campaign: MetaCampaign; currency: string; accountId: st
   );
 };
 
+type TabGroup = { id: string; label: string; tabs: string[] };
+
+// Onze abas em quatro grupos: o grupo fica em cima e as abas dele numa segunda linha menor
+const TAB_GROUPS: TabGroup[] = [
+  { id: "overview", label: "Visão geral", tabs: ["results", "campaigns", "audiences", "leads"] },
+  { id: "create", label: "Criar", tabs: ["create", "pilot"] },
+  { id: "ai", label: "IA", tabs: ["suggestions", "strategy", "changes"] },
+  { id: "settings", label: "Configurar", tabs: ["automation", "conversions"] },
+];
+
+const TAB_LABEL: Record<string, string> = {
+  results: "Resultados",
+  campaigns: "Campanhas",
+  audiences: "Públicos",
+  leads: "Leads",
+  create: "Criar campanha",
+  pilot: "Piloto automático",
+  suggestions: "Sugestões",
+  strategy: "Estratégia",
+  changes: "Mudanças",
+  automation: "Automação",
+  conversions: "Eventos",
+};
+
+// Mesmos status e chave da aba Mudanças, para as duas telas dividirem a mesma consulta
+const PENDING_CHANGE_STATUSES: AdChangeStatus[] = ["PENDING_APPROVAL", "BLOCKED", "FAILED"];
+
+const CountBadge: FC<{ count: number | undefined; label: string; active?: boolean }> = ({ count, label, active }) =>
+  count ? (
+    <span
+      aria-label={`${count} ${label}`}
+      className={cn(
+        "inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none font-semibold tabular-nums",
+        active ? "bg-primary text-primary-foreground" : "bg-amber-500 text-white",
+      )}
+    >
+      {count > 99 ? "99+" : count}
+    </span>
+  ) : null;
+
 /** Resultados, estrutura e leads das contas de anúncio copiados da Meta; só leitura por enquanto. */
 // No celular o conteúdo rola junto com a tela; no computador cada aba rola dentro do próprio espaço
 const tabContentClassName = "p-3 sm:p-4 md:min-h-0 md:flex-1 md:overflow-auto";
@@ -158,7 +201,6 @@ const tabContentClassName = "p-3 sm:p-4 md:min-h-0 md:flex-1 md:overflow-auto";
 export const AdsPage = () => {
   const { client, can } = useClientContext();
   const baseUrl = useBaseUrl();
-  const queryClient = useQueryClient();
   const [storedAccountId, setStoredAccountId] = useLocalStorage<string | null>(`ads:account:${client.id}`, null);
   const [tab, setTab] = useLocalStorage<string>(`ads:tab:${client.id}`, "results");
   // Aviso no celular abre direto numa aba (ex.: ?tab=changes para aprovar uma proposta de verba)
@@ -170,11 +212,29 @@ export const AdsPage = () => {
     setSearchParams({}, { replace: true });
   }, [searchParams, setSearchParams, setTab]);
   const tabsListRef = useRef<HTMLDivElement>(null);
+  // Última aba aberta em cada grupo, para voltar nela ao trocar de grupo
+  const [lastTabByGroup, setLastTabByGroup] = useState<Record<string, string>>({});
+
+  const visibleGroups = TAB_GROUPS.map((group) => ({
+    ...group,
+    tabs: group.tabs.filter((item) => item !== "strategy" || can("ads.manage")),
+  }));
+  // Aba guardada que não existe mais (ou sem permissão) cai em Resultados
+  const activeTab = visibleGroups.some((group) => group.tabs.includes(tab)) ? tab : "results";
+  const activeGroup = visibleGroups.find((group) => group.tabs.includes(activeTab)) ?? visibleGroups[0];
+  const selectGroup = (groupId: string) => {
+    const group = visibleGroups.find((item) => item.id === groupId);
+    if (!group) return;
+    // Guarda a aba atual do grupo que está sendo deixado
+    setLastTabByGroup((value) => ({ ...value, [activeGroup.id]: activeTab }));
+    const last = lastTabByGroup[groupId];
+    setTab(last && group.tabs.includes(last) ? last : group.tabs[0]);
+  };
 
   // A aba escolhida fica visível na barra que rola para o lado (no celular)
   useEffect(() => {
     tabsListRef.current?.querySelector<HTMLElement>('[data-state="active"]')?.scrollIntoView({ block: "nearest", inline: "center" });
-  }, [tab]);
+  }, [activeTab]);
   // Rascunho montado pelo piloto que a aba Criar campanha abre
   const [pilotDraftId, setPilotDraftId] = useState<string | null>(null);
 
@@ -195,14 +255,29 @@ export const AdsPage = () => {
       query.state.data?.account.syncStatus === "SYNCING" || query.state.data?.account.syncStatus === "PENDING" ? 5000 : false,
   });
 
-  const syncAccount = useMutation({
-    mutationFn: metaAdsService.syncAccount,
-    onError: requestErrorHandling,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["metaAds"] });
-      toast.success("Sincronização agendada");
-    },
+  const syncAccount = useSyncAccount();
+
+  // Contadores das abas: mudanças esperando aprovação e sugestões abertas
+  const pendingChangesQuery = useQuery({
+    meta: { errorHandledInline: true },
+    queryKey: ["metaAds", "changes", client.id, account?.id, "pending"],
+    queryFn: () =>
+      metaAdsService.findChanges({
+        params: { clientId: client.id, accountId: account!.id },
+        queries: { status: PENDING_CHANGE_STATUSES.join(",") },
+      }),
+    enabled: !!account,
+    staleTime: 60_000,
   });
+  const openSuggestionsQuery = useQuery({
+    meta: { errorHandledInline: true },
+    queryKey: ["metaAds", "suggestions", client.id, account?.id, "OPEN", "count"],
+    queryFn: () => metaAdsService.findSuggestions({ params: { clientId: client.id, accountId: account!.id }, queries: { status: "OPEN" } }),
+    enabled: !!account,
+    staleTime: 60_000,
+  });
+  const pendingChangesCount = pendingChangesQuery.data?.filter((change) => change.status === "PENDING_APPROVAL").length;
+  const openSuggestionsCount = openSuggestionsQuery.data?.length;
 
   if (connectionQuery.isLoading) return <LoadingState className="h-full" />;
 
@@ -227,6 +302,17 @@ export const AdsPage = () => {
 
   const structure = structureQuery.data;
   const currentAccount = structure?.account ?? account;
+  const isSyncing = syncAccount.isPending || currentAccount.syncStatus === "SYNCING" || currentAccount.syncStatus === "PENDING";
+  const tabCount: Record<string, { count: number | undefined; label: string }> = {
+    changes: { count: pendingChangesCount, label: "mudança(s) para aprovar" },
+    suggestions: { count: openSuggestionsCount, label: "sugestão(ões) aberta(s)" },
+  };
+  const groupCount = (group: TabGroup) => group.tabs.reduce((total, item) => total + (tabCount[item]?.count ?? 0), 0) || undefined;
+  const tabTitle = (item: string) => {
+    if (item === "campaigns" && structure) return `${TAB_LABEL[item]} (${structure.campaigns.length})`;
+    if (item === "audiences" && structure) return `${TAB_LABEL[item]} (${structure.audiences.length})`;
+    return TAB_LABEL[item];
+  };
 
   return (
     // No celular a tela inteira rola junto (o cabeçalho não come o espaço); no computador cada aba rola sozinha
@@ -250,8 +336,15 @@ export const AdsPage = () => {
             ))}
           </select>
         </div>
-        <p className="text-muted-foreground min-w-0 flex-1 pb-2 text-xs sm:flex-none">
-          {syncStatusLabel[currentAccount.syncStatus]}
+        <p className="text-muted-foreground flex min-w-0 flex-1 flex-wrap items-center gap-x-1 pb-2 text-xs sm:flex-none">
+          {isSyncing ? (
+            <span role="status" className="bg-primary/10 text-primary inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium">
+              <RefreshCw className="h-3 w-3 animate-spin" />
+              Sincronizando
+            </span>
+          ) : (
+            syncStatusLabel[currentAccount.syncStatus]
+          )}
           {currentAccount.lastSyncedAt && ` · atualizada em ${format(new Date(currentAccount.lastSyncedAt), "dd/MM HH:mm")}`}
           {currentAccount.syncError && <span className="text-destructive"> · {currentAccount.syncError}</span>}
         </p>
@@ -260,31 +353,44 @@ export const AdsPage = () => {
             variant="outline"
             size="sm"
             className="ml-auto"
-            disabled={syncAccount.isPending}
+            disabled={isSyncing}
             onClick={() => syncAccount.mutate({ params: { clientId: client.id, accountId: account.id } })}
           >
-            <RefreshCw className="h-4 w-4" />
-            Sincronizar agora
+            <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
+            {isSyncing ? "Sincronizando…" : "Sincronizar agora"}
           </Button>
         )}
       </div>
 
-      <Tabs value={tab} onValueChange={setTab} className="flex flex-col gap-0 md:min-h-0 md:flex-1 md:overflow-hidden">
-        {/* Onze abas não cabem no celular: a barra rola para o lado e fica presa no topo */}
-        <div className="bg-background sticky top-0 z-10 overflow-x-auto px-3 pt-3 [scrollbar-width:none] sm:px-4 md:static [&::-webkit-scrollbar]:hidden">
-          <TabsList className="w-max" ref={tabsListRef}>
-            <TabsTrigger value="results">Resultados</TabsTrigger>
-            <TabsTrigger value="pilot">Piloto automático</TabsTrigger>
-            <TabsTrigger value="create">Criar campanha</TabsTrigger>
-            <TabsTrigger value="suggestions">Sugestões</TabsTrigger>
-            {can("ads.manage") && <TabsTrigger value="strategy">Estratégia</TabsTrigger>}
-            <TabsTrigger value="changes">Mudanças</TabsTrigger>
-            <TabsTrigger value="automation">Automação</TabsTrigger>
-            <TabsTrigger value="campaigns">Campanhas{structure && ` (${structure.campaigns.length})`}</TabsTrigger>
-            <TabsTrigger value="audiences">Públicos{structure && ` (${structure.audiences.length})`}</TabsTrigger>
-            <TabsTrigger value="leads">Leads</TabsTrigger>
-            <TabsTrigger value="conversions">Eventos</TabsTrigger>
-          </TabsList>
+      <Tabs value={activeTab} onValueChange={setTab} className="flex flex-col gap-0 md:min-h-0 md:flex-1 md:overflow-hidden">
+        {/* Grupos em cima e as abas do grupo embaixo; no celular a barra fica presa no topo e rola para o lado */}
+        <div className="bg-background sticky top-0 z-10 space-y-2 px-3 pt-3 sm:px-4 md:static">
+          <Tabs value={activeGroup.id} onValueChange={selectGroup}>
+            <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <TabsList className="w-max" aria-label="Seções de anúncios">
+                {visibleGroups.map((group) => (
+                  <TabsTrigger key={group.id} value={group.id}>
+                    {group.label}
+                    <CountBadge count={groupCount(group)} label="itens pedindo atenção" active={group.id === activeGroup.id} />
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
+          </Tabs>
+          <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <TabsList className="h-8 w-max gap-1 bg-transparent p-0" ref={tabsListRef} aria-label={`Abas de ${activeGroup.label}`}>
+              {activeGroup.tabs.map((item) => (
+                <TabsTrigger
+                  key={item}
+                  value={item}
+                  className="data-[state=active]:bg-muted border-border rounded-full px-3 text-xs data-[state=active]:shadow-none"
+                >
+                  {tabTitle(item)}
+                  {tabCount[item] && <CountBadge count={tabCount[item].count} label={tabCount[item].label} />}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
         </div>
 
         <TabsContent value="results" className={cn(tabContentClassName, "space-y-8")}>
@@ -333,8 +439,8 @@ export const AdsPage = () => {
           <AdsConversionEvents />
         </TabsContent>
 
-        {(tab === "campaigns" || tab === "audiences") && structureQuery.isLoading && <LoadingState />}
-        {(tab === "campaigns" || tab === "audiences") && structureQuery.isError && (
+        {(activeTab === "campaigns" || activeTab === "audiences") && structureQuery.isLoading && <LoadingState />}
+        {(activeTab === "campaigns" || activeTab === "audiences") && structureQuery.isError && (
           <ErrorState
             message="Não foi possível carregar a conta."
             onRetry={() => structureQuery.refetch()}
@@ -393,11 +499,11 @@ export const AdsPage = () => {
                       {structure.audiences.map((audience) => (
                         <TableRow key={audience.metaId}>
                           <TableCell className="font-medium">{audience.name}</TableCell>
-                          <TableCell className="text-xs">{audience.subtype?.toLowerCase() ?? "—"}</TableCell>
+                          <TableCell className="text-xs">{metaLabel(audienceSubtypeLabel, audience.subtype)}</TableCell>
                           <TableCell className="text-right tabular-nums">
                             {audience.approximateCount === null ? "—" : `${audience.approximateCount.toLocaleString("pt-BR")}+`}
                           </TableCell>
-                          <TableCell className="text-muted-foreground text-xs">{audience.deliveryStatus ?? "—"}</TableCell>
+                          <TableCell className="text-muted-foreground text-xs">{audienceDeliveryLabel(audience.deliveryStatus)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

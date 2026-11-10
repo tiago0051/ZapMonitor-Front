@@ -107,7 +107,13 @@ export const DialogSaveServiceGroup: FC<DialogSaveServiceGroupProps> = ({ client
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         {isEditing ? (
-          <Button variant="ghost" size="icon" className="text-muted-foreground h-8 w-8 shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground h-8 w-8 shrink-0"
+            aria-label={`Editar ${serviceGroup?.name ?? "grupo"}`}
+            title="Editar"
+          >
             <Pencil className="h-4 w-4" />
           </Button>
         ) : (
@@ -115,7 +121,7 @@ export const DialogSaveServiceGroup: FC<DialogSaveServiceGroupProps> = ({ client
         )}
       </DialogTrigger>
 
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar grupo de atendimento" : "Novo grupo de atendimento"}</DialogTitle>
           <DialogDescription>

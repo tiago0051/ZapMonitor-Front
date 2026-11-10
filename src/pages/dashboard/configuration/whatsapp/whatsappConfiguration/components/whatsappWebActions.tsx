@@ -63,6 +63,7 @@ export const WhatsappWebActions: FC<WhatsappWebActionsProps> = ({ clientId, what
           variant="ghost"
           size="icon"
           className="h-8 w-8"
+          aria-label="Reconectar"
           title="Reconectar"
           disabled={reconnectMutation.isPending}
           onClick={() => reconnectMutation.mutate({ params })}
@@ -74,7 +75,14 @@ export const WhatsappWebActions: FC<WhatsappWebActionsProps> = ({ clientId, what
       {canDisconnect && (
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8" title="Desconectar" disabled={disconnectMutation.isPending}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label="Desconectar"
+              title="Desconectar"
+              disabled={disconnectMutation.isPending}
+            >
               {disconnectMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unplug className="h-4 w-4" />}
             </Button>
           </AlertDialogTrigger>
@@ -88,7 +96,10 @@ export const WhatsappWebActions: FC<WhatsappWebActionsProps> = ({ clientId, what
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction className={buttonVariants({ variant: "destructive" })} onClick={() => disconnectMutation.mutate({ params })}>
+              <AlertDialogAction
+                className={buttonVariants({ variant: "destructive" })}
+                onClick={() => disconnectMutation.mutate({ params })}
+              >
                 Desconectar
               </AlertDialogAction>
             </AlertDialogFooter>

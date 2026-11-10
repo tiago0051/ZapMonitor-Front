@@ -172,7 +172,7 @@ export const EmailCampaignDetail = () => {
               <span className={cn("rounded px-1.5 py-0.5 text-xs font-medium", info.className)}>{info.label}</span>
               <span className="bg-muted text-muted-foreground rounded px-1.5 py-0.5 text-xs">E-mail</span>
             </div>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-sm break-words">
               {campaign.subject}
               {campaign.frequencyCapDays && ` · sem repetir em ${campaign.frequencyCapDays} dias`}
               {campaign.startedAt && ` · início ${formatDate(campaign.startedAt)}`}

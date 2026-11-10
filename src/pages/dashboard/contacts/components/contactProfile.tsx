@@ -19,7 +19,7 @@ import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Mail, MessageCircle, Phone, Star, Trash2 } from "lucide-react";
-import { useState, type FC, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type FC, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router";
 import { DialogNewContactTemplate } from "@/pages/dashboard/whatsapp/components/dialogNewContactTemplate";
 import { toast } from "sonner";
@@ -28,9 +28,35 @@ import { ContactMerge } from "./contactMerge";
 import { ContactTimeline } from "./contactTimeline";
 import { ContactMergeSuggestions } from "./contactMergeSuggestions";
 import { AiFieldUpdates } from "@/components/aiFieldUpdates/aiFieldUpdates";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes";
+import { undoableAction } from "@/lib/undoToast";
 
-type ContactProfileProps =
-  { contactId: string; conversationId?: never; compact?: boolean } | { conversationId: string; contactId?: never; compact?: boolean };
+type ContactProfileProps = ({ contactId: string; conversationId?: never } | { conversationId: string; contactId?: never }) & {
+  compact?: boolean;
+  /**
+   * Avisa quem embute a ficha (ex.: painel do atendimento) que há alterações não salvas.
+   * Quando passado, quem embute fica responsável por proteger a saída; sem ele a própria ficha protege.
+   */
+  onDirtyChange?: (isDirty: boolean) => void;
+};
+
+/** Formulário da ficha com edição pendente: a barra de "Alterações não salvas" salva ou descarta todos juntos. */
+type Draft = { isSaving: boolean; save: () => void; discard: () => void };
+type RegisterDraft = (key: string, draft: Draft | null) => void;
+
+/** Registra o formulário na barra de alterações não salvas enquanto ele estiver sujo. */
+function useDraft(register: RegisterDraft, key: string, isDirty: boolean, isSaving: boolean, save: () => void, discard: () => void) {
+  const actions = useRef({ save, discard });
+  useEffect(() => {
+    actions.current = { save, discard };
+  });
+
+  useEffect(() => {
+    register(key, isDirty ? { isSaving, save: () => actions.current.save(), discard: () => actions.current.discard() } : null);
+  }, [register, key, isDirty, isSaving]);
+
+  useEffect(() => () => register(key, null), [register, key]);
+}
 
 const Section: FC<{ title: string; action?: ReactNode; children: ReactNode }> = ({ title, action, children }) => (
   <section className="grid gap-2">
@@ -43,9 +69,36 @@ const Section: FC<{ title: string; action?: ReactNode; children: ReactNode }> = 
 );
 
 /** Ficha da pessoa: dados, telefones, e-mails, campos, conversas, negócios e mesclagem. */
-export const ContactProfile: FC<ContactProfileProps> = ({ contactId, conversationId, compact }) => {
+export const ContactProfile: FC<ContactProfileProps> = ({ contactId, conversationId, compact, onDirtyChange }) => {
   const { client } = useClientContext();
   const queryClient = useQueryClient();
+
+  const [drafts, setDrafts] = useState<Record<string, Draft>>({});
+  const registerDraft = useCallback<RegisterDraft>((key, draft) => {
+    setDrafts((current) => {
+      if (!draft) {
+        if (!(key in current)) return current;
+        const next = { ...current };
+        delete next[key];
+        return next;
+      }
+      return { ...current, [key]: draft };
+    });
+  }, []);
+  const pendingDrafts = Object.values(drafts);
+  const isDirty = pendingDrafts.length > 0;
+  const isSaving = pendingDrafts.some((draft) => draft.isSaving);
+
+  // Embutida, quem embute protege a saída (evita dois avisos para o mesmo clique)
+  const { guardDialog } = useUnsavedChangesGuard(isDirty && !onDirtyChange);
+  const onDirtyChangeRef = useRef(onDirtyChange);
+  useEffect(() => {
+    onDirtyChangeRef.current = onDirtyChange;
+  });
+  useEffect(() => {
+    onDirtyChangeRef.current?.(isDirty);
+  }, [isDirty]);
+  useEffect(() => () => onDirtyChangeRef.current?.(false), []);
 
   const query = useQuery({
     meta: { errorHandledInline: true },
@@ -72,9 +125,10 @@ export const ContactProfile: FC<ContactProfileProps> = ({ contactId, conversatio
 
   return (
     <div className={cn("grid", compact ? "gap-5" : "gap-6")}>
+      {guardDialog}
       <ContactMergeSuggestions contact={contact} onChanged={onSaved} />
       <AiFieldUpdates owner={{ contactId: contact.id }} onAccepted={() => query.refetch()} />
-      <ContactData key={contact.updatedAt} contact={contact} onSaved={onSaved} />
+      <ContactData key={contact.updatedAt} contact={contact} onSaved={onSaved} registerDraft={registerDraft} />
       <ContactPhones contact={contact} onSaved={onSaved} />
       <ContactEmails contact={contact} onSaved={onSaved} />
       {!!fieldsQuery.data?.some((field) => field.active) && (
@@ -83,6 +137,7 @@ export const ContactProfile: FC<ContactProfileProps> = ({ contactId, conversatio
           contact={contact}
           fields={fieldsQuery.data.filter((field) => field.active)}
           onSaved={onSaved}
+          registerDraft={registerDraft}
         />
       )}
       <ContactConversations contact={contact} />
@@ -90,13 +145,37 @@ export const ContactProfile: FC<ContactProfileProps> = ({ contactId, conversatio
       <ContactMerge contact={contact} onMerged={onSaved} />
       {/* No atendimento a ficha ocupa o painel inteiro: a linha do tempo vem logo abaixo; na página dela fica ao lado */}
       {compact && <ContactTimeline contactId={contact.id} compact />}
+      {isDirty && (
+        <div
+          role="region"
+          aria-label="Alterações não salvas"
+          className="bg-card/95 supports-[backdrop-filter]:bg-card/80 sticky bottom-0 z-10 -mx-1 flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 shadow-md backdrop-blur"
+        >
+          <span className="text-sm font-medium">Alterações não salvas</span>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={isSaving}
+              onClick={() => pendingDrafts.forEach((draft) => draft.discard())}
+            >
+              Descartar
+            </Button>
+            <Button type="button" size="sm" disabled={isSaving} onClick={() => pendingDrafts.forEach((draft) => draft.save())}>
+              {isSaving ? "Salvando..." : "Salvar"}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 type SectionProps = { contact: ContactDetail; onSaved: (contact: ContactDetail) => void };
+type DraftSectionProps = SectionProps & { registerDraft: RegisterDraft };
 
-const ContactData: FC<SectionProps> = ({ contact, onSaved }) => {
+const ContactData: FC<DraftSectionProps> = ({ contact, onSaved, registerDraft }) => {
   const { client } = useClientContext();
   const [name, setName] = useState(contact.name ?? "");
   const [document, setDocument] = useState(contact.document ?? "");
@@ -112,6 +191,18 @@ const ContactData: FC<SectionProps> = ({ contact, onSaved }) => {
   });
 
   const isDirty = name !== (contact.name ?? "") || document !== (contact.document ?? "") || notes !== (contact.notes ?? "");
+  useDraft(
+    registerDraft,
+    "data",
+    isDirty,
+    save.isPending,
+    () => save.mutate(),
+    () => {
+      setName(contact.name ?? "");
+      setDocument(contact.document ?? "");
+      setNotes(contact.notes ?? "");
+    },
+  );
 
   return (
     <form
@@ -145,11 +236,6 @@ const ContactData: FC<SectionProps> = ({ contact, onSaved }) => {
           className={crmTextareaClassName}
         />
       </div>
-      {isDirty && (
-        <Button type="submit" size="sm" className="justify-self-start" disabled={save.isPending}>
-          Salvar
-        </Button>
-      )}
     </form>
   );
 };
@@ -168,11 +254,28 @@ const ContactPhones: FC<SectionProps> = ({ contact, onSaved }) => {
       setLabel("");
     },
   });
+  const [hiddenIds, setHiddenIds] = useState<string[]>([]);
+  const unhide = (id: string) => setHiddenIds((current) => current.filter((item) => item !== id));
   const remove = useMutation({
     mutationFn: (phoneId: string) => contactService.removePhone(client.id, contact.id, phoneId),
-    onError: requestErrorHandling,
-    onSuccess: onSaved,
+    onError: (error, phoneId) => {
+      unhide(phoneId);
+      requestErrorHandling(error);
+    },
+    onSuccess: (updated, phoneId) => {
+      onSaved(updated);
+      unhide(phoneId);
+    },
   });
+  const onRemove = (item: ContactDetail["phones"][number]) => {
+    setHiddenIds((current) => [...current, item.id]);
+    undoableAction({
+      message: `Telefone ${item.phoneNumber} tirado da ficha`,
+      commit: () => remove.mutateAsync(item.id).catch(() => undefined),
+      onUndo: () => unhide(item.id),
+    });
+  };
+  const phones = contact.phones.filter((item) => !hiddenIds.includes(item.id));
   const setPrimary = useMutation({
     mutationFn: (phoneId: string) => contactService.setPrimaryPhone(client.id, contact.id, phoneId),
     onError: requestErrorHandling,
@@ -186,9 +289,9 @@ const ContactPhones: FC<SectionProps> = ({ contact, onSaved }) => {
 
   return (
     <Section title="Telefones">
-      {contact.phones.length === 0 && <p className="text-muted-foreground text-sm">Nenhum telefone.</p>}
+      {phones.length === 0 && <p className="text-muted-foreground text-sm">Nenhum telefone.</p>}
       <ul className="grid gap-1.5">
-        {contact.phones.map((item) => (
+        {phones.map((item) => (
           <li key={item.id} className="flex items-center gap-2 text-sm">
             <Phone className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
             <span className="min-w-0 flex-1 truncate tabular-nums">
@@ -217,8 +320,7 @@ const ContactPhones: FC<SectionProps> = ({ contact, onSaved }) => {
               className="text-muted-foreground h-7 w-7"
               title="Tirar da ficha"
               aria-label={`Tirar ${item.phoneNumber} da ficha`}
-              disabled={remove.isPending}
-              onClick={() => remove.mutate(item.id)}
+              onClick={() => onRemove(item)}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
@@ -265,7 +367,10 @@ const PhoneConversationAction: FC<{ contact: ContactDetail; phone: ContactDetail
   if (conversation)
     return (
       <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" asChild>
-        <Link to={openUrl(conversation.id, conversation.phoneNumber)}>Abrir conversa</Link>
+        <Link to={openUrl(conversation.id, conversation.phoneNumber)} aria-label="Abrir conversa">
+          <span className="sm:hidden">Abrir</span>
+          <span className="hidden sm:inline">Abrir conversa</span>
+        </Link>
       </Button>
     );
 
@@ -295,11 +400,28 @@ const ContactEmails: FC<SectionProps> = ({ contact, onSaved }) => {
       setEmail("");
     },
   });
+  const [hiddenIds, setHiddenIds] = useState<string[]>([]);
+  const unhide = (id: string) => setHiddenIds((current) => current.filter((item) => item !== id));
   const remove = useMutation({
     mutationFn: (emailId: string) => contactService.removeEmail(client.id, contact.id, emailId),
-    onError: requestErrorHandling,
-    onSuccess: onSaved,
+    onError: (error, emailId) => {
+      unhide(emailId);
+      requestErrorHandling(error);
+    },
+    onSuccess: (updated, emailId) => {
+      onSaved(updated);
+      unhide(emailId);
+    },
   });
+  const onRemove = (item: ContactDetail["emails"][number]) => {
+    setHiddenIds((current) => [...current, item.id]);
+    undoableAction({
+      message: `E-mail ${item.email} tirado da ficha`,
+      commit: () => remove.mutateAsync(item.id).catch(() => undefined),
+      onUndo: () => unhide(item.id),
+    });
+  };
+  const emails = contact.emails.filter((item) => !hiddenIds.includes(item.id));
   const setPrimary = useMutation({
     mutationFn: (emailId: string) => contactService.setPrimaryEmail(client.id, contact.id, emailId),
     onError: requestErrorHandling,
@@ -308,9 +430,9 @@ const ContactEmails: FC<SectionProps> = ({ contact, onSaved }) => {
 
   return (
     <Section title="E-mails">
-      {contact.emails.length === 0 && <p className="text-muted-foreground text-sm">Nenhum e-mail.</p>}
+      {emails.length === 0 && <p className="text-muted-foreground text-sm">Nenhum e-mail.</p>}
       <ul className="grid gap-1.5">
-        {contact.emails.map((item) => (
+        {emails.map((item) => (
           <li key={item.id} className="flex items-center gap-2 text-sm">
             <Mail className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
             <span className={cn("min-w-0 flex-1 truncate", item.invalidAt && "text-muted-foreground line-through")}>{item.email}</span>
@@ -336,8 +458,7 @@ const ContactEmails: FC<SectionProps> = ({ contact, onSaved }) => {
               className="text-muted-foreground h-7 w-7"
               title="Tirar da ficha"
               aria-label={`Tirar ${item.email} da ficha`}
-              disabled={remove.isPending}
-              onClick={() => remove.mutate(item.id)}
+              onClick={() => onRemove(item)}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
@@ -368,7 +489,7 @@ const ContactEmails: FC<SectionProps> = ({ contact, onSaved }) => {
   );
 };
 
-const ContactFields: FC<SectionProps & { fields: CrmField[] }> = ({ contact, fields, onSaved }) => {
+const ContactFields: FC<DraftSectionProps & { fields: CrmField[] }> = ({ contact, fields, onSaved, registerDraft }) => {
   const { client } = useClientContext();
   const [values, setValues] = useState(() => toCustomFieldsForm(fields, contact.customFields));
 
@@ -383,6 +504,14 @@ const ContactFields: FC<SectionProps & { fields: CrmField[] }> = ({ contact, fie
 
   const initial = toCustomFieldsForm(fields, contact.customFields);
   const isDirty = fields.some((field) => (values[field.id] ?? "") !== (initial[field.id] ?? ""));
+  useDraft(
+    registerDraft,
+    "fields",
+    isDirty,
+    save.isPending,
+    () => save.mutate(),
+    () => setValues(toCustomFieldsForm(fields, contact.customFields)),
+  );
 
   return (
     <Section title="Campos">
@@ -404,11 +533,6 @@ const ContactFields: FC<SectionProps & { fields: CrmField[] }> = ({ contact, fie
             />
           </div>
         ))}
-        {isDirty && (
-          <Button type="submit" size="sm" className="justify-self-start" disabled={save.isPending}>
-            Salvar campos
-          </Button>
-        )}
       </form>
     </Section>
   );

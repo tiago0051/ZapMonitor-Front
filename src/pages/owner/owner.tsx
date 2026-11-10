@@ -2,7 +2,8 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ownerService } from "@/services/api/ownerService";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo } from "react";
+import { useSearchParams } from "react-router";
 import { ClientsTab } from "./components/clientsTab";
 import { FinanceTab } from "./components/financeTab";
 import { PriceTablesTab } from "./components/priceTablesTab";
@@ -11,10 +12,35 @@ import { ImplantersTab } from "./components/implantersTab";
 import { PeriodFilter } from "./components/periodFilter";
 import { formatNumber, periodPresets, toPeriodQuery, type Period } from "./ownerFormat";
 
+const ownerTabs = ["implanters", "clients", "finance", "prices", "templates"];
+
 export const Owner = () => {
-  const [period, setPeriod] = useState<Period>(periodPresets[0].build());
-  const [tab, setTab] = useState<string>("implanters");
-  const [implanterFilter, setImplanterFilter] = useState<string>("");
+  // Aba, período e filtro ficam na URL: recarregar ou compartilhar o link mantém a mesma visão
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab") ?? "";
+  const tab = ownerTabs.includes(requestedTab) ? requestedTab : "implanters";
+  const defaultPeriod = useMemo(() => periodPresets[0].build(), []);
+  const period: Period = {
+    start: searchParams.get("start") ?? defaultPeriod.start,
+    end: searchParams.get("end") ?? defaultPeriod.end,
+  };
+  const implanterFilter = searchParams.get("implanter") ?? "";
+
+  const updateParams = (changes: Record<string, string>) =>
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        for (const [key, value] of Object.entries(changes)) {
+          if (value) next.set(key, value);
+          else next.delete(key);
+        }
+        return next;
+      },
+      { replace: true },
+    );
+  const setTab = (value: string) => updateParams({ tab: value });
+  const setPeriod = (value: Period) => updateParams({ start: value.start, end: value.end });
+  const setImplanterFilter = (value: string) => updateParams({ implanter: value });
 
   const periodQuery = toPeriodQuery(period);
   // Financeiro, Preços e Modelos têm o próprio recorte de tempo (ou nenhum)
@@ -38,13 +64,10 @@ export const Owner = () => {
     { label: "Tenants sem responsável", value: findImplantersQuery.data?.clientsWithoutImplanter ?? 0 },
   ];
 
-  const showImplanterClients = (implanterUserId: string) => {
-    setImplanterFilter(implanterUserId);
-    setTab("clients");
-  };
+  const showImplanterClients = (implanterUserId: string) => updateParams({ implanter: implanterUserId, tab: "clients" });
 
   return (
-    <div className="flex flex-col gap-4 overflow-auto p-6">
+    <div className="flex flex-col gap-4 overflow-auto p-4 md:p-6">
       <div>
         <h1 className="text-2xl">Tela do dono</h1>
         <p className="text-muted-foreground text-sm">Acompanhe os implantadores, o uso e o resultado financeiro dos tenants.</p>
@@ -81,7 +104,7 @@ export const Owner = () => {
           <ImplantersTab query={findImplantersQuery} onShowClients={showImplanterClients} />
         </TabsContent>
         <TabsContent value="finance" className="pt-2">
-          <FinanceTab />
+          <FinanceTab month={searchParams.get("month") ?? undefined} onMonthChange={(month) => updateParams({ month })} />
         </TabsContent>
         <TabsContent value="prices" className="pt-2">
           <PriceTablesTab />

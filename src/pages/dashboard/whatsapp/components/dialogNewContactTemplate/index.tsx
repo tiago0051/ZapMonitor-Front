@@ -120,7 +120,9 @@ export const DialogNewContactTemplate: FC<DialogNewContactTemplateProps> = ({ on
       <DialogTrigger asChild>
         {trigger ?? (
           <button
+            type="button"
             title="Nova conversa"
+            aria-label="Nova conversa"
             className="hover:bg-muted text-muted-foreground hover:text-foreground flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-colors"
           >
             <MessageSquarePlus className="h-4 w-4" />
@@ -199,9 +201,7 @@ export const DialogNewContactTemplate: FC<DialogNewContactTemplateProps> = ({ on
                       ))}
                     </select>
                   </FormControl>
-                  {whatsappWebConfigurations.length > 0 && (
-                    <p className="text-muted-foreground text-xs">{WHATSAPP_WEB_TEMPLATE_HINT}.</p>
-                  )}
+                  {whatsappWebConfigurations.length > 0 && <p className="text-muted-foreground text-xs">{WHATSAPP_WEB_TEMPLATE_HINT}.</p>}
                   <FormMessage />
                 </FormItem>
               )}

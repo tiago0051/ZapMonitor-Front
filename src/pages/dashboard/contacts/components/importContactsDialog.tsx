@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { DisabledReason } from "@/components/disabled-reason";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { useClientContext } from "@/context/ClientContext/clientContext";
@@ -9,7 +9,8 @@ import { formatCount, parseCsv } from "@/pages/dashboard/broadcasts/broadcastUti
 import { contactService } from "@/services/api/contactService";
 import { requestErrorHandling } from "@/utils/request";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Upload } from "lucide-react";
+import { FileSpreadsheet, Upload } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -37,6 +38,7 @@ export const ImportContactsDialog = () => {
   const [mode, setMode] = useState<"skip" | "update">("skip");
   const [progress, setProgress] = useState<number | null>(null);
   const [result, setResult] = useState<ContactImportResult | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const fieldsQuery = useQuery({
     queryKey: ["contacts", "fields", client.id],
@@ -108,6 +110,13 @@ export const ImportContactsDialog = () => {
   const busy = progress !== null;
   const hasIdentity = !!columns.name || !!columns.phone || !!columns.email;
 
+  const allColumns = [
+    ...baseColumns.map((column) => ({ key: column.key as string, label: column.label })),
+    ...fields.map((field) => ({ key: `field:${field.id}`, label: field.name })),
+  ];
+  const mappedColumns = allColumns.filter((column) => !!columns[column.key]);
+  const previewRows = csv?.rows.slice(0, 3) ?? [];
+
   return (
     <Dialog
       open={open}
@@ -123,7 +132,7 @@ export const ImportContactsDialog = () => {
           Importar planilha
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Importar contatos</DialogTitle>
           <DialogDescription>
@@ -135,13 +144,42 @@ export const ImportContactsDialog = () => {
           <div className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="import-contacts-file">Arquivo</Label>
-              <Input
-                id="import-contacts-file"
-                type="file"
-                accept=".csv,text/csv"
-                disabled={busy}
-                onChange={(event) => readFile(event.target.files?.[0])}
-              />
+              {/* Área de soltar: também abre o seletor de arquivos ao tocar/clicar (funciona no celular) */}
+              <label
+                htmlFor="import-contacts-file"
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  if (!busy) setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  setIsDragging(false);
+                  if (!busy) readFile(event.dataTransfer.files?.[0]);
+                }}
+                className={cn(
+                  "focus-within:ring-ring/50 flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed px-4 py-6 text-center transition-colors focus-within:ring-[3px]",
+                  isDragging ? "border-primary bg-primary/5" : "hover:bg-muted/50",
+                  busy && "pointer-events-none opacity-50",
+                )}
+              >
+                {csv ? <FileSpreadsheet className="text-muted-foreground h-6 w-6" /> : <Upload className="text-muted-foreground h-6 w-6" />}
+                <span className="text-sm font-medium">{csv ? csv.fileName : "Escolher arquivo CSV"}</span>
+                <span className="text-muted-foreground text-xs">
+                  {csv ? "Toque para trocar o arquivo" : "Toque para escolher ou arraste o arquivo para cá"}
+                </span>
+                <input
+                  id="import-contacts-file"
+                  type="file"
+                  accept=".csv,text/csv"
+                  disabled={busy}
+                  className="sr-only"
+                  onChange={(event) => {
+                    readFile(event.target.files?.[0]);
+                    event.target.value = "";
+                  }}
+                />
+              </label>
             </div>
 
             {csv && (
@@ -150,10 +188,7 @@ export const ImportContactsDialog = () => {
                   {csv.fileName}: {formatCount(csv.rows.length)} linhas.
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {[
-                    ...baseColumns.map((column) => ({ key: column.key as string, label: column.label })),
-                    ...fields.map((field) => ({ key: `field:${field.id}`, label: field.name })),
-                  ].map((column) => (
+                  {allColumns.map((column) => (
                     <div key={column.key} className="grid gap-1.5">
                       <Label htmlFor={`import-column-${column.key}`} className="text-xs">
                         {column.label}
@@ -175,6 +210,41 @@ export const ImportContactsDialog = () => {
                     </div>
                   ))}
                 </div>
+
+                {mappedColumns.length > 0 && previewRows.length > 0 && (
+                  <div className="grid gap-1.5">
+                    <p className="text-sm font-medium">Prévia das primeiras linhas</p>
+                    <div className="overflow-x-auto rounded-lg border">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-muted/50">
+                          <tr>
+                            {mappedColumns.map((column) => (
+                              <th key={column.key} scope="col" className="px-2 py-1.5 font-medium whitespace-nowrap">
+                                {column.label}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {previewRows.map((row, rowIndex) => (
+                            <tr key={rowIndex} className="border-t">
+                              {mappedColumns.map((column) => {
+                                const value = valueOf(row, columns[column.key]);
+                                return (
+                                  <td key={column.key} className="max-w-48 truncate px-2 py-1.5">
+                                    {value ?? <span className="text-muted-foreground">—</span>}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {!hasIdentity && <DisabledReason>Escolha a coluna de nome, telefone ou e-mail para importar.</DisabledReason>}
 
                 <fieldset className="grid gap-2">
                   <legend className="mb-1 text-sm font-medium">Telefone ou e-mail que já está numa ficha</legend>

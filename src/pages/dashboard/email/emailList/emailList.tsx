@@ -17,7 +17,7 @@ export const EmailList = () => {
 
   const findAllClientQuery = useQuery({
     meta: { errorHandledInline: true },
-    queryKey: ["emails", pagination],
+    queryKey: ["emails", client.id, pagination],
     queryFn: () =>
       emailService.findAllEmails({
         query: { page: pagination.pageIndex + 1, take: pagination.pageSize },

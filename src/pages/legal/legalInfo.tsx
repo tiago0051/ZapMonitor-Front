@@ -11,7 +11,7 @@ export const LegalSection: FC<{ id: string; title: string; children: ReactNode }
 
 /** Moldura das páginas legais públicas, com o link entre elas. */
 export const LegalPage: FC<{ title: string; updatedAt: string; children: ReactNode }> = ({ title, updatedAt, children }) => (
-  <div className="bg-background text-foreground min-h-screen">
+  <div className="bg-background text-foreground min-h-svh">
     <main className="mx-auto max-w-3xl space-y-8 px-4 py-10 text-[15px] leading-relaxed sm:py-16">
       <header className="space-y-2 border-b pb-6">
         <p className="text-muted-foreground text-sm font-medium">{COMPANY.product}</p>

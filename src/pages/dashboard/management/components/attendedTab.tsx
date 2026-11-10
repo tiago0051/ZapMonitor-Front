@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { managementService } from "@/services/api/managementService";
 import { useQuery } from "@tanstack/react-query";
 import { endOfDay, endOfMonth, format, parseISO, startOfDay, startOfMonth, subDays, subMonths } from "date-fns";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AttendedServicesList } from "./attendedServicesList";
 
 type Period = { start: string; end: string };
@@ -34,6 +34,15 @@ export const AttendedTab = () => {
 
   const [period, setPeriod] = useState<Period>(presets[2].build());
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const detailRef = useRef<HTMLDivElement>(null);
+
+  // Abaixo de lg o detalhe fica embaixo da lista: leva a pessoa até ele
+  const selectAttendant = (userId: string) => {
+    setSelectedUserId(userId);
+    if (window.matchMedia("(min-width: 1024px)").matches) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    requestAnimationFrame(() => detailRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" }));
+  };
 
   const isValidPeriod = !!period.start && !!period.end && period.start <= period.end;
   // O dia inteiro no fuso do navegador
@@ -112,7 +121,8 @@ export const AttendedTab = () => {
             {attendants.map((attendant) => (
               <li key={attendant.userId}>
                 <button
-                  onClick={() => setSelectedUserId(attendant.userId)}
+                  type="button"
+                  onClick={() => selectAttendant(attendant.userId)}
                   aria-current={attendant.userId === selectedUserId ? "true" : undefined}
                   className={cn(
                     "flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors",
@@ -130,7 +140,7 @@ export const AttendedTab = () => {
           </ul>
         </div>
 
-        <div className="bg-card min-w-0 flex-1 rounded-xl border shadow-xs">
+        <div ref={detailRef} className="bg-card min-w-0 flex-1 scroll-mt-4 rounded-xl border shadow-xs">
           {!selectedAttendant && (
             <p className="text-muted-foreground p-6 text-sm">Selecione um colaborador para ver quem ele atendeu no período.</p>
           )}

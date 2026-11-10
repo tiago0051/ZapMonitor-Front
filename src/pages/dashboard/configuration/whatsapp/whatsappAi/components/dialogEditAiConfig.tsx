@@ -68,7 +68,7 @@ export const DialogEditAiConfig: FC<DialogEditAiConfigProps> = ({ clientId, clas
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-h-screen overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Editar Configuração de IA</DialogTitle>
           <DialogDescription>Troque a chave de API usada pelos agentes de IA, transcrições e resumos deste cliente.</DialogDescription>

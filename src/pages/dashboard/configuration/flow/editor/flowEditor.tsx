@@ -26,11 +26,35 @@ import {
   type Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { ArrowLeft, Loader2, MessageSquareText, Phone, Rocket, Save, Undo2 } from "lucide-react";
+import {
+  ArrowLeft,
+  FlaskConical,
+  History,
+  Loader2,
+  MessageSquareText,
+  Monitor,
+  MoreHorizontal,
+  Phone,
+  Power,
+  Rocket,
+  Save,
+  Undo2,
+  X,
+} from "lucide-react";
+import { DisabledReason } from "@/components/disabled-reason";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useWhatsappConfigurations } from "../flowLinks";
-import { useCallback, useEffect, useMemo, useState, type FC } from "react";
+import { useCallback, useMemo, useState, type FC } from "react";
 import { Link, useParams } from "react-router";
 import { toast } from "sonner";
 import { FlowCanvasNode, type FlowCanvasNodeType } from "./flowCanvasNode";
@@ -41,6 +65,15 @@ import { FlowNodePanel } from "./flowNodePanel";
 import { DiscardDraftDialog, FlowVersionHistory, PublishFlowDialog } from "./flowPublishing";
 import { FlowSimulator } from "./flowSimulator";
 import { FlowTestContacts } from "./flowTesting";
+
+const MOBILE_BANNER_KEY = "zapmonitor:flowEditorMobileBannerDismissed";
+const readMobileBannerDismissed = () => {
+  try {
+    return localStorage.getItem(MOBILE_BANNER_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
 
 const nodeTypes = Object.fromEntries(Object.keys(flowNodeConfigs).map((type) => [type, FlowCanvasNode]));
 // Fluxo de fila: pontos de entrada e só nós que não tiram o contato da fila
@@ -140,6 +173,10 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
   const [isPublishOpen, setIsPublishOpen] = useState(false);
   const [isDiscardOpen, setIsDiscardOpen] = useState(false);
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
+  const isMobile = useIsMobile();
+  // No celular "Testar" e "Histórico" abrem pelo menu "⋯"
+  const [mobilePanel, setMobilePanel] = useState<"test" | "history" | null>(null);
+  const [isMobileBannerDismissed, setIsMobileBannerDismissed] = useState(readMobileBannerDismissed);
 
   // O nó em que a simulação está fica selecionado no canvas
   const highlightSimulationNode = useCallback(
@@ -316,14 +353,17 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
     setIsDirty(true);
   };
 
-  useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (isDirty) event.preventDefault();
-    };
+  // Pergunta antes de sair pelo "Voltar", pela sidebar ou ao fechar a aba com alterações não salvas
+  const { guardDialog } = useUnsavedChangesGuard(isDirty);
 
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [isDirty]);
+  const dismissMobileBanner = () => {
+    setIsMobileBannerDismissed(true);
+    try {
+      localStorage.setItem(MOBILE_BANNER_KEY, "1");
+    } catch {
+      // Sem armazenamento, o aviso só volta na próxima visita
+    }
+  };
 
   // Um número só inicia um fluxo; mostra onde ele está hoje para deixar claro que será movido
   const findOtherFlowName = (configurationId: string) =>
@@ -370,12 +410,40 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
       : flow.publishedIssues.length > 0
         ? "A versão publicada tem pendências: corrija, publique e ative"
         : undefined;
+  const publishReason = !canPublish ? publishTitle : undefined;
+  const activateReason = !flow.active && !canActivate ? activateTitle : undefined;
+  const canDiscard = hasDraft && flow.version > 0;
+
+  const discardButton = canDiscard && (
+    <Button
+      variant="ghost"
+      size="icon"
+      aria-label="Descartar rascunho"
+      title="Descartar rascunho e voltar para a versão publicada"
+      disabled={isPending}
+      onClick={() => setIsDiscardOpen(true)}
+    >
+      <Undo2 className="h-4 w-4" />
+    </Button>
+  );
+  const toggleButton = (
+    <Button
+      variant={flow.active ? "outline" : "secondary"}
+      disabled={isPending || (!flow.active && !canActivate)}
+      title={!flow.active ? activateTitle : undefined}
+      aria-describedby={activateReason ? "flow-activate-reason" : undefined}
+      onClick={() => toggleFlow.mutate({ params: { clientId, flowId: flow.id } })}
+    >
+      {flow.active ? "Desativar" : "Ativar"}
+    </Button>
+  );
 
   return (
     <div className="flex h-full flex-col">
+      {guardDialog}
       <div className="bg-card flex flex-wrap items-end gap-3 border-b px-4 py-3">
         <Button variant="ghost" size="icon" asChild>
-          <Link to="../..?tab=flow" relative="path">
+          <Link to="../..?tab=flow" relative="path" aria-label="Voltar para os fluxos" title="Voltar">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -395,7 +463,7 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
 
         {!isQueueFlow && (
           <>
-            <div className="w-44 space-y-1">
+            <div className="w-[calc(50%-0.375rem)] space-y-1 sm:w-44">
               <Label htmlFor="flow-reset">Reiniciar após (min)</Label>
               <Input
                 id="flow-reset"
@@ -411,11 +479,11 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
               />
             </div>
 
-            <div className="space-y-1">
+            <div className="w-[calc(50%-0.375rem)] space-y-1 sm:w-auto">
               <Label>Números</Label>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-44 justify-start font-normal">
+                  <Button variant="outline" className="w-full justify-start font-normal sm:w-44">
                     <Phone className="h-4 w-4" />
                     {whatsappConfigurationIds.length ? `${whatsappConfigurationIds.length} número(s)` : "Nenhum"}
                   </Button>
@@ -446,70 +514,138 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
             </div>
           </>
         )}
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant={flow.active ? "default" : "secondary"}>{flow.active ? "Ativo" : "Inativo"}</Badge>
-          <Badge variant="outline" title="Cada publicação gera uma versão; atendimentos em andamento continuam na versão em que começaram">
-            {flow.version > 0 ? `Versão ${flow.version} no ar` : "Nunca publicado"}
-          </Badge>
-          {isDirty ? (
-            <span className="text-muted-foreground text-xs">Alterações não salvas</span>
-          ) : (
-            hasDraft &&
-            flow.version > 0 && <span className="text-xs font-medium text-amber-700 dark:text-amber-400">Rascunho não publicado</span>
-          )}
-          <Button
-            variant="outline"
-            onClick={handleSave}
-            disabled={isPending || !name.trim() || !Number.isInteger(resetAfterMinutes)}
-            title="Salva o rascunho; os atendimentos continuam na versão publicada"
-          >
-            {updateFlow.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Salvar rascunho
-          </Button>
-          <Button disabled={isPending || !canPublish} title={publishTitle} onClick={() => setIsPublishOpen(true)}>
-            <Rocket className="h-4 w-4" />
-            Publicar
-          </Button>
-          {hasDraft && flow.version > 0 && (
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Descartar rascunho"
-              title="Descartar rascunho e voltar para a versão publicada"
-              disabled={isPending}
-              onClick={() => setIsDiscardOpen(true)}
+        {/* No celular os selos ficam numa linha e as ações em outra; no computador "contents" mantém tudo na mesma fila */}
+        <div className="flex flex-wrap items-center gap-2 max-md:w-full">
+          <div className="flex basis-full flex-wrap items-center gap-2 md:contents">
+            <Badge variant={flow.active ? "default" : "secondary"}>{flow.active ? "Ativo" : "Inativo"}</Badge>
+            <Badge
+              variant="outline"
+              title="Cada publicação gera uma versão; atendimentos em andamento continuam na versão em que começaram"
             >
-              <Undo2 className="h-4 w-4" />
+              {flow.version > 0 ? `Versão ${flow.version} no ar` : "Nunca publicado"}
+            </Badge>
+            {isDirty ? (
+              <span className="text-muted-foreground text-xs">Alterações não salvas</span>
+            ) : (
+              hasDraft &&
+              flow.version > 0 && <span className="text-xs font-medium text-amber-700 dark:text-amber-400">Rascunho não publicado</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 md:contents">
+            <Button
+              variant="outline"
+              onClick={handleSave}
+              disabled={isPending || !name.trim() || !Number.isInteger(resetAfterMinutes)}
+              title="Salva o rascunho; os atendimentos continuam na versão publicada"
+            >
+              {updateFlow.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              <span className="hidden sm:inline">Salvar rascunho</span>
+              <span className="sm:hidden">Salvar</span>
             </Button>
-          )}
-          <Button
-            variant="outline"
-            title="Conversar com o rascunho salvo, sem WhatsApp"
-            onClick={() => {
-              setSelectedNodeId(null);
-              setIsSimulatorOpen(true);
-            }}
-          >
-            <MessageSquareText className="h-4 w-4" />
-            Simular
-          </Button>
-          {!isQueueFlow && <FlowTestContacts clientId={clientId} flow={flow} />}
-          <FlowVersionHistory
-            clientId={clientId}
-            flow={flow}
-            disabled={isDirty || isPending}
-            restoringVersionId={restoreVersion.isPending ? (restoreVersion.variables?.params.versionId ?? null) : null}
-            onRestore={(version) => restoreVersion.mutate({ params: { clientId, flowId: flow.id, versionId: version.id } })}
-          />
-          <Button
-            variant={flow.active ? "outline" : "secondary"}
-            disabled={isPending || (!flow.active && !canActivate)}
-            title={!flow.active ? activateTitle : undefined}
-            onClick={() => toggleFlow.mutate({ params: { clientId, flowId: flow.id } })}
-          >
-            {flow.active ? "Desativar" : "Ativar"}
-          </Button>
+            <Button
+              disabled={isPending || !canPublish}
+              title={publishTitle}
+              aria-describedby={publishReason ? "flow-publish-reason" : undefined}
+              onClick={() => setIsPublishOpen(true)}
+            >
+              <Rocket className="h-4 w-4" />
+              Publicar
+            </Button>
+            {!isMobile && discardButton}
+            <Button
+              variant="outline"
+              aria-label="Simular"
+              title="Conversar com o rascunho salvo, sem WhatsApp"
+              onClick={() => {
+                setSelectedNodeId(null);
+                setIsSimulatorOpen(true);
+              }}
+            >
+              <MessageSquareText className="h-4 w-4" />
+              <span className="hidden sm:inline">Simular</span>
+            </Button>
+            {isMobile ? (
+              <div className="relative">
+                <DropdownMenu modal={false}>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" aria-label="Mais ações">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-56"
+                    // O foco não volta ao "⋯": o painel ou diálogo que acabou de abrir se fecharia ao perder o foco
+                    onCloseAutoFocus={(event) => event.preventDefault()}
+                  >
+                    {!isQueueFlow && (
+                      <DropdownMenuItem onSelect={() => setMobilePanel("test")}>
+                        <FlaskConical className="h-4 w-4" />
+                        Testar
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem disabled={flow.version === 0} onSelect={() => setMobilePanel("history")}>
+                      <History className="h-4 w-4" />
+                      Histórico de versões
+                    </DropdownMenuItem>
+                    {canDiscard && (
+                      <DropdownMenuItem disabled={isPending} onSelect={() => setIsDiscardOpen(true)}>
+                        <Undo2 className="h-4 w-4" />
+                        Descartar rascunho
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      disabled={isPending || (!flow.active && !canActivate)}
+                      onSelect={() => toggleFlow.mutate({ params: { clientId, flowId: flow.id } })}
+                    >
+                      <Power className="h-4 w-4" />
+                      {flow.active ? "Desativar" : "Ativar"}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {/* Os painéis abrem ancorados no botão "⋯" */}
+                {!isQueueFlow && (
+                  <FlowTestContacts
+                    clientId={clientId}
+                    flow={flow}
+                    anchorOnly
+                    open={mobilePanel === "test"}
+                    onOpenChange={(open) => setMobilePanel(open ? "test" : null)}
+                  />
+                )}
+                <FlowVersionHistory
+                  clientId={clientId}
+                  flow={flow}
+                  disabled={isDirty || isPending}
+                  restoringVersionId={restoreVersion.isPending ? (restoreVersion.variables?.params.versionId ?? null) : null}
+                  onRestore={(version) => restoreVersion.mutate({ params: { clientId, flowId: flow.id, versionId: version.id } })}
+                  anchorOnly
+                  open={mobilePanel === "history"}
+                  onOpenChange={(open) => setMobilePanel(open ? "history" : null)}
+                />
+              </div>
+            ) : (
+              <>
+                {!isQueueFlow && <FlowTestContacts clientId={clientId} flow={flow} />}
+                <FlowVersionHistory
+                  clientId={clientId}
+                  flow={flow}
+                  disabled={isDirty || isPending}
+                  restoringVersionId={restoreVersion.isPending ? (restoreVersion.variables?.params.versionId ?? null) : null}
+                  onRestore={(version) => restoreVersion.mutate({ params: { clientId, flowId: flow.id, versionId: version.id } })}
+                />
+                {toggleButton}
+              </>
+            )}
+          </div>
         </div>
+        {(publishReason || activateReason) && (
+          <div className="flex basis-full flex-wrap justify-end gap-x-4 gap-y-1">
+            <DisabledReason id="flow-publish-reason">{publishReason && `Publicar: ${publishReason}`}</DisabledReason>
+            <DisabledReason id="flow-activate-reason">{activateReason && `Ativar: ${activateReason}`}</DisabledReason>
+          </div>
+        )}
         <PublishFlowDialog
           flow={flow}
           open={isPublishOpen}
@@ -526,9 +662,20 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
         />
       </div>
 
-      <div className="flex min-h-0 flex-1">
-        <aside className="bg-card w-56 shrink-0 space-y-2 overflow-y-auto border-r p-3">
-          <p className="text-muted-foreground text-xs font-semibold uppercase">Adicionar nó</p>
+      {!isMobileBannerDismissed && (
+        <div className="flex items-start gap-2 border-b bg-amber-50 px-4 py-2 text-sm text-amber-900 md:hidden dark:bg-amber-950/40 dark:text-amber-200">
+          <Monitor className="mt-0.5 h-4 w-4 shrink-0" />
+          <p className="flex-1">Para editar fluxos, use um computador. Pelo celular dá para simular, publicar e ativar.</p>
+          <Button variant="ghost" size="icon" className="-my-1 h-7 w-7 shrink-0" aria-label="Dispensar aviso" onClick={dismissMobileBanner}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
+      {/* No celular a paleta vira uma faixa rolável acima do canvas e os painéis cobrem o canvas */}
+      <div className="relative flex min-h-0 flex-1 flex-col md:flex-row">
+        <aside className="bg-card flex shrink-0 gap-2 overflow-x-auto border-b p-2 md:block md:w-56 md:space-y-2 md:overflow-x-visible md:overflow-y-auto md:border-r md:border-b-0 md:p-3">
+          <p className="text-muted-foreground hidden text-xs font-semibold uppercase md:block">Adicionar nó</p>
           {availableNodeTypes.map((type) => {
             const config = flowNodeConfigs[type];
             const Icon = config.icon;
@@ -537,12 +684,13 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
               <button
                 key={type}
                 onClick={() => addNode(type)}
-                className="hover:bg-muted flex w-full items-start gap-2 rounded-lg border p-2 text-left transition-colors"
+                title={config.description}
+                className="hover:bg-muted flex shrink-0 items-start gap-2 rounded-lg border p-2 text-left transition-colors md:w-full"
               >
                 <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${config.colorClassName}`} />
                 <span>
-                  <span className="block text-sm font-medium">{config.label}</span>
-                  <span className="text-muted-foreground block text-xs">{config.description}</span>
+                  <span className="block text-sm font-medium whitespace-nowrap md:whitespace-normal">{config.label}</span>
+                  <span className="text-muted-foreground hidden text-xs md:block">{config.description}</span>
                 </span>
               </button>
             );
@@ -584,13 +732,14 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
             >
               <Background />
               <Controls />
-              <MiniMap pannable zoomable />
+              {/* No celular o minimapa cobre boa parte do canvas */}
+              <MiniMap pannable zoomable className="max-md:!hidden" />
             </ReactFlow>
           </FlowIssuesContext.Provider>
         </div>
 
         {isSimulatorOpen && (
-          <aside className="bg-card w-96 shrink-0 border-l">
+          <aside className="bg-card absolute inset-0 z-20 md:static md:w-96 md:shrink-0 md:border-l">
             <FlowSimulator
               clientId={clientId}
               flow={flow}
@@ -602,7 +751,7 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
         )}
 
         {selectedNode && !isSimulatorOpen && (
-          <aside className="bg-card w-80 shrink-0 border-l">
+          <aside className="bg-card absolute inset-0 z-20 md:static md:w-80 md:shrink-0 md:border-l">
             <FlowNodePanel
               key={selectedNode.id}
               type={selectedNode.type as FlowNodeType}

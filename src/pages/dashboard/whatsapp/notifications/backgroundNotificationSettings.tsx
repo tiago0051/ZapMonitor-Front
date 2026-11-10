@@ -75,7 +75,7 @@ export const BackgroundNotificationSettings: FC = () => {
       )}
 
       {!push.isChecking && push.status === "off" && (
-        <Button size="sm" className="w-full" disabled={push.isBusy} onClick={push.enable}>
+        <Button size="sm" className="h-auto min-h-8 w-full py-1.5 whitespace-normal" disabled={push.isBusy} onClick={push.enable}>
           {push.isBusy && <Loader2 className="h-4 w-4 animate-spin" />}
           Ativar para {client.name} neste aparelho
         </Button>

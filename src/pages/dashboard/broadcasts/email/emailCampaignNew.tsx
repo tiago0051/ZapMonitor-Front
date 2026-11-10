@@ -1,3 +1,4 @@
+import { DisabledReason } from "@/components/disabled-reason";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -16,7 +17,15 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
 import { selectClassName } from "../audienceSources";
-import { describeSendWindow, formatCount, isFutureSchedule, sendWindowError, toLocalInputValue } from "../broadcastUtils";
+import {
+  describeSendWindow,
+  focusPendingField,
+  formatCount,
+  isFutureSchedule,
+  sendWindowError,
+  toLocalInputValue,
+} from "../broadcastUtils";
+import { MobilePreviewSheet } from "../components/mobilePreviewSheet";
 import { SendWindowFields } from "../components/sendWindowFields";
 import { EmailAudienceStep } from "./emailAudienceStep";
 import { emptyEmailAudience, summarizeEmailAudience, type EmailAudienceSources } from "./emailCampaignUtils";
@@ -82,6 +91,15 @@ export const EmailCampaignNew = () => {
     if (step === 1 && summary.ready.length === 0) return "Inclua pelo menos uma pessoa com e-mail válido";
     return null;
   })();
+  // Campo que resolve o bloqueio da etapa, para levar a pessoa até ele ao tocar em "Continuar"
+  const stepErrorField =
+    step !== 0 || !stepError
+      ? null
+      : !name.trim()
+        ? "email-campaign-name"
+        : !senderId
+          ? "email-campaign-sender"
+          : "email-campaign-template";
 
   const createMutation = useMutation({
     mutationFn: (action: "draft" | "now" | "schedule") =>
@@ -140,6 +158,22 @@ export const EmailCampaignNew = () => {
     (!consent ? "Confirme que as pessoas aceitaram receber e-mails" : null);
   const template = templates.find((item) => item.id === templateId);
   const reviewError = settingsError ?? scheduleError;
+  const reviewErrorField = sendWindowError(sendWindow)
+    ? "email-campaign-window-start"
+    : capError
+      ? "email-campaign-cap-days"
+      : clickError
+        ? "email-campaign-click-stage"
+        : abError
+          ? subjectB.trim()
+            ? "email-campaign-ab-percent"
+            : "email-campaign-subject-b"
+          : !consent
+            ? "email-campaign-consent"
+            : scheduleError
+              ? "email-campaign-scheduled-at"
+              : null;
+  const previewNote = firstContactId ? "Prévia com os dados da primeira ficha da lista." : "Prévia com os valores padrão das variáveis.";
   const sender = senders.find((item) => item.id === senderId);
 
   return (
@@ -178,7 +212,19 @@ export const EmailCampaignNew = () => {
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
         <Card className="min-w-0">
           <CardHeader>
-            <CardTitle>{STEPS[step]}</CardTitle>
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle>{STEPS[step]}</CardTitle>
+              {templateId && (
+                <MobilePreviewSheet>
+                  <EmailPreviewFrame
+                    subject={previewQuery.data?.subject}
+                    html={previewQuery.data?.html}
+                    isLoading={previewQuery.isLoading}
+                    note={previewNote}
+                  />
+                </MobilePreviewSheet>
+              )}
+            </div>
             {step === 1 && (
               <CardDescription>
                 Some quantas fontes quiser. E-mails repetidos entram uma vez só; descadastrados e e-mails que voltaram são tirados no envio.
@@ -522,18 +568,25 @@ export const EmailCampaignNew = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button disabled={busy || !summary.ready.length || !!reviewError} onClick={() => setConfirmSend(true)}>
-                      {when === "schedule" ? "Agendar" : "Enviar agora"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      disabled={busy || !summary.ready.length || !!settingsError}
-                      onClick={() => createMutation.mutate("draft")}
-                    >
-                      Salvar rascunho
-                    </Button>
-                    {reviewError && <p className="text-muted-foreground text-xs">{reviewError}</p>}
+                  <div className="grid gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {/* O span recebe o toque quando o botão está bloqueado e leva ao campo pendente */}
+                      <span onClick={() => !busy && reviewError && focusPendingField(reviewErrorField)}>
+                        <Button disabled={busy || !summary.ready.length || !!reviewError} onClick={() => setConfirmSend(true)}>
+                          {when === "schedule" ? "Agendar" : "Enviar agora"}
+                        </Button>
+                      </span>
+                      <span onClick={() => !busy && settingsError && focusPendingField(reviewErrorField)}>
+                        <Button
+                          variant="outline"
+                          disabled={busy || !summary.ready.length || !!settingsError}
+                          onClick={() => createMutation.mutate("draft")}
+                        >
+                          Salvar rascunho
+                        </Button>
+                      </span>
+                    </div>
+                    <DisabledReason>{reviewError}</DisabledReason>
                   </div>
                 )}
               </div>
@@ -541,18 +594,24 @@ export const EmailCampaignNew = () => {
 
             {step < 2 && (
               <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-4">
-                <p className="text-muted-foreground text-sm">
-                  {stepError ?? (step >= 1 ? `${formatCount(summary.ready.length)} prontas para receber` : "")}
-                </p>
+                {stepError ? (
+                  <DisabledReason className="text-sm">{stepError}</DisabledReason>
+                ) : (
+                  <p className="text-muted-foreground text-sm">
+                    {step >= 1 ? `${formatCount(summary.ready.length)} prontas para receber` : ""}
+                  </p>
+                )}
                 <div className="flex gap-2">
                   {step > 0 && (
                     <Button variant="ghost" onClick={() => setStep(step - 1)}>
                       Voltar
                     </Button>
                   )}
-                  <Button disabled={!!stepError} onClick={() => setStep(step + 1)}>
-                    Continuar
-                  </Button>
+                  <span onClick={() => stepError && focusPendingField(stepErrorField)}>
+                    <Button disabled={!!stepError} onClick={() => setStep(step + 1)}>
+                      Continuar
+                    </Button>
+                  </span>
                 </div>
               </div>
             )}
@@ -561,11 +620,11 @@ export const EmailCampaignNew = () => {
 
         {templateId && (
           <EmailPreviewFrame
-            className="lg:sticky lg:top-4"
+            className="hidden lg:sticky lg:top-4 lg:grid"
             subject={previewQuery.data?.subject}
             html={previewQuery.data?.html}
             isLoading={previewQuery.isLoading}
-            note={firstContactId ? "Prévia com os dados da primeira ficha da lista." : "Prévia com os valores padrão das variáveis."}
+            note={previewNote}
           />
         )}
       </div>

@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/confirm-dialog";
 import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ export const OptOutList = () => {
   const [phone, setPhone] = useState("");
   const [page, setPage] = useState(1);
   const canEdit = can("broadcasts.send");
+  const { confirm, confirmDialog } = useConfirm();
 
   const query = useQuery({
     queryKey: ["broadcastOptOuts", client.id, search, page],
@@ -48,11 +50,22 @@ export const OptOutList = () => {
     },
   });
 
+  const handleRemove = async (item: { id: string; phoneNumber: string }) => {
+    const ok = await confirm({
+      title: `Tirar ${item.phoneNumber} da lista?`,
+      description: "Essa pessoa voltará a receber campanhas de marketing.",
+      confirmLabel: "Tirar da lista",
+      destructive: true,
+    });
+    if (ok) removeMutation.mutate(item.id);
+  };
+
   const items = query.data?.items ?? [];
   const pages = Math.max(1, Math.ceil((query.data?.total ?? 0) / TAKE));
 
   return (
     <div className="grid gap-4">
+      {confirmDialog}
       <p className="text-muted-foreground max-w-prose text-sm">
         Quem responde PARAR, SAIR ou toca em um botão com esse texto entra aqui sozinho e não recebe mais campanhas de marketing. Modelos de
         utilidade, como lembretes e cobranças, continuam chegando.
@@ -115,7 +128,7 @@ export const OptOutList = () => {
                   size="icon"
                   aria-label={`Tirar ${item.phoneNumber} da lista`}
                   disabled={removeMutation.isPending}
-                  onClick={() => removeMutation.mutate(item.id)}
+                  onClick={() => handleRemove(item)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>

@@ -155,7 +155,7 @@ export const BroadcastDetail = () => {
               <h1 className="truncate text-2xl font-semibold">{broadcast.name}</h1>
               <span className={cn("rounded px-1.5 py-0.5 text-xs font-medium", info.className)}>{info.label}</span>
             </div>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-sm break-words">
               {broadcast.templateName} ({broadcast.templateLanguage}) · {broadcast.configurationPhoneNumber ?? "número removido"}
               {broadcast.createdByName && ` · criada por ${broadcast.createdByName}`}
               {broadcast.source === "API" && " · pela API"}

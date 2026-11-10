@@ -17,6 +17,7 @@ import {
   FiBook,
   FiBriefcase,
   FiColumns,
+  FiKey,
   FiLogOut,
   FiMail,
   FiRepeat,
@@ -103,10 +104,15 @@ const navMain: {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { logout, user } = useUserContext();
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, setOpenMobile, isMobile } = useSidebar();
   const baseUrl = useBaseUrl();
   const { can, canUseCrm, canUseAds, client } = useClientContext();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
+
+  // No celular o menu é um Sheet: fecha ao navegar
+  React.useEffect(() => {
+    setOpenMobile(false);
+  }, [pathname, setOpenMobile]);
 
   // Mesma consulta da tela de clientes: trocar só faz sentido com mais de um cliente
   const findAllClientQuery = useQuery({
@@ -137,14 +143,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               {client.name}
             </p>
           </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip={"Encolher"}>
-              <button onClick={toggleSidebar}>
-                <PanelLeftIcon />
-                <span>Encolher</span>
-              </button>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+          {!isMobile && (
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip={"Encolher"}>
+                <button onClick={toggleSidebar}>
+                  <PanelLeftIcon />
+                  <span>Encolher</span>
+                </button>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
@@ -194,6 +202,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </Link>
             </SidebarMenuButton>
           )}
+          <SidebarMenuButton
+            asChild
+            tooltip={"Alterar senha"}
+            isActive={pathname === `${baseUrl}/configuration` && search.includes("tab=account")}
+          >
+            <Link to={`${baseUrl}/configuration?tab=account`}>
+              <FiKey />
+              Alterar senha
+            </Link>
+          </SidebarMenuButton>
           <SidebarMenuButton onClick={() => logout()} asChild tooltip={"Sair"}>
             <Link to={`/auth/logout`}>
               <FiLogOut />

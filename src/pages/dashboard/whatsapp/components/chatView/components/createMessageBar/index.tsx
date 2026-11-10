@@ -9,11 +9,29 @@ import { convertImageForWhatsapp, convertWavToMp3 } from "@/utils/fileConvert";
 import { requestErrorHandling } from "@/utils/request";
 import { BlockBlobClient } from "@azure/storage-blob";
 import { useMutation } from "@tanstack/react-query";
-import { type ChangeEvent, type FC, useEffect, useRef, useState } from "react";
+import { type ChangeEvent, type FC, useEffect, useMemo, useRef, useState } from "react";
 import { FiFile, FiImage, FiMic, FiPaperclip, FiSend, FiStopCircle, FiX } from "react-icons/fi";
 import { useReactMediaRecorder } from "react-media-recorder";
 import { toast } from "sonner";
 import { MessageReplyPreview } from "../messageReplyPreview";
+
+const formatFileSize = (bytes: number) => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} MB`;
+};
+
+const formatDuration = (totalSeconds: number) => {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = Math.floor(totalSeconds % 60);
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+};
+
+/** Tipo do arquivo para mostrar ao atendente: extensão do nome ou, sem ela, o subtipo do MIME. */
+const fileTypeLabel = (file: File) => {
+  const extension = file.name.includes(".") ? file.name.split(".").pop() : "";
+  return (extension || file.type.split("/").pop() || "arquivo").toUpperCase();
+};
 
 type CreateMessageBarProps = {
   contact: WhatsappContactMessage;
@@ -77,16 +95,27 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
     onSettled: () => setUploadProgress(null),
   });
 
+  // Duração do áudio gravado, medida no relógio enquanto grava
+  const recordingStartedAt = useRef<number | null>(null);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+
   const { status, startRecording, stopRecording, error } = useReactMediaRecorder({
     audio: true,
     mediaRecorderOptions: {
       mimeType: "audio/wav",
     },
-    onStop: async (_u, blob) =>
+    onStart: () => {
+      recordingStartedAt.current = Date.now();
+      setRecordingSeconds(0);
+    },
+    onStop: async (_u, blob) => {
+      if (recordingStartedAt.current) setRecordingSeconds((Date.now() - recordingStartedAt.current) / 1000);
+      recordingStartedAt.current = null;
       setMessage({
         type: WhatsappMessageContentType.AUDIO,
         value: blob,
-      }),
+      });
+    },
   });
 
   async function handleSendMessage() {
@@ -229,6 +258,24 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
   }, [replyingTo]);
 
   useEffect(() => {
+    if (!isRecording) return;
+    const interval = window.setInterval(() => {
+      if (recordingStartedAt.current) setRecordingSeconds((Date.now() - recordingStartedAt.current) / 1000);
+    }, 500);
+    return () => window.clearInterval(interval);
+  }, [isRecording]);
+
+  // Um endereço por anexo (e não um a cada render), liberado quando o anexo muda
+  const attachmentUrl = useMemo(
+    () => (message.value instanceof Blob && (messageIsAudio || messageIsImage) ? URL.createObjectURL(message.value) : null),
+    [message.value, messageIsAudio, messageIsImage],
+  );
+  useEffect(() => {
+    if (!attachmentUrl) return;
+    return () => URL.revokeObjectURL(attachmentUrl);
+  }, [attachmentUrl]);
+
+  useEffect(() => {
     if (error) {
       toast.error(error);
     }
@@ -273,23 +320,44 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
         )}
 
         {showDocumentBar && (
-          <div className="flex w-full items-center">
+          <div className="flex w-full min-w-0 items-center">
             {messageIsDocument && (
-              <div className={"flex w-full items-center gap-2"}>
-                <FiFile />
-                <p>{(message.value as File).name}</p>
+              <div className={"flex w-full min-w-0 items-center gap-2"}>
+                <FiFile className="shrink-0" />
+                <div className="min-w-0">
+                  <p className="min-w-0 truncate">{(message.value as File).name}</p>
+                  <p className="text-muted-foreground text-xs">
+                    {fileTypeLabel(message.value as File)} · {formatFileSize((message.value as File).size)}
+                  </p>
+                </div>
               </div>
             )}
 
-            {messageIsAudio && <audio controls src={URL.createObjectURL(message.value as Blob)} className="w-full" />}
+            {messageIsAudio && attachmentUrl && (
+              <div className="flex w-full min-w-0 items-center gap-2">
+                <audio controls src={attachmentUrl} className="min-w-0 flex-1" aria-label="Áudio gravado" />
+                {recordingSeconds > 0 && (
+                  <span className="text-muted-foreground shrink-0 text-xs tabular-nums">{formatDuration(recordingSeconds)}</span>
+                )}
+              </div>
+            )}
 
             {messageIsImage && (
               <div className={"w-full"}>
-                <img src={URL.createObjectURL(message.value as File)} alt={"Imagem selecioanda"} className={"h-[100px]"} />
+                {attachmentUrl && <img src={attachmentUrl} alt={"Imagem selecionada"} className={"h-[100px] max-w-full object-contain"} />}
+                <p className="text-muted-foreground truncate text-xs">
+                  {(message.value as File).name} · {formatFileSize((message.value as File).size)}
+                </p>
               </div>
             )}
 
-            <Button variant={"ghost"} size={"icon"} onClick={() => setMessage(defaultMessage)} disabled={disabledMessage}>
+            <Button
+              variant={"ghost"}
+              size={"icon"}
+              onClick={() => setMessage(defaultMessage)}
+              disabled={disabledMessage}
+              aria-label="Remover anexo"
+            >
               <FiX />
             </Button>
           </div>
@@ -297,7 +365,9 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
 
         {isRecording && (
           <div className="border-destructive w-full animate-pulse rounded border px-4 py-2">
-            <p className="text-destructive">Gravando áudio...</p>
+            <p className="text-destructive">
+              Gravando áudio... <span className="tabular-nums">{formatDuration(recordingSeconds)}</span>
+            </p>
           </div>
         )}
         <div className="flex gap-1">
@@ -329,7 +399,7 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
           {!isRecording && messageIsText && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild disabled={isRecording}>
-                <Button variant={"outline"} size={"icon"} disabled={disabledMessage}>
+                <Button variant={"outline"} size={"icon"} disabled={disabledMessage} aria-label="Anexar arquivo">
                   <FiPaperclip />
                 </Button>
               </DropdownMenuTrigger>

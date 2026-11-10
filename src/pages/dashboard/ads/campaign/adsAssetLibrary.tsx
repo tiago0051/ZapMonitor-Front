@@ -74,7 +74,7 @@ export const AdsAssetLibrary: FC<AdsAssetLibraryProps> = ({ account, assets, sel
               <Button
                 size="icon"
                 variant="secondary"
-                className="absolute top-1 right-1 h-8 w-8 md:h-6 md:w-6 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100"
+                className="absolute top-1 right-1 h-8 w-8 md:h-6 md:w-6 md:opacity-60 md:group-hover:opacity-100 md:focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
                 aria-label={`Tirar ${asset.name} da biblioteca`}
                 disabled={remove.isPending}
                 onClick={() => remove.mutate({ params: { clientId: client.id, assetId: asset.id } })}

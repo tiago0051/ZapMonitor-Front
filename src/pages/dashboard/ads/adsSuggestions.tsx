@@ -8,14 +8,22 @@ import { metaAdsService } from "@/services/api/metaAdsService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Bot, Lightbulb, Loader2, Sparkles } from "lucide-react";
+import { Bot, Lightbulb, Sparkles } from "lucide-react";
 import { useState, type FC } from "react";
 import { toast } from "sonner";
 import { suggestionStatusLabel } from "./adsUtils";
 import { AdSuggestionCard } from "./components/adSuggestionCard";
 import { AdvisorText } from "./components/advisorText";
+import { SteppedProgress } from "./components/steppedProgress";
 
 const STATUSES: AdSuggestionStatus[] = ["OPEN", "ACCEPTED", "POSTPONED", "REJECTED"];
+const AUDIT_STEPS = [
+  "Lendo as métricas da conta…",
+  "Analisando públicos e criativos…",
+  "Cruzando o gasto com as vendas do CRM…",
+  "Escrevendo as sugestões…",
+];
+const DAILY_STEPS = ["Lendo as métricas de ontem…", "Comparando com os dias anteriores…", "Escrevendo as sugestões…"];
 
 /** Auditoria da IA, análise diária e as sugestões da conta. */
 export const AdsSuggestions: FC<{ account: AdAccount }> = ({ account }) => {
@@ -66,12 +74,11 @@ export const AdsSuggestions: FC<{ account: AdAccount }> = ({ account }) => {
               A inteligência artificial não está ativa ou a cota do mês acabou. As sugestões já registradas continuam aqui.
             </p>
           )}
-          {isRunning && (
-            <p className="flex items-center gap-2 text-sm">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              {analysis.kind === "AUDIT" ? "Auditando a conta" : "Analisando o dia"}, isso leva até um minuto…
-            </p>
-          )}
+          <SteppedProgress
+            active={isRunning || requestAudit.isPending}
+            steps={analysis?.kind === "DAILY" ? DAILY_STEPS : AUDIT_STEPS}
+            interval={8000}
+          />
           {analysis && !isRunning && (
             <div className="space-y-1">
               <p className="text-muted-foreground text-xs">
@@ -121,7 +128,10 @@ export const AdsSuggestions: FC<{ account: AdAccount }> = ({ account }) => {
             type="button"
             aria-pressed={status === option}
             onClick={() => setStatus(option)}
-            className={cn("flex-1 rounded px-2 py-1 text-xs", status === option ? "bg-primary text-primary-foreground" : "hover:bg-muted")}
+            className={cn(
+              "focus-visible:ring-ring/50 flex-1 rounded px-2 py-1 text-xs outline-none focus-visible:ring-[3px]",
+              status === option ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+            )}
           >
             {suggestionStatusLabel[option]}
           </button>

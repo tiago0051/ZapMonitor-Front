@@ -19,7 +19,7 @@ export const EmailPreviewFrame: FC<EmailPreviewFrameProps> = ({ subject, html, i
     <div className={cn("grid min-w-0 gap-2", className)}>
       <div className="flex items-center justify-between gap-2">
         <p className="text-muted-foreground truncate text-xs">{note ?? "Prévia"}</p>
-        <div className="flex gap-1" role="group" aria-label="Tamanho da prévia">
+        <div className="hidden gap-1 md:flex" role="group" aria-label="Tamanho da prévia">
           <Button
             size="icon"
             variant={device === "desktop" ? "secondary" : "ghost"}
@@ -52,7 +52,7 @@ export const EmailPreviewFrame: FC<EmailPreviewFrameProps> = ({ subject, html, i
             title="Prévia do e-mail"
             sandbox=""
             srcDoc={html ?? ""}
-            className={cn("h-[560px] border-0 bg-white", device === "mobile" ? "w-[375px] max-w-full" : "w-full")}
+            className={cn("h-[560px] border-0 bg-white", device === "mobile" ? "w-full md:w-[375px]" : "w-full")}
           />
         </div>
       </div>

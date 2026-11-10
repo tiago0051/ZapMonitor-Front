@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/confirm-dialog";
 import { renewalLabel } from "@/components/plan/planExpired";
 import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +28,7 @@ const summarizeItems = (template: PlanTemplate) =>
 
 const PlanTemplateCard = ({ template, table }: { template: PlanTemplate; table: PriceTable | undefined }) => {
   const queryClient = useQueryClient();
+  const { confirm, confirmDialog } = useConfirm();
 
   const deletePlanTemplate = useMutation({
     mutationFn: billingService.deletePlanTemplate,
@@ -39,6 +41,7 @@ const PlanTemplateCard = ({ template, table }: { template: PlanTemplate; table: 
 
   return (
     <Card className="gap-3">
+      {confirmDialog}
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2">
           {template.name}
@@ -67,7 +70,15 @@ const PlanTemplateCard = ({ template, table }: { template: PlanTemplate; table: 
               variant="ghost"
               size="sm"
               disabled={deletePlanTemplate.isPending}
-              onClick={() => deletePlanTemplate.mutate({ params: { planTemplateId: template.id } })}
+              onClick={async () => {
+                const ok = await confirm({
+                  title: `Excluir o modelo "${template.name}"?`,
+                  description: "O modelo deixa de aparecer na hora de montar o plano de um tenant. Esta ação não pode ser desfeita.",
+                  confirmLabel: "Excluir",
+                  destructive: true,
+                });
+                if (ok) deletePlanTemplate.mutate({ params: { planTemplateId: template.id } });
+              }}
             >
               Excluir
             </Button>

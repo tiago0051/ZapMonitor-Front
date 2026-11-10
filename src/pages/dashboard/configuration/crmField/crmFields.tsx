@@ -1,7 +1,9 @@
 import { EmptyState } from "@/components/state-message";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useConfirm } from "@/components/confirm-dialog";
+import { ExpandableDescription } from "../components/expandableDescription";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -191,17 +193,33 @@ export const CrmFields = () => {
   });
 
   const fields = findAllFieldsQuery.data;
+  const { confirm, confirmDialog } = useConfirm();
+
+  const toggleField = async (field: (typeof fields)[number]) => {
+    if (
+      field.active &&
+      !(await confirm({
+        title: `Desativar o campo "${field.name}"?`,
+        description:
+          "O campo sai dos formulários e deixa de ser exigido pelas etapas do funil. Os valores já preenchidos são mantidos e voltam se você reativar.",
+        confirmLabel: "Desativar",
+        destructive: true,
+      }))
+    )
+      return;
+    setFieldActive.mutate({ params: { clientId: clientId!, fieldId: field.id }, body: { active: !field.active } });
+  };
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+      {confirmDialog}
+      <CardHeader className="flex flex-col items-start gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle>Campos personalizados</CardTitle>
-          <CardDescription>
-            Informações extras do negócio (como produto) ou da ficha do contato (como CPF). Cada etapa do funil pode exigir campos do
-            negócio preenchidos antes de receber um negócio. Desativar um campo tira ele dos formulários e das exigências, sem apagar os
-            valores.
-          </CardDescription>
+          <ExpandableDescription summary="Informações extras do negócio (como produto) ou da ficha do contato (como CPF).">
+            Cada etapa do funil pode exigir campos do negócio preenchidos antes de receber um negócio. Desativar um campo tira ele dos
+            formulários e das exigências, sem apagar os valores.
+          </ExpandableDescription>
         </div>
         <DialogSaveCrmField clientId={clientId!} />
       </CardHeader>
@@ -224,14 +242,7 @@ export const CrmFields = () => {
                 </div>
                 {!field.active && <Badge variant="secondary">Inativo</Badge>}
                 <DialogSaveCrmField clientId={clientId!} field={field} />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={setFieldActive.isPending}
-                  onClick={() =>
-                    setFieldActive.mutate({ params: { clientId: clientId!, fieldId: field.id }, body: { active: !field.active } })
-                  }
-                >
+                <Button size="sm" variant="outline" disabled={setFieldActive.isPending} onClick={() => void toggleField(field)}>
                   {field.active ? "Desativar" : "Reativar"}
                 </Button>
               </li>

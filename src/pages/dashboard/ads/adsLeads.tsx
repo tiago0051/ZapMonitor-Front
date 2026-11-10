@@ -10,7 +10,7 @@ import { metaAdsService } from "@/services/api/metaAdsService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Download, FileText, Phone, RotateCcw } from "lucide-react";
+import { ChevronRight, Download, FileText, Phone, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
@@ -75,31 +75,38 @@ export const AdsLeads = () => {
   const leads = leadsQuery.data ?? [];
 
   // Para leads que não chegam pelo webhook, como o lead de verificação do conjunto de dados
+  // Fica recolhido em "Opções avançadas": é uma ferramenta técnica que quase ninguém precisa
   const importBar = can("ads.manage") && (
-    <form
-      className="flex flex-wrap items-center gap-2"
-      onSubmit={(event) => {
-        event.preventDefault();
-        const id = metaLeadId.trim();
-        if (id) importLead.mutate({ params: { clientId: client.id }, body: { metaLeadId: id } });
-      }}
-    >
-      <Input
-        className="max-w-64"
-        inputMode="numeric"
-        placeholder="Id do lead na Meta"
-        aria-label="Id do lead na Meta"
-        value={metaLeadId}
-        onChange={(event) => setMetaLeadId(event.target.value.replace(/\D/g, ""))}
-      />
-      <Button type="submit" variant="outline" size="sm" disabled={!metaLeadId.trim() || importLead.isPending}>
-        <Download className="h-3.5 w-3.5" />
-        {importLead.isPending ? "Buscando..." : "Importar lead"}
-      </Button>
-      <p className="text-muted-foreground text-xs">
-        Use para leads que não chegaram sozinhos, como o lead de verificação do conjunto de dados.
-      </p>
-    </form>
+    <details className="group text-sm">
+      <summary className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 flex w-fit cursor-pointer list-none items-center gap-1 rounded text-xs font-medium outline-none focus-visible:ring-[3px] [&::-webkit-details-marker]:hidden">
+        <ChevronRight className="h-3.5 w-3.5 transition-transform group-open:rotate-90" />
+        Opções avançadas
+      </summary>
+      <form
+        className="mt-2 flex flex-wrap items-center gap-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          const id = metaLeadId.trim();
+          if (id) importLead.mutate({ params: { clientId: client.id }, body: { metaLeadId: id } });
+        }}
+      >
+        <Input
+          className="max-w-64"
+          inputMode="numeric"
+          placeholder="Id do lead na Meta"
+          aria-label="Id do lead na Meta"
+          value={metaLeadId}
+          onChange={(event) => setMetaLeadId(event.target.value.replace(/\D/g, ""))}
+        />
+        <Button type="submit" variant="outline" size="sm" disabled={!metaLeadId.trim() || importLead.isPending}>
+          <Download className="h-3.5 w-3.5" />
+          {importLead.isPending ? "Buscando..." : "Importar lead"}
+        </Button>
+        <p className="text-muted-foreground text-xs">
+          Use para leads que não chegaram sozinhos, como o lead de verificação do conjunto de dados.
+        </p>
+      </form>
+    </details>
   );
 
   const phoneDialog = (
@@ -205,7 +212,9 @@ export const AdsLeads = () => {
                     >
                       {status.label}
                     </span>
-                    {lead.error && lead.status !== "CREATED" && <p className="text-muted-foreground mt-1 max-w-56 text-xs">{lead.error}</p>}
+                    {lead.error && lead.status !== "CREATED" && (
+                      <p className="text-muted-foreground mt-1 max-w-56 text-xs whitespace-normal">{lead.error}</p>
+                    )}
                   </TableCell>
                   <TableCell className="text-xs">
                     {lead.dealId ? (

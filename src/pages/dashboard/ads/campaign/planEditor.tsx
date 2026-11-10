@@ -1,13 +1,21 @@
+import { useConfirm } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Film, Plus, Trash2 } from "lucide-react";
-import { useState, type FC } from "react";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { undoableAction } from "@/lib/undoToast";
+import { cn } from "@/lib/utils";
+import { AlertTriangle, Film, Plus, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState, type FC, type ReactNode } from "react";
 import { AdvisorText } from "../components/advisorText";
+import { MetricHelp } from "../components/metricHelp";
 import { AdsAssetLibrary } from "./adsAssetLibrary";
 import { fieldSelectClassName } from "./campaignUtils";
+import { CountryPicker } from "./countryPicker";
 import type { CampaignAudienceOption } from "./useCampaignOptions";
 
 const textarea = "border-input bg-background min-h-16 w-full rounded-md border px-3 py-2 text-sm";
@@ -55,6 +63,40 @@ const AudiencePicker: FC<AudiencePickerProps> = ({ label, selected, audiences, o
   </Popover>
 );
 
+type AssetPickerProps = { open: boolean; onOpenChange: (open: boolean) => void; children: ReactNode };
+
+/** Biblioteca de criativos em janela (computador) ou painel de baixo (celular) para escolher o criativo do anúncio. */
+const AssetPicker: FC<AssetPickerProps> = ({ open, onOpenChange, children }) => {
+  const isMobile = useIsMobile();
+  const title = "Escolha a imagem ou o vídeo";
+  const description = "Toque em um criativo da biblioteca ou envie um novo.";
+
+  if (isMobile)
+    return (
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{title}</SheetTitle>
+            <SheetDescription>{description}</SheetDescription>
+          </SheetHeader>
+          <div className="px-4 pb-4">{children}</div>
+        </SheetContent>
+      </Sheet>
+    );
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        {children}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 type PlanEditorProps = {
   account: AdAccount;
   plan: AdCampaignPlan;
@@ -73,6 +115,46 @@ export const PlanEditor: FC<PlanEditorProps> = ({ account, plan, audiences, asse
   const setCreative = (key: string, changes: Partial<AdPlanCreative>) =>
     set({ creatives: plan.creatives.map((creative) => (creative.key === key ? { ...creative, ...changes } : creative)) });
   const special = plan.specialAdCategory !== "NONE";
+  const { confirm, confirmDialog } = useConfirm();
+  // Plano mais recente, para o "Desfazer" devolver o anúncio sem perder o que foi editado depois
+  const planRef = useRef(plan);
+  useEffect(() => {
+    planRef.current = plan;
+  }, [plan]);
+
+  const removeAdSet = async (adSet: AdPlanAdSet) => {
+    const adsCount = plan.creatives.filter((creative) => creative.adSetKey === adSet.key).length;
+    if (
+      adsCount > 0 &&
+      !(await confirm({
+        title: `Tirar o conjunto "${adSet.name}"?`,
+        description: `Os ${adsCount} anúncio(s) dele também saem do plano.`,
+        confirmLabel: "Tirar conjunto",
+        destructive: true,
+      }))
+    )
+      return;
+    const current = planRef.current;
+    onChange({
+      ...current,
+      adSets: current.adSets.filter((item) => item.key !== adSet.key),
+      creatives: current.creatives.filter((creative) => creative.adSetKey !== adSet.key),
+    });
+  };
+  const removeCreative = (creative: AdPlanCreative) => {
+    const index = plan.creatives.findIndex((item) => item.key === creative.key);
+    set({ creatives: plan.creatives.filter((item) => item.key !== creative.key) });
+    undoableAction({
+      message: `"${creative.name}" saiu do plano`,
+      commit: () => undefined,
+      onUndo: () => {
+        const current = planRef.current;
+        const creatives = [...current.creatives];
+        creatives.splice(Math.min(index, creatives.length), 0, creative);
+        onChange({ ...current, creatives });
+      },
+    });
+  };
 
   const addAdSet = () => {
     const key = nextKey(
@@ -121,6 +203,7 @@ export const PlanEditor: FC<PlanEditorProps> = ({ account, plan, audiences, asse
 
   return (
     <div className="space-y-4">
+      {confirmDialog}
       {plan.reasoning && (
         <div className="border-primary/20 bg-primary/5 rounded-lg border p-3">
           <p className="text-primary mb-1 text-xs font-semibold">Por que este plano</p>
@@ -224,12 +307,7 @@ export const PlanEditor: FC<PlanEditorProps> = ({ account, plan, audiences, asse
                 variant="ghost"
                 className="ml-auto h-8 w-8"
                 aria-label={`Tirar ${adSet.name}`}
-                onClick={() =>
-                  set({
-                    adSets: plan.adSets.filter((item) => item.key !== adSet.key),
-                    creatives: plan.creatives.filter((creative) => creative.adSetKey !== adSet.key),
-                  })
-                }
+                onClick={() => void removeAdSet(adSet)}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -261,23 +339,10 @@ export const PlanEditor: FC<PlanEditorProps> = ({ account, plan, audiences, asse
                 onChange={(event) => setAdSet(adSet.key, { ageMax: event.target.valueAsNumber || 65 })}
               />
             </label>
-            <label className="flex items-center gap-1">
+            <div className="flex items-center gap-1">
               Países
-              <Input
-                aria-label="Países"
-                className="h-8 w-28 text-xs"
-                disabled={disabled}
-                value={adSet.countries.join(", ")}
-                onChange={(event) =>
-                  setAdSet(adSet.key, {
-                    countries: event.target.value
-                      .split(",")
-                      .map((country) => country.trim().toUpperCase())
-                      .filter(Boolean),
-                  })
-                }
-              />
-            </label>
+              <CountryPicker selected={adSet.countries} disabled={disabled} onChange={(countries) => setAdSet(adSet.key, { countries })} />
+            </div>
             <label className="flex items-center gap-2">
               <Checkbox
                 checked={adSet.advantageAudience}
@@ -285,6 +350,7 @@ export const PlanEditor: FC<PlanEditorProps> = ({ account, plan, audiences, asse
                 onCheckedChange={(checked) => setAdSet(adSet.key, { advantageAudience: checked === true })}
               />
               Público Advantage+
+              <MetricHelp term="ADVANTAGE" />
             </label>
             {!disabled && (
               <>
@@ -310,14 +376,26 @@ export const PlanEditor: FC<PlanEditorProps> = ({ account, plan, audiences, asse
               .map((creative) => {
                 const asset = assets.find((item) => item.id === creative.assetId);
 
+                const missingAsset = !asset;
+
                 return (
-                  <div key={creative.key} className="bg-muted/30 grid gap-2 rounded-md border p-2 md:grid-cols-[96px_1fr]">
-                    <div>
+                  <div
+                    key={creative.key}
+                    className={cn(
+                      "bg-muted/30 grid gap-2 rounded-md border p-2 md:grid-cols-[96px_1fr]",
+                      missingAsset && "border-amber-500 dark:border-amber-600",
+                    )}
+                  >
+                    <div className="space-y-1">
                       <button
                         type="button"
                         disabled={disabled}
-                        onClick={() => setPickingAssetFor(pickingAssetFor === creative.key ? null : creative.key)}
-                        className="bg-muted text-muted-foreground flex aspect-square w-24 items-center justify-center overflow-hidden rounded border text-[10px]"
+                        onClick={() => setPickingAssetFor(creative.key)}
+                        className={cn(
+                          "bg-muted text-muted-foreground flex aspect-square w-24 items-center justify-center overflow-hidden rounded border text-[10px]",
+                          missingAsset && "border-dashed border-amber-500 text-amber-700 dark:text-amber-400",
+                        )}
+                        aria-label={asset ? `Trocar o criativo (${asset.name})` : "Escolher imagem ou vídeo"}
                         title={asset?.name ?? "Escolher imagem ou vídeo"}
                       >
                         {asset?.previewUrl ? (
@@ -328,6 +406,12 @@ export const PlanEditor: FC<PlanEditorProps> = ({ account, plan, audiences, asse
                           "Escolher criativo"
                         )}
                       </button>
+                      {missingAsset && (
+                        <p className="flex w-24 items-start gap-1 text-[11px] text-amber-700 dark:text-amber-400">
+                          <AlertTriangle className="mt-px h-3 w-3 shrink-0" />
+                          Sem imagem ou vídeo
+                        </p>
+                      )}
                     </div>
                     <div className="grid gap-2">
                       <div className="flex items-center gap-2">
@@ -345,7 +429,7 @@ export const PlanEditor: FC<PlanEditorProps> = ({ account, plan, audiences, asse
                             variant="ghost"
                             className="h-8 w-8 shrink-0"
                             aria-label={`Tirar ${creative.name}`}
-                            onClick={() => set({ creatives: plan.creatives.filter((item) => item.key !== creative.key) })}
+                            onClick={() => removeCreative(creative)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -393,18 +477,8 @@ export const PlanEditor: FC<PlanEditorProps> = ({ account, plan, audiences, asse
                           onCheckedChange={(checked) => setCreative(creative.key, { advantageEnhancements: checked === true })}
                         />
                         Melhorias do Advantage+ criativo (retoques na imagem e variações de texto)
+                        <MetricHelp term="ADVANTAGE" />
                       </label>
-                      {pickingAssetFor === creative.key && (
-                        <AdsAssetLibrary
-                          account={account}
-                          assets={assets}
-                          selectedId={creative.assetId}
-                          onSelect={(selected) => {
-                            setCreative(creative.key, { assetId: selected.id });
-                            setPickingAssetFor(null);
-                          }}
-                        />
-                      )}
                     </div>
                   </div>
                 );
@@ -425,6 +499,18 @@ export const PlanEditor: FC<PlanEditorProps> = ({ account, plan, audiences, asse
           Conjunto
         </Button>
       )}
+
+      <AssetPicker open={pickingAssetFor !== null} onOpenChange={(open) => !open && setPickingAssetFor(null)}>
+        <AdsAssetLibrary
+          account={account}
+          assets={assets}
+          selectedId={plan.creatives.find((creative) => creative.key === pickingAssetFor)?.assetId ?? null}
+          onSelect={(selected) => {
+            if (pickingAssetFor) setCreative(pickingAssetFor, { assetId: selected.id });
+            setPickingAssetFor(null);
+          }}
+        />
+      </AssetPicker>
     </div>
   );
 };

@@ -11,9 +11,44 @@ import { formatConversationTime } from "@/utils/formatString";
 type ContactCardProps = DetailedHTMLProps<React.HTMLAttributes<HTMLButtonElement>, HTMLButtonElement> & {
   contact: WhatsappContactMessage;
   active: boolean;
+  /** Termo buscado, destacado no nome */
+  highlight?: string;
 };
 
-export const ContactCard: FC<ContactCardProps> = ({ contact, active, onClick }) => {
+/** Destaca, sem diferenciar maiúsculas, cada ocorrência do termo no texto. */
+const HighlightedText: FC<{ text: string; term?: string }> = ({ text, term }) => {
+  const query = term?.trim();
+  if (!query) return <>{text}</>;
+
+  const lowerText = text.toLocaleLowerCase();
+  const lowerQuery = query.toLocaleLowerCase();
+  const parts: { value: string; match: boolean }[] = [];
+  let cursor = 0;
+  let index = lowerText.indexOf(lowerQuery);
+  while (index !== -1) {
+    if (index > cursor) parts.push({ value: text.slice(cursor, index), match: false });
+    parts.push({ value: text.slice(index, index + query.length), match: true });
+    cursor = index + query.length;
+    index = lowerText.indexOf(lowerQuery, cursor);
+  }
+  if (cursor < text.length) parts.push({ value: text.slice(cursor), match: false });
+
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.match ? (
+          <mark key={i} className="rounded-sm bg-yellow-200 px-0.5 text-inherit dark:bg-yellow-500/40">
+            {part.value}
+          </mark>
+        ) : (
+          <span key={i}>{part.value}</span>
+        ),
+      )}
+    </>
+  );
+};
+
+export const ContactCard: FC<ContactCardProps> = ({ contact, active, onClick, highlight }) => {
   const getExpirationStatus = useCallback(() => {
     if (!contact.replyTimeExpiredAt) return null;
 
@@ -59,6 +94,8 @@ export const ContactCard: FC<ContactCardProps> = ({ contact, active, onClick }) 
 
   return (
     <button
+      type="button"
+      aria-current={active || undefined}
       onClick={onClick}
       className={`border-border w-full border-b px-4 py-3 text-left transition-colors ${
         active ? "border-l-2 border-l-green-500 bg-green-50" : "border-l-2 border-l-transparent hover:bg-gray-50"
@@ -68,7 +105,9 @@ export const ContactCard: FC<ContactCardProps> = ({ contact, active, onClick }) 
         <ContactAvatar contact={contact} />
         <div className="min-w-0 flex-1">
           <div className="mb-0.5 flex items-center justify-between gap-2">
-            <span className="text-foreground truncate text-sm font-semibold">{nameToPresentation}</span>
+            <span className="text-foreground truncate text-sm font-semibold">
+              <HighlightedText text={nameToPresentation} term={highlight} />
+            </span>
             {contact.lastMessageAt && (
               <span className={cn("shrink-0 text-xs", hasUnread ? "font-semibold text-green-600" : "text-muted-foreground")}>
                 {formatConversationTime(contact.lastMessageAt)}

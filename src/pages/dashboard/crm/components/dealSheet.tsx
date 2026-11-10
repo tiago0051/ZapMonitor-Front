@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useBaseUrl } from "@/hooks/use-baseUrl";
 import { crmService } from "@/services/api/crmService";
@@ -193,8 +194,8 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
     <Sheet open={!!dealId} onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="w-full overflow-y-auto sm:max-w-md">
         <SheetHeader>
-          <SheetTitle>{deal?.title ?? "Negócio"}</SheetTitle>
-          <SheetDescription>
+          <SheetTitle className="pr-6 break-words">{deal?.title ?? "Negócio"}</SheetTitle>
+          <SheetDescription className="break-words">
             {!deal
               ? "Carregando..."
               : [
@@ -315,30 +316,58 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
               </div>
             </section>
 
-            {deal.origin && <DealOriginDetails origin={deal.origin} />}
+            {/* key: cada negócio aberto começa em "Detalhes" */}
+            <Tabs key={deal.id} defaultValue="details" className="gap-4">
+              <TabsList className="w-full">
+                <TabsTrigger value="details">Detalhes</TabsTrigger>
+                <TabsTrigger value="tasks">
+                  Tarefas
+                  {deal.openTaskCount > 0 && <span className="text-muted-foreground tabular-nums">({deal.openTaskCount})</span>}
+                </TabsTrigger>
+                <TabsTrigger value="history">
+                  Histórico
+                  {!!eventsQuery.data?.length && <span className="text-muted-foreground tabular-nums">({eventsQuery.data.length})</span>}
+                </TabsTrigger>
+              </TabsList>
 
-            <DealAiInsight deal={deal} pipeline={pipeline} onMove={(stage) => actions.requestMove(deal, stage)} />
+              {/* forceMount: trocar de aba não perde o que foi digitado e não salvo */}
+              <TabsContent value="details" forceMount className="space-y-6 data-[state=inactive]:hidden">
+                {deal.origin && <DealOriginDetails origin={deal.origin} />}
 
-            <AiFieldUpdates owner={{ dealId: deal.id }} onAccepted={() => queryClient.invalidateQueries({ queryKey: ["crm", "deals"] })} />
+                <DealAiInsight deal={deal} pipeline={pipeline} onMove={(stage) => actions.requestMove(deal, stage)} />
 
-            <DealDetailsForm key={`${deal.id}-${deal.updatedAt}`} deal={deal} />
+                <AiFieldUpdates
+                  owner={{ dealId: deal.id }}
+                  onAccepted={() => queryClient.invalidateQueries({ queryKey: ["crm", "deals"] })}
+                />
 
-            <DealTasks deal={deal} />
+                <DealDetailsForm key={`${deal.id}-${deal.updatedAt}`} deal={deal} />
+              </TabsContent>
 
-            <section>
-              <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">Histórico</p>
-              {eventsQuery.isLoading && <LoadingState className="justify-start py-2" />}
-              <ol className="space-y-3">
-                {eventsQuery.data?.map((event) => (
-                  <li key={event.id} className="border-l-2 pl-3 text-sm">
-                    <p>{describeEvent(event)}</p>
-                    <p className="text-muted-foreground text-xs">
-                      {event.user?.name ?? "Fluxo automático"} · {format(new Date(event.createdAt), "PPp", { locale: ptBR })}
-                    </p>
-                  </li>
-                ))}
-              </ol>
-            </section>
+              <TabsContent value="tasks" forceMount className="data-[state=inactive]:hidden">
+                <DealTasks deal={deal} />
+              </TabsContent>
+
+              <TabsContent value="history" forceMount className="data-[state=inactive]:hidden">
+                <section>
+                  <h3 className="sr-only">Histórico</h3>
+                  {eventsQuery.isLoading && <LoadingState className="justify-start py-2" />}
+                  {eventsQuery.isSuccess && eventsQuery.data.length === 0 && (
+                    <p className="text-muted-foreground text-sm">Nada registrado ainda.</p>
+                  )}
+                  <ol className="space-y-3">
+                    {eventsQuery.data?.map((event) => (
+                      <li key={event.id} className="border-l-2 pl-3 text-sm">
+                        <p>{describeEvent(event)}</p>
+                        <p className="text-muted-foreground text-xs">
+                          {event.user?.name ?? "Fluxo automático"} · {format(new Date(event.createdAt), "PPp", { locale: ptBR })}
+                        </p>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+              </TabsContent>
+            </Tabs>
           </div>
         )}
         {actions.dialogs}

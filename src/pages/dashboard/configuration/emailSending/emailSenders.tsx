@@ -2,6 +2,8 @@ import { EmptyState, ErrorState, LoadingState } from "@/components/state-message
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useConfirm } from "@/components/confirm-dialog";
+import { ExpandableDescription } from "../components/expandableDescription";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -161,7 +163,7 @@ const SenderCard: FC<{ sender: EmailSender }> = ({ sender }) => {
   const { client } = useClientContext();
   const queryClient = useQueryClient();
   const [testTo, setTestTo] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const { confirm, confirmDialog } = useConfirm();
   const [showDns, setShowDns] = useState(sender.status !== "VERIFIED");
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: sendersKey(client.id) });
@@ -197,6 +199,7 @@ const SenderCard: FC<{ sender: EmailSender }> = ({ sender }) => {
 
   return (
     <li className="grid gap-4 rounded-xl border p-4">
+      {confirmDialog}
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="truncate font-semibold">{sender.fromName}</p>
@@ -317,20 +320,24 @@ const SenderCard: FC<{ sender: EmailSender }> = ({ sender }) => {
           </form>
         )}
         <div className="ml-auto flex gap-1">
-          {confirmDelete ? (
-            <>
-              <Button variant="destructive" size="sm" disabled={remove.isPending} onClick={() => remove.mutate()}>
-                Confirmar remoção
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => setConfirmDelete(false)}>
-                Cancelar
-              </Button>
-            </>
-          ) : (
-            <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setConfirmDelete(true)}>
-              Remover
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground"
+            disabled={remove.isPending}
+            onClick={async () => {
+              const ok = await confirm({
+                title: `Remover o remetente ${sender.fromEmail}?`,
+                description:
+                  "Campanhas e e-mails não poderão mais sair por este remetente. Para voltar a usá-lo, será preciso cadastrar e verificar o domínio de novo.",
+                confirmLabel: "Remover",
+                destructive: true,
+              });
+              if (ok) remove.mutate();
+            }}
+          >
+            Remover
+          </Button>
         </div>
       </div>
     </li>
@@ -348,13 +355,13 @@ export const EmailSenders = () => {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+      <CardHeader className="flex flex-col items-start gap-4 space-y-0 sm:flex-row sm:justify-between">
         <div>
           <CardTitle>Remetentes de e-mail</CardTitle>
-          <CardDescription>
-            Os e-mails saem com o domínio da empresa, assinados (DKIM), com descadastro em um clique e com rejeições e reclamações tratadas
-            sozinhas. Rejeição acima de 5% ou reclamação acima de 0,1% aparecem em vermelho: o provedor pode bloquear o envio.
-          </CardDescription>
+          <ExpandableDescription summary="Os e-mails saem com o domínio da empresa, assinados (DKIM).">
+            Têm descadastro em um clique e rejeições e reclamações tratadas sozinhas. Rejeição acima de 5% ou reclamação acima de 0,1%
+            aparecem em vermelho: o provedor pode bloquear o envio.
+          </ExpandableDescription>
         </div>
         <DialogNewSender />
       </CardHeader>
@@ -416,11 +423,13 @@ export const EmailSuppressions = () => {
   });
 
   const canEdit = can("emailSettings.manage");
+  const { confirm, confirmDialog } = useConfirm();
   const pages = Math.max(1, Math.ceil((query.data?.total ?? 0) / TAKE));
 
   return (
     <Card>
       <CardHeader>
+        {confirmDialog}
         <CardTitle>Descadastrados</CardTitle>
         <CardDescription>
           Quem se descadastrou, marcou como spam ou teve o e-mail rejeitado de vez não recebe mais nenhum e-mail de campanha. Tirar alguém
@@ -480,7 +489,15 @@ export const EmailSuppressions = () => {
                     size="sm"
                     className="text-muted-foreground"
                     disabled={remove.isPending}
-                    onClick={() => remove.mutate(item.id)}
+                    onClick={async () => {
+                      const ok = await confirm({
+                        title: `Tirar ${item.email} da lista?`,
+                        description: "Este e-mail volta a receber campanhas. Só faça isso com o consentimento da pessoa.",
+                        confirmLabel: "Tirar da lista",
+                        destructive: true,
+                      });
+                      if (ok) remove.mutate(item.id);
+                    }}
                   >
                     Tirar
                   </Button>

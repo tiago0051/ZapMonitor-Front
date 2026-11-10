@@ -125,7 +125,7 @@ export const AdsConversionEvents = () => {
                     <span className={cn("rounded px-1.5 py-0.5 text-xs font-medium whitespace-nowrap", status.className)}>
                       {status.label}
                     </span>
-                    {event.error && event.status !== "SENT" && <p className="text-muted-foreground mt-1 max-w-72 text-xs">{event.error}</p>}
+                    {event.error && event.status !== "SENT" && <p className="text-muted-foreground mt-1 max-w-72 text-xs whitespace-normal">{event.error}</p>}
                     {event.status === "SENT" && event.sentAt && (
                       <p className="text-muted-foreground mt-1 text-xs" title={`event_id ${event.eventId}`}>
                         em {format(new Date(event.sentAt), "dd/MM HH:mm")}

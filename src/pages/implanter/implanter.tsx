@@ -4,7 +4,7 @@ import { UsersTab } from "./components/usersTab";
 
 export const Implanter = () => {
   return (
-    <div className="flex max-h-full flex-col gap-4 overflow-hidden p-6">
+    <div className="flex max-h-full flex-col gap-4 overflow-hidden p-4 md:p-6">
       <div>
         <h1 className="text-2xl">Painel do implantador</h1>
         <p className="text-muted-foreground text-sm">Tenants que você implanta e os usuários que têm acesso a eles.</p>

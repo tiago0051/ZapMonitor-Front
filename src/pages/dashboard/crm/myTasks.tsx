@@ -9,6 +9,7 @@ import { endOfDay, format, isPast } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ListTodo } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { DealSheet } from "./components/dealSheet";
 import { useCrmOptions } from "./useCrmOptions";
 
@@ -27,14 +28,32 @@ export const MyTasks = () => {
     queryFn: () => crmService.findMyTasks({ params: { clientId: client.id } }),
   });
 
-  const completeTask = useMutation({
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ["crm", "myTasks"] });
+    queryClient.invalidateQueries({ queryKey: ["crm", "deals"] });
+  };
+
+  const setCompleted = useMutation({
     mutationFn: crmService.setDealTaskCompleted,
     onError: requestErrorHandling,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["crm", "myTasks"] });
-      queryClient.invalidateQueries({ queryKey: ["crm", "deals"] });
-    },
+    onSuccess: invalidate,
   });
+
+  // Concluir tira a tarefa da lista; o toast permite reabrir caso o toque tenha sido sem querer
+  const handleComplete = (task: DealTask) => {
+    setCompleted.mutate(
+      { params: { clientId: client.id, taskId: task.id }, body: { completed: true } },
+      {
+        onSuccess: () =>
+          toast.success(`"${task.title}" concluída`, {
+            action: {
+              label: "Desfazer",
+              onClick: () => setCompleted.mutate({ params: { clientId: client.id, taskId: task.id }, body: { completed: false } }),
+            },
+          }),
+      },
+    );
+  };
 
   if (tasksQuery.isLoading) return <LoadingState />;
   if (tasksQuery.isError)
@@ -73,10 +92,9 @@ export const MyTasks = () => {
                 <li key={task.id} className="flex items-center gap-3 px-3 py-2">
                   <Checkbox
                     aria-label={`Concluir ${task.title}`}
-                    disabled={completeTask.isPending}
-                    onCheckedChange={() =>
-                      completeTask.mutate({ params: { clientId: client.id, taskId: task.id }, body: { completed: true } })
-                    }
+                    checked={false}
+                    disabled={setCompleted.isPending}
+                    onCheckedChange={() => handleComplete(task)}
                   />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm">{task.title}</p>

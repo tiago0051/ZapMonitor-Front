@@ -33,7 +33,13 @@ export const DialogDeleteServiceGroup: FC<DialogDeleteServiceGroupProps> = ({ cl
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive h-8 w-8 shrink-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-muted-foreground hover:text-destructive h-8 w-8 shrink-0"
+          aria-label={`Excluir ${serviceGroup.name}`}
+          title="Excluir"
+        >
           <Trash2 className="h-4 w-4" />
         </Button>
       </DialogTrigger>

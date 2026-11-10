@@ -2,6 +2,7 @@ import { EmptyState } from "@/components/state-message";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useClientContext } from "@/context/ClientContext/clientContext";
+import { useUserContext } from "@/context/UserContext/userContext";
 import { useGoogleCalendarLogin } from "@/hooks/use-googleCalendarLogin";
 import { googleCalendarService } from "@/services/api/googleCalendarService";
 import { requestErrorHandling } from "@/utils/request";
@@ -14,6 +15,7 @@ import { toast } from "sonner";
 /** Conta Google cuja agenda os agentes de IA controlam; a ferramenta é ligada em cada agente. */
 export const GoogleCalendarSettings = () => {
   const { client } = useClientContext();
+  const { user } = useUserContext();
   const queryClient = useQueryClient();
   const [isConfirmingDisconnect, setIsConfirmingDisconnect] = useState(false);
 
@@ -59,7 +61,7 @@ export const GoogleCalendarSettings = () => {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+      <CardHeader className="flex flex-col items-start gap-4 space-y-0 sm:flex-row sm:justify-between">
         <div>
           <CardTitle>Google Agenda</CardTitle>
           <CardDescription>
@@ -74,10 +76,16 @@ export const GoogleCalendarSettings = () => {
 
       <CardContent className="space-y-4">
         {(!isConfigured || !connection.configured) && (
-          <p className="text-destructive text-sm">
-            O login com o Google não está configurado neste ambiente (VITE_GOOGLE_OAUTH_CLIENT_ID no painel e GOOGLE_OAUTH_CLIENT_ID /
-            GOOGLE_OAUTH_CLIENT_SECRET no servidor).
-          </p>
+          <div className="space-y-1 text-sm">
+            <p className="text-destructive">A integração com o Google Agenda está indisponível no momento. Fale com o suporte.</p>
+            {/* O detalhe técnico só interessa a quem administra o ambiente */}
+            {(user?.isOwner || user?.isImplanter) && (
+              <p className="text-muted-foreground text-xs">
+                Detalhe técnico: o login com o Google não está configurado neste ambiente (VITE_GOOGLE_OAUTH_CLIENT_ID no painel e
+                GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET no servidor).
+              </p>
+            )}
+          </div>
         )}
 
         {!connection.connected && (

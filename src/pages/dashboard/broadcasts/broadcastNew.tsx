@@ -1,3 +1,4 @@
+import { DisabledReason } from "@/components/disabled-reason";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,7 @@ import { toast } from "sonner";
 import {
   describeSendWindow,
   estimateCostUsd,
+  focusPendingField,
   isFutureSchedule,
   formatCount,
   formatUsd,
@@ -38,6 +40,7 @@ import {
   toLocalInputValue,
   type VariableMapping,
 } from "./broadcastUtils";
+import { MobilePreviewSheet } from "./components/mobilePreviewSheet";
 import { SendWindowFields } from "./components/sendWindowFields";
 import { ReplySettingsFields } from "./components/replySettingsFields";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -125,6 +128,14 @@ export const BroadcastNew = () => {
     if (step === 2 && summary.ready.length === 0) return "Nenhuma pessoa com todas as variáveis preenchidas";
     return null;
   })();
+  // Campo que resolve o bloqueio da etapa, para levar a pessoa até ele ao tocar em "Continuar"
+  const stepErrorField = (() => {
+    if (step !== 0 || !stepError) return null;
+    if (!name.trim()) return "broadcast-name";
+    if (!configurationId) return "broadcast-configuration";
+    if (!template || !template.sendable) return "broadcast-template";
+    return "broadcast-header-file";
+  })();
 
   const headerFileId = async () =>
     (await buildTemplateSendBody(client.id, configurationId, { template, variables: {}, headerFile })).headerFileId;
@@ -208,6 +219,20 @@ export const BroadcastNew = () => {
   const capError = capEnabled && capDays && !(Number(capDays) >= 1 && Number(capDays) <= 90) ? "O limite vai de 1 a 90 dias" : null;
   const settingsError = sendWindowError(sendWindow) ?? capError ?? (needsConsent && !consent ? "Confirme o consentimento da lista" : null);
   const reviewError = settingsError ?? scheduleError;
+  const reviewErrorField = sendWindowError(sendWindow)
+    ? "broadcast-window-start"
+    : capError
+      ? "broadcast-cap-days"
+      : needsConsent && !consent
+        ? "broadcast-consent"
+        : scheduleError
+          ? "broadcast-scheduled-at"
+          : null;
+
+  const previewNote = `Prévia${firstReady ? ` para ${firstReady.row.name || firstReady.row.phoneNumber}` : ""}`;
+  const previewContent = template && (
+    <TemplatePreview template={template} variables={firstReady?.variables} headerFileName={headerFile?.name} />
+  );
 
   return (
     <div className="flex h-full flex-col gap-4 overflow-auto p-4 md:p-6">
@@ -246,7 +271,10 @@ export const BroadcastNew = () => {
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
         <Card className="min-w-0">
           <CardHeader>
-            <CardTitle>{STEPS[step]}</CardTitle>
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle>{STEPS[step]}</CardTitle>
+              {previewContent && <MobilePreviewSheet description={previewNote}>{previewContent}</MobilePreviewSheet>}
+            </div>
             {step === 1 && <CardDescription>Some quantas fontes quiser. Números repetidos entram uma vez só.</CardDescription>}
           </CardHeader>
           <CardContent className="grid gap-4">
@@ -285,9 +313,7 @@ export const BroadcastNew = () => {
                       </option>
                     ))}
                   </select>
-                  {whatsappWebConfigurations.length > 0 && (
-                    <p className="text-muted-foreground text-xs">{WHATSAPP_WEB_TEMPLATE_HINT}.</p>
-                  )}
+                  {whatsappWebConfigurations.length > 0 && <p className="text-muted-foreground text-xs">{WHATSAPP_WEB_TEMPLATE_HINT}.</p>}
                 </div>
                 {configurationId && (
                   <div className="grid gap-2">
@@ -497,18 +523,25 @@ export const BroadcastNew = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button disabled={busy || !summary.ready.length || !!reviewError} onClick={() => setConfirmSend(true)}>
-                      {when === "schedule" ? "Agendar" : "Enviar agora"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      disabled={busy || !summary.ready.length || !!settingsError}
-                      onClick={() => createMutation.mutate("draft")}
-                    >
-                      Salvar rascunho
-                    </Button>
-                    {reviewError && <p className="text-muted-foreground text-xs">{reviewError}</p>}
+                  <div className="grid gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {/* O span recebe o toque quando o botão está bloqueado e leva ao campo pendente */}
+                      <span onClick={() => !busy && reviewError && focusPendingField(reviewErrorField)}>
+                        <Button disabled={busy || !summary.ready.length || !!reviewError} onClick={() => setConfirmSend(true)}>
+                          {when === "schedule" ? "Agendar" : "Enviar agora"}
+                        </Button>
+                      </span>
+                      <span onClick={() => !busy && settingsError && focusPendingField(reviewErrorField)}>
+                        <Button
+                          variant="outline"
+                          disabled={busy || !summary.ready.length || !!settingsError}
+                          onClick={() => createMutation.mutate("draft")}
+                        >
+                          Salvar rascunho
+                        </Button>
+                      </span>
+                    </div>
+                    <DisabledReason>{reviewError}</DisabledReason>
                   </div>
                 )}
               </div>
@@ -516,30 +549,34 @@ export const BroadcastNew = () => {
 
             {step < 3 && (
               <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-4">
-                <p className="text-muted-foreground text-sm">
-                  {stepError ?? (step >= 1 ? `${formatCount(summary.ready.length)} prontas para receber` : "")}
-                </p>
+                {stepError ? (
+                  <DisabledReason className="text-sm">{stepError}</DisabledReason>
+                ) : (
+                  <p className="text-muted-foreground text-sm">
+                    {step >= 1 ? `${formatCount(summary.ready.length)} prontas para receber` : ""}
+                  </p>
+                )}
                 <div className="flex gap-2">
                   {step > 0 && (
                     <Button variant="ghost" onClick={() => setStep(step - 1)}>
                       Voltar
                     </Button>
                   )}
-                  <Button disabled={!!stepError} onClick={() => setStep(step + 1)}>
-                    Continuar
-                  </Button>
+                  <span onClick={() => stepError && focusPendingField(stepErrorField)}>
+                    <Button disabled={!!stepError} onClick={() => setStep(step + 1)}>
+                      Continuar
+                    </Button>
+                  </span>
                 </div>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {template && (
-          <div className="grid gap-2 lg:sticky lg:top-4">
-            <p className="text-muted-foreground text-xs">
-              Prévia{firstReady ? ` para ${firstReady.row.name || firstReady.row.phoneNumber}` : ""}
-            </p>
-            <TemplatePreview template={template} variables={firstReady?.variables} headerFileName={headerFile?.name} />
+        {previewContent && (
+          <div className="hidden gap-2 lg:sticky lg:top-4 lg:grid">
+            <p className="text-muted-foreground text-xs">{previewNote}</p>
+            {previewContent}
           </div>
         )}
       </div>

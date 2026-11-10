@@ -48,7 +48,10 @@ const StatTile: FC<{ label: string; value: string; detail?: string }> = ({ label
 
 // Barra horizontal de uma série só: a largura é a fração e o rótulo traz o número, para não depender da cor
 const BarRow: FC<{ label: string; fraction: number; valueLabel: string; color?: string }> = ({ label, fraction, valueLabel, color }) => (
-  <div className="grid grid-cols-[minmax(0,10rem)_minmax(0,1fr)_auto] items-center gap-3 text-sm" title={`${label}: ${valueLabel}`}>
+  <div
+    className="grid grid-cols-[minmax(0,7rem)_minmax(0,1fr)_auto] items-center gap-3 text-sm sm:grid-cols-[minmax(0,10rem)_minmax(0,1fr)_auto]"
+    title={`${label}: ${valueLabel}`}
+  >
     <span className="flex min-w-0 items-center gap-1.5">
       {color && <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: color }} />}
       <span className="truncate">{label}</span>

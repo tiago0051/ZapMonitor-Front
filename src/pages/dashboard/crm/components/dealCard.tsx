@@ -1,7 +1,9 @@
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNow, isPast } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ListTodo, PhoneOff, Snowflake, Sparkles, Tag, UserRound, Users } from "lucide-react";
+import { ArrowRightLeft, ListTodo, PhoneOff, Snowflake, Sparkles, Tag, UserRound, Users } from "lucide-react";
 import type { FC } from "react";
 import { aiScoreLabel, dealContactName, formatCurrency, staleDays } from "../crmUtils";
 import { OpenChatButton } from "../chatDock/openChatButton";
@@ -12,11 +14,45 @@ type DealCardProps = {
   stage?: PipelineStage;
   onOpen: (deal: Deal) => void;
   draggable: boolean;
+  /** Etapas do funil para o atalho "Mover para…", que substitui o arrastar no toque */
+  stages?: PipelineStage[];
+  onMove?: (stage: PipelineStage) => void;
 };
+
+/** Menu "Mover para…" do card: a mesma ação do arrastar, acessível no celular e pelo teclado. */
+const MoveDealMenu: FC<{ deal: Deal; stages: PipelineStage[]; onMove: (stage: PipelineStage) => void }> = ({ deal, stages, onMove }) => (
+  // Eventos do menu (mesmo no portal) sobem pela árvore do React; parar aqui evita abrir o negócio
+  <div onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="text-muted-foreground hover:text-primary h-6 w-6"
+          aria-label={`Mover ${deal.title} para outra etapa`}
+          title="Mover para…"
+        >
+          <ArrowRightLeft className="h-3.5 w-3.5" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">Mover para…</DropdownMenuLabel>
+        {stages.map((stage) => (
+          <DropdownMenuItem key={stage.id} disabled={stage.id === deal.stageId} onSelect={() => onMove(stage)}>
+            <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: stage.color }} />
+            <span className="truncate">{stage.name}</span>
+            {stage.id === deal.stageId && <span className="text-muted-foreground ml-auto text-[11px]">atual</span>}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  </div>
+);
 
 export const DEAL_DRAG_TYPE = "application/x-zapmonitor-deal";
 
-export const DealCard: FC<DealCardProps> = ({ deal, stage, onOpen, draggable }) => {
+export const DealCard: FC<DealCardProps> = ({ deal, stage, onOpen, draggable, stages, onMove }) => {
   const contactName = dealContactName(deal.contact);
   const daysStale = staleDays(deal, stage);
   const isTaskOverdue = !!deal.nextTask && isPast(new Date(deal.nextTask.dueAt));
@@ -54,6 +90,7 @@ export const DealCard: FC<DealCardProps> = ({ deal, stage, onOpen, draggable }) 
         <div className="-mt-0.5 -mr-1 flex shrink-0 items-center gap-1">
           {deal.value !== null && <span className="text-xs font-semibold text-green-700">{formatCurrency(deal.value)}</span>}
           {deal.contact && <OpenChatButton contact={deal.contact} variant="icon" />}
+          {deal.status === "OPEN" && stages && onMove && <MoveDealMenu deal={deal} stages={stages} onMove={onMove} />}
         </div>
       </div>
 

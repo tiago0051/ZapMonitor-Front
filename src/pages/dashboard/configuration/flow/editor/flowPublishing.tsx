@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { flowService } from "@/services/api/flowService";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -49,7 +49,7 @@ export const PublishFlowDialog: FC<PublishDialogProps> = ({ flow, open, onOpenCh
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-h-[85dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isFirstVersion ? "Publicar a primeira versão" : `Publicar a versão ${flow.version + 1}`}</DialogTitle>
           <DialogDescription>
@@ -133,10 +133,29 @@ type VersionHistoryProps = {
   disabled: boolean;
   restoringVersionId: string | null;
   onRestore: (version: FlowVersion) => void;
+} & PanelControlProps;
+
+/**
+ * No celular os painéis do cabeçalho abrem pelo menu "⋯": ficam controlados por fora e ancorados no elemento
+ * posicionado mais próximo, sem botão próprio.
+ */
+export type PanelControlProps = {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  anchorOnly?: boolean;
 };
 
 /** Versões publicadas; restaurar copia a versão para o rascunho, que precisa ser publicado de novo. */
-export const FlowVersionHistory: FC<VersionHistoryProps> = ({ clientId, flow, disabled, restoringVersionId, onRestore }) => {
+export const FlowVersionHistory: FC<VersionHistoryProps> = ({
+  clientId,
+  flow,
+  disabled,
+  restoringVersionId,
+  onRestore,
+  open,
+  onOpenChange,
+  anchorOnly,
+}) => {
   const versionsQuery = useQuery({
     queryKey: ["flowVersions", clientId, flow.id, flow.version],
     queryFn: () => flowService.findVersions({ params: { clientId, flowId: flow.id } }),
@@ -144,13 +163,19 @@ export const FlowVersionHistory: FC<VersionHistoryProps> = ({ clientId, flow, di
   });
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Histórico de versões" title="Histórico de versões" disabled={flow.version === 0}>
-          <History className="h-4 w-4" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 space-y-2">
+    <Popover open={open} onOpenChange={onOpenChange}>
+      {anchorOnly ? (
+        <PopoverAnchor asChild>
+          <span aria-hidden className="pointer-events-none absolute inset-0" />
+        </PopoverAnchor>
+      ) : (
+        <PopoverTrigger asChild>
+          <Button variant="ghost" size="icon" aria-label="Histórico de versões" title="Histórico de versões" disabled={flow.version === 0}>
+            <History className="h-4 w-4" />
+          </Button>
+        </PopoverTrigger>
+      )}
+      <PopoverContent align="end" className="w-80 max-w-[calc(100vw-2rem)] space-y-2">
         <p className="text-sm font-medium">Versões publicadas</p>
         <p className="text-muted-foreground text-xs">Restaurar copia a versão para o rascunho. Ela só volta ao ar quando você publicar.</p>
         {versionsQuery.isLoading && <p className="text-muted-foreground text-sm">Carregando…</p>}
