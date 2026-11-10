@@ -1,7 +1,12 @@
 type AdSyncStatus = "PENDING" | "SYNCING" | "SUCCESS" | "FAILED";
 
+// YouTube entra pelo Google Ads
+type AdPlatform = "META" | "GOOGLE" | "TIKTOK";
+
 type AdAccount = {
   id: string;
+  platform: AdPlatform;
+  // Id da conta na plataforma: act_ na Meta, customer id no Google Ads, advertiser id no TikTok
   metaAccountId: string;
   name: string;
   currency: string;
@@ -914,4 +919,136 @@ type AdLearningEntry = {
   detail: string;
   experimentId: string | null;
   createdAt: string;
+};
+
+// Conexão com o Google Ads (YouTube) ou o TikTok
+type AdPlatformConnection = {
+  platform: AdPlatform;
+  configured: boolean;
+  connected: boolean;
+  revoked: boolean;
+  // E-mail da conta Google ou resumo dos anunciantes do TikTok
+  externalUserName: string | null;
+  connectedAt: string | null;
+  accounts: AdAccount[];
+};
+
+type PlatformAvailableAccount = {
+  externalId: string;
+  name: string;
+  currency: string;
+  timezoneName: string | null;
+  accountStatus: number;
+  businessName: string | null;
+  linked: boolean;
+};
+
+// Link do ZapMonitor que vai no anúncio do YouTube ou do TikTok
+type AdTrackedLink = {
+  id: string;
+  platform: AdPlatform;
+  code: string;
+  name: string;
+  whatsappConfigurationId: string;
+  message: string;
+  // Endereço para colar como URL final do anúncio
+  url: string;
+  // Texto pronto dos anúncios de mensagem do TikTok
+  prefilledMessage: string;
+  externalAdId: string | null;
+  active: boolean;
+  clicks: number;
+  conversations: number;
+  createdAt: string;
+};
+
+type PlatformConversionSettings = {
+  platform: AdPlatform;
+  enabled: boolean;
+  adAccountId: string | null;
+  readyEvents: ConversionEventName[];
+  pixelCode: string | null;
+  testEventCode: string | null;
+};
+
+type AdPlatformSummary = AdReportMetrics & {
+  platform: AdPlatform;
+  accounts: number;
+  currency: string | null;
+};
+
+type AdVideoCampaignStatus = "DRAFT" | "PUBLISHING" | "PUBLISHED" | "FAILED";
+
+type AdVideoCampaignRequest = {
+  objective: string;
+  dailyBudget: number;
+  whatsappConfigurationId: string;
+  message: string;
+  // TikTok: id do vídeo enviado (ou do post, no Spark Ads); YouTube: id do vídeo
+  videos: AdVideoCampaignVideo[];
+  logoAsset: string | null;
+  businessName: string;
+};
+
+type AdVideoCampaignPlan = {
+  campaignName: string;
+  adTexts: string[];
+  headlines: string[];
+  longHeadlines: string[];
+  descriptions: string[];
+  callToAction: string;
+  ageMin: number;
+  ageMax: number;
+  rationale: string;
+};
+
+type AdVideoCampaign = {
+  id: string;
+  platform: AdPlatform;
+  status: AdVideoCampaignStatus;
+  request: AdVideoCampaignRequest;
+  plan: AdVideoCampaignPlan | null;
+  result: { campaignId?: string; adGroupId?: string; adIds?: string[]; linkId?: string };
+  // O que falta para publicar
+  missing: string[];
+  compliance: { severity: "BLOCK" | "WARN"; message: string; excerpt: string; suggestion: string }[];
+  error: string | null;
+  createdAt: string;
+};
+
+type AdVideoScript = {
+  titulo: string;
+  gancho: string;
+  cenas: { tempo?: string; fala?: string; legenda?: string; imagem?: string }[];
+  chamada: string;
+  duracaoSegundos?: number;
+  porQue?: string;
+};
+
+type AdVideoCampaignVideo = {
+  id: string;
+  name: string;
+  // SPARK: post de um criador autorizado pelo código dele
+  kind?: "UPLOAD" | "SPARK";
+  identityId?: string | null;
+};
+
+type TikTokLeadSource = {
+  id: string;
+  advertiserId: string;
+  name: string;
+  pipelineId: string | null;
+  stageId: string | null;
+  serviceGroupId: string | null;
+  // Sem a inscrição no webhook, os leads entram só pela importação
+  subscriptionError: string | null;
+};
+
+type AdVideoGeneration = {
+  id: string;
+  status: "QUEUED" | "RUNNING" | "DONE" | "FAILED";
+  error: string | null;
+  createdAt: string;
+  // Link temporário do vídeo pronto
+  url: string | null;
 };

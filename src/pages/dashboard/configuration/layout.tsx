@@ -21,6 +21,8 @@ import {
   TextCursorInput,
   Users,
   Workflow,
+  MonitorPlay,
+  Clapperboard,
   type LucideIcon,
 } from "lucide-react";
 import { Suspense, useEffect, useRef, type ReactNode } from "react";
@@ -36,6 +38,7 @@ import { LostReasons } from "./lostReason/lostReasons";
 import { CrmFields } from "./crmField/crmFields";
 import { EmailSettings } from "./emailSending/emailSenders";
 import { MetaAdsSettings } from "./metaAds/metaAdsSettings";
+import { AdPlatformSettings } from "./adsPlatforms/adPlatformSettings";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { ServiceGroups } from "./serviceGroup/serviceGroup";
 import { WhatsappAiConfiguration } from "./whatsapp/whatsappAi/whatsappAiConfiguration";
@@ -117,6 +120,22 @@ const configurationGroups: { label: string; sections: ConfigurationSection[] }[]
         label: "Anúncios da Meta",
         icon: Megaphone,
         content: <MetaAdsSettings />,
+        permission: "ads.manage",
+        requiresAds: true,
+      },
+      {
+        id: "youtubeAds",
+        label: "Anúncios do YouTube",
+        icon: MonitorPlay,
+        content: <AdPlatformSettings platform="GOOGLE" />,
+        permission: "ads.manage",
+        requiresAds: true,
+      },
+      {
+        id: "tiktokAds",
+        label: "Anúncios do TikTok",
+        icon: Clapperboard,
+        content: <AdPlatformSettings platform="TIKTOK" />,
         permission: "ads.manage",
         requiresAds: true,
       },

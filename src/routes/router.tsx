@@ -7,6 +7,7 @@ import { OwnerRouter } from "./ownerRouter";
 import { useUserContext } from "@/context/UserContext/userContext";
 import { PrivacyPolicy } from "@/pages/legal/privacyPolicy";
 import { TermsOfService } from "@/pages/legal/termsOfService";
+import { TikTokAdsCallback } from "@/pages/tiktokAds/tiktokAdsCallback";
 
 export const Router: FC = () => {
   return (
@@ -17,6 +18,8 @@ export const Router: FC = () => {
         <Route path="politica-de-privacidade" element={<Navigate to="/privacidade" replace />} />
         <Route path="termos" element={<TermsOfService />} />
         <Route path="termos-de-servico" element={<Navigate to="/termos" replace />} />
+        {/* Volta do login do TikTok no popup; só repassa o código para a janela do painel */}
+        <Route path="tiktok-ads/callback" element={<TikTokAdsCallback />} />
         <Route path="dashboard/*" element={<PrivateRouter />} />
         <Route path="*" element={<PublicRouter />} />
       </Routes>

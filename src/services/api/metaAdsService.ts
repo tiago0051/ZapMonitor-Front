@@ -18,6 +18,20 @@ export const metaAdsService = {
     await api.delete(`/client/${params.clientId}/meta-ads/connection`);
   },
 
+  findPlatformSummary: async ({
+    params,
+    queries,
+  }: MetaAdsClientParams & { queries: { startDate: string; endDate: string } }): Promise<AdPlatformSummary[]> => {
+    const response = await api.get<AdPlatformSummary[]>(`/client/${params.clientId}/meta-ads/platform-summary`, { params: queries });
+    return response.data;
+  },
+
+  /** Contas vinculadas de todas as plataformas. */
+  findAccounts: async ({ params }: MetaAdsClientParams): Promise<AdAccount[]> => {
+    const response = await api.get<AdAccount[]>(`/client/${params.clientId}/meta-ads/accounts`);
+    return response.data;
+  },
+
   findAvailableAccounts: async ({ params }: MetaAdsClientParams): Promise<AvailableAdAccount[]> => {
     const response = await api.get<AvailableAdAccount[]>(`/client/${params.clientId}/meta-ads/available-account`);
     return response.data;

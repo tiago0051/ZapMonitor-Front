@@ -70,6 +70,15 @@ export const accountStatusLabel: Record<number, string> = {
   101: "Fechada",
 };
 
+export const adPlatformLabel: Record<AdPlatform, string> = {
+  META: "Meta",
+  GOOGLE: "YouTube",
+  TIKTOK: "TikTok",
+};
+
+// Ordem fixa dos botões de plataforma
+export const AD_PLATFORMS: AdPlatform[] = ["META", "GOOGLE", "TIKTOK"];
+
 export const syncStatusLabel: Record<AdSyncStatus, string> = {
   PENDING: "Aguardando",
   SYNCING: "Sincronizando",

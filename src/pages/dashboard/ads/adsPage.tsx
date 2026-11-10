@@ -15,9 +15,12 @@ import { Fragment, useEffect, useRef, useState, type FC } from "react";
 import { Link, useSearchParams } from "react-router";
 import { useLocalStorage } from "usehooks-ts";
 import {
+  AD_PLATFORMS,
+  adPlatformLabel,
   audienceDeliveryLabel,
   audienceSubtypeLabel,
   bidStrategyLabel,
+  budgetLabel,
   billingEventLabel,
   callToActionLabel,
   campaignObjectiveLabel,
@@ -39,6 +42,9 @@ import { AdsCampaignBuilder } from "./campaign/adsCampaignBuilder";
 import { AdsCrmAudiences } from "./campaign/adsCrmAudiences";
 import { AdsStrategyChatTab } from "./adsStrategyChatTab";
 import { AdsResults } from "./adsResults";
+import { AdsPlatformComparison } from "./adsPlatformComparison";
+import { AdsVideoCampaigns } from "./video/adsVideoCampaigns";
+import { AdsInstagramVideos } from "./video/adsInstagramVideos";
 import { AdsPilot } from "./pilot/adsPilot";
 import { AdStatusToggle } from "./components/adStatusToggle";
 import { AdBudgetEditor } from "./components/adBudgetEditor";
@@ -52,7 +58,16 @@ const StatusChip: FC<{ status: string }> = ({ status }) => {
   );
 };
 
-const AdRows: FC<{ adSet: MetaAdSet; accountId: string }> = ({ adSet, accountId }) => (
+// Orçamento só para leitura, nas plataformas em que ainda não dá para mudar pela tela
+const BudgetText: FC<{ dailyBudget: number | null; lifetimeBudget: number | null; currency: string; emptyLabel?: string }> = ({
+  dailyBudget,
+  lifetimeBudget,
+  currency,
+  emptyLabel = "—",
+}) => <>{budgetLabel({ dailyBudget, lifetimeBudget }, currency) ?? <span className="text-muted-foreground text-xs">{emptyLabel}</span>}</>;
+
+// Pausar, ativar e mudar verba pela tela; sem edição, só mostra o orçamento
+const AdRows: FC<{ adSet: MetaAdSet; accountId: string; editable: boolean }> = ({ adSet, accountId, editable }) => (
   <>
     {adSet.ads.map((ad) => (
       <TableRow key={ad.metaId} className="bg-muted/20">
@@ -63,7 +78,7 @@ const AdRows: FC<{ adSet: MetaAdSet; accountId: string }> = ({ adSet, accountId 
         <TableCell>
           <span className="flex items-center gap-1.5">
             <StatusChip status={ad.effectiveStatus} />
-            <AdStatusToggle accountId={accountId} level="ad" metaId={ad.metaId} status={ad.status} />
+            {editable && <AdStatusToggle accountId={accountId} level="ad" metaId={ad.metaId} status={ad.status} />}
           </span>
         </TableCell>
         <TableCell className="text-muted-foreground text-xs">{metaLabel(callToActionLabel, ad.creative?.callToActionType)}</TableCell>
@@ -73,7 +88,12 @@ const AdRows: FC<{ adSet: MetaAdSet; accountId: string }> = ({ adSet, accountId 
   </>
 );
 
-const CampaignRows: FC<{ campaign: MetaCampaign; currency: string; accountId: string }> = ({ campaign, currency, accountId }) => {
+const CampaignRows: FC<{ campaign: MetaCampaign; currency: string; accountId: string; editable: boolean }> = ({
+  campaign,
+  currency,
+  accountId,
+  editable,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [openAdSetIds, setOpenAdSetIds] = useState<string[]>([]);
   const toggleAdSet = (metaId: string) =>
@@ -95,20 +115,29 @@ const CampaignRows: FC<{ campaign: MetaCampaign; currency: string; accountId: st
         <TableCell>
           <span className="flex items-center gap-1.5">
             <StatusChip status={campaign.effectiveStatus} />
-            <AdStatusToggle accountId={accountId} level="campaign" metaId={campaign.metaId} status={campaign.status} />
+            {editable && <AdStatusToggle accountId={accountId} level="campaign" metaId={campaign.metaId} status={campaign.status} />}
           </span>
         </TableCell>
         <TableCell className="text-xs">{metaLabel(bidStrategyLabel, campaign.bidStrategy)}</TableCell>
         <TableCell className="text-right text-sm whitespace-nowrap tabular-nums">
-          <AdBudgetEditor
-            accountId={accountId}
-            level="campaign"
-            metaId={campaign.metaId}
-            dailyBudget={campaign.dailyBudget}
-            lifetimeBudget={campaign.lifetimeBudget}
-            currency={currency}
-            emptyLabel="no conjunto"
-          />
+          {editable ? (
+            <AdBudgetEditor
+              accountId={accountId}
+              level="campaign"
+              metaId={campaign.metaId}
+              dailyBudget={campaign.dailyBudget}
+              lifetimeBudget={campaign.lifetimeBudget}
+              currency={currency}
+              emptyLabel="no conjunto"
+            />
+          ) : (
+            <BudgetText
+              dailyBudget={campaign.dailyBudget}
+              lifetimeBudget={campaign.lifetimeBudget}
+              currency={currency}
+              emptyLabel="no conjunto"
+            />
+          )}
         </TableCell>
       </TableRow>
 
@@ -134,22 +163,26 @@ const CampaignRows: FC<{ campaign: MetaCampaign; currency: string; accountId: st
               <TableCell>
                 <span className="flex items-center gap-1.5">
                   <StatusChip status={adSet.effectiveStatus} />
-                  <AdStatusToggle accountId={accountId} level="adset" metaId={adSet.metaId} status={adSet.status} />
+                  {editable && <AdStatusToggle accountId={accountId} level="adset" metaId={adSet.metaId} status={adSet.status} />}
                 </span>
               </TableCell>
               <TableCell className="text-xs">{metaLabel(billingEventLabel, adSet.billingEvent)}</TableCell>
               <TableCell className="text-right text-sm whitespace-nowrap tabular-nums">
-                <AdBudgetEditor
-                  accountId={accountId}
-                  level="adset"
-                  metaId={adSet.metaId}
-                  dailyBudget={adSet.dailyBudget}
-                  lifetimeBudget={adSet.lifetimeBudget}
-                  currency={currency}
-                />
+                {editable ? (
+                  <AdBudgetEditor
+                    accountId={accountId}
+                    level="adset"
+                    metaId={adSet.metaId}
+                    dailyBudget={adSet.dailyBudget}
+                    lifetimeBudget={adSet.lifetimeBudget}
+                    currency={currency}
+                  />
+                ) : (
+                  <BudgetText dailyBudget={adSet.dailyBudget} lifetimeBudget={adSet.lifetimeBudget} currency={currency} />
+                )}
               </TableCell>
             </TableRow>
-            {openAdSetIds.includes(adSet.metaId) && <AdRows adSet={adSet} accountId={accountId} />}
+            {openAdSetIds.includes(adSet.metaId) && <AdRows adSet={adSet} accountId={accountId} editable={editable} />}
           </Fragment>
         ))}
     </>
@@ -157,6 +190,20 @@ const CampaignRows: FC<{ campaign: MetaCampaign; currency: string; accountId: st
 };
 
 type TabGroup = { id: string; label: string; tabs: string[] };
+
+// Abas que já funcionam em contas do YouTube e do TikTok; as demais ainda falam só com a Meta
+const MULTI_PLATFORM_TABS = [
+  "results",
+  "campaigns",
+  "audiences",
+  "create",
+  "suggestions",
+  "experiments",
+  "learnings",
+  "strategy",
+  "changes",
+  "automation",
+];
 
 // Treze abas em quatro grupos: o grupo fica em cima e as abas dele numa segunda linha menor
 const TAB_GROUPS: TabGroup[] = [
@@ -206,6 +253,7 @@ export const AdsPage = () => {
   const { client, can } = useClientContext();
   const baseUrl = useBaseUrl();
   const [storedAccountId, setStoredAccountId] = useLocalStorage<string | null>(`ads:account:${client.id}`, null);
+  const [storedPlatform, setStoredPlatform] = useLocalStorage<AdPlatform | null>(`ads:platform:${client.id}`, null);
   const [tab, setTab] = useLocalStorage<string>(`ads:tab:${client.id}`, "results");
   // Aviso no celular abre direto numa aba (ex.: ?tab=changes para aprovar uma proposta de verba)
   const [searchParams, setSearchParams] = useSearchParams();
@@ -219,12 +267,31 @@ export const AdsPage = () => {
   // Última aba aberta em cada grupo, para voltar nela ao trocar de grupo
   const [lastTabByGroup, setLastTabByGroup] = useState<Record<string, string>>({});
 
+  const accountsQuery = useQuery({
+    queryKey: ["metaAds", "accounts", client.id],
+    queryFn: () => metaAdsService.findAccounts({ params: { clientId: client.id } }),
+  });
+  const allAccounts = accountsQuery.data ?? [];
+  // Os botões de plataforma só aparecem quando o cliente tem contas em mais de uma
+  const platforms = AD_PLATFORMS.filter((item) => allAccounts.some((account) => account.platform === item));
+  const storedAccount = allAccounts.find((item) => item.id === storedAccountId);
+  const platform =
+    storedPlatform && platforms.includes(storedPlatform) ? storedPlatform : (storedAccount?.platform ?? platforms[0] ?? "META");
+  const accounts = allAccounts.filter((item) => item.platform === platform);
+  const account = accounts.find((item) => item.id === storedAccountId) ?? accounts[0];
+  const isMeta = account?.platform === "META";
+  const selectPlatform = (value: AdPlatform) => {
+    setStoredPlatform(value);
+    setStoredAccountId(allAccounts.find((item) => item.platform === value)?.id ?? null);
+  };
+
   const visibleGroups = TAB_GROUPS.map((group) => ({
     ...group,
-    tabs: group.tabs.filter((item) => item !== "strategy" || can("ads.manage")),
-  }));
-  // Aba guardada que não existe mais (ou sem permissão) cai em Resultados
-  const activeTab = visibleGroups.some((group) => group.tabs.includes(tab)) ? tab : "results";
+    tabs: group.tabs.filter((item) => (item !== "strategy" || can("ads.manage")) && (isMeta || MULTI_PLATFORM_TABS.includes(item))),
+  })).filter((group) => group.tabs.length > 0);
+  const defaultTab = "results";
+  // Aba guardada que não existe mais (ou sem permissão, ou de outra plataforma) cai na primeira aba
+  const activeTab = visibleGroups.some((group) => group.tabs.includes(tab)) ? tab : defaultTab;
   const activeGroup = visibleGroups.find((group) => group.tabs.includes(activeTab)) ?? visibleGroups[0];
   const selectGroup = (groupId: string) => {
     const group = visibleGroups.find((item) => item.id === groupId);
@@ -241,13 +308,6 @@ export const AdsPage = () => {
   }, [activeTab]);
   // Rascunho montado pelo piloto que a aba Criar campanha abre
   const [pilotDraftId, setPilotDraftId] = useState<string | null>(null);
-
-  const connectionQuery = useQuery({
-    queryKey: ["metaAds", "connection", client.id],
-    queryFn: () => metaAdsService.findConnection({ params: { clientId: client.id } }),
-  });
-  const accounts = connectionQuery.data?.accounts ?? [];
-  const account = accounts.find((item) => item.id === storedAccountId) ?? accounts[0];
 
   const structureQuery = useQuery({
     meta: { errorHandledInline: true },
@@ -283,9 +343,9 @@ export const AdsPage = () => {
   const pendingChangesCount = pendingChangesQuery.data?.filter((change) => change.status === "PENDING_APPROVAL").length;
   const openSuggestionsCount = openSuggestionsQuery.data?.length;
 
-  if (connectionQuery.isLoading) return <LoadingState className="h-full" />;
+  if (accountsQuery.isLoading) return <LoadingState className="h-full" />;
 
-  if (accounts.length === 0)
+  if (!account)
     return (
       <EmptyState
         className="h-full"
@@ -323,6 +383,30 @@ export const AdsPage = () => {
     <div className="flex h-full flex-col overflow-y-auto md:overflow-hidden">
       <div className="flex flex-wrap items-end gap-x-4 gap-y-2 border-b p-3 sm:p-4">
         <h1 className="mr-2 text-xl font-semibold sm:text-2xl">Anúncios</h1>
+        {platforms.length > 1 && (
+          <div className="grid gap-1">
+            <span id="ads-platform-label" className="text-xs font-medium">
+              Plataforma
+            </span>
+            <div role="radiogroup" aria-labelledby="ads-platform-label" className="bg-muted inline-flex h-9 rounded-md p-0.5">
+              {platforms.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  role="radio"
+                  aria-checked={item === platform}
+                  onClick={() => selectPlatform(item)}
+                  className={cn(
+                    "rounded px-3 text-sm font-medium transition-colors",
+                    item === platform ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {adPlatformLabel[item]}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="grid w-full gap-1 sm:w-auto">
           <Label htmlFor="ads-account" className="text-xs">
             Conta de anúncio
@@ -398,6 +482,7 @@ export const AdsPage = () => {
         </div>
 
         <TabsContent value="results" className={cn(tabContentClassName, "space-y-8")}>
+          {platforms.length > 1 && <AdsPlatformComparison />}
           <AdsDailySummary key={currentAccount.id} account={currentAccount} />
           <AdsResults key={currentAccount.id} account={currentAccount} />
         </TabsContent>
@@ -414,7 +499,18 @@ export const AdsPage = () => {
         </TabsContent>
 
         <TabsContent value="create" className={tabContentClassName}>
-          <AdsCampaignBuilder key={`${currentAccount.id}-${pilotDraftId ?? ""}`} account={currentAccount} initialDraftId={pilotDraftId} />
+          {isMeta ? (
+            <div className="space-y-4">
+              <AdsInstagramVideos key={currentAccount.id} account={currentAccount} />
+              <AdsCampaignBuilder
+                key={`${currentAccount.id}-${pilotDraftId ?? ""}`}
+                account={currentAccount}
+                initialDraftId={pilotDraftId}
+              />
+            </div>
+          ) : (
+            <AdsVideoCampaigns key={currentAccount.id} account={currentAccount} />
+          )}
         </TabsContent>
 
         <TabsContent value="suggestions" className={tabContentClassName}>
@@ -464,7 +560,10 @@ export const AdsPage = () => {
           <>
             <TabsContent value="campaigns" className={tabContentClassName}>
               {structure.campaigns.length === 0 ? (
-                <EmptyState title="Nenhuma campanha nesta conta" description="Campanhas excluídas na Meta não aparecem aqui." />
+                <EmptyState
+                  title="Nenhuma campanha nesta conta"
+                  description={`Campanhas excluídas ${isMeta ? "na Meta" : `no ${adPlatformLabel[currentAccount.platform]}`} não aparecem aqui.`}
+                />
               ) : (
                 <div className="rounded-lg border">
                   <Table>
@@ -483,6 +582,7 @@ export const AdsPage = () => {
                           campaign={campaign}
                           currency={structure.account.currency}
                           accountId={currentAccount.id}
+                          editable
                         />
                       ))}
                     </TableBody>
@@ -492,7 +592,7 @@ export const AdsPage = () => {
             </TabsContent>
 
             <TabsContent value="audiences" className={cn(tabContentClassName, "space-y-4")}>
-              <AdsCrmAudiences account={currentAccount} />
+              {isMeta && <AdsCrmAudiences account={currentAccount} />}
 
               {structure.audiences.length === 0 ? (
                 <EmptyState title="Nenhum público personalizado nesta conta" />

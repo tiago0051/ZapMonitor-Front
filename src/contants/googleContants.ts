@@ -8,4 +8,6 @@ export const googleContants = {
     "https://www.googleapis.com/auth/calendar.events",
     "https://www.googleapis.com/auth/calendar.calendarlist.readonly",
   ].join(" "),
+  // Anúncios do YouTube pelo Google Ads e, opcional, enviar o vídeo do anúncio ao canal do YouTube
+  ADS_SCOPES: ["openid", "email", "https://www.googleapis.com/auth/adwords", "https://www.googleapis.com/auth/youtube.upload"].join(" "),
 };
