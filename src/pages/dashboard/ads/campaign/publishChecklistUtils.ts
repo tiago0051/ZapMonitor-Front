@@ -11,6 +11,8 @@ type ChecklistInput = {
   durationDays: number | null;
   // Ainda carregando: só o servidor confere conversões e horário da equipe
   delivery: AdDeliveryOptions | undefined;
+  // Revisão de políticas da última versão salva; ainda carregando fica de fora
+  complianceIssues: AdComplianceIssue[] | undefined;
 };
 
 /**
@@ -18,7 +20,14 @@ type ChecklistInput = {
  * Segue as mesmas regras que o servidor confere ao publicar (publishErrors); públicos que sumiram da conta só o
  * servidor sabe, por isso a lista dele continua aparecendo.
  */
-export const buildPublishChecklist = ({ routing, plan, assets, durationDays, delivery }: ChecklistInput): ChecklistItem[] => {
+export const buildPublishChecklist = ({
+  routing,
+  plan,
+  assets,
+  durationDays,
+  delivery,
+  complianceIssues,
+}: ChecklistInput): ChecklistItem[] => {
   const items: ChecklistItem[] = [
     { label: "Número de WhatsApp que recebe as conversas", ok: !!routing.whatsappConfigurationId, details: [] },
     { label: "Página do Facebook ligada ao número", ok: !!routing.metaPageId, details: [] },
@@ -68,6 +77,16 @@ export const buildPublishChecklist = ({ routing, plan, assets, durationDays, del
   }
   if (plan.optimizationEvent === "PURCHASE" || plan.teamHoursOnly)
     items.push({ label: "Otimização e horário dos anúncios", ok: deliveryDetails.length === 0, details: deliveryDetails });
+
+  // Mesmas regras de blockingIssues no servidor: só o que impede publicar; avisos não travam
+  if (complianceIssues) {
+    const blocking = complianceIssues.filter((issue) => issue.severity === "BLOCK");
+    items.push({
+      label: "Sem itens que impedem publicar na revisão de políticas",
+      ok: blocking.length === 0,
+      details: [...new Set(blocking.map((issue) => issue.message))],
+    });
+  }
 
   return items;
 };

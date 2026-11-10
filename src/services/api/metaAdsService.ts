@@ -408,6 +408,11 @@ export const metaAdsService = {
     return response.data;
   },
 
+  findDraftCompliance: async ({ params }: { params: { clientId: string; draftId: string } }): Promise<AdComplianceIssue[]> => {
+    const response = await api.get<AdComplianceIssue[]>(`/client/${params.clientId}/meta-ads/draft/${params.draftId}/compliance`);
+    return response.data;
+  },
+
   findAbTest: async ({ params }: { params: { clientId: string; draftId: string } }): Promise<AdAbTestCell[]> => {
     const response = await api.get<AdAbTestCell[]>(`/client/${params.clientId}/meta-ads/draft/${params.draftId}/ab-test`);
     return response.data;
@@ -448,6 +453,8 @@ export const metaAdsService = {
       pipelineId?: string | null;
       originAudienceId?: string | null;
       ratio?: number | null;
+      // Grupo de controle: 0 (sem) ou de 5 a 50%
+      controlPercent?: number;
     };
   }): Promise<AdCrmAudience> => {
     const response = await api.post(`/client/${params.clientId}/meta-ads/account/${params.accountId}/crm-audience`, body, {
@@ -460,6 +467,17 @@ export const metaAdsService = {
     const response = await api.post(`/client/${params.clientId}/meta-ads/crm-audience/${params.audienceId}/sync`, undefined, {
       timeout: 180000,
     });
+    return response.data;
+  },
+
+  findCrmAudienceLift: async ({
+    params,
+  }: {
+    params: { clientId: string; accountId: string; audienceId: string };
+  }): Promise<AdAudienceLift> => {
+    const response = await api.get<AdAudienceLift>(
+      `/client/${params.clientId}/meta-ads/account/${params.accountId}/crm-audience/${params.audienceId}/lift`,
+    );
     return response.data;
   },
 

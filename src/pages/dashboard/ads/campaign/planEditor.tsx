@@ -15,6 +15,7 @@ import { AdvisorText } from "../components/advisorText";
 import { MetricHelp } from "../components/metricHelp";
 import { AdsAssetLibrary } from "./adsAssetLibrary";
 import { fieldSelectClassName } from "./campaignUtils";
+import { PLAN_CATEGORY_ELEMENT_ID, planCreativeElementId } from "./complianceUtils";
 import { CountryPicker } from "./countryPicker";
 import type { CampaignAudienceOption } from "./useCampaignOptions";
 
@@ -225,11 +226,11 @@ export const PlanEditor: FC<PlanEditorProps> = ({ account, plan, audiences, asse
           />
         </div>
         <div className="grid gap-1">
-          <Label htmlFor="plan-category" className="text-xs">
+          <Label htmlFor={PLAN_CATEGORY_ELEMENT_ID} className="text-xs">
             Categoria especial
           </Label>
           <select
-            id="plan-category"
+            id={PLAN_CATEGORY_ELEMENT_ID}
             className={fieldSelectClassName}
             disabled={disabled}
             value={plan.specialAdCategory}
@@ -400,6 +401,7 @@ export const PlanEditor: FC<PlanEditorProps> = ({ account, plan, audiences, asse
                 return (
                   <div
                     key={creative.key}
+                    id={planCreativeElementId(creative.key)}
                     className={cn(
                       "bg-muted/30 grid gap-2 rounded-md border p-2 md:grid-cols-[96px_1fr]",
                       missingAsset && "border-amber-500 dark:border-amber-600",
@@ -456,6 +458,7 @@ export const PlanEditor: FC<PlanEditorProps> = ({ account, plan, audiences, asse
                       </div>
                       <textarea
                         aria-label="Texto principal"
+                        data-compliance-field="primaryText"
                         className={textarea}
                         placeholder="Texto principal"
                         maxLength={2000}
@@ -466,6 +469,7 @@ export const PlanEditor: FC<PlanEditorProps> = ({ account, plan, audiences, asse
                       <div className="grid gap-2 sm:grid-cols-2">
                         <Input
                           aria-label="Título"
+                          data-compliance-field="headline"
                           placeholder="Título"
                           maxLength={255}
                           disabled={disabled}
@@ -474,6 +478,7 @@ export const PlanEditor: FC<PlanEditorProps> = ({ account, plan, audiences, asse
                         />
                         <Input
                           aria-label="Descrição"
+                          data-compliance-field="description"
                           placeholder="Descrição (opcional)"
                           maxLength={255}
                           disabled={disabled}
@@ -483,6 +488,7 @@ export const PlanEditor: FC<PlanEditorProps> = ({ account, plan, audiences, asse
                       </div>
                       <Input
                         aria-label="Mensagem de boas-vindas"
+                        data-compliance-field="welcomeMessage"
                         placeholder="Mensagem que o cliente envia ao abrir o WhatsApp"
                         maxLength={500}
                         disabled={disabled}

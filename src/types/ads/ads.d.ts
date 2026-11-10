@@ -523,6 +523,47 @@ type AdCrmAudience = {
   status: "PENDING" | "SYNCED" | "FAILED";
   error: string | null;
   lastSyncedAt: string | null;
+  // Parte sorteada que não vai para a Meta (0 sem grupo de controle)
+  controlPercent: number;
+  // Início da medição com o grupo de controle
+  controlStartedAt: string | null;
+};
+
+type AdAudienceLiftGroup = { members: number; conversions: number; rate: number | null };
+
+type AdAudienceLiftVerdict = "LEARNING" | "POSITIVE" | "NO_EFFECT" | "UNCLEAR";
+
+// Quem recebeu o anúncio contra o grupo de controle: vendas que o anúncio realmente trouxe
+type AdAudienceLift = {
+  treated: AdAudienceLiftGroup;
+  control: AdAudienceLiftGroup;
+  absoluteLift: number | null;
+  relativeLift: number | null;
+  // Chance (0 a 1) de quem recebeu comprar mais que o controle
+  probPositive: number | null;
+  incrementalSales: number | null;
+  spend: number;
+  costPerIncrementalSale: number | null;
+  verdict: AdAudienceLiftVerdict;
+  // Frase pronta em pt-BR
+  explanation: string;
+};
+
+// ---------- Revisão de políticas ----------
+
+type AdComplianceSeverity = "BLOCK" | "WARN";
+
+type AdComplianceField = "headline" | "primaryText" | "description" | "welcomeMessage" | "specialAdCategory";
+
+type AdComplianceIssue = {
+  severity: AdComplianceSeverity;
+  ruleId: string;
+  // Chave do anúncio no plano; null quando vale para a campanha toda
+  creativeKey: string | null;
+  field: AdComplianceField | null;
+  excerpt: string | null;
+  message: string;
+  suggestion: string;
 };
 
 type AdAbTestCell = { cell: string; metaAdSetId: string; row: AdReportRow | null };

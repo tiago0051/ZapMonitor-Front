@@ -19,6 +19,7 @@ import { effectiveStatusInfo, formatCount, formatMoney, statusToneClassName } fr
 import { AdStatusToggle } from "../components/adStatusToggle";
 import { SteppedProgress } from "../components/steppedProgress";
 import { AdsAssetLibrary } from "./adsAssetLibrary";
+import { CompliancePanel } from "./compliancePanel";
 import { DeliveryFields } from "./deliveryFields";
 import { BriefFields, RoutingFields } from "./draftFields";
 import { PlanEditor } from "./planEditor";
@@ -164,6 +165,7 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
   const refresh = (updated: AdCampaignDraft) => {
     queryClient.setQueryData(["metaAds", "draft", client.id, draft.id], updated);
     queryClient.invalidateQueries({ queryKey: ["metaAds", "drafts"] });
+    queryClient.invalidateQueries({ queryKey: ["metaAds", "compliance", client.id, draft.id] });
   };
   const save = useMutation({
     mutationFn: metaAdsService.updateDraft,
@@ -229,12 +231,18 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
     queryFn: () => metaAdsService.findDeliveryOptions({ params: { clientId: client.id } }),
     enabled: !!plan && !draft.published?.campaignId,
   });
+  const complianceQuery = useQuery({
+    queryKey: ["metaAds", "compliance", client.id, draft.id],
+    queryFn: () => metaAdsService.findDraftCompliance({ params }),
+    enabled: !!draft.plan && !draft.published?.campaignId,
+  });
   const checklist = buildPublishChecklist({
     routing,
     plan,
     assets: options.assets,
     durationDays: brief.durationDays,
     delivery: deliveryQuery.data,
+    complianceIssues: complianceQuery.data,
   });
   const missingCount = checklist.filter((item) => !item.ok).length;
 
@@ -378,6 +386,9 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
 
       <section className="space-y-3 rounded-lg border p-3">
         <h3 className="text-sm font-semibold">4. Revisão e publicação</h3>
+        {plan && draft.plan && !draft.published?.campaignId && (
+          <CompliancePanel query={complianceQuery} plan={plan} isStale={JSON.stringify(plan) !== JSON.stringify(draft.plan)} />
+        )}
         {canPublish && (
           <div className="space-y-2">
             <p className="text-sm font-medium">

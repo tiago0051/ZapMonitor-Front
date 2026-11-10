@@ -10,9 +10,10 @@ import { metaAdsService } from "@/services/api/metaAdsService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Plus, RefreshCw, Trash2, Users } from "lucide-react";
+import { BarChart3, Plus, RefreshCw, Trash2, Users } from "lucide-react";
 import { useState, type FC } from "react";
 import { toast } from "sonner";
+import { AudienceLiftDialog } from "./audienceLiftDialog";
 
 const sourceLabel: Record<AdCrmAudienceSource, string> = {
   WON: "Clientes (negócios ganhos)",
@@ -30,6 +31,10 @@ const sourceHelp: Record<AdCrmAudienceSource, string> = {
     "Chegou pelos anúncios nos últimos 90 dias, conversou e não comprou. Quem comprou ou pediu para não receber mensagens fica de fora.",
 };
 
+// Grupo de controle só mede quem ainda pode comprar: não vale para clientes (já compraram) nem semelhantes
+const controlSources: AdCrmAudienceSource[] = ["OPEN", "REENGAGE", "ALL"];
+const controlOptions = [0, 10, 20, 30];
+
 const selectClassName = cn(crmSelectClassName, "h-8 text-xs");
 
 /** Públicos na Meta com os telefones do CRM (em hash) e semelhantes a eles. */
@@ -44,6 +49,8 @@ export const AdsCrmAudiences: FC<{ account: AdAccount }> = ({ account }) => {
   const [pipelineId, setPipelineId] = useState("");
   const [originAudienceId, setOriginAudienceId] = useState("");
   const [ratioPercent, setRatioPercent] = useState(1);
+  const [controlPercent, setControlPercent] = useState(0);
+  const [liftAudience, setLiftAudience] = useState<AdCrmAudience | null>(null);
 
   const audiencesQuery = useQuery({
     queryKey: ["metaAds", "crmAudiences", client.id, account.id],
@@ -66,6 +73,7 @@ export const AdsCrmAudiences: FC<{ account: AdAccount }> = ({ account }) => {
       notify(audience);
       setIsCreating(false);
       setName("");
+      setControlPercent(0);
     },
   });
   const sync = useMutation({
@@ -80,6 +88,7 @@ export const AdsCrmAudiences: FC<{ account: AdAccount }> = ({ account }) => {
 
   const audiences = audiencesQuery.data ?? [];
   const customAudiences = audiences.filter((audience) => audience.kind === "CUSTOM" && audience.metaAudienceId);
+  const allowsControl = kind === "CUSTOM" && controlSources.includes(source);
   const isValid = name.trim() !== "" && (kind === "CUSTOM" || !!originAudienceId);
 
   return (
@@ -162,6 +171,29 @@ export const AdsCrmAudiences: FC<{ account: AdAccount }> = ({ account }) => {
                     ))}
                   </select>
                 </div>
+                {allowsControl && (
+                  <div className="grid gap-1 sm:col-span-2">
+                    <Label htmlFor="crm-audience-control" className="text-xs">
+                      Grupo de controle
+                    </Label>
+                    <select
+                      id="crm-audience-control"
+                      className={cn(selectClassName, "sm:max-w-64")}
+                      value={controlPercent}
+                      onChange={(event) => setControlPercent(Number(event.target.value))}
+                    >
+                      {controlOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option === 0 ? "Sem grupo de controle" : `${option}% do público`}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-muted-foreground text-xs">
+                      Uma parte sorteada não recebe o anúncio. Comparando quanto cada grupo compra, dá para ver as vendas que o anúncio
+                      realmente traz.
+                    </p>
+                  </div>
+                )}
               </>
             ) : (
               <>
@@ -208,7 +240,13 @@ export const AdsCrmAudiences: FC<{ account: AdAccount }> = ({ account }) => {
                   params,
                   body:
                     kind === "CUSTOM"
-                      ? { name: name.trim(), kind, source, pipelineId: pipelineId || null }
+                      ? {
+                          name: name.trim(),
+                          kind,
+                          source,
+                          pipelineId: pipelineId || null,
+                          ...(allowsControl && controlPercent > 0 && { controlPercent }),
+                        }
                       : { name: name.trim(), kind, originAudienceId, ratio: ratioPercent / 100 },
                 })
               }
@@ -228,7 +266,14 @@ export const AdsCrmAudiences: FC<{ account: AdAccount }> = ({ account }) => {
         {audiences.map((audience) => (
           <li key={audience.id} className="flex flex-wrap items-center gap-2 py-2">
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium">{audience.name}</p>
+              <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
+                {audience.name}
+                {audience.controlPercent > 0 && (
+                  <span className="rounded bg-sky-50 px-1.5 py-0.5 text-xs font-medium text-sky-700 dark:bg-sky-950/40 dark:text-sky-300">
+                    Controle {audience.controlPercent}%
+                  </span>
+                )}
+              </p>
               <p className="text-muted-foreground text-xs">
                 {audience.kind === "LOOKALIKE"
                   ? `Semelhante (${Math.round((audience.ratio ?? 0.01) * 100)}%)`
@@ -241,6 +286,12 @@ export const AdsCrmAudiences: FC<{ account: AdAccount }> = ({ account }) => {
                 </p>
               )}
             </div>
+            {audience.controlPercent > 0 && (
+              <Button size="sm" variant="outline" className="h-8" onClick={() => setLiftAudience(audience)}>
+                <BarChart3 className="h-4 w-4" />
+                Ver resultado
+              </Button>
+            )}
             {can("ads.manage") && (
               <>
                 {audience.kind === "CUSTOM" && (
@@ -272,6 +323,7 @@ export const AdsCrmAudiences: FC<{ account: AdAccount }> = ({ account }) => {
           </li>
         ))}
       </ul>
+      <AudienceLiftDialog account={account} audience={liftAudience} onOpenChange={(open) => !open && setLiftAudience(null)} />
     </section>
   );
 };

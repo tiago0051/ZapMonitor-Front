@@ -326,7 +326,7 @@ export const audienceDeliveryLabel = (status: string | null | undefined) => {
 };
 
 export type GlossaryTerm =
-  "CTR" | "ROAS" | "CPA" | "ADVANTAGE" | "CPC" | "CPM" | "SALES_SHARE" | "OPTIMIZATION" | "TEAM_HOURS" | "PROB_BEST";
+  "CTR" | "ROAS" | "CPA" | "ADVANTAGE" | "CPC" | "CPM" | "SALES_SHARE" | "OPTIMIZATION" | "TEAM_HOURS" | "PROB_BEST" | "INCREMENTAL_SALES";
 
 /** Explicações curtas para as siglas da Meta, mostradas pelo botão "o que é isso". */
 export const metricGlossary: Record<GlossaryTerm, { title: string; description: string }> = {
@@ -375,5 +375,10 @@ export const metricGlossary: Record<GlossaryTerm, { title: string; description: 
     title: "Chance de ser o melhor",
     description:
       "Olhando as vendas e o gasto de cada lado até agora, quantas vezes em 100 este lado seria o que vende mais barato. Com poucas vendas as chances ficam parecidas; o teste só declara vencedor quando um lado passa de 95%, com pelo menos 10 vendas e 7 dias.",
+  },
+  INCREMENTAL_SALES: {
+    title: "Vendas a mais por causa do anúncio",
+    description:
+      "Algumas pessoas compram de qualquer jeito, com ou sem anúncio. Comparando quem recebeu o anúncio com o grupo sorteado que não recebeu, sobra só o que o anúncio trouxe de fato. Ex.: se 5% de quem recebeu comprou e 3% do grupo de controle comprou, os 2% de diferença são vendas a mais por causa do anúncio.",
   },
 };
