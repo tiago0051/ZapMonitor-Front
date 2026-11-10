@@ -3,7 +3,7 @@ import { useSocketContext } from "@/context/SocketContext/socketContext";
 import { whatsappService } from "@/services/api/whatsappService";
 import { IsTopScrolled } from "@/utils/scroll";
 import { useInfiniteQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface UseContactMessagesProps {
   contact: WhatsappContactMessage;
@@ -39,13 +39,40 @@ export const useContactMessages = ({ contact }: UseContactMessagesProps) => {
     initialPageParam: 1,
   });
 
-  function onScrollChat(event: React.UIEvent<HTMLDivElement, UIEvent>) {
-    const isTopScrolled = IsTopScrolled(event.currentTarget);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const { hasNextPage, isFetching, isFetchNextPageError, fetchNextPage } = findAllWhatsappMessagesByContact;
 
-    if (isTopScrolled && findAllWhatsappMessagesByContact.hasNextPage && !findAllWhatsappMessagesByContact.isFetching) {
-      findAllWhatsappMessagesByContact.fetchNextPage();
-    }
+  /**
+   * Busca a página anterior quando o topo está à vista. Também vale quando as mensagens não enchem a tela (telas
+   * grandes): sem rolagem o evento de scroll nunca dispara, então a checagem roda a cada página e ao redimensionar.
+   */
+  const loadOlderIfAtTop = useCallback(() => {
+    const element = scrollRef.current;
+    // Depois de uma falha só tenta de novo pelo scroll, para não repetir a requisição sem parar
+    if (!element || !hasNextPage || isFetching || isFetchNextPageError) return;
+
+    if (IsTopScrolled(element)) fetchNextPage();
+  }, [hasNextPage, isFetching, isFetchNextPageError, fetchNextPage]);
+
+  function onScrollChat(event: React.UIEvent<HTMLDivElement, UIEvent>) {
+    if (hasNextPage && !isFetching && IsTopScrolled(event.currentTarget)) fetchNextPage();
   }
+
+  // A cada página carregada: se ainda não há rolagem, busca a próxima até encher a tela ou acabar
+  useEffect(() => {
+    const frame = requestAnimationFrame(loadOlderIfAtTop);
+    return () => cancelAnimationFrame(frame);
+  }, [loadOlderIfAtTop, findAllWhatsappMessagesByContact.data]);
+
+  // Janela maior ou painel lateral fechado aumentam a área do chat
+  useEffect(() => {
+    const element = scrollRef.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+
+    const observer = new ResizeObserver(() => loadOlderIfAtTop());
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [loadOlderIfAtTop]);
 
   useEffect(() => {
     const handleNewMessage = (data: WhatsappMessage) => {
@@ -101,6 +128,7 @@ export const useContactMessages = ({ contact }: UseContactMessagesProps) => {
   }, [newMessagesList, findAllWhatsappMessagesByContact.data]);
 
   return {
+    scrollRef,
     onScrollChat,
     isFetching: findAllWhatsappMessagesByContact.isFetching,
     messages,

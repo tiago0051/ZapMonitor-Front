@@ -9,7 +9,7 @@ type MessageListProps = {
 };
 
 export const MessageList = ({ contact, onReply }: MessageListProps) => {
-  const { onScrollChat, isFetching, messages } = useContactMessages({
+  const { scrollRef, onScrollChat, isFetching, messages } = useContactMessages({
     contact,
   });
 
@@ -17,7 +17,7 @@ export const MessageList = ({ contact, onReply }: MessageListProps) => {
 
   return (
     <div className={"grid h-full grid-rows-[auto_min-content] overflow-hidden pt-4"}>
-      <div onScroll={onScrollChat} className="flex max-h-full flex-col-reverse gap-2 overflow-auto px-4">
+      <div ref={scrollRef} onScroll={onScrollChat} className="flex max-h-full flex-col-reverse gap-2 overflow-auto px-4">
         <AnimatePresence initial={false}>
           {messages.map((message) => (
             <MessageItem message={message} key={message.id} contactId={contact.id} contactName={contactName} onReply={onReply} />
