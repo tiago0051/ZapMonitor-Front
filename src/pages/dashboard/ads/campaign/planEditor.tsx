@@ -383,7 +383,7 @@ export const PlanEditor: FC<PlanEditorProps> = ({ account, plan, audiences, asse
                 <AudiencePicker
                   label="Excluir"
                   selected={adSet.excludeAudienceIds}
-                  audiences={audiences.filter((audience) => !audience.isLookalike)}
+                  audiences={audiences.filter((audience) => !special || !audience.isLookalike)}
                   onChange={(ids) => setAdSet(adSet.key, { excludeAudienceIds: ids })}
                 />
               </>

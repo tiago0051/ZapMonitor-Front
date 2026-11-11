@@ -1,5 +1,7 @@
+import { useConfirm } from "@/components/confirm-dialog";
 import { LoadingState } from "@/components/state-message";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useClientContext } from "@/context/ClientContext/clientContext";
@@ -20,6 +22,7 @@ const sourceLabel: Record<AdCrmAudienceSource, string> = {
   OPEN: "Em negociação (negócios abertos)",
   ALL: "Todos os contatos com negócio",
   REENGAGE: "Conversou e não comprou",
+  DISQUALIFIED: "Desqualificados (perdidos por motivo escolhido)",
 };
 
 // Uma linha explicando quem entra em cada opção
@@ -29,6 +32,8 @@ const sourceHelp: Record<AdCrmAudienceSource, string> = {
   ALL: "Todo contato que tem algum negócio no CRM.",
   REENGAGE:
     "Chegou pelos anúncios nos últimos 90 dias, conversou e não comprou. Quem comprou ou pediu para não receber mensagens fica de fora.",
+  DISQUALIFIED:
+    "Negócios perdidos pelos motivos marcados abaixo. Quem comprou depois fica de fora. Bom para excluir dos anúncios ou gerar um semelhante para excluir.",
 };
 
 // Grupo de controle só mede quem ainda pode comprar: não vale para clientes (já compraram) nem semelhantes
@@ -50,6 +55,7 @@ export const AdsCrmAudiences: FC<{ account: AdAccount }> = ({ account }) => {
   const [originAudienceId, setOriginAudienceId] = useState("");
   const [ratioPercent, setRatioPercent] = useState(1);
   const [controlPercent, setControlPercent] = useState(0);
+  const [lostReasonIds, setLostReasonIds] = useState<string[]>([]);
   const [liftAudience, setLiftAudience] = useState<AdCrmAudience | null>(null);
 
   const audiencesQuery = useQuery({
@@ -60,6 +66,11 @@ export const AdsCrmAudiences: FC<{ account: AdAccount }> = ({ account }) => {
     queryKey: ["crm", "pipelines", client.id],
     queryFn: () => crmService.findAllPipelines({ params: { clientId: client.id } }),
     enabled: access.crmEnabled,
+  });
+  const lostReasonsQuery = useQuery({
+    queryKey: ["crm", "lostReasons", client.id],
+    queryFn: () => crmService.findAllLostReasons({ params: { clientId: client.id } }),
+    enabled: access.crmEnabled && source === "DISQUALIFIED",
   });
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["metaAds", "crmAudiences"] });
@@ -74,6 +85,7 @@ export const AdsCrmAudiences: FC<{ account: AdAccount }> = ({ account }) => {
       setIsCreating(false);
       setName("");
       setControlPercent(0);
+      setLostReasonIds([]);
     },
   });
   const sync = useMutation({
@@ -85,14 +97,28 @@ export const AdsCrmAudiences: FC<{ account: AdAccount }> = ({ account }) => {
     },
   });
   const remove = useMutation({ mutationFn: metaAdsService.deleteCrmAudience, onError: requestErrorHandling, onSuccess: invalidate });
+  const { confirm, confirmDialog } = useConfirm();
+  const confirmRemove = async (audience: { id: string; name: string; metaAudienceId?: string | null }) => {
+    const confirmed = await confirm({
+      title: `Apagar o público "${audience.name}"?`,
+      description: audience.metaAudienceId
+        ? "Ele é apagado também na Meta e sai dos conjuntos que o usam. Não dá para desfazer."
+        : "Ele sai do ZapMonitor. Não dá para desfazer.",
+      confirmLabel: "Apagar público",
+      destructive: true,
+    });
+    if (confirmed) remove.mutate({ params: { clientId: client.id, audienceId: audience.id } });
+  };
 
   const audiences = audiencesQuery.data ?? [];
   const customAudiences = audiences.filter((audience) => audience.kind === "CUSTOM" && audience.metaAudienceId);
   const allowsControl = kind === "CUSTOM" && controlSources.includes(source);
-  const isValid = name.trim() !== "" && (kind === "CUSTOM" || !!originAudienceId);
+  const isDisqualified = kind === "CUSTOM" && source === "DISQUALIFIED";
+  const isValid = name.trim() !== "" && (kind === "CUSTOM" ? !isDisqualified || lostReasonIds.length > 0 : !!originAudienceId);
 
   return (
     <section className="space-y-3 rounded-lg border p-3">
+      {confirmDialog}
       <div className="flex items-center gap-2">
         <Users className="text-primary h-4 w-4" />
         <h3 className="text-sm font-semibold">Públicos do CRM</h3>
@@ -104,8 +130,8 @@ export const AdsCrmAudiences: FC<{ account: AdAccount }> = ({ account }) => {
         )}
       </div>
       <p className="text-muted-foreground text-xs">
-        Os telefones vão para a Meta só em hash. Use para excluir quem já comprou ou está negociando, ou para achar pessoas parecidas com os
-        clientes. Categorias especiais (crédito, emprego, moradia) não aceitam semelhantes.
+        Os telefones vão para a Meta só em hash. Use para excluir quem já comprou, está negociando ou foi desqualificado, ou para achar
+        pessoas parecidas. Categorias especiais (crédito, emprego, moradia) não aceitam semelhantes, nem para excluir.
       </p>
 
       {isCreating && (
@@ -171,6 +197,34 @@ export const AdsCrmAudiences: FC<{ account: AdAccount }> = ({ account }) => {
                     ))}
                   </select>
                 </div>
+                {isDisqualified && (
+                  <div className="grid gap-1 sm:col-span-2">
+                    <span className="text-xs font-medium">Motivos de perda que contam como desqualificado</span>
+                    {lostReasonsQuery.isLoading && <LoadingState className="justify-start py-1" />}
+                    {lostReasonsQuery.data?.length === 0 && (
+                      <p className="text-muted-foreground text-xs">Nenhum motivo de perda cadastrado. Cadastre nas configurações do CRM.</p>
+                    )}
+                    <div className="grid gap-1 sm:grid-cols-2">
+                      {lostReasonsQuery.data?.map((reason) => (
+                        <label key={reason.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                          <Checkbox
+                            checked={lostReasonIds.includes(reason.id)}
+                            onCheckedChange={(checked) =>
+                              setLostReasonIds((current) => (checked ? [...current, reason.id] : current.filter((id) => id !== reason.id)))
+                            }
+                          />
+                          <span className="truncate">
+                            {reason.name}
+                            {!reason.active && <span className="text-muted-foreground"> · inativo</span>}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    <p className="text-muted-foreground text-xs">
+                      Só entram negócios perdidos com um desses motivos escolhido da lista; motivo digitado à mão não conta.
+                    </p>
+                  </div>
+                )}
                 {allowsControl && (
                   <div className="grid gap-1 sm:col-span-2">
                     <Label htmlFor="crm-audience-control" className="text-xs">
@@ -245,6 +299,7 @@ export const AdsCrmAudiences: FC<{ account: AdAccount }> = ({ account }) => {
                           kind,
                           source,
                           pipelineId: pipelineId || null,
+                          ...(isDisqualified && { lostReasonIds }),
                           ...(allowsControl && controlPercent > 0 && { controlPercent }),
                         }
                       : { name: name.trim(), kind, originAudienceId, ratio: ratioPercent / 100 },
@@ -311,10 +366,10 @@ export const AdsCrmAudiences: FC<{ account: AdAccount }> = ({ account }) => {
                   size="icon"
                   variant="ghost"
                   className="h-8 w-8"
-                  aria-label={`Tirar ${audience.name}`}
-                  title="Tirar do ZapMonitor (na Meta o público continua)"
+                  aria-label={`Apagar ${audience.name}`}
+                  title="Apagar no ZapMonitor e na Meta"
                   disabled={remove.isPending}
-                  onClick={() => remove.mutate({ params: { clientId: client.id, audienceId: audience.id } })}
+                  onClick={() => confirmRemove(audience)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>

@@ -513,7 +513,7 @@ type AdCreativeAsset = {
 type AdCrmAudienceKind = "CUSTOM" | "LOOKALIKE";
 
 // REENGAGE: veio dos anúncios nos últimos 90 dias, conversou e não comprou
-type AdCrmAudienceSource = "WON" | "OPEN" | "ALL" | "REENGAGE";
+type AdCrmAudienceSource = "WON" | "OPEN" | "ALL" | "REENGAGE" | "DISQUALIFIED";
 
 type AdCrmAudience = {
   id: string;
@@ -532,6 +532,8 @@ type AdCrmAudience = {
   controlPercent: number;
   // Início da medição com o grupo de controle
   controlStartedAt: string | null;
+  // Desqualificados: motivos de perda que contam
+  lostReasonIds: string[];
 };
 
 type AdAudienceLiftGroup = { members: number; conversions: number; rate: number | null };

@@ -465,6 +465,8 @@ export const metaAdsService = {
       kind: AdCrmAudienceKind;
       source?: AdCrmAudienceSource;
       pipelineId?: string | null;
+      // Desqualificados: motivos de perda que contam
+      lostReasonIds?: string[];
       originAudienceId?: string | null;
       ratio?: number | null;
       // Grupo de controle: 0 (sem) ou de 5 a 50%
