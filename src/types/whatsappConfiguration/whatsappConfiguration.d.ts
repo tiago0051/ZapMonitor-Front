@@ -13,6 +13,8 @@ type WhatsappConfiguration = {
   connectionStatus: WhatsappWebConnectionStatus | null;
   connectionError: string | null;
   connectedAt: string | null;
+  // Ligações pelo WhatsApp ligadas na Meta (só na API oficial)
+  callingEnabled: boolean;
 };
 
 // CLOUD_API: API oficial da Meta. WHATSAPP_WEB: número conectado por QR code (não oficial)

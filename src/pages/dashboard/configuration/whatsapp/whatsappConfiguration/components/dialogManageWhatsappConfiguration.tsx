@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { whatsappCallService } from "@/services/api/whatsappCallService";
 import { whatsappService } from "@/services/api/whatsappService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -41,6 +43,17 @@ export const DialogManageWhatsappConfiguration: FC<DialogManageWhatsappConfigura
       setAuthorizationToken("");
     },
   });
+
+  const updateCalling = useMutation({
+    mutationFn: (enabled: boolean) => whatsappCallService.updateCalling({ params, body: { enabled } }),
+    onError: requestErrorHandling,
+    onSuccess: ({ callingEnabled }) => {
+      queryClient.invalidateQueries({ queryKey: ["whatsappConfigurations", clientId] });
+      toast.success(callingEnabled ? "Ligações ligadas neste número" : "Ligações desligadas neste número");
+    },
+  });
+  // Mostra a escolha na hora; a lista de números atualiza em seguida
+  const callingEnabled = updateCalling.isPending ? !!updateCalling.variables : whatsappConfiguration.callingEnabled;
 
   const phoneNumber =
     parsePhoneNumberFromString(whatsappConfiguration.phoneNumber)?.format("INTERNATIONAL") ?? whatsappConfiguration.phoneNumber;
@@ -81,6 +94,22 @@ export const DialogManageWhatsappConfiguration: FC<DialogManageWhatsappConfigura
               {webhookQuery.data.effectiveUrl ?? "Nenhum webhook configurado para este número"}
             </p>
           )}
+        </div>
+
+        <div className="flex items-start justify-between gap-4 rounded-md border p-3">
+          <div className="space-y-1">
+            <Label htmlFor={`calling-${whatsappConfiguration.id}`}>Ligações pelo WhatsApp</Label>
+            <p className="text-muted-foreground text-xs">
+              Os contatos podem ligar para este número e os atendentes atendem pelo navegador. Para ligar para um contato, ele precisa
+              autorizar antes. As ligações feitas pela empresa são cobradas pela Meta por minuto.
+            </p>
+          </div>
+          <Switch
+            id={`calling-${whatsappConfiguration.id}`}
+            checked={callingEnabled}
+            disabled={updateCalling.isPending}
+            onCheckedChange={(checked) => updateCalling.mutate(checked)}
+          />
         </div>
 
         <form

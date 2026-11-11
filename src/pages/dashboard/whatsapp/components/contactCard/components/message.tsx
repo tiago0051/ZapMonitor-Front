@@ -2,7 +2,7 @@ import { WhatsappMessageContentType } from "@/enums/whatsappMessageContentType.e
 import { formatWhatsappText } from "@/utils/formatString";
 import type { FC } from "react";
 import { FaRobot } from "react-icons/fa";
-import { FiFile, FiImage, FiMessageCircle, FiMic, FiUser, FiVideo } from "react-icons/fi";
+import { FiFile, FiImage, FiMessageCircle, FiMic, FiPhone, FiUser, FiVideo } from "react-icons/fi";
 
 type MessageProps = {
   messageContentType: string | undefined;
@@ -22,6 +22,9 @@ export const Message: FC<MessageProps> = ({ isIncoming, messageContentType, chil
     {messageContentType === WhatsappMessageContentType.IMAGE && <FiImage />}
     {messageContentType === WhatsappMessageContentType.VIDEO && <FiVideo />}
     {messageContentType === WhatsappMessageContentType.TEMPLATE && <FaRobot />}
+    {(messageContentType === WhatsappMessageContentType.CALL ||
+      messageContentType === WhatsappMessageContentType.CALL_PERMISSION_REQUEST ||
+      messageContentType === WhatsappMessageContentType.CALL_PERMISSION_REPLY) && <FiPhone />}
 
     <p className="col-start-2 line-clamp-2 text-sm font-light group-data-[incoming=true]:font-normal">{formatWhatsappText(children)}</p>
   </div>

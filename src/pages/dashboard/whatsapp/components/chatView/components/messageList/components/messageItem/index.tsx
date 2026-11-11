@@ -7,7 +7,7 @@ import { useEffect, useState, type FC, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FiAlertTriangle, FiDownload } from "react-icons/fi";
 import { IoCheckmarkDoneOutline, IoCheckmarkOutline, IoTimeOutline } from "react-icons/io5";
-import { ChevronDown, ChevronUp, Loader2, Megaphone, Reply, RotateCw, Sparkles } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, Megaphone, Phone, Reply, RotateCw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "motion/react";
 import { MessageReplyPreview } from "../../../messageReplyPreview";
@@ -15,6 +15,7 @@ import { TemplateMessage } from "../templateMessage";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { whatsappService } from "@/services/api/whatsappService";
 import { requestErrorHandling } from "@/utils/request";
+import { CallMessage } from "@/pages/dashboard/whatsapp/calls/callMessage";
 
 type MessageFileContent = { url: string; filename: string };
 
@@ -126,7 +127,22 @@ const supportedContentTypes: string[] = [
   WhatsappMessageContentType.STICKER,
   WhatsappMessageContentType.CONTACTS,
   WhatsappMessageContentType.TEMPLATE,
+  WhatsappMessageContentType.CALL_PERMISSION_REQUEST,
+  WhatsappMessageContentType.CALL_PERMISSION_REPLY,
 ];
+
+// Pedido para ligar e a resposta do contato: texto com o ícone de ligação
+const CallPermissionText = ({ message }: { message: WhatsappMessage<string> }) => (
+  <p className="flex items-start gap-1.5 whitespace-pre-wrap">
+    <Phone className="mt-0.5 size-4 shrink-0 text-green-700" aria-hidden />
+    <span>
+      {message.contentType === WhatsappMessageContentType.CALL_PERMISSION_REQUEST && (
+        <span className="text-muted-foreground block text-xs">Pedido para ligar</span>
+      )}
+      {message.content}
+    </span>
+  </p>
+);
 
 // Sem resposta da IA nesse tempo, o botão volta para tentar de novo
 const DESCRIBE_WAIT_MS = 90 * 1000;
@@ -183,7 +199,10 @@ type MessageItemProps = {
   onReply?: (message: WhatsappMessage) => void;
 };
 
-export const MessageItem: FC<MessageItemProps> = ({ message, contactId, contactName, onReply }) => {
+export const MessageItem: FC<MessageItemProps> = (props) =>
+  props.message.contentType === WhatsappMessageContentType.CALL ? <CallMessage message={props.message} /> : <ChatMessageItem {...props} />;
+
+const ChatMessageItem: FC<MessageItemProps> = ({ message, contactId, contactName, onReply }) => {
   const [isTranscriptionOpen, setIsTranscriptionOpen] = useState(false);
 
   const status = message.status;
@@ -223,6 +242,10 @@ export const MessageItem: FC<MessageItemProps> = ({ message, contactId, contactN
 
       {(message.contentType === WhatsappMessageContentType.TEXT || message.contentType === WhatsappMessageContentType.INTERACTIVE) && (
         <MessageText message={message as WhatsappMessage<string>} />
+      )}
+      {(message.contentType === WhatsappMessageContentType.CALL_PERMISSION_REQUEST ||
+        message.contentType === WhatsappMessageContentType.CALL_PERMISSION_REPLY) && (
+        <CallPermissionText message={message as WhatsappMessage<string>} />
       )}
       {message.contentType === WhatsappMessageContentType.AUDIO && <MessageAudio {...mediaProps} />}
       {message.contentType === WhatsappMessageContentType.IMAGE && <MessageImage {...mediaProps} />}
