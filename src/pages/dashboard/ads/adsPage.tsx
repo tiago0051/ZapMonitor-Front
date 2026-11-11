@@ -483,8 +483,9 @@ export const AdsPage = () => {
 
         <TabsContent value="results" className={cn(tabContentClassName, "space-y-8")}>
           {platforms.length > 1 && <AdsPlatformComparison />}
-          <AdsDailySummary key={currentAccount.id} account={currentAccount} />
-          <AdsResults key={currentAccount.id} account={currentAccount} />
+          {/* Irmãos com a mesma key fazem o React duplicar o bloco ao trocar de conta: cada um tem a sua */}
+          <AdsDailySummary key={`summary-${currentAccount.id}`} account={currentAccount} />
+          <AdsResults key={`results-${currentAccount.id}`} account={currentAccount} />
         </TabsContent>
 
         <TabsContent value="pilot" className={tabContentClassName}>
