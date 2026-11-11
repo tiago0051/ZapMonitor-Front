@@ -69,7 +69,7 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, serviceAction
         <p className="text-muted-foreground truncate text-xs">{formatPhoneNumber(contact.phoneNumber)}</p>
       </div>
       <div className="flex flex-shrink-0 items-center gap-1">
-        <CallButton contact={contact} />
+        <CallButton contact={contact} contactService={contactService} />
         {canUseCrm && (
           <Popover>
             <PopoverTrigger asChild>

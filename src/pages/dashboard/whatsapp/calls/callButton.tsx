@@ -9,8 +9,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useClientContext } from "@/context/ClientContext/clientContext";
-import { useUserContext } from "@/context/UserContext/userContext";
-import { WhatsappServiceStatus } from "@/enums/whatsappServiceStatus.enum";
 import { whatsappCallService } from "@/services/api/whatsappCallService";
 import { whatsappService } from "@/services/api/whatsappService";
 import { requestErrorHandling } from "@/utils/request";
@@ -20,15 +18,15 @@ import { useState, type FC } from "react";
 import { toast } from "sonner";
 import { useCallContext } from "./callContext";
 
-type CallButtonProps = { contact: WhatsappContactMessage };
+// O atendimento vem da mesma consulta que libera o envio de mensagens: atualiza assim que o atendente assume
+type CallButtonProps = { contact: WhatsappContactMessage; contactService?: WhatsappContactService };
 
 /**
  * Liga para o contato pelo número da conversa. Sem autorização do contato, oferece mandar o pedido para ligar.
  * Só aparece quando o número tem as ligações ligadas.
  */
-export const CallButton: FC<CallButtonProps> = ({ contact }) => {
+export const CallButton: FC<CallButtonProps> = ({ contact, contactService }) => {
   const { client } = useClientContext();
-  const { user } = useUserContext();
   const { canUseCalls, activeCall, startCall } = useCallContext();
   const [isPermissionDialogOpen, setIsPermissionDialogOpen] = useState(false);
 
@@ -42,7 +40,7 @@ export const CallButton: FC<CallButtonProps> = ({ contact }) => {
   const configuration = configurationsQuery.data?.items.find((item) => item.id === contact.whatsappConfigurationId);
   const params = { clientId: client.id, contactId: contact.id, configurationId: contact.whatsappConfigurationId };
   const contactName = contact.surname?.trim() || contact.name?.trim() || contact.phoneNumber;
-  const isAttending = contact.serviceStatus === WhatsappServiceStatus.HUMAN_ACTIVE && contact.userIdInService === user?.id;
+  const isAttending = !!contactService?.canBeSentMessage;
 
   const call = useMutation({
     mutationFn: () => whatsappCallService.findAvailability({ params }),
