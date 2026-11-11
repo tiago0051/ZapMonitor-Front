@@ -42,13 +42,23 @@ function loadGoogleIdentityServices(): Promise<void> {
 }
 
 type UseGoogleCalendarLoginOptions = {
+  // Permissões pedidas; o padrão é a agenda
+  scope?: string;
+  // Texto do erro quando o Google não autoriza
+  deniedMessage?: string;
   onCode: (code: string) => void;
   onCancel?: () => void;
   onError?: (message: string) => void;
 };
 
 /** Login com o Google para a agenda: o popup devolve o código que o back troca pelo acesso contínuo. */
-export const useGoogleCalendarLogin = ({ onCode, onCancel, onError }: UseGoogleCalendarLoginOptions) => {
+export const useGoogleCalendarLogin = ({
+  scope = googleContants.CALENDAR_SCOPES,
+  deniedMessage = "O Google não autorizou o acesso à agenda",
+  onCode,
+  onCancel,
+  onError,
+}: UseGoogleCalendarLoginOptions) => {
   const isConfigured = !!googleContants.OAUTH_CLIENT_ID;
   const [isReady, setIsReady] = useState<boolean>(!!getGoogleAccounts()?.oauth2);
 
@@ -70,19 +80,19 @@ export const useGoogleCalendarLogin = ({ onCode, onCancel, onError }: UseGoogleC
     accounts.oauth2
       .initCodeClient({
         client_id: googleContants.OAUTH_CLIENT_ID,
-        scope: googleContants.CALENDAR_SCOPES,
+        scope,
         ux_mode: "popup",
         // O fluxo de código já pede acesso contínuo; "consent" faz o Google devolver o refresh token mesmo quando a conta já autorizou antes
         prompt: "consent",
         callback: (response) => {
           if (response.code) onCode(response.code);
           else if (response.error === "access_denied") onCancel?.();
-          else onError?.(response.error_description || "O Google não autorizou o acesso à agenda");
+          else onError?.(response.error_description || deniedMessage);
         },
         error_callback: (error) => (error.type === "popup_closed" ? onCancel?.() : onError?.(error.message || "Falha no login do Google")),
       })
       .requestCode();
-  }, [onCode, onCancel, onError]);
+  }, [scope, deniedMessage, onCode, onCancel, onError]);
 
   return { launch, isConfigured, isReady };
 };
