@@ -608,9 +608,23 @@ export const metaAdsService = {
       notes?: string | null;
       whatsappConfigurationId?: string | null;
       metaPageId?: string | null;
+      format?: AdPilotFormatChoice;
     };
   }): Promise<AdPilotRun> => {
     const response = await api.post(`/client/${params.clientId}/meta-ads/account/${params.accountId}/pilot/campaign`, body);
+    return response.data;
+  },
+
+  decidePilotCreatives: async ({
+    params,
+    runId,
+    creatives,
+  }: {
+    params: { clientId: string };
+    runId: string;
+    creatives: AdPilotCreativeDecision[];
+  }): Promise<AdPilotRun> => {
+    const response = await api.post(`/client/${params.clientId}/meta-ads/pilot/run/${runId}/creatives`, { creatives });
     return response.data;
   },
 

@@ -11,6 +11,7 @@ import { Loader2, Rocket } from "lucide-react";
 import { useState, type FC } from "react";
 import { toast } from "sonner";
 import { fieldSelectClassName } from "../campaign/campaignUtils";
+import { PilotCreativeApproval } from "./pilotCreativeApproval";
 import { pilotRunStatusInfo, pilotStepLabel, pilotTextareaClassName } from "./pilotUtils";
 
 type Props = {
@@ -21,7 +22,10 @@ type Props = {
   onOpenDraft: (draftId: string) => void;
 };
 
-/** O usuário dá o teto de verba; a IA lê o histórico e monta a campanha (de teste, se não houver) com os criativos gerados. */
+/**
+ * O usuário dá o teto de verba; a IA lê o histórico e gera os criativos. Depois que o usuário aprova, o piloto monta a campanha
+ * (de teste, se não houver histórico) só com os aprovados.
+ */
 export const PilotCampaign: FC<Props> = ({ account, brand, configurations, pages, onOpenDraft }) => {
   const { client, can } = useClientContext();
   const queryClient = useQueryClient();
@@ -31,6 +35,7 @@ export const PilotCampaign: FC<Props> = ({ account, brand, configurations, pages
   const [notes, setNotes] = useState("");
   const [whatsappConfigurationId, setWhatsappConfigurationId] = useState(brand.whatsappConfigurationId ?? "");
   const [metaPageId, setMetaPageId] = useState(brand.metaPageId ?? "");
+  const [creativeFormat, setCreativeFormat] = useState<AdPilotFormatChoice>("IMAGE");
 
   const runsQuery = useQuery({
     queryKey: ["metaAds", "pilotRuns", client.id, account.id],
@@ -48,17 +53,19 @@ export const PilotCampaign: FC<Props> = ({ account, brand, configurations, pages
           notes: notes.trim() || null,
           whatsappConfigurationId: whatsappConfigurationId || null,
           metaPageId: metaPageId || null,
+          format: creativeFormat,
         },
       }),
     onError: requestErrorHandling,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["metaAds", "pilotRuns", client.id, account.id] });
-      toast.success("O piloto começou a montar a campanha. Leva alguns minutos.");
+      toast.success("O piloto começou a gerar os criativos. Leva alguns minutos; depois é só aprovar.");
     },
   });
 
   const runs = (runsQuery.data ?? []).filter((run) => run.kind === "CAMPAIGN");
-  const isRunning = runs.some((run) => run.status === "RUNNING");
+  // Criativos esperando aprovação seguram uma nova montagem, para não gerar imagens em dobro
+  const isRunning = runs.some((run) => run.status === "RUNNING" || run.status === "AWAITING_APPROVAL");
   const budgetValue = Number(budget.replace(",", "."));
   const hasBase = !!brand.profile || !!brand.baseText?.trim();
   const canRequest = can("ads.manage") && hasBase && budgetValue >= 1 && !isRunning && !request.isPending;
@@ -68,9 +75,9 @@ export const PilotCampaign: FC<Props> = ({ account, brand, configurations, pages
       <div>
         <h2 className="text-lg font-semibold">4. Montar campanha</h2>
         <p className="text-muted-foreground text-sm">
-          Sem histórico, o piloto monta uma campanha de teste com 2 conjuntos e ângulos diferentes por 7 a 10 dias. Com histórico, repete o
-          que vendeu e mantém um criativo novo em teste. A campanha vira um rascunho em Criar campanha: nada vai para a Meta sem a sua
-          revisão.
+          Primeiro o piloto gera os criativos e mostra para você aprovar, recusar ou ajustar os textos. Depois monta a campanha só com os
+          aprovados: sem histórico, um teste com 2 conjuntos por 7 a 10 dias; com histórico, repete o que vendeu. A campanha vira um
+          rascunho em Criar campanha: nada vai para a Meta sem a sua revisão.
         </p>
       </div>
 
@@ -138,6 +145,27 @@ export const PilotCampaign: FC<Props> = ({ account, brand, configurations, pages
             </div>
           </div>
           <div className="grid gap-1">
+            <Label htmlFor="pilot-format" className="text-xs">
+              Formato dos criativos
+            </Label>
+            <select
+              id="pilot-format"
+              className={cn(fieldSelectClassName, "w-full sm:w-72")}
+              value={creativeFormat}
+              onChange={(event) => setCreativeFormat(event.target.value as AdPilotFormatChoice)}
+            >
+              <option value="IMAGE">Imagens</option>
+              <option value="VIDEO">Vídeos (a IA escreve o roteiro)</option>
+              <option value="MIXED">Imagens e vídeos (a IA escolhe)</option>
+            </select>
+            {creativeFormat !== "IMAGE" && (
+              <p className="text-muted-foreground text-xs">
+                Para vídeo, a IA escreve o roteiro e você revisa antes. O vídeo só é gerado depois que o roteiro é aprovado, até 2 por
+                campanha, e leva alguns minutos cada.
+              </p>
+            )}
+          </div>
+          <div className="grid gap-1">
             <Label htmlFor="pilot-notes" className="text-xs">
               Pedido para a IA (opcional)
             </Label>
@@ -158,10 +186,10 @@ export const PilotCampaign: FC<Props> = ({ account, brand, configurations, pages
           <div className="flex flex-wrap items-center gap-3">
             <Button disabled={!canRequest} onClick={() => request.mutate()}>
               <Rocket className="h-4 w-4" />
-              Montar campanha com o piloto
+              Gerar criativos com o piloto
             </Button>
             {!hasBase && <p className="text-muted-foreground text-xs">Preencha a base da marca primeiro.</p>}
-            <p className="text-muted-foreground text-xs">Cada imagem gerada consome a cota de IA.</p>
+            <p className="text-muted-foreground text-xs">Cada imagem e cada vídeo gerado consome a cota de IA.</p>
           </div>
         </div>
       )}
@@ -187,6 +215,7 @@ export const PilotCampaign: FC<Props> = ({ account, brand, configurations, pages
                 )}
                 {run.summary && <p className="text-muted-foreground text-xs">{run.summary}</p>}
                 {run.error && <p className="text-destructive text-xs">{run.error}</p>}
+                {run.status === "AWAITING_APPROVAL" && <PilotCreativeApproval account={account} run={run} />}
               </div>
               {run.draftId && (
                 <Button size="sm" variant="outline" onClick={() => onOpenDraft(run.draftId!)}>

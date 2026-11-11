@@ -683,9 +683,47 @@ type AdCreativeScore = {
   missingData: string | null;
 };
 
-type AdPilotRunStatus = "RUNNING" | "DONE" | "FAILED";
+type AdPilotRunStatus = "RUNNING" | "AWAITING_APPROVAL" | "DONE" | "FAILED";
 
-type AdPilotStep = "IDENTITY" | "HISTORY" | "INSIGHTS" | "PLAN" | "CREATIVES" | "DRAFT" | "REVIEW";
+type AdPilotCreativeStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+type AdPilotFormatChoice = "IMAGE" | "VIDEO" | "MIXED";
+
+type AdPilotVideoScript = {
+  gancho?: string;
+  cenas?: { tempo?: string; fala?: string; legenda?: string; imagem?: string }[];
+  chamada?: string;
+};
+
+type AdPilotRunCreative = {
+  key: string;
+  angle: string;
+  name: string;
+  primaryText: string;
+  headline: string;
+  description: string | null;
+  welcomeMessage: string;
+  format: "IMAGE" | "VIDEO";
+  script: AdPilotVideoScript | null;
+  videoUrl: string | null;
+  assetId: string | null;
+  assetPreviewUrl: string | null;
+  assetOrigin: AdAssetOrigin | null;
+  status: AdPilotCreativeStatus;
+  error: string | null;
+};
+
+type AdPilotCreativeDecision = {
+  key: string;
+  approved: boolean;
+  primaryText?: string | null;
+  headline?: string | null;
+  description?: string | null;
+  welcomeMessage?: string | null;
+  script?: AdPilotVideoScript | null;
+};
+
+type AdPilotStep = "IDENTITY" | "HISTORY" | "INSIGHTS" | "PLAN" | "CREATIVES" | "VIDEOS" | "DRAFT" | "REVIEW";
 
 type AdPilotRun = {
   id: string;
@@ -696,6 +734,7 @@ type AdPilotRun = {
   maxDailyBudget: number | null;
   summary: string | null;
   draftId: string | null;
+  creatives: AdPilotRunCreative[];
   error: string | null;
   startedAt: string;
   finishedAt: string | null;

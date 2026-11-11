@@ -25,12 +25,14 @@ export const pilotStepLabel: Record<AdPilotStep, string> = {
   INSIGHTS: "Comparando os criativos",
   PLAN: "Montando a campanha",
   CREATIVES: "Gerando os criativos",
+  VIDEOS: "Gerando os vídeos dos roteiros aprovados",
   DRAFT: "Criando o rascunho",
   REVIEW: "Revisando os criativos",
 };
 
 export const pilotRunStatusInfo: Record<AdPilotRunStatus, { label: string; className: string }> = {
   RUNNING: { label: "Rodando", className: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300" },
+  AWAITING_APPROVAL: { label: "Aprovar criativos", className: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" },
   DONE: { label: "Pronto", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" },
   FAILED: { label: "Falhou", className: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300" },
 };
