@@ -179,6 +179,13 @@ export const PilotIdentity: FC<Props> = ({ account, brand, pages, onChange }) =>
               ))}
             </div>
           )}
+          {sources?.details?.length ? (
+            <ul className="text-muted-foreground list-disc space-y-0.5 pl-4 text-xs">
+              {sources.details.map((detail) => (
+                <li key={detail}>{detail}</li>
+              ))}
+            </ul>
+          ) : null}
           {identity ? (
             <div className="space-y-2 text-sm">
               <div className="flex flex-wrap items-center gap-2">
