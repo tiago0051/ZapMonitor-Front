@@ -216,6 +216,30 @@ export const PilotCampaign: FC<Props> = ({ account, brand, configurations, pages
                 {run.summary && <p className="text-muted-foreground text-xs">{run.summary}</p>}
                 {run.error && <p className="text-destructive text-xs">{run.error}</p>}
                 {run.status === "AWAITING_APPROVAL" && <PilotCreativeApproval account={account} run={run} />}
+                {run.status !== "AWAITING_APPROVAL" && run.creatives.some((creative) => creative.videoUrl) && (
+                  // Depois de aprovado, o vídeo é gerado na montagem: aqui dá para assistir o que entrou na campanha
+                  <div className="flex flex-wrap gap-3 pt-2">
+                    {run.creatives
+                      .filter((creative) => creative.videoUrl)
+                      .map((creative) => (
+                        <figure key={creative.key} className="w-36 space-y-1">
+                          <video
+                            src={creative.videoUrl!}
+                            controls
+                            playsInline
+                            preload="metadata"
+                            className="aspect-[9/16] w-full rounded bg-black object-contain"
+                          />
+                          <figcaption className="text-muted-foreground truncate text-xs" title={creative.name}>
+                            {creative.name}
+                          </figcaption>
+                          <a href={creative.videoUrl!} target="_blank" rel="noreferrer" className="text-primary text-xs underline">
+                            Abrir em outra aba
+                          </a>
+                        </figure>
+                      ))}
+                  </div>
+                )}
               </div>
               {run.draftId && (
                 <Button size="sm" variant="outline" onClick={() => onOpenDraft(run.draftId!)}>
