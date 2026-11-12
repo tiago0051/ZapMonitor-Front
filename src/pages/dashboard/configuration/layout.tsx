@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { clientService } from "@/services/api/clientService";
 import { useQuery } from "@tanstack/react-query";
 import {
+  Palette,
   Bot,
   CircleSlash,
   Code2,
@@ -37,6 +38,7 @@ import { LostReasons } from "./lostReason/lostReasons";
 import { CrmFields } from "./crmField/crmFields";
 import { EmailSettings } from "./emailSending/emailSenders";
 import { MetaAdsSettings } from "./metaAds/metaAdsSettings";
+import { BrandIdentitySettings } from "./brandIdentity/brandIdentitySettings";
 import { AdPlatformSettings } from "./adsPlatforms/adPlatformSettings";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { ServiceGroups } from "./serviceGroup/serviceGroup";
@@ -108,6 +110,18 @@ const configurationGroups: { label: string; sections: ConfigurationSection[] }[]
         permission: "templates.manage",
       },
       { id: "category", label: "Categorias", icon: Tags, content: <WhatsappCategory />, permission: "categories.manage" },
+    ],
+  },
+  {
+    label: "Marca",
+    sections: [
+      {
+        id: "brandIdentity",
+        label: "Identidade da marca",
+        icon: Palette,
+        content: <BrandIdentitySettings />,
+        permission: "brand.manage",
+      },
     ],
   },
   {

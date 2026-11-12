@@ -24,6 +24,7 @@ import {
   FiSend,
   FiSettings,
   FiSpeaker,
+  FiInstagram,
   FiTrendingUp,
   FiUsers,
   FiZap,
@@ -87,6 +88,13 @@ const navMain: {
     icon: FiSpeaker,
     url: "ads",
     permission: "ads.view",
+    requiresAds: true,
+  },
+  {
+    title: "Postagens",
+    icon: FiInstagram,
+    url: "posts",
+    permission: "posts.view",
     requiresAds: true,
   },
   {

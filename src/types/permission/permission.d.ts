@@ -26,7 +26,11 @@ type Permission =
   | "ads.manage"
   | "ads.approve"
   | "broadcasts.view"
-  | "broadcasts.send";
+  | "broadcasts.send"
+  | "posts.view"
+  | "posts.manage"
+  | "posts.publish"
+  | "brand.manage";
 
 type PermissionDefinition = {
   key: Permission;

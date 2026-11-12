@@ -57,6 +57,16 @@ const BrandForm: FC<{ brand: EmailBrand }> = ({ brand }) => {
     },
   });
 
+  const applyIdentity = useMutation({
+    mutationFn: () => emailTemplateService.applyBrandIdentity(client.id),
+    onError: requestErrorHandling,
+    onSuccess: (saved) => {
+      queryClient.setQueryData(["emailTemplates", "brand", client.id], saved);
+      queryClient.invalidateQueries({ queryKey: ["emailTemplates", "preview"] });
+      toast.success("Logo, cor e nome da marca aplicados nos e-mails");
+    },
+  });
+
   const upload = (file: File | undefined) => {
     if (!file) return;
     setUploading(true);
@@ -76,6 +86,16 @@ const BrandForm: FC<{ brand: EmailBrand }> = ({ brand }) => {
 
   return (
     <form onSubmit={onSubmit} className="grid gap-4">
+      {canEdit && (
+        <div className="bg-muted/40 flex flex-wrap items-center justify-between gap-2 rounded-md border p-3 text-sm">
+          <span className="text-muted-foreground">
+            Use a logo e as cores da identidade da marca, lida do Instagram e do Facebook e usada também nas postagens.
+          </span>
+          <Button type="button" variant="outline" size="sm" disabled={applyIdentity.isPending} onClick={() => applyIdentity.mutate()}>
+            {applyIdentity.isPending ? "Aplicando..." : "Usar identidade da marca"}
+          </Button>
+        </div>
+      )}
       <div className="grid gap-1.5">
         <Label htmlFor="brand-logo">Logo</Label>
         {logo.url && <img src={logo.url} alt="Logo" className="bg-muted max-h-16 max-w-48 rounded border object-contain p-1" />}

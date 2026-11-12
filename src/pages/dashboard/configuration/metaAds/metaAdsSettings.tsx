@@ -21,6 +21,10 @@ const scopeLabel: Record<string, string> = {
   business_management: "acessar o portfólio",
   leads_retrieval: "ler leads dos formulários",
   pages_show_list: "ver as páginas",
+  pages_manage_posts: "publicar na página (Postagens)",
+  pages_read_engagement: "ler as postagens da página",
+  instagram_basic: "ler o Instagram",
+  instagram_content_publish: "publicar no Instagram (Postagens)",
 };
 
 export const MetaAdsSettings = () => {

@@ -41,6 +41,9 @@ export const emailTemplateService = {
     body: { logoAssetId: string | null; primaryColor: string; backgroundColor: string; footerText: string | null },
   ): Promise<EmailBrand> => (await api.put(`${base(clientId)}/brand`, body)).data,
 
+  /** Aplica a logo, a cor e o nome da identidade da marca (a mesma das postagens e dos anúncios). */
+  applyBrandIdentity: async (clientId: string): Promise<EmailBrand> => (await api.post(`${base(clientId)}/brand/apply-identity`)).data,
+
   /** Envia a imagem para o armazenamento e devolve o endereço público dela, que não expira. */
   uploadImage: async (clientId: string, file: File): Promise<{ assetId: string; url: string }> => {
     const { uploadUrl, assetId, url } = (
