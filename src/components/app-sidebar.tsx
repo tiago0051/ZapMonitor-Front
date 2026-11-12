@@ -26,6 +26,7 @@ import {
   FiSpeaker,
   FiTrendingUp,
   FiUsers,
+  FiZap,
 } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
 import { PanelLeftIcon } from "lucide-react";
@@ -45,6 +46,11 @@ const navMain: {
   requiresCrm?: boolean;
   requiresAds?: boolean;
 }[] = [
+  {
+    title: "Assistente",
+    icon: FiZap,
+    url: "assistant",
+  },
   {
     title: "E-mails",
     icon: FiMail,

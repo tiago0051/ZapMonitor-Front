@@ -9,6 +9,7 @@ import { ClientProvider } from "@/context/ClientContext/clientProvider";
 import { PermissionRoute } from "@/components/permission-route";
 import { PlanExpiredScreen } from "@/components/plan/planExpiredScreen";
 import { isPlanExpiredError } from "@/components/plan/planExpired";
+import { AssistantPage } from "@/pages/dashboard/assistant/assistantPage";
 
 const WhatsappRouter = lazy(() => import("./whatsappRouter"));
 const ConfigurationRouter = lazy(() => import("./clientRouter"));
@@ -45,6 +46,8 @@ export const DashboardRouter: FC = () => {
         <Route element={<DashboardLayout />}>
           <Route index element={<HomePage />} />
           <Route path="configuration/*" element={<ConfigurationRouter />} />
+          {/* Todo membro conversa; o assistente age com as permissões de quem está logado */}
+          <Route path="assistant" element={<AssistantPage />} />
           <Route
             path="email/*"
             element={

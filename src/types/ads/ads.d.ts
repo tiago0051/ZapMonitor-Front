@@ -303,19 +303,6 @@ type AdAdvisorStatus = {
   latestAnalysis: AdAnalysis | null;
 };
 
-type AdChat = { id: string; title: string; createdAt: string; updatedAt: string };
-
-type AdChatMessage = {
-  id: string;
-  role: "USER" | "ASSISTANT";
-  content: string;
-  // Sugestões criadas nesta resposta
-  suggestionIds: string[];
-  createdAt: string;
-};
-
-type AdChatConversation = { chat: AdChat; messages: AdChatMessage[]; suggestions: AdSuggestion[] };
-
 type AdChangeStatus = "PENDING_APPROVAL" | "APPLIED" | "FAILED" | "BLOCKED" | "REJECTED" | "REVERTED" | "EXPIRED";
 
 // Só os campos que a mudança toca; orçamento na moeda da conta

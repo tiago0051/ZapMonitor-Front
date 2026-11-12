@@ -226,28 +226,6 @@ export const metaAdsService = {
     return response.data;
   },
 
-  findChats: async ({ params }: MetaAdsAccountParams): Promise<AdChat[]> => {
-    const response = await api.get<AdChat[]>(`/client/${params.clientId}/meta-ads/account/${params.accountId}/chat`);
-    return response.data;
-  },
-
-  findChatConversation: async ({ params }: { params: { clientId: string; chatId: string } }): Promise<AdChatConversation> => {
-    const response = await api.get<AdChatConversation>(`/client/${params.clientId}/meta-ads/chat/${params.chatId}`);
-    return response.data;
-  },
-
-  sendChatMessage: async ({
-    params,
-    body,
-  }: MetaAdsAccountParams & { body: { message: string; chatId: string | null } }): Promise<AdChatConversation> => {
-    const response = await api.post(`/client/${params.clientId}/meta-ads/account/${params.accountId}/chat/message`, body);
-    return response.data;
-  },
-
-  deleteChat: async ({ params }: { params: { clientId: string; chatId: string } }): Promise<void> => {
-    await api.delete(`/client/${params.clientId}/meta-ads/chat/${params.chatId}`);
-  },
-
   findChanges: async ({ params, queries }: MetaAdsAccountParams & { queries: { status?: string } }): Promise<AdChange[]> => {
     const response = await api.get<AdChange[]>(`/client/${params.clientId}/meta-ads/account/${params.accountId}/change`, {
       params: queries,
