@@ -50,6 +50,7 @@ import { AdStatusToggle } from "./components/adStatusToggle";
 import { AdBudgetEditor } from "./components/adBudgetEditor";
 import { AdsLearnings } from "./learnings/adsLearnings";
 import { AdsExperiments } from "./experiments/adsExperiments";
+import { AdsStrategyWiki } from "./wiki/adsStrategyWiki";
 
 const StatusChip: FC<{ status: string }> = ({ status }) => {
   const info = effectiveStatusInfo(status);
@@ -201,15 +202,16 @@ const MULTI_PLATFORM_TABS = [
   "experiments",
   "learnings",
   "strategy",
+  "wiki",
   "changes",
   "automation",
 ];
 
-// Treze abas em quatro grupos: o grupo fica em cima e as abas dele numa segunda linha menor
+// Catorze abas em quatro grupos: o grupo fica em cima e as abas dele numa segunda linha menor
 const TAB_GROUPS: TabGroup[] = [
   { id: "overview", label: "Visão geral", tabs: ["results", "campaigns", "audiences", "leads"] },
   { id: "create", label: "Criar", tabs: ["create", "pilot"] },
-  { id: "ai", label: "IA", tabs: ["suggestions", "experiments", "learnings", "strategy", "changes"] },
+  { id: "ai", label: "IA", tabs: ["suggestions", "experiments", "learnings", "strategy", "wiki", "changes"] },
   { id: "settings", label: "Configurar", tabs: ["automation", "conversions"] },
 ];
 
@@ -224,6 +226,7 @@ const TAB_LABEL: Record<string, string> = {
   experiments: "Testes",
   learnings: "Aprendizados",
   strategy: "Estratégia",
+  wiki: "Wiki",
   changes: "Mudanças",
   automation: "Automação",
   conversions: "Eventos",
@@ -524,6 +527,10 @@ export const AdsPage = () => {
 
         <TabsContent value="learnings" className={tabContentClassName}>
           <AdsLearnings key={currentAccount.id} account={currentAccount} />
+        </TabsContent>
+
+        <TabsContent value="wiki" className={tabContentClassName}>
+          <AdsStrategyWiki platform={currentAccount.platform} />
         </TabsContent>
 
         {can("ads.manage") && (
