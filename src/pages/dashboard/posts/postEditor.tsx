@@ -19,6 +19,7 @@ import {
   Film,
   ImagePlus,
   Loader2,
+  Plus,
   RefreshCw,
   Send,
   Sparkles,
@@ -181,8 +182,20 @@ const ScriptEditor: FC<{ script: SocialScript; onChange: (script: SocialScript) 
       </div>
       {scenes.map((scene, index) => (
         <fieldset key={index} className="grid gap-2 rounded-lg border p-2">
-          <legend className="px-1 text-xs font-medium">
+          <legend className="flex items-center gap-1 px-1 text-xs font-medium">
             Cena {index + 1} {scene.tempo && <span className="text-muted-foreground">({scene.tempo})</span>}
+            {!disabled && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                aria-label={`Remover cena ${index + 1}`}
+                onClick={() => onChange({ ...script, cenas: scenes.filter((_, position) => position !== index) })}
+              >
+                <Trash2 className="h-3.5 w-3.5" aria-hidden />
+              </Button>
+            )}
           </legend>
           <Input
             aria-label="O que aparece"
@@ -207,6 +220,18 @@ const ScriptEditor: FC<{ script: SocialScript; onChange: (script: SocialScript) 
           />
         </fieldset>
       ))}
+      {!disabled && scenes.length < 6 && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="justify-self-start"
+          onClick={() => onChange({ ...script, cenas: [...scenes, {}] })}
+        >
+          <Plus className="mr-2 h-4 w-4" aria-hidden />
+          Adicionar cena
+        </Button>
+      )}
       <div className="grid gap-1.5">
         <Label htmlFor="script-cta">Chamada final</Label>
         <Input
@@ -449,7 +474,9 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
               {editable && (
                 <Button
                   className="justify-self-start"
-                  disabled={generateVideo.isPending || busy || !(script.cenas?.length ?? 0)}
+                  disabled={
+                    generateVideo.isPending || busy || !(script.cenas ?? []).some((scene) => scene.fala?.trim() || scene.imagem?.trim())
+                  }
                   onClick={() => generateVideo.mutate()}
                 >
                   <Film className="mr-2 h-4 w-4" aria-hidden />
