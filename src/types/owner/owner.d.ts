@@ -31,6 +31,8 @@ type OwnerClient = {
   adSegment: string | null;
   // O cliente pediu para não participar da inteligência compartilhada
   adIntelligenceOptOut: boolean;
+  // Exclusão pedida pelo dono; preenchido enquanto os dados são apagados
+  deletingAt: string | null;
 };
 
 type OwnerAdSegment = { value: string; label: string };

@@ -43,3 +43,9 @@ type ChangeClientAdSegmentRequestData = {
   params: { clientId: string };
   body: { segment: string | null };
 };
+
+type DeleteOwnerClientRequestData = {
+  params: { clientId: string };
+  // Nome do tenant digitado para confirmar
+  body: { confirmationName: string };
+};

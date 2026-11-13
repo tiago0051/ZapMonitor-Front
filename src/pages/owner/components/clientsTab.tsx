@@ -1,4 +1,5 @@
 import { PlanStatusBadge } from "@/components/plan/planRenewalFields";
+import { Badge } from "@/components/ui/badge";
 import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTablePaginate } from "@/components/ui/dataTablePaginate";
@@ -18,6 +19,7 @@ import { formatNumber } from "../ownerFormat";
 import { ClientAdSegmentSelect } from "./clientAdSegmentSelect";
 import { DialogChangeImplanter } from "./dialogChangeImplanter";
 import { DialogClientPlan } from "./dialogClientPlan";
+import { DialogDeleteClient } from "./dialogDeleteClient";
 
 const WITHOUT_IMPLANTER = "none";
 
@@ -27,10 +29,33 @@ const selectClassName =
 const ImplanterName = ({ client }: { client: OwnerClient }) =>
   client.implanter ? <span>{client.implanter.name}</span> : <span className="text-muted-foreground italic">Sem responsável</span>;
 
+const ClientName = ({ client }: { client: OwnerClient }) => (
+  <span className="inline-flex flex-wrap items-center gap-2">
+    {client.name}
+    {client.deletingAt && <Badge variant="destructive">Excluindo</Badge>}
+  </span>
+);
+
+// Um tenant sendo excluído só aceita retomar a exclusão
+const ClientActions = ({ client }: { client: OwnerClient }) => (
+  <div className="flex flex-wrap gap-1">
+    {!client.deletingAt && (
+      <>
+        <DialogClientPlan client={client} />
+        <DialogChangeImplanter client={client} />
+      </>
+    )}
+    <DialogDeleteClient client={client} />
+  </div>
+);
+
 const columns: DataTablePaginateColumnDef<OwnerClient>[] = [
-  { accessorKey: "name", header: "Tenant" },
+  { header: "Tenant", cell: ({ row }) => <ClientName client={row.original} /> },
   { header: "Responsável", cell: ({ row }) => <ImplanterName client={row.original} /> },
-  { header: "Segmento", cell: ({ row }) => <ClientAdSegmentSelect client={row.original} /> },
+  {
+    header: "Segmento",
+    cell: ({ row }) => (row.original.deletingAt ? "—" : <ClientAdSegmentSelect client={row.original} />),
+  },
   { header: "Vencimento", cell: ({ row }) => (row.original.plan ? <PlanStatusBadge status={row.original.plan} /> : "—") },
   { accessorKey: "createdAt", header: "Criado em", cell: ({ row }) => format(row.original.createdAt, "dd/MM/yyyy") },
   { accessorKey: "activeUsers", header: "Usuários ativos", cell: ({ row }) => formatNumber(row.original.activeUsers) },
@@ -38,12 +63,7 @@ const columns: DataTablePaginateColumnDef<OwnerClient>[] = [
   { accessorKey: "services", header: "Atendimentos no período", cell: ({ row }) => formatNumber(row.original.services) },
   {
     header: "Ações",
-    cell: ({ row }) => (
-      <div className="flex flex-wrap gap-1">
-        <DialogClientPlan client={row.original} />
-        <DialogChangeImplanter client={row.original} />
-      </div>
-    ),
+    cell: ({ row }) => <ClientActions client={row.original} />,
   },
 ];
 
@@ -131,7 +151,9 @@ export const ClientsTab: FC<ClientsTabProps> = ({ period, implanters, implanterF
           {clients.items.map((client) => (
             <Card key={client.id} className="gap-3">
               <CardHeader>
-                <CardTitle>{client.name}</CardTitle>
+                <CardTitle>
+                  <ClientName client={client} />
+                </CardTitle>
                 <CardDescription>
                   <ImplanterName client={client} /> · criado em {format(client.createdAt, "dd/MM/yyyy")}
                 </CardDescription>
@@ -151,14 +173,13 @@ export const ClientsTab: FC<ClientsTabProps> = ({ period, implanters, implanterF
                     <dd className="font-semibold tabular-nums">{formatNumber(client.services)}</dd>
                   </div>
                 </dl>
-                <div className="space-y-1">
-                  <p className="text-muted-foreground text-sm">Segmento dos anúncios</p>
-                  <ClientAdSegmentSelect client={client} className="w-full max-w-none" />
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  <DialogClientPlan client={client} />
-                  <DialogChangeImplanter client={client} />
-                </div>
+                {!client.deletingAt && (
+                  <div className="space-y-1">
+                    <p className="text-muted-foreground text-sm">Segmento dos anúncios</p>
+                    <ClientAdSegmentSelect client={client} className="w-full max-w-none" />
+                  </div>
+                )}
+                <ClientActions client={client} />
               </CardContent>
             </Card>
           ))}

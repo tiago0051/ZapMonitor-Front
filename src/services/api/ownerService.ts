@@ -23,4 +23,7 @@ export const ownerService = {
   changeClientAdSegment: async ({ params, body }: ChangeClientAdSegmentRequestData): Promise<void> => {
     await api.put(`/owner/clients/${params.clientId}/ad-segment`, body);
   },
+  deleteClient: async ({ params, body }: DeleteOwnerClientRequestData): Promise<void> => {
+    await api.delete(`/owner/clients/${params.clientId}`, { data: body });
+  },
 };
