@@ -479,6 +479,8 @@ type AdCampaignDraft = AdDraftRouting & {
   publishErrors: string[];
   publishedAt: string | null;
   activatedAt: string | null;
+  // Ativação agendada (planejamento)
+  activateAt?: string | null;
   createdAt: string;
   updatedAt: string;
 };

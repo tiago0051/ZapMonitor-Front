@@ -12,7 +12,7 @@ import { metaAdsService } from "@/services/api/metaAdsService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { AlertTriangle, ArrowLeft, Check, Loader2, Megaphone, Play, Plus, Rocket, Save, Sparkles, Trash2, Undo2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CalendarClock, Check, Loader2, Megaphone, Play, Plus, Rocket, Save, Sparkles, Trash2, Undo2 } from "lucide-react";
 import { useState, type FC } from "react";
 import { toast } from "sonner";
 import { effectiveStatusInfo, formatCount, formatMoney, statusToneClassName } from "../adsUtils";
@@ -211,6 +211,16 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
       onBack();
     },
   });
+  const [activateAt, setActivateAt] = useState(() => format(new Date(Date.now() + 24 * 60 * 60 * 1000), "yyyy-MM-dd'T'08:00"));
+  const scheduleActivation = useMutation({
+    mutationFn: metaAdsService.scheduleDraftActivation,
+    onError: requestErrorHandling,
+    onSuccess: (updated) => {
+      refresh(updated);
+      queryClient.invalidateQueries({ queryKey: ["planner"] });
+      toast.success(updated.activateAt ? "Ativação agendada" : "Agendamento cancelado");
+    },
+  });
   const [isConfirmingUndo, setIsConfirmingUndo] = useState(false);
   const undo = useMutation({
     mutationFn: metaAdsService.undoDraftPublication,
@@ -221,7 +231,8 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
       toast.success("Campanha excluída da Meta. Corrija o plano e crie de novo.");
     },
   });
-  const isBusy = save.isPending || generate.isPending || publish.isPending || activate.isPending || undo.isPending;
+  const isBusy =
+    save.isPending || generate.isPending || publish.isPending || activate.isPending || undo.isPending || scheduleActivation.isPending;
   // Criada (ou criada pela metade) e ainda não ativada: dá para excluir da Meta e voltar ao rascunho
   const canUndo =
     can("ads.manage") && !!draft.published?.campaignId && (draft.status === "FAILED" || draft.status === "PUBLISHED") && !draft.activatedAt;
@@ -425,6 +436,45 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
               <Play className="h-4 w-4" />
               Ativar campanha
             </Button>
+          )}
+          {/* Ligar sozinha numa data: o sistema ativa na hora marcada, respeitando o horário das travas */}
+          {can("ads.approve") && draft.status === "PUBLISHED" && (
+            <div className="flex flex-wrap items-center gap-2">
+              {draft.activateAt ? (
+                <>
+                  <span className="text-sm">
+                    <CalendarClock className="mr-1 inline h-4 w-4" aria-hidden />
+                    Ativação agendada para {format(new Date(draft.activateAt), "dd/MM 'às' HH:mm")}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={isBusy}
+                    onClick={() => scheduleActivation.mutate({ params, body: { activateAt: null } })}
+                  >
+                    Cancelar agendamento
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Input
+                    type="datetime-local"
+                    aria-label="Data e hora da ativação"
+                    className="w-auto"
+                    value={activateAt}
+                    onChange={(event) => setActivateAt(event.target.value)}
+                  />
+                  <Button
+                    variant="outline"
+                    disabled={isBusy || !activateAt}
+                    onClick={() => scheduleActivation.mutate({ params, body: { activateAt: new Date(activateAt).toISOString() } })}
+                  >
+                    <CalendarClock className="h-4 w-4" />
+                    Agendar ativação
+                  </Button>
+                </>
+              )}
+            </div>
           )}
           {/* Já ativada: pausar e reativar a campanha sem passar pela IA */}
           {draft.status === "ACTIVE" && draft.published?.campaignId && draft.campaignStatus && (

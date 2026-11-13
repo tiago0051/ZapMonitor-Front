@@ -400,6 +400,18 @@ export const metaAdsService = {
     return response.data;
   },
 
+  /** Agenda (ou cancela, com null) a ativação da campanha criada pausada. */
+  scheduleDraftActivation: async ({
+    params,
+    body,
+  }: {
+    params: { clientId: string; draftId: string };
+    body: { activateAt: string | null };
+  }): Promise<AdCampaignDraft> => {
+    const response = await api.put(`/client/${params.clientId}/meta-ads/draft/${params.draftId}/activation-schedule`, body);
+    return response.data;
+  },
+
   findDraftCompliance: async ({ params }: { params: { clientId: string; draftId: string } }): Promise<AdComplianceIssue[]> => {
     const response = await api.get<AdComplianceIssue[]>(`/client/${params.clientId}/meta-ads/draft/${params.draftId}/compliance`);
     return response.data;

@@ -16,6 +16,7 @@ import {
   FiActivity,
   FiBook,
   FiBriefcase,
+  FiCalendar,
   FiColumns,
   FiKey,
   FiLogOut,
@@ -71,6 +72,12 @@ const navMain: {
     icon: FiBook,
     url: "contacts",
     permission: "contacts.view",
+  },
+  {
+    title: "Planejamento",
+    icon: FiCalendar,
+    url: "planner",
+    permission: "planner.view",
   },
   {
     title: "Campanhas",

@@ -51,6 +51,8 @@ type SocialPost = {
   error: string | null;
   scheduledAt: string | null;
   publishedAt: string | null;
+  // Dia previsto no planejamento enquanto não é agendada
+  plannedFor?: string | null;
   createdAt: string;
   updatedAt: string;
   media: SocialPostMedia[];
