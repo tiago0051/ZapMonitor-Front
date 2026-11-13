@@ -1,29 +1,9 @@
-type FindMonthlyReportRequestData = {
-  params: FindMonthlyReportRequestParams;
-  queries: FindMonthlyReportRequestQueries;
-};
-
-type FindMonthlyReportRequestParams = {
-  clientId: string;
-};
-
-type FindMonthlyReportRequestQueries = {
-  year: number;
-  month: number;
-  userId?: string;
-};
-
-type FindDailyMessagesRequestData = {
-  params: FindDailyMessagesRequestParams;
-  queries: FindDailyMessagesRequestQueries;
-};
-
-type FindDailyMessagesRequestParams = {
-  clientId: string;
-};
-
-type FindDailyMessagesRequestQueries = {
-  year: number;
-  month: number;
-  userId?: string;
+type FindWhatsappPerformanceRequestData = {
+  params: { clientId: string };
+  queries: {
+    startDate: string;
+    endDate: string;
+    // Date.getTimezoneOffset() do navegador: dias e horas do relatório no horário local
+    timezoneOffset: number;
+  };
 };

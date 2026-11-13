@@ -1,84 +1,95 @@
-import type { FC } from "react";
-import { useBaseUrl } from "@/hooks/use-baseUrl";
-import { Reports } from "./reports/reports";
-import { Separator } from "@/components/ui/separator";
-import { Link } from "react-router";
+import { ErrorState } from "@/components/state-message";
+import { Button } from "@/components/ui/button";
 import { useClientContext } from "@/context/ClientContext/clientContext";
-import { cn } from "@/lib/utils";
+import { useUserContext } from "@/context/UserContext/userContext";
+import { useBaseUrl } from "@/hooks/use-baseUrl";
+import { homeService } from "@/services/api/homeService";
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { ListChecks } from "lucide-react";
+import type { FC } from "react";
 import { FaWhatsapp } from "react-icons/fa";
-import { FiActivity, FiMail, FiSettings, FiUsers } from "react-icons/fi";
+import { Link } from "react-router";
+import { GettingStarted } from "./components/gettingStarted";
+import { useGuideSteps, useGuideVisibility } from "./components/gettingStartedSteps";
+import { HomeMetrics } from "./components/homeMetrics";
+import { HomeShortcuts } from "./components/homeShortcuts";
 
-// Atalhos sem permissão ficam visíveis para qualquer membro do cliente
-const shortcuts: {
-  title: string;
-  description: string;
-  icon: React.ComponentType<{ className?: string }>;
-  url: string;
-  permission?: Permission;
-}[] = [
-  {
-    title: "Atendimento WhatsApp",
-    description: "Responder a fila e as conversas em andamento",
-    icon: FaWhatsapp,
-    url: "whatsapp",
-    permission: "whatsapp.chat",
-  },
-  { title: "E-mails", description: "Consultar os e-mails enviados", icon: FiMail, url: "email", permission: "email.view" },
-  {
-    title: "Gestão",
-    description: "Acompanhar atendimentos em andamento e encerrados",
-    icon: FiActivity,
-    url: "management",
-    permission: "management.view",
-  },
-  { title: "Usuários", description: "Convidar pessoas e ajustar acessos", icon: FiUsers, url: "members", permission: "members.manage" },
-  { title: "Configurações", description: "Fluxos, templates, números e sua senha", icon: FiSettings, url: "configuration" },
-];
+// Fila e conversas mudam o tempo todo; o resto é barato de recontar
+const REFRESH_INTERVAL_MS = 60 * 1000;
+
+const greeting = (date: Date) => {
+  const hour = date.getHours();
+  if (hour < 12) return "Bom dia";
+  if (hour < 18) return "Boa tarde";
+  return "Boa noite";
+};
 
 export const HomePage: FC = () => {
   const baseUrl = useBaseUrl();
-  const { can } = useClientContext();
+  const { client, can } = useClientContext();
+  const { user } = useUserContext();
 
-  const allowedShortcuts = shortcuts.filter((shortcut) => !shortcut.permission || can(shortcut.permission));
+  const overviewQuery = useQuery({
+    meta: { errorHandledInline: true },
+    queryKey: ["home", "overview", client.id],
+    queryFn: () =>
+      homeService.findOverview({ params: { clientId: client.id }, queries: { timezoneOffset: new Date().getTimezoneOffset() } }),
+    refetchInterval: REFRESH_INTERVAL_MS,
+  });
+
+  const steps = useGuideSteps(overviewQuery.data?.onboarding);
+  const { isHidden, setHidden } = useGuideVisibility(client.id, user?.id ?? "");
+  const pendingSteps = steps.filter((step) => !step.done).length;
+  const showGuide = !isHidden && pendingSteps > 0;
+
+  const now = new Date();
+  const firstName = user?.name?.trim().split(/\s+/)[0];
 
   return (
-    <div className="mx-auto size-full max-w-7xl overflow-auto px-4 py-4">
-      <div className="mx-auto space-y-8">
-        <div>
-          <h2 className="mb-4 text-2xl">Atalhos</h2>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {allowedShortcuts.map((shortcut, index) => {
-              // O primeiro atalho é a tarefa principal do usuário e ganha destaque
-              const isPrimary = index === 0 && shortcut.url === "whatsapp";
-
-              return (
-                <Link
-                  key={shortcut.url}
-                  to={`${baseUrl}/${shortcut.url}`}
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg border px-5 py-4 transition-colors",
-                    isPrimary ? "border-transparent bg-green-600 text-white shadow-lg hover:bg-green-700" : "bg-card hover:bg-muted",
-                  )}
-                >
-                  <shortcut.icon className={cn("h-6 w-6 shrink-0", !isPrimary && "text-muted-foreground")} />
-                  <span className="min-w-0">
-                    <span className="block text-base font-medium">{shortcut.title}</span>
-                    <span className={cn("block text-sm", isPrimary ? "text-white/80" : "text-muted-foreground")}>
-                      {shortcut.description}
-                    </span>
-                  </span>
-                </Link>
-              );
-            })}
+    <div className="mx-auto size-full max-w-7xl overflow-auto px-4 py-6">
+      <div className="space-y-8">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-muted-foreground text-sm first-letter:uppercase">{format(now, "EEEE, d 'de' MMMM", { locale: ptBR })}</p>
+            <h1 className="text-2xl font-semibold">
+              {greeting(now)}
+              {firstName ? `, ${firstName}` : ""}!
+            </h1>
+            <p className="text-muted-foreground text-sm">Veja como está o {client.name} e continue de onde parou.</p>
           </div>
-        </div>
+          <div className="flex flex-wrap gap-2">
+            {isHidden && pendingSteps > 0 && (
+              <Button variant="outline" onClick={() => setHidden(false)}>
+                <ListChecks className="h-4 w-4" />
+                Primeiros passos ({steps.length - pendingSteps}/{steps.length})
+              </Button>
+            )}
+            {can("whatsapp.chat") && (
+              <Button asChild className="bg-green-600 text-white hover:bg-green-700">
+                <Link to={`${baseUrl}/whatsapp`}>
+                  <FaWhatsapp className="h-4 w-4" />
+                  Abrir atendimento
+                </Link>
+              </Button>
+            )}
+          </div>
+        </header>
 
-        {can("reports.view") && (
-          <>
-            <Separator />
-            <Reports />
-          </>
+        {showGuide && <GettingStarted steps={steps} onHide={() => setHidden(true)} />}
+
+        {overviewQuery.isError ? (
+          <ErrorState
+            message="Não foi possível carregar o resumo."
+            onRetry={() => overviewQuery.refetch()}
+            isRetrying={overviewQuery.isFetching}
+          />
+        ) : (
+          <HomeMetrics metrics={overviewQuery.data?.metrics} isLoading={overviewQuery.isLoading} />
         )}
+
+        <HomeShortcuts />
       </div>
     </div>
   );

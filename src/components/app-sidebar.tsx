@@ -44,6 +44,8 @@ const navMain: {
   icon: React.ComponentType;
   url: string;
   permission?: Permission;
+  // Basta uma destas permissões
+  anyPermission?: Permission[];
   requiresCrm?: boolean;
   requiresAds?: boolean;
 }[] = [
@@ -101,7 +103,7 @@ const navMain: {
     title: "Gestão",
     icon: FiActivity,
     url: "management",
-    permission: "management.view",
+    anyPermission: ["management.view", "reports.view"],
   },
   {
     title: "Usuários",
@@ -175,7 +177,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             {navMain
               .filter(
                 (item) =>
-                  (!item.permission || can(item.permission)) && (!item.requiresCrm || canUseCrm) && (!item.requiresAds || canUseAds),
+                  (!item.permission || can(item.permission)) &&
+                  (!item.anyPermission || item.anyPermission.some((permission) => can(permission))) &&
+                  (!item.requiresCrm || canUseCrm) &&
+                  (!item.requiresAds || canUseAds),
               )
               .map((item) => (
                 <SidebarMenuItem key={item.title}>

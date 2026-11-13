@@ -107,11 +107,8 @@ export const DashboardRouter: FC = () => {
           />
           <Route
             path="management/*"
-            element={
-              <PermissionRoute permission="management.view">
-                <ManagementRouter />
-              </PermissionRoute>
-            }
+            // Cada aba da gestão confere a própria permissão (equipe ou relatórios)
+            element={<ManagementRouter />}
           />
           <Route
             path="members/*"

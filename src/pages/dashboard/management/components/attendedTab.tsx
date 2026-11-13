@@ -1,38 +1,19 @@
 import { ErrorState } from "@/components/state-message";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { cn } from "@/lib/utils";
 import { managementService } from "@/services/api/managementService";
 import { useQuery } from "@tanstack/react-query";
-import { endOfDay, endOfMonth, format, parseISO, startOfDay, startOfMonth, subDays, subMonths } from "date-fns";
 import { useRef, useState } from "react";
 import { AttendedServicesList } from "./attendedServicesList";
-
-type Period = { start: string; end: string };
-
-const toInputDate = (date: Date) => format(date, "yyyy-MM-dd");
-
-const presets: { label: string; build: () => Period }[] = [
-  { label: "Hoje", build: () => ({ start: toInputDate(new Date()), end: toInputDate(new Date()) }) },
-  { label: "Últimos 7 dias", build: () => ({ start: toInputDate(subDays(new Date(), 6)), end: toInputDate(new Date()) }) },
-  { label: "Este mês", build: () => ({ start: toInputDate(startOfMonth(new Date())), end: toInputDate(new Date()) }) },
-  {
-    label: "Mês passado",
-    build: () => {
-      const lastMonth = subMonths(new Date(), 1);
-      return { start: toInputDate(startOfMonth(lastMonth)), end: toInputDate(endOfMonth(lastMonth)) };
-    },
-  },
-];
+import { thisMonthPeriod, toPeriodQuery, type Period } from "./period";
+import { PeriodFilter } from "./periodFilter";
 
 export const AttendedTab = () => {
   const { client } = useClientContext();
 
-  const [period, setPeriod] = useState<Period>(presets[2].build());
+  const [period, setPeriod] = useState<Period>(thisMonthPeriod);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const detailRef = useRef<HTMLDivElement>(null);
 
@@ -44,11 +25,7 @@ export const AttendedTab = () => {
     requestAnimationFrame(() => detailRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" }));
   };
 
-  const isValidPeriod = !!period.start && !!period.end && period.start <= period.end;
-  // O dia inteiro no fuso do navegador
-  const periodQuery = isValidPeriod
-    ? { startDate: startOfDay(parseISO(period.start)).toISOString(), endDate: endOfDay(parseISO(period.end)).toISOString() }
-    : null;
+  const periodQuery = toPeriodQuery(period);
 
   const findSummaryQuery = useQuery({
     meta: { errorHandledInline: true },
@@ -63,37 +40,7 @@ export const AttendedTab = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="space-y-1">
-          <Label htmlFor="period-start">De</Label>
-          <Input
-            id="period-start"
-            type="date"
-            value={period.start}
-            max={period.end}
-            onChange={(e) => setPeriod({ ...period, start: e.target.value })}
-          />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="period-end">Até</Label>
-          <Input
-            id="period-end"
-            type="date"
-            value={period.end}
-            min={period.start}
-            onChange={(e) => setPeriod({ ...period, end: e.target.value })}
-          />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {presets.map((preset) => (
-            <Button key={preset.label} variant="outline" size="sm" onClick={() => setPeriod(preset.build())}>
-              {preset.label}
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      {!isValidPeriod && <p className="text-destructive text-sm">Escolha um período em que o início seja antes do fim.</p>}
+      <PeriodFilter period={period} onChange={setPeriod} idPrefix="attended-period" />
 
       <div className="flex flex-col gap-4 lg:flex-row">
         <div className="bg-card rounded-xl border shadow-xs lg:w-80 lg:shrink-0">
