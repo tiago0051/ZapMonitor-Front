@@ -4,8 +4,10 @@ import { cn } from "@/lib/utils";
 import { metaAdsService } from "@/services/api/metaAdsService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Film, ImagePlus, Loader2, Trash2 } from "lucide-react";
-import { useRef, type FC } from "react";
+import { Film, ImagePlus, Loader2, Palette, Trash2 } from "lucide-react";
+import { useRef, useState, type FC } from "react";
+import { creativeStudioService } from "@/services/api/creativeStudioService";
+import { CreativeStudioDialog } from "../../studio/creativeStudioDialog";
 import { toast } from "sonner";
 import { assetOriginLabel } from "../pilot/pilotUtils";
 
@@ -24,7 +26,23 @@ export const AdsAssetLibrary: FC<AdsAssetLibraryProps> = ({ account, assets, sel
   const { client, can } = useClientContext();
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [studioOpen, setStudioOpen] = useState(false);
   const params = { clientId: client.id, accountId: account.id };
+
+  // Versão do estúdio vai para a biblioteca da conta e, no modo de escolha, já fica marcada no anúncio
+  const useFromStudio = async (generation: CreativeGeneration) => {
+    try {
+      const asset = await creativeStudioService.sendToAds(client.id, generation.id, account.id);
+      queryClient.invalidateQueries({ queryKey: ["metaAds", "assets"] });
+      toast.success(
+        asset.type === "VIDEO" ? "Vídeo enviado; a Meta leva alguns minutos para processar" : "Imagem enviada para a biblioteca",
+      );
+      onSelect?.(asset);
+    } catch (error) {
+      requestErrorHandling(error);
+      throw error;
+    }
+  };
 
   const upload = useMutation({
     mutationFn: metaAdsService.uploadAsset,
@@ -96,7 +114,27 @@ export const AdsAssetLibrary: FC<AdsAssetLibraryProps> = ({ account, assets, sel
             {upload.isPending ? "Enviando…" : "Enviar"}
           </button>
         )}
+        {can("ads.manage") && (
+          <button
+            type="button"
+            onClick={() => setStudioOpen(true)}
+            className="text-muted-foreground hover:bg-muted flex aspect-square flex-col items-center justify-center gap-1 rounded-md border border-dashed text-center text-xs"
+          >
+            <Palette className="h-5 w-5" aria-hidden />
+            Criar no estúdio
+          </button>
+        )}
       </div>
+      {can("ads.manage") && (
+        <CreativeStudioDialog
+          open={studioOpen}
+          onOpenChange={setStudioOpen}
+          description="Envie as fotos do produto e as instruções: a IA cria o criativo, você pede alterações e manda a versão escolhida para esta conta."
+          defaults={{ purpose: "AD" }}
+          pickLabel={onSelect ? "Usar neste anúncio" : "Enviar para a biblioteca"}
+          onPick={useFromStudio}
+        />
+      )}
       <input
         ref={inputRef}
         type="file"

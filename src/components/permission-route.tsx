@@ -3,7 +3,9 @@ import { ShieldOff } from "lucide-react";
 import type { FC, ReactNode } from "react";
 
 type PermissionRouteProps = {
-  permission: Permission;
+  permission?: Permission;
+  // Basta uma destas permissões
+  anyPermission?: Permission[];
   // Exige também que o plano inclua o módulo CRM
   requiresCrm?: boolean;
   // Exige também que o plano inclua o módulo de anúncios
@@ -23,10 +25,16 @@ export const NoPermission = () => (
   </div>
 );
 
-export const PermissionRoute: FC<PermissionRouteProps> = ({ permission, requiresCrm, requiresAds, children }) => {
+export const PermissionRoute: FC<PermissionRouteProps> = ({ permission, anyPermission, requiresCrm, requiresAds, children }) => {
   const { can, access } = useClientContext();
 
-  if (!can(permission) || (requiresCrm && !access.crmEnabled) || (requiresAds && !access.adsEnabled)) return <NoPermission />;
+  if (
+    (permission && !can(permission)) ||
+    (anyPermission && !anyPermission.some((item) => can(item))) ||
+    (requiresCrm && !access.crmEnabled) ||
+    (requiresAds && !access.adsEnabled)
+  )
+    return <NoPermission />;
 
   return children;
 };

@@ -26,6 +26,7 @@ import {
   FiSettings,
   FiSpeaker,
   FiInstagram,
+  FiImage,
   FiTrendingUp,
   FiUsers,
   FiZap,
@@ -104,6 +105,13 @@ const navMain: {
     icon: FiInstagram,
     url: "posts",
     permission: "posts.view",
+    requiresAds: true,
+  },
+  {
+    title: "Estúdio",
+    icon: FiImage,
+    url: "studio",
+    anyPermission: ["ads.manage", "posts.manage"],
     requiresAds: true,
   },
   {

@@ -42,7 +42,15 @@ export const socialPostService = {
 
   create: async (
     clientId: string,
-    body: { idea: string; format: SocialPostFormat; platforms: SocialPlatform[]; imageCount?: number; plannedFor?: string },
+    body: {
+      idea: string;
+      format: SocialPostFormat;
+      platforms: SocialPlatform[];
+      imageCount?: number;
+      plannedFor?: string;
+      // A mídia vem do estúdio de criativos: a IA só escreve a legenda
+      skipMedia?: boolean;
+    },
   ): Promise<SocialPost> => (await api.post(postBase(clientId), body)).data,
 
   update: async (

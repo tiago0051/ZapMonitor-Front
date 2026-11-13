@@ -50,6 +50,8 @@ const NewPostDialog: FC<{ open: boolean; onOpenChange: (open: boolean) => void; 
   const [postFormat, setPostFormat] = useState<SocialPostFormat>("IMAGE");
   const [imageCount, setImageCount] = useState(3);
   const [platforms, setPlatforms] = useState<SocialPlatform[]>(["INSTAGRAM", "FACEBOOK"]);
+  // Imagens ou vídeo feitos no estúdio a partir das fotos do produto: a IA só escreve a legenda agora
+  const [useStudio, setUseStudio] = useState(false);
 
   const create = useMutation({
     mutationFn: () =>
@@ -57,14 +59,15 @@ const NewPostDialog: FC<{ open: boolean; onOpenChange: (open: boolean) => void; 
         idea: idea.trim(),
         format: postFormat,
         platforms,
-        imageCount: postFormat === "CAROUSEL" ? imageCount : undefined,
+        imageCount: postFormat === "CAROUSEL" && !useStudio ? imageCount : undefined,
+        skipMedia: useStudio || undefined,
       }),
     onError: requestErrorHandling,
     onSuccess: (post) => {
       queryClient.invalidateQueries({ queryKey: ["socialPosts", client.id] });
       onOpenChange(false);
       setIdea("");
-      navigate(`${baseUrl}/posts/${post.id}`);
+      navigate(`${baseUrl}/posts/${post.id}${useStudio ? "?studio=1" : ""}`);
     },
   });
 
@@ -136,7 +139,18 @@ const NewPostDialog: FC<{ open: boolean; onOpenChange: (open: boolean) => void; 
             </div>
           </fieldset>
 
-          {postFormat === "CAROUSEL" && (
+          <label className="flex items-start gap-2 rounded-lg border p-3 text-sm">
+            <Checkbox className="mt-0.5" checked={useStudio} onCheckedChange={(checked) => setUseStudio(checked === true)} />
+            <span className="grid gap-0.5">
+              <span className="font-medium">Criar {postFormat === "REEL" ? "o vídeo" : "as imagens"} no estúdio, a partir de fotos</span>
+              <span className="text-muted-foreground text-xs">
+                Envie fotos do produto e a IA cria a arte com base nelas. A legenda é escrita agora;{" "}
+                {postFormat === "REEL" ? "o vídeo" : "as imagens"} você faz no estúdio, que abre em seguida.
+              </span>
+            </span>
+          </label>
+
+          {postFormat === "CAROUSEL" && !useStudio && (
             <div className="grid gap-1.5">
               <Label htmlFor="post-image-count">Imagens geradas pela IA</Label>
               <input

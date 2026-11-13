@@ -23,11 +23,14 @@ import {
   RefreshCw,
   Send,
   Sparkles,
+  Palette,
   Trash2,
   Upload,
 } from "lucide-react";
 import { useRef, useState, type FC } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
+import { creativeStudioService } from "@/services/api/creativeStudioService";
+import { CreativeStudioDialog } from "../studio/creativeStudioDialog";
 import { toast } from "sonner";
 import { PostSetupNotice } from "./postSetupNotice";
 import {
@@ -252,6 +255,9 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
   const queryClient = useQueryClient();
   const { confirm, confirmDialog } = useConfirm();
   const fileRef = useRef<HTMLInputElement>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Postagem criada para usar o estúdio: abre ele direto no formulário de criativo novo
+  const [studioOpen, setStudioOpen] = useState(searchParams.get("studio") === "1");
 
   const [caption, setCaption] = useState(post.caption ?? "");
   const [hashtags, setHashtags] = useState(post.hashtags.join(" "));
@@ -438,11 +444,43 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
                 </Button>
               )}
               {(canAddImage || post.format === "REEL") && (
+                <Button variant="outline" size="sm" onClick={() => setStudioOpen(true)}>
+                  <Palette className="mr-2 h-4 w-4" aria-hidden />
+                  Criar no estúdio
+                </Button>
+              )}
+              {(canAddImage || post.format === "REEL") && (
                 <Button variant="outline" size="sm" disabled={upload.isPending} onClick={() => fileRef.current?.click()}>
                   <Upload className="mr-2 h-4 w-4" aria-hidden />
                   {upload.isPending ? "Enviando..." : post.format === "REEL" ? "Enviar meu vídeo" : "Enviar minha imagem"}
                 </Button>
               )}
+              <CreativeStudioDialog
+                open={studioOpen}
+                startNew={searchParams.get("studio") === "1"}
+                onOpenChange={(open) => {
+                  setStudioOpen(open);
+                  if (!open && searchParams.has("studio")) setSearchParams({}, { replace: true });
+                }}
+                description="Envie as fotos do produto e as instruções: a IA cria a imagem ou o vídeo, você pede alterações e usa a versão que ficar melhor nesta postagem."
+                defaults={{
+                  kind: post.format === "REEL" ? "VIDEO" : "IMAGE",
+                  lockKind: true,
+                  purpose: "POST",
+                  aspectRatio: post.format === "REEL" ? "9:16" : "4:5",
+                  brief: post.idea,
+                }}
+                pickLabel={post.format === "REEL" ? "Usar como vídeo do reel" : "Usar na postagem"}
+                onPick={async (generation) => {
+                  try {
+                    apply(await creativeStudioService.attachToPost(client.id, generation.id, post.id));
+                    toast.success(post.format === "REEL" ? "Vídeo do reel atualizado" : "Imagem adicionada à postagem");
+                  } catch (error) {
+                    requestErrorHandling(error);
+                    throw error;
+                  }
+                }}
+              />
               <input
                 ref={fileRef}
                 type="file"
