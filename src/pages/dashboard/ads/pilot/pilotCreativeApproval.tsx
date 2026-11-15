@@ -129,6 +129,11 @@ export const PilotCreativeApproval: FC<Props> = ({ account, run }) => {
                     onCheckedChange={(checked) => update(creative.key, { approved: checked === true })}
                   />
                   <span className="font-medium">{creative.name}</span>
+                  {creative.group && (
+                    <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5 text-xs font-semibold">
+                      Conjunto: {creative.group}
+                    </span>
+                  )}
                   <span className="text-muted-foreground text-xs">
                     {isVideo ? "Vídeo" : "Imagem"} · {creative.angle}
                     {creative.assetOrigin && ` · ${assetOriginLabel[creative.assetOrigin]}`}

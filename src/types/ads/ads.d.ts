@@ -424,6 +424,8 @@ type AdCampaignPlan = {
   campaignName: string;
   specialAdCategory: SpecialAdCategory;
   dailyBudget: number;
+  // Verba dividida igualmente entre os conjuntos em vez de a campanha distribuir; sem o campo vale desligado
+  adSetBudget?: boolean;
   reasoning: string;
   adSets: AdPlanAdSet[];
   creatives: AdPlanCreative[];
@@ -687,6 +689,8 @@ type AdPilotVideoScript = {
 type AdPilotRunCreative = {
   key: string;
   angle: string;
+  // Tema do conjunto em que o criativo entra (ex.: uma dor por conjunto), quando o gestor pediu
+  group: string | null;
   name: string;
   primaryText: string;
   headline: string;

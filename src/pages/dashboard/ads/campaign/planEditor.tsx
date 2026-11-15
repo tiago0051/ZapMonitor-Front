@@ -264,6 +264,22 @@ export const PlanEditor: FC<PlanEditorProps> = ({ account, plan, audiences, asse
         </p>
       )}
 
+      {plan.adSets.length > 1 && !plan.abTest.enabled && (
+        <label className="flex flex-wrap items-center gap-2 text-sm">
+          <Checkbox
+            checked={!!plan.adSetBudget}
+            disabled={disabled}
+            onCheckedChange={(checked) => set({ adSetBudget: checked === true })}
+          />
+          Verba separada por conjunto
+          <span className="text-muted-foreground text-xs">
+            {plan.adSetBudget
+              ? `${account.currency} ${(Math.round((plan.dailyBudget / plan.adSets.length) * 100) / 100).toFixed(2)} por dia em cada conjunto`
+              : "a campanha distribui a verba entre os conjuntos"}
+          </span>
+        </label>
+      )}
+
       <label className="flex items-center gap-2 text-sm">
         <Checkbox
           checked={plan.abTest.enabled}
