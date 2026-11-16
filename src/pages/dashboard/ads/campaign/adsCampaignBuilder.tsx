@@ -12,10 +12,24 @@ import { metaAdsService } from "@/services/api/metaAdsService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { AlertTriangle, ArrowLeft, CalendarClock, Check, Loader2, Megaphone, Play, Plus, Rocket, Save, Sparkles, Trash2, Undo2 } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  CalendarClock,
+  Check,
+  Loader2,
+  Megaphone,
+  Play,
+  Plus,
+  Rocket,
+  Save,
+  Sparkles,
+  Trash2,
+  Undo2,
+} from "lucide-react";
 import { useState, type FC } from "react";
 import { toast } from "sonner";
-import { effectiveStatusInfo, formatCount, formatMoney, statusToneClassName } from "../adsUtils";
+import { effectiveStatusInfo, formatCount, formatMoney, isCampaignOver, statusToneClassName } from "../adsUtils";
 import { AdStatusToggle } from "../components/adStatusToggle";
 import { SteppedProgress } from "../components/steppedProgress";
 import { AdsAssetLibrary } from "./adsAssetLibrary";
@@ -36,11 +50,13 @@ const statusInfo: Record<AdDraftStatus, { label: string; className: string }> = 
 };
 
 /**
- * Status para mostrar: depois de ativada, a campanha pode ser pausada na Meta, pela IA ou à mão; então vale o status
- * da última sincronização, não o do rascunho.
+ * Status para mostrar: depois de criada, a campanha pode ser pausada, excluída ou arquivada na Meta, ou chegar ao fim; então vale
+ * o status da última sincronização, não o do rascunho.
  */
 const draftStatusDisplay = (draft: AdCampaignDraft) => {
-  if (draft.status === "ACTIVE" && draft.campaignStatus && draft.campaignStatus !== "ACTIVE") {
+  const overridesDraft =
+    isCampaignOver(draft.campaignStatus) || (draft.status === "ACTIVE" && !!draft.campaignStatus && draft.campaignStatus !== "ACTIVE");
+  if (draft.published?.campaignId && draft.campaignStatus && overridesDraft) {
     const info = effectiveStatusInfo(draft.campaignStatus);
     return { label: info.label, className: statusToneClassName[info.tone] };
   }
@@ -237,6 +253,8 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
   const canUndo =
     can("ads.manage") && !!draft.published?.campaignId && (draft.status === "FAILED" || draft.status === "PUBLISHED") && !draft.activatedAt;
   const canPublish = can("ads.manage") && (draft.status === "DRAFT" || draft.status === "FAILED");
+  // Excluída, arquivada ou encerrada na Meta: não dá mais para ativar, agendar nem pausar daqui
+  const campaignOver = !!draft.published?.campaignId && isCampaignOver(draft.campaignStatus);
   const deliveryQuery = useQuery({
     queryKey: ["metaAds", "deliveryOptions", client.id],
     queryFn: () => metaAdsService.findDeliveryOptions({ params: { clientId: client.id } }),
@@ -431,14 +449,14 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
               {draft.status === "FAILED" ? "Continuar a criação" : "Criar pausada na Meta"}
             </Button>
           )}
-          {can("ads.approve") && draft.status === "PUBLISHED" && (
+          {can("ads.approve") && draft.status === "PUBLISHED" && !campaignOver && (
             <Button disabled={isBusy} onClick={() => activate.mutate({ params })}>
               <Play className="h-4 w-4" />
               Ativar campanha
             </Button>
           )}
           {/* Ligar sozinha numa data: o sistema ativa na hora marcada, respeitando o horário das travas */}
-          {can("ads.approve") && draft.status === "PUBLISHED" && (
+          {can("ads.approve") && draft.status === "PUBLISHED" && !campaignOver && (
             <div className="flex flex-wrap items-center gap-2">
               {draft.activateAt ? (
                 <>
@@ -477,7 +495,7 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
             </div>
           )}
           {/* Já ativada: pausar e reativar a campanha sem passar pela IA */}
-          {draft.status === "ACTIVE" && draft.published?.campaignId && draft.campaignStatus && (
+          {draft.status === "ACTIVE" && draft.published?.campaignId && draft.campaignStatus && !campaignOver && (
             <AdStatusToggle
               accountId={account.id}
               level="campaign"

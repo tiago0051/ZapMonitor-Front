@@ -48,7 +48,14 @@ const effectiveStatus: Record<string, { label: string; tone: StatusTone }> = {
   PENDING_BILLING_INFO: { label: "Sem pagamento", tone: "problem" },
   ARCHIVED: { label: "Arquivado", tone: "off" },
   DELETED: { label: "Excluído", tone: "off" },
+  // Calculados pelo sistema para a campanha criada pelo rascunho
+  COMPLETED: { label: "Concluído", tone: "off" },
+  NOT_FOUND: { label: "Excluído ou arquivado na Meta", tone: "off" },
 };
+
+/** A campanha não roda mais: saiu da Meta (excluída ou arquivada) ou já passou da data de término. */
+export const isCampaignOver = (status: string | null | undefined) =>
+  !!status && ["NOT_FOUND", "DELETED", "ARCHIVED", "COMPLETED"].includes(status);
 
 export const effectiveStatusInfo = (status: string) => effectiveStatus[status] ?? { label: status, tone: "off" as StatusTone };
 
