@@ -97,7 +97,13 @@ type BrandIdentity = {
   pageName: string | null;
   instagramAccountId: string | null;
   instagramUsername: string | null;
+  // Base da marca: o que vende, para quem, regras e diferenciais
   about: string | null;
+  // Perfil montado pela IA a partir da base e revisado pelo usuário
+  profile: AdBrandProfileData | null;
+  profileUpdatedAt: string | null;
+  // Arquivos da base, já lidos como texto
+  files: AdBrandSource[];
   fixedHashtags: string[];
   logoUploaded: boolean;
   hasLogo: boolean;

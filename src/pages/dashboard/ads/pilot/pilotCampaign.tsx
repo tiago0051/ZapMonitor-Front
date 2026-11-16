@@ -59,7 +59,7 @@ export const PilotCampaign: FC<Props> = ({ account, brand, configurations, pages
     onError: requestErrorHandling,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["metaAds", "pilotRuns", client.id, account.id] });
-      toast.success("O piloto começou a gerar os criativos. Leva alguns minutos; depois é só aprovar.");
+      toast.success("O piloto está montando a campanha. Em alguns minutos o rascunho fica pronto para você ligar as artes.");
     },
   });
 
@@ -75,9 +75,10 @@ export const PilotCampaign: FC<Props> = ({ account, brand, configurations, pages
       <div>
         <h2 className="text-lg font-semibold">4. Montar campanha</h2>
         <p className="text-muted-foreground text-sm">
-          Primeiro o piloto gera os criativos e mostra para você aprovar, recusar ou ajustar os textos. Depois monta a campanha só com os
-          aprovados: sem histórico, um teste com 2 conjuntos por 7 a 10 dias; com histórico, repete o que vendeu. A campanha vira um
-          rascunho em Criar campanha: nada vai para a Meta sem a sua revisão.
+          Dê o comando e o piloto monta a campanha inteira — conjuntos, públicos, verba, textos e o prompt da arte de cada anúncio — sem
+          gerar nenhuma imagem ou vídeo. Sem histórico, um teste com 2 conjuntos por 7 a 10 dias; com histórico, repete o que vendeu. No
+          rascunho, em cada anúncio, você escolhe uma arte existente ou abre o estúdio com o prompt já preenchido e gera só quando quiser.
+          Nada vai para a Meta sem a sua revisão.
         </p>
       </div>
 
@@ -160,8 +161,8 @@ export const PilotCampaign: FC<Props> = ({ account, brand, configurations, pages
             </select>
             {creativeFormat !== "IMAGE" && (
               <p className="text-muted-foreground text-xs">
-                Para vídeo, a IA escreve o roteiro e você revisa antes. O vídeo só é gerado depois que o roteiro é aprovado, até 2 por
-                campanha, e leva alguns minutos cada.
+                Para vídeo, a IA escreve o roteiro e ele vira o prompt do anúncio. O vídeo só é gerado quando você pedir no estúdio, e leva
+                alguns minutos cada.
               </p>
             )}
           </div>
@@ -186,10 +187,12 @@ export const PilotCampaign: FC<Props> = ({ account, brand, configurations, pages
           <div className="flex flex-wrap items-center gap-3">
             <Button disabled={!canRequest} onClick={() => request.mutate()}>
               <Rocket className="h-4 w-4" />
-              Gerar criativos com o piloto
+              Montar campanha com o piloto
             </Button>
             {!hasBase && <p className="text-muted-foreground text-xs">Preencha a base da marca primeiro.</p>}
-            <p className="text-muted-foreground text-xs">Cada imagem e cada vídeo gerado consome a cota de IA.</p>
+            <p className="text-muted-foreground text-xs">
+              Montar não gera artes; cada imagem e vídeo criado no estúdio consome a cota de IA.
+            </p>
           </div>
         </div>
       )}
@@ -243,7 +246,9 @@ export const PilotCampaign: FC<Props> = ({ account, brand, configurations, pages
               </div>
               {run.draftId && (
                 <Button size="sm" variant="outline" onClick={() => onOpenDraft(run.draftId!)}>
-                  Revisar rascunho
+                  {run.creatives.some((creative) => creative.prompt && !creative.assetId)
+                    ? "Abrir rascunho e criar as artes"
+                    : "Revisar rascunho"}
                 </Button>
               )}
             </li>

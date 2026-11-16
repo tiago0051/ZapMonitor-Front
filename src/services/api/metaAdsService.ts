@@ -502,42 +502,9 @@ export const metaAdsService = {
     params,
     body,
   }: MetaAdsAccountParams & {
-    body: { baseText?: string | null; whatsappConfigurationId?: string | null; metaPageId?: string | null };
+    body: { whatsappConfigurationId?: string | null; metaPageId?: string | null };
   }): Promise<AdBrandProfile> => {
     const response = await api.put(`/client/${params.clientId}/meta-ads/account/${params.accountId}/pilot/brand`, body);
-    return response.data;
-  },
-
-  saveBrandProfile: async ({ params, profile }: MetaAdsAccountParams & { profile: AdBrandProfileData }): Promise<AdBrandProfile> => {
-    const response = await api.put(`/client/${params.clientId}/meta-ads/account/${params.accountId}/pilot/brand/profile`, { profile });
-    return response.data;
-  },
-
-  generateBrandProfile: async ({ params }: MetaAdsAccountParams): Promise<AdBrandProfile> => {
-    const response = await api.post(
-      `/client/${params.clientId}/meta-ads/account/${params.accountId}/pilot/brand/profile/generate`,
-      undefined,
-      {
-        timeout: 180000,
-      },
-    );
-    return response.data;
-  },
-
-  addBrandSource: async ({ params, file }: MetaAdsAccountParams & { file: File }): Promise<AdBrandProfile> => {
-    const form = new FormData();
-    form.append("file", file);
-    const response = await api.post(`/client/${params.clientId}/meta-ads/account/${params.accountId}/pilot/brand/source`, form, {
-      headers: { "Content-Type": "multipart/form-data" },
-      timeout: 180000,
-    });
-    return response.data;
-  },
-
-  deleteBrandSource: async ({ params }: { params: { clientId: string; accountId: string; sourceId: string } }): Promise<AdBrandProfile> => {
-    const response = await api.delete(
-      `/client/${params.clientId}/meta-ads/account/${params.accountId}/pilot/brand/source/${params.sourceId}`,
-    );
     return response.data;
   },
 

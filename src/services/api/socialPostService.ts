@@ -3,10 +3,10 @@ import api from "./api";
 const postBase = (clientId: string) => `/client/${clientId}/social-post`;
 const brandBase = (clientId: string) => `/client/${clientId}/brand-identity`;
 
-const upload = (url: string, file: File) => {
+const upload = (url: string, file: File, timeout?: number) => {
   const form = new FormData();
   form.append("file", file);
-  return api.post(url, form, { headers: { "Content-Type": "multipart/form-data" } });
+  return api.post(url, form, { headers: { "Content-Type": "multipart/form-data" }, timeout });
 };
 
 export const brandIdentityService = {
@@ -24,6 +24,20 @@ export const brandIdentityService = {
     (await api.post(`${brandBase(clientId)}/refresh`, { metaPageId }, { timeout: 180000 })).data,
 
   uploadLogo: async (clientId: string, file: File): Promise<BrandIdentity> => (await upload(`${brandBase(clientId)}/logo`, file)).data,
+
+  saveProfile: async (clientId: string, profile: AdBrandProfileData): Promise<BrandIdentity> =>
+    (await api.put(`${brandBase(clientId)}/profile`, { profile })).data,
+
+  /** A IA monta o perfil a partir da base, dos arquivos e das legendas; pode levar alguns segundos. */
+  generateProfile: async (clientId: string): Promise<BrandIdentity> =>
+    (await api.post(`${brandBase(clientId)}/profile/generate`, undefined, { timeout: 180000 })).data,
+
+  /** PDF escaneado e imagem a IA transcreve na hora. */
+  addSource: async (clientId: string, file: File): Promise<BrandIdentity> =>
+    (await upload(`${brandBase(clientId)}/source`, file, 180000)).data,
+
+  deleteSource: async (clientId: string, sourceId: string): Promise<BrandIdentity> =>
+    (await api.delete(`${brandBase(clientId)}/source/${sourceId}`)).data,
 };
 
 export const socialPostService = {

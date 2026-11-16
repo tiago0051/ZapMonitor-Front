@@ -24,7 +24,7 @@ export const pilotStepLabel: Record<AdPilotStep, string> = {
   HISTORY: "Lendo o histórico dos anúncios",
   INSIGHTS: "Comparando os criativos",
   PLAN: "Montando a campanha",
-  CREATIVES: "Gerando os criativos",
+  CREATIVES: "Escrevendo os anúncios e os prompts das artes",
   VIDEOS: "Gerando os vídeos dos roteiros aprovados",
   DRAFT: "Criando o rascunho",
   REVIEW: "Revisando os criativos",
@@ -43,26 +43,3 @@ export const assetOriginLabel: Record<AdAssetOrigin, string> = {
   POST: "Postagem",
   AD: "Anúncio da conta",
 };
-
-// Campos de lista do perfil, um item por linha no formulário
-export const profileListFields: { key: keyof AdBrandProfileData; label: string }[] = [
-  { key: "products", label: "Produtos" },
-  { key: "differentiators", label: "Diferenciais" },
-  { key: "offers", label: "Ofertas" },
-  { key: "proofs", label: "Provas" },
-  { key: "restrictions", label: "Restrições (o que não pode prometer)" },
-  { key: "avoidWords", label: "Palavras a evitar" },
-];
-
-export const emptyBrandProfile = (): AdBrandProfileData => ({
-  business: "",
-  products: [],
-  audience: "",
-  differentiators: [],
-  offers: [],
-  proofs: [],
-  tone: "",
-  restrictions: [],
-  avoidWords: [],
-  summary: "",
-});

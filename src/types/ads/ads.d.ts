@@ -418,7 +418,11 @@ type AdPlanCreative = {
   welcomeMessage: string;
   assetId: string | null;
   advantageEnhancements: boolean;
+  // Arte sugerida pelo piloto e ainda não criada: o prompt preenche o estúdio
+  creativeBrief?: AdPlanCreativeBrief | null;
 };
+
+type AdPlanCreativeBrief = { format: "IMAGE" | "VIDEO"; angle: string; prompt: string };
 
 type AdCampaignPlan = {
   campaignName: string;
@@ -625,6 +629,7 @@ type AdBrandPost = {
 
 type AdBrandProfile = {
   id: string;
+  // Base e perfil vêm da marca global (Configurações › Identidade da marca); aqui só leitura
   baseText: string | null;
   profile: AdBrandProfileData | null;
   profileUpdatedAt: string | null;
@@ -644,7 +649,6 @@ type AdBrandProfile = {
   whatsappConfigurationId: string | null;
   // Permissões opcionais que faltam na conexão; sem elas as postagens não são lidas
   missingOptionalScopes: string[];
-  sources: AdBrandSource[];
   posts: AdBrandPost[];
 };
 
@@ -698,6 +702,8 @@ type AdPilotRunCreative = {
   welcomeMessage: string;
   format: "IMAGE" | "VIDEO";
   script: AdPilotVideoScript | null;
+  // Prompt da arte a criar no estúdio, quando ela ainda não existe
+  prompt: string | null;
   videoUrl: string | null;
   assetId: string | null;
   assetPreviewUrl: string | null;

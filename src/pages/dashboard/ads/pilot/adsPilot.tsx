@@ -39,7 +39,7 @@ export const AdsPilot: FC<Props> = ({ account, onOpenDraft }) => {
 
   return (
     <div className="mx-auto max-w-6xl space-y-10">
-      <PilotBrand key={`brand-${brand.id}`} account={account} brand={brand} onChange={setBrand} />
+      <PilotBrand brand={brand} />
       <PilotIdentity account={account} brand={brand} pages={pages} onChange={setBrand} />
       <PilotScoreboard account={account} brand={brand} onChange={setBrand} />
       <PilotCampaign account={account} brand={brand} configurations={options.configurations} pages={pages} onOpenDraft={onOpenDraft} />

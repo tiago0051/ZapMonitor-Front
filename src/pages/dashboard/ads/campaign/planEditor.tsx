@@ -6,18 +6,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { undoableAction } from "@/lib/undoToast";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, Film, Plus, Trash2 } from "lucide-react";
+import { creativeStudioService } from "@/services/api/creativeStudioService";
+import { requestErrorHandling } from "@/utils/request";
+import { useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, Film, Palette, Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState, type FC, type ReactNode } from "react";
 import { AdvisorText } from "../components/advisorText";
 import { MetricHelp } from "../components/metricHelp";
+import { CreativeStudioDialog } from "../../studio/creativeStudioDialog";
 import { AdsAssetLibrary } from "./adsAssetLibrary";
 import { fieldSelectClassName } from "./campaignUtils";
 import { PLAN_CATEGORY_ELEMENT_ID, planCreativeElementId } from "./complianceUtils";
 import { CountryPicker } from "./countryPicker";
 import type { CampaignAudienceOption } from "./useCampaignOptions";
+import { toast } from "sonner";
 
 const textarea = "border-input bg-background min-h-16 w-full rounded-md border px-3 py-2 text-sm";
 
@@ -109,13 +115,33 @@ type PlanEditorProps = {
 
 /** Plano editável: campanha, conjuntos com público, anúncios com textos e criativo, e o teste A/B. */
 export const PlanEditor: FC<PlanEditorProps> = ({ account, plan, audiences, assets, disabled, onChange }) => {
+  const { client } = useClientContext();
+  const queryClient = useQueryClient();
   const [pickingAssetFor, setPickingAssetFor] = useState<string | null>(null);
+  // Anúncio cuja arte está sendo criada no estúdio
+  const [studioFor, setStudioFor] = useState<string | null>(null);
+  const studioCreative = plan.creatives.find((creative) => creative.key === studioFor) ?? null;
+  const studioBrief = studioCreative?.creativeBrief ?? null;
   const set = (changes: Partial<AdCampaignPlan>) => onChange({ ...plan, ...changes });
   const setAdSet = (key: string, changes: Partial<AdPlanAdSet>) =>
     set({ adSets: plan.adSets.map((adSet) => (adSet.key === key ? { ...adSet, ...changes } : adSet)) });
   const setCreative = (key: string, changes: Partial<AdPlanCreative>) =>
     set({ creatives: plan.creatives.map((creative) => (creative.key === key ? { ...creative, ...changes } : creative)) });
   const special = plan.specialAdCategory !== "NONE";
+
+  // A versão escolhida no estúdio sobe para a biblioteca da conta e vira a arte do anúncio
+  const useFromStudio = async (generation: CreativeGeneration) => {
+    const key = studioFor;
+    try {
+      const asset = await creativeStudioService.sendToAds(client.id, generation.id, account.id);
+      await queryClient.invalidateQueries({ queryKey: ["metaAds", "assets"] });
+      if (key) setCreative(key, { assetId: asset.id });
+      toast.success(asset.type === "VIDEO" ? "Vídeo enviado; a Meta leva alguns minutos para processar" : "Arte ligada ao anúncio");
+    } catch (error) {
+      requestErrorHandling(error);
+      throw error;
+    }
+  };
   const { confirm, confirmDialog } = useConfirm();
   // Plano mais recente, para o "Desfazer" devolver o anúncio sem perder o que foi editado depois
   const planRef = useRef(plan);
@@ -449,6 +475,29 @@ export const PlanEditor: FC<PlanEditorProps> = ({ account, plan, audiences, asse
                           Sem imagem ou vídeo
                         </p>
                       )}
+                      {!disabled && (
+                        <div className="grid w-24 gap-1">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-1 text-[11px]"
+                            onClick={() => setPickingAssetFor(creative.key)}
+                          >
+                            {asset ? "Trocar" : "Escolher existente"}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={missingAsset && creative.creativeBrief ? "default" : "outline"}
+                            className="h-7 px-1 text-[11px]"
+                            onClick={() => setStudioFor(creative.key)}
+                          >
+                            <Palette className="h-3 w-3" aria-hidden />
+                            Criar no estúdio
+                          </Button>
+                        </div>
+                      )}
                     </div>
                     <div className="grid gap-2">
                       <div className="flex items-center gap-2">
@@ -511,6 +560,21 @@ export const PlanEditor: FC<PlanEditorProps> = ({ account, plan, audiences, asse
                         value={creative.welcomeMessage}
                         onChange={(event) => setCreative(creative.key, { welcomeMessage: event.target.value })}
                       />
+                      {creative.creativeBrief && (
+                        <details className="bg-background rounded-md border px-2 py-1 text-xs" open={missingAsset}>
+                          <summary className="cursor-pointer font-medium">
+                            Prompt do piloto · {creative.creativeBrief.format === "VIDEO" ? "vídeo" : "imagem"}
+                            {creative.creativeBrief.angle && ` · ${creative.creativeBrief.angle}`}
+                          </summary>
+                          <p className="text-muted-foreground mt-1 whitespace-pre-line">{creative.creativeBrief.prompt}</p>
+                          {missingAsset && !disabled && (
+                            <p className="text-muted-foreground mt-1">
+                              A arte ainda não foi criada. Em "Criar no estúdio" o prompt já vem preenchido; ajuste se quiser e gere quando
+                              estiver bom.
+                            </p>
+                          )}
+                        </details>
+                      )}
                       <label className="flex items-center gap-2 text-xs">
                         <Checkbox
                           checked={creative.advantageEnhancements}
@@ -540,6 +604,21 @@ export const PlanEditor: FC<PlanEditorProps> = ({ account, plan, audiences, asse
           Conjunto
         </Button>
       )}
+
+      <CreativeStudioDialog
+        open={studioFor !== null}
+        onOpenChange={(open) => !open && setStudioFor(null)}
+        title={studioCreative ? `Arte do anúncio "${studioCreative.name}"` : undefined}
+        description={
+          studioBrief
+            ? "O prompt do piloto já está preenchido. Revise, envie fotos do produto se quiser e gere: nada é criado antes de você pedir."
+            : "Envie as fotos do produto e as instruções: a IA cria o criativo, você pede alterações e usa a versão escolhida neste anúncio."
+        }
+        defaults={{ purpose: "AD", kind: studioBrief?.format ?? "IMAGE", brief: studioBrief?.prompt.substring(0, 5000) }}
+        startNew={!!studioBrief && !studioCreative?.assetId}
+        pickLabel="Usar neste anúncio"
+        onPick={useFromStudio}
+      />
 
       <AssetPicker open={pickingAssetFor !== null} onOpenChange={(open) => !open && setPickingAssetFor(null)}>
         <AdsAssetLibrary

@@ -16,6 +16,7 @@ import { ExternalLink, Plus, Sparkles, Upload, X } from "lucide-react";
 import { useRef, useState, type FC } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
+import { BrandBaseSettings } from "./brandBaseSettings";
 
 const sourceLabel: Record<BrandSourceStatus, string> = {
   OK: "lida",
@@ -34,7 +35,6 @@ const BrandForm: FC<{ brand: BrandIdentity }> = ({ brand }) => {
   const canEdit = can("brand.manage");
 
   const [pageId, setPageId] = useState(brand.metaPageId ?? "");
-  const [about, setAbout] = useState(brand.about ?? "");
   const [hashtags, setHashtags] = useState(brand.fixedHashtags.join(" "));
   const [identity, setIdentity] = useState<BrandIdentityData>(brand.identity ?? emptyIdentity);
 
@@ -53,7 +53,6 @@ const BrandForm: FC<{ brand: BrandIdentity }> = ({ brand }) => {
   const save = useMutation({
     mutationFn: () =>
       brandIdentityService.update(client.id, {
-        about,
         fixedHashtags: hashtags.split(/[\s,]+/).filter(Boolean),
         metaPageId: pageId || undefined,
         identity,
@@ -66,9 +65,8 @@ const BrandForm: FC<{ brand: BrandIdentity }> = ({ brand }) => {
   });
   const refresh = useMutation({
     mutationFn: async () => {
-      // Salva o que foi escrito antes: o "sobre a empresa" entra na leitura da IA
+      // Salva a página e as hashtags antes; a base da marca (salva no card acima) também entra na leitura da IA
       await brandIdentityService.update(client.id, {
-        about,
         fixedHashtags: hashtags.split(/[\s,]+/).filter(Boolean),
         metaPageId: pageId || undefined,
       });
@@ -249,19 +247,7 @@ const BrandForm: FC<{ brand: BrandIdentity }> = ({ brand }) => {
       </section>
 
       <section className="grid gap-3">
-        <h3 className="font-medium">Texto</h3>
-        <div className="grid gap-1.5">
-          <Label htmlFor="brand-about">Sobre a empresa, público e tom de voz</Label>
-          <textarea
-            id="brand-about"
-            value={about}
-            maxLength={5000}
-            disabled={!canEdit}
-            placeholder="Ex.: Loja de perfumes em Niterói para mulheres de 25 a 45 anos. Tom próximo e alegre, sem gírias. Entregamos em 24 horas."
-            onChange={(event) => setAbout(event.target.value)}
-            className={socialTextareaClassName}
-          />
-        </div>
+        <h3 className="font-medium">Postagens</h3>
         <div className="grid gap-1.5">
           <Label htmlFor="brand-hashtags">Hashtags fixas</Label>
           <Input
@@ -313,7 +299,7 @@ const BrandForm: FC<{ brand: BrandIdentity }> = ({ brand }) => {
   );
 };
 
-/** Identidade da marca do cliente: uma só para postagens, e-mails e anúncios. */
+/** Base e identidade da marca do cliente: uma só para anúncios, postagens, e-mails e o assistente. */
 export const BrandIdentitySettings = () => {
   const { client } = useClientContext();
   const query = useQuery({
@@ -324,27 +310,30 @@ export const BrandIdentitySettings = () => {
   });
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Identidade da marca</CardTitle>
-        <CardDescription>
-          A IA lê a página do Facebook e o Instagram da empresa e aprende a logo, as cores, o estilo e os temas que engajam. Vale para todo
-          o sistema: imagens e legendas das postagens, visual dos e-mails e criativos dos anúncios.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {query.isLoading && <LoadingState label="Carregando..." />}
-        {query.isError && (
-          <ErrorState
-            message="Não foi possível carregar a identidade da marca."
-            onRetry={() => query.refetch()}
-            isRetrying={query.isFetching}
-          />
-        )}
-        {query.data && (
-          <BrandForm key={`${query.data.identityUpdatedAt}-${query.data.metaPageId}-${query.data.status}`} brand={query.data} />
-        )}
-      </CardContent>
-    </Card>
+    <div className="grid gap-6">
+      {query.data && <BrandBaseSettings brand={query.data} />}
+      <Card>
+        <CardHeader>
+          <CardTitle>Identidade visual</CardTitle>
+          <CardDescription>
+            A IA lê a página do Facebook e o Instagram da empresa e aprende a logo, as cores, o estilo e os temas que engajam. Vale para
+            todo o sistema: imagens e legendas das postagens, visual dos e-mails e criativos dos anúncios.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {query.isLoading && <LoadingState label="Carregando..." />}
+          {query.isError && (
+            <ErrorState
+              message="Não foi possível carregar a identidade da marca."
+              onRetry={() => query.refetch()}
+              isRetrying={query.isFetching}
+            />
+          )}
+          {query.data && (
+            <BrandForm key={`${query.data.identityUpdatedAt}-${query.data.metaPageId}-${query.data.status}`} brand={query.data} />
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
