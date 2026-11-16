@@ -566,6 +566,8 @@ export const metaAdsService = {
       whatsappConfigurationId?: string | null;
       metaPageId?: string | null;
       format?: AdPilotFormatChoice;
+      // Passo da estratégia de marketing: a campanha nasce com a marca [EST-...] e ligada a ela
+      strategyStepId?: string | null;
     };
   }): Promise<AdPilotRun> => {
     const response = await api.post(`/client/${params.clientId}/meta-ads/account/${params.accountId}/pilot/campaign`, body);

@@ -7,9 +7,10 @@ import { metaAdsService } from "@/services/api/metaAdsService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Loader2, Rocket } from "lucide-react";
+import { Loader2, Rocket, Target } from "lucide-react";
 import { useState, type FC } from "react";
 import { toast } from "sonner";
+import { clearPilotPrefill, takePilotPrefill } from "../../strategies/strategyUtils";
 import { fieldSelectClassName } from "../campaign/campaignUtils";
 import { PilotCreativeApproval } from "./pilotCreativeApproval";
 import { pilotRunStatusInfo, pilotStepLabel, pilotTextareaClassName } from "./pilotUtils";
@@ -31,8 +32,10 @@ export const PilotCampaign: FC<Props> = ({ account, brand, configurations, pages
   const queryClient = useQueryClient();
   const params = { clientId: client.id, accountId: account.id };
   const [budget, setBudget] = useState("");
-  const [goal, setGoal] = useState("");
-  const [notes, setNotes] = useState("");
+  // Aberto pelo passo de uma estratégia: objetivo e notas vêm do briefing e a campanha nasce marcada
+  const [strategyPrefill, setStrategyPrefill] = useState(() => takePilotPrefill(client.id));
+  const [goal, setGoal] = useState(strategyPrefill?.goal ?? "");
+  const [notes, setNotes] = useState(strategyPrefill?.notes ?? "");
   const [whatsappConfigurationId, setWhatsappConfigurationId] = useState(brand.whatsappConfigurationId ?? "");
   const [metaPageId, setMetaPageId] = useState(brand.metaPageId ?? "");
   const [creativeFormat, setCreativeFormat] = useState<AdPilotFormatChoice>("IMAGE");
@@ -54,10 +57,16 @@ export const PilotCampaign: FC<Props> = ({ account, brand, configurations, pages
           whatsappConfigurationId: whatsappConfigurationId || null,
           metaPageId: metaPageId || null,
           format: creativeFormat,
+          strategyStepId: strategyPrefill?.strategyStepId ?? null,
         },
       }),
     onError: requestErrorHandling,
     onSuccess: () => {
+      if (strategyPrefill) {
+        clearPilotPrefill();
+        setStrategyPrefill(null);
+        queryClient.invalidateQueries({ queryKey: ["marketingStrategy", client.id] });
+      }
       queryClient.invalidateQueries({ queryKey: ["metaAds", "pilotRuns", client.id, account.id] });
       toast.success("O piloto está montando a campanha. Em alguns minutos o rascunho fica pronto para você ligar as artes.");
     },
@@ -81,6 +90,25 @@ export const PilotCampaign: FC<Props> = ({ account, brand, configurations, pages
           Nada vai para a Meta sem a sua revisão.
         </p>
       </div>
+
+      {can("ads.manage") && strategyPrefill && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-sky-300 bg-sky-50 p-3 text-sm dark:border-sky-800 dark:bg-sky-950">
+          <Target className="h-4 w-4 shrink-0 text-sky-700 dark:text-sky-300" aria-hidden />
+          <p className="min-w-0 flex-1">
+            Campanha do passo <strong>{strategyPrefill.label}</strong>. A campanha e os conjuntos vão levar a marca da estratégia no nome.
+          </p>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              clearPilotPrefill();
+              setStrategyPrefill(null);
+            }}
+          >
+            Não ligar à estratégia
+          </Button>
+        </div>
+      )}
 
       {can("ads.manage") && (
         <div className="space-y-3 rounded-lg border p-4">

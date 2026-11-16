@@ -25,6 +25,7 @@ import {
   FiSend,
   FiSettings,
   FiSpeaker,
+  FiTarget,
   FiInstagram,
   FiImage,
   FiTrendingUp,
@@ -79,6 +80,12 @@ const navMain: {
     icon: FiCalendar,
     url: "planner",
     permission: "planner.view",
+  },
+  {
+    title: "Estratégias",
+    icon: FiTarget,
+    url: "strategies",
+    permission: "strategies.view",
   },
   {
     title: "Campanhas",

@@ -32,7 +32,9 @@ type Permission =
   | "posts.publish"
   | "brand.manage"
   | "planner.view"
-  | "planner.manage";
+  | "planner.manage"
+  | "strategies.view"
+  | "strategies.manage";
 
 type PermissionDefinition = {
   key: Permission;
