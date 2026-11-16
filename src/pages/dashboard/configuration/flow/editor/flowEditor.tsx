@@ -63,6 +63,7 @@ import { FlowIssuesPanel } from "./flowIssuesPanel";
 import { createFlowId, flowNodeConfigs, getFlowNodeOutputs } from "./flowNodeConfig";
 import { FlowNodePanel } from "./flowNodePanel";
 import { DiscardDraftDialog, FlowVersionHistory, PublishFlowDialog } from "./flowPublishing";
+import { FlowFollowUpButton } from "./flowFollowUp";
 import { FlowSimulator } from "./flowSimulator";
 import { FlowTestContacts } from "./flowTesting";
 
@@ -121,9 +122,11 @@ const toCanvasNodes = (definition: FlowDefinition): FlowCanvasNodeType[] =>
 const toCanvasEdges = (definition: FlowDefinition): Edge[] =>
   definition.edges.map((edge) => ({ id: edge.id, source: edge.source, sourceHandle: edge.sourceHandle, target: edge.target }));
 
-const toDefinition = (nodes: FlowCanvasNodeType[], edges: Edge[]): FlowDefinition => ({
+const toDefinition = (nodes: FlowCanvasNodeType[], edges: Edge[], followUp: FlowFollowUp | null): FlowDefinition => ({
   nodes: nodes.map((node) => ({ id: node.id, type: node.type as FlowNodeType, position: node.position, data: node.data })),
   edges: edges.map((edge) => ({ id: edge.id, source: edge.source, sourceHandle: edge.sourceHandle ?? "", target: edge.target })),
+  // Sem follow-up a chave fica de fora, para o rascunho continuar igual à versão publicada antes dele
+  ...(followUp ? { followUp } : {}),
 });
 
 // Pendências que o back devolve quando recusa salvar ou ativar o fluxo
@@ -157,6 +160,7 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(toCanvasEdges(editingDefinition(flow)));
   const [name, setName] = useState(flow.name);
   const [resetAfterMinutes, setResetAfterMinutes] = useState(flow.resetAfterMinutes);
+  const [followUp, setFollowUp] = useState<FlowFollowUp | null>(editingDefinition(flow).followUp ?? null);
   const [whatsappConfigurationIds, setWhatsappConfigurationIds] = useState(flow.whatsappConfigurationIds);
   const configurations = useWhatsappConfigurations(clientId);
   const { flows } = useFlowEditorContext();
@@ -200,6 +204,7 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
     setEdges(toCanvasEdges(editingDefinition(loadedFlow)));
     setName(loadedFlow.name);
     setResetAfterMinutes(loadedFlow.resetAfterMinutes);
+    setFollowUp(editingDefinition(loadedFlow).followUp ?? null);
     setWhatsappConfigurationIds(loadedFlow.whatsappConfigurationIds);
     setSelectedNodeId(null);
     setRejectedIssues(null);
@@ -295,7 +300,7 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
       body: {
         name: name.trim(),
         resetAfterMinutes,
-        definition: toDefinition(nodes, edges),
+        definition: toDefinition(nodes, edges, followUp),
         whatsappConfigurationIds,
         expectedUpdatedAt: flow.updatedAt,
       },
@@ -474,6 +479,19 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
                 title="Minutos sem interação do contato com a IA ou a pergunta do fluxo; depois disso a próxima mensagem recomeça o fluxo"
                 onChange={(e) => {
                   setResetAfterMinutes(e.target.valueAsNumber);
+                  setIsDirty(true);
+                }}
+              />
+            </div>
+
+            <div className="w-[calc(50%-0.375rem)] space-y-1 sm:w-auto">
+              <Label>Follow-up</Label>
+              <FlowFollowUpButton
+                clientId={clientId}
+                followUp={followUp}
+                whatsappConfigurationIds={whatsappConfigurationIds}
+                onChange={(value) => {
+                  setFollowUp(value);
                   setIsDirty(true);
                 }}
               />

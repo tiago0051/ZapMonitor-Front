@@ -4,6 +4,7 @@ type FlowDiff = {
   changed: FlowDefinitionNode[];
   // Conexões criadas ou removidas
   edgeChanges: number;
+  followUpChanged: boolean;
 };
 
 // Chaves em ordem fixa, para dados iguais com outra ordem não contarem como alteração
@@ -31,5 +32,6 @@ export function diffFlowDefinitions(published: FlowDefinition, draft: FlowDefini
     }),
     edgeChanges:
       [...draftEdges].filter((key) => !publishedEdges.has(key)).length + [...publishedEdges].filter((key) => !draftEdges.has(key)).length,
+    followUpChanged: stableStringify(published.followUp ?? null) !== stableStringify(draft.followUp ?? null),
   };
 }

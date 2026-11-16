@@ -80,6 +80,7 @@ export const PublishFlowDialog: FC<PublishDialogProps> = ({ flow, open, onOpenCh
             {diff.edgeChanges > 0 && (
               <p className="text-muted-foreground text-sm">{diff.edgeChanges} conexão(ões) criada(s) ou removida(s).</p>
             )}
+            {diff.followUpChanged && <p className="text-muted-foreground text-sm">O follow-up mudou.</p>}
           </div>
         )}
 

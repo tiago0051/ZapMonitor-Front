@@ -82,9 +82,32 @@ type FlowDefinitionEdge = {
   target: string;
 };
 
+// Envio do follow-up: texto (só com a janela de 24h aberta) ou modelo aprovado (a qualquer momento)
+type FlowFollowUpStep = {
+  id: string;
+  // Espera contada a partir da última mensagem enviada (da IA, do fluxo ou o envio anterior)
+  delayMinutes: number;
+  kind: "text" | "template";
+  // Aceita {{nome}}
+  text?: string;
+  templateId?: string;
+  // { "body.1": "contact_name" } ou texto fixo
+  templateVariables?: Record<string, string>;
+};
+
+type FlowFollowUpNoReplyAction = "none" | "queue" | "end";
+
+// Mensagens para recuperar o contato que parou de responder à IA ou à pergunta do fluxo
+type FlowFollowUp = {
+  enabled: boolean;
+  steps: FlowFollowUpStep[];
+  noReply?: { action: FlowFollowUpNoReplyAction; afterMinutes: number };
+};
+
 type FlowDefinition = {
   nodes: FlowDefinitionNode[];
   edges: FlowDefinitionEdge[];
+  followUp?: FlowFollowUp | null;
 };
 
 // Pendência de um nó (nodeId) ou do fluxo todo (sem nodeId)
