@@ -83,7 +83,7 @@ export const StrategyResultsPanel: FC<Props> = ({ strategy, canManage, onSaved }
         <div className="space-y-1">
           <h2 className="text-base font-semibold">Resultados da estratégia</h2>
           <p className="text-muted-foreground text-xs">
-            Contam só as campanhas com a marca {strategy.marker} (ligadas pelo piloto, pelos atalhos, pela marca no nome ou à mão).
+            Contam só as campanhas ligadas à estratégia (pelo piloto, pelos atalhos, pela marca no nome ou à mão).
             {results &&
               ` Período: ${format(new Date(`${results.since}T12:00`), "dd/MM")} a ${format(new Date(`${results.until}T12:00`), "dd/MM")}.`}
           </p>
