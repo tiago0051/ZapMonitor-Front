@@ -400,6 +400,11 @@ export const metaAdsService = {
     return response.data;
   },
 
+  findActivationPreview: async ({ params }: { params: { clientId: string; draftId: string } }): Promise<AdActivationPreview> => {
+    const response = await api.get<AdActivationPreview>(`/client/${params.clientId}/meta-ads/draft/${params.draftId}/activation-preview`);
+    return response.data;
+  },
+
   activateDraft: async ({ params }: { params: { clientId: string; draftId: string } }): Promise<AdCampaignDraft> => {
     const response = await api.post(`/client/${params.clientId}/meta-ads/draft/${params.draftId}/activate`);
     return response.data;
