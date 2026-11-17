@@ -7,8 +7,9 @@ export const userService = {
   verifyEmail: async ({ body }: VerifyEmailRequestData): Promise<void> => {
     await api.post("/user/verify-email", body);
   },
-  login: async ({ body }: LoginRequestData): Promise<void> => {
-    await api.post("/user/auth/login", body);
+  login: async ({ body }: LoginRequestData): Promise<LoginResponse> => {
+    const response = await api.post("/user/auth/login", body);
+    return response.data || undefined;
   },
   refreshSession: async (): Promise<void> => {
     await api.post("/user/auth/refresh");
@@ -20,6 +21,15 @@ export const userService = {
   changePassword: async ({ body }: ChangePasswordRequestData): Promise<void> => {
     await api.put("/user/change-password", body);
   },
+  findTwoFactorStatus: async (): Promise<TwoFactorStatus> => (await api.get("/user/two-factor")).data,
+  /** Gera a chave e o QR code; só passa a valer depois de confirmar um código do app. */
+  startTwoFactorSetup: async (): Promise<TwoFactorSetup> => (await api.post("/user/two-factor/setup")).data,
+  enableTwoFactor: async (code: string): Promise<{ recoveryCodes: string[] }> => (await api.post("/user/two-factor/enable", { code })).data,
+  disableTwoFactor: async (body: { password: string; code: string }): Promise<void> => {
+    await api.post("/user/two-factor/disable", body);
+  },
+  regenerateTwoFactorRecoveryCodes: async (code: string): Promise<{ recoveryCodes: string[] }> =>
+    (await api.post("/user/two-factor/recovery-codes", { code })).data,
   forgotPassword: async ({ body }: ForgotPasswordRequestData): Promise<void> => {
     await api.post("/user/forgot-password", body);
   },

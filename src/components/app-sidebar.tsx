@@ -289,7 +289,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <DropdownMenuItem asChild>
                   <Link to={`${baseUrl}/configuration?tab=account`}>
                     <FiKey />
-                    Alterar senha
+                    Senha e segurança
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

@@ -1,5 +1,4 @@
 import { QueryErrorBoundary } from "@/components/query-error-boundary";
-import { ChangePasswordForm } from "@/components/change-password-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { clientService } from "@/services/api/clientService";
@@ -27,6 +26,7 @@ import {
 } from "lucide-react";
 import { Suspense, useEffect, useRef, type ReactNode } from "react";
 import { FirstStepsChecklist } from "./components/firstStepsChecklist";
+import { AccountSettings } from "./account/accountSettings";
 import { useParams, useSearchParams } from "react-router";
 import { AiAgents } from "./aiAgent/aiAgents";
 import { GoogleCalendarSettings } from "./googleCalendar/googleCalendarSettings";
@@ -189,7 +189,7 @@ const configurationGroups: { label: string; sections: ConfigurationSection[] }[]
   },
   {
     label: "Conta",
-    sections: [{ id: "account", label: "Senha", icon: KeyRound, content: <ChangePasswordForm />, hiddenFromNav: true }],
+    sections: [{ id: "account", label: "Senha e segurança", icon: KeyRound, content: <AccountSettings />, hiddenFromNav: true }],
   },
 ];
 
