@@ -40,7 +40,8 @@ export const DialogSendTemplate = ({ contactService, whatsappConfigurationId }: 
       toast.success("Modelo enviado");
 
       queryClient.invalidateQueries({ queryKey: [`contact-${contactService.id}`] });
-      queryClient.invalidateQueries({ queryKey: ["whatsappContacts"] });
+      queryClient.invalidateQueries({ queryKey: ["whatsapp", "contacts"] });
+      queryClient.invalidateQueries({ queryKey: ["whatsapp", "contactsStats"] });
 
       setOpen(false);
     },
