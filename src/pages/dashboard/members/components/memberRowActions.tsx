@@ -1,7 +1,7 @@
 import { useUserContext } from "@/context/UserContext/userContext";
 import type { FC } from "react";
 import { useMemberRoleOptions } from "../useMemberRoleOptions";
-import { DialogCancelInvitation } from "./dialogCancelInvitation";
+import { InvitationActions } from "./invitationActions";
 import { DialogChangeMemberRole } from "./dialogChangeMemberRole";
 import { DialogChangeMemberStatus } from "./dialogChangeMemberStatus";
 
@@ -15,7 +15,7 @@ export const MemberRowActions: FC<MemberRowActionsProps> = ({ member, clientId }
   const { canManageMember } = useMemberRoleOptions(clientId);
 
   if (member.status === "PENDING") {
-    return <DialogCancelInvitation clientId={clientId} invitationId={member.id} />;
+    return <InvitationActions clientId={clientId} invitationId={member.id} email={member.email} />;
   }
 
   // O próprio acesso e o de quem tem mais poder não podem ser alterados
