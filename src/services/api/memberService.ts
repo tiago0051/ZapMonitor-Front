@@ -17,7 +17,10 @@ export const memberService = {
   activate: async ({ params }: ActivateMemberRequestData): Promise<void> => {
     await api.patch(`/client/${params.clientId}/members/${params.userId}/activate`);
   },
-  deactivate: async ({ params }: DeactivateMemberRequestData): Promise<void> => {
-    await api.patch(`/client/${params.clientId}/members/${params.userId}/deactivate`);
+  deactivate: async ({ params, body }: DeactivateMemberRequestData): Promise<void> => {
+    await api.patch(`/client/${params.clientId}/members/${params.userId}/deactivate`, body ?? {});
   },
+  /** Grupos, atendimentos, negócios, tarefas e rotinas do usuário, e os grupos em que ele é o único ativo. */
+  findDeactivationImpact: async (clientId: string, userId: string): Promise<MemberDeactivationImpact> =>
+    (await api.get(`/client/${clientId}/members/${userId}/deactivation-impact`)).data,
 };

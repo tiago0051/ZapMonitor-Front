@@ -60,6 +60,21 @@ type ActivateMemberRequestParams = {
 
 type DeactivateMemberRequestData = {
   params: DeactivateMemberRequestParams;
+  // Quem assume: grupos em que ele é o único ativo exigem substituto
+  body?: {
+    serviceGroupReplacements?: Record<string, string>;
+    transferToUserId?: string | null;
+  };
+};
+
+// Onde o usuário está no cliente antes de ser desativado
+type MemberDeactivationImpact = {
+  serviceGroups: { id: string; name: string; otherActiveMembers: number; onlyMember: boolean }[];
+  contactsInService: number;
+  openDeals: number;
+  openDealTasks: number;
+  openPlannerTasks: number;
+  assistantRoutines: number;
 };
 
 type DeactivateMemberRequestParams = {
