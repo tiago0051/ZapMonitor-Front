@@ -220,7 +220,8 @@ export const metaAdsService = {
     body,
   }: {
     params: { clientId: string; suggestionId: string };
-    body: { status: AdSuggestionStatus; note?: string | null; postponedUntil?: string | null };
+    // applyNow: aceitar já aprovando e aplicando (só quem aprova anúncios)
+    body: { status: AdSuggestionStatus; note?: string | null; postponedUntil?: string | null; applyNow?: boolean };
   }): Promise<AdSuggestion> => {
     const response = await api.put(`/client/${params.clientId}/meta-ads/suggestion/${params.suggestionId}/decision`, body);
     return response.data;

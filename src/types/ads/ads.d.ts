@@ -286,7 +286,7 @@ type AdSuggestion = {
   decidedAt: string | null;
   decisionNote: string | null;
   // Mudança gerada pela sugestão aceita
-  change: { id: string; status: AdChangeStatus; error: string | null } | null;
+  change: { id: string; status: AdChangeStatus; error: string | null; before: AdChangeState | null; after: AdChangeState } | null;
   createdAt: string;
 };
 
