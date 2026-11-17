@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import type { FC } from "react";
 import { getMemberRoleLabel, memberStatusLabel, memberStatusVariant } from "../memberStatus";
 import { MemberRowActions } from "./memberRowActions";
+import { TwoFactorBadge } from "./twoFactorBadge";
 
 type MemberCardProps = {
   member: Member;
@@ -24,8 +25,9 @@ export const MemberCard: FC<MemberCardProps> = ({ member, clientId }) => {
         </Badge>
       </div>
 
-      <div className="mt-2">
+      <div className="mt-2 flex flex-wrap gap-1">
         <Badge variant="outline">{getMemberRoleLabel(member)}</Badge>
+        {member.twoFactorEnabled && <TwoFactorBadge />}
       </div>
 
       <p className="text-muted-foreground mt-2 text-xs">Entrou em {format(member.createdAt, "dd/MM/yyyy HH:mm")}</p>

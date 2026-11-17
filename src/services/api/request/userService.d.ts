@@ -5,6 +5,25 @@ type LoginRequestData = {
 type LoginRequestBody = {
   email: string;
   password: string;
+  // Código do app autenticador ou de recuperação, quando a verificação em duas etapas está ativa
+  code?: string;
+};
+
+// Senha certa, mas falta o código do app autenticador
+type LoginResponse = { twoFactorRequired?: boolean } | undefined;
+
+type TwoFactorStatus = {
+  enabled: boolean;
+  enabledAt: string | null;
+  recoveryCodesLeft: number;
+};
+
+type TwoFactorSetup = {
+  // Chave para digitar no app quando não der para ler o QR code
+  secret: string;
+  otpauthUrl: string;
+  // QR code em data URL (PNG)
+  qrCode: string;
 };
 
 type RegisterUserRequestData = {

@@ -65,4 +65,6 @@ type TenantAccess = {
   adsEnabled: boolean;
   // Vencimento do plano, para o aviso dos últimos dias
   plan?: PlanStatus;
+  // O tenant exige verificação em duas etapas e o usuário ainda não ativou
+  twoFactorSetupRequired?: boolean;
 };

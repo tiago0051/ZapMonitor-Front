@@ -3,6 +3,7 @@ import { type DataTablePaginateColumnDef } from "@/components/ui/dataTablePagina
 import { format } from "date-fns";
 import { MemberRowActions } from "./components/memberRowActions";
 import { getMemberRoleLabel, memberStatusLabel, memberStatusVariant } from "./memberStatus";
+import { TwoFactorBadge } from "./components/twoFactorBadge";
 
 export const getColumns = (clientId: string) => {
   const columns: DataTablePaginateColumnDef<Member>[] = [
@@ -21,7 +22,12 @@ export const getColumns = (clientId: string) => {
     {
       accessorKey: "role",
       header: "Papel",
-      cell: ({ row }) => <Badge variant="outline">{getMemberRoleLabel(row.original)}</Badge>,
+      cell: ({ row }) => (
+        <div className="flex flex-wrap gap-1">
+          <Badge variant="outline">{getMemberRoleLabel(row.original)}</Badge>
+          {row.original.twoFactorEnabled && <TwoFactorBadge />}
+        </div>
+      ),
     },
     {
       accessorKey: "status",

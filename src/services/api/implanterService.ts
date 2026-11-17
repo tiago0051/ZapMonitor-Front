@@ -5,6 +5,11 @@ export const implanterService = {
     const response = await api.get("/implanter/clients");
     return response.data;
   },
+  /** Primeiros passos, último atendimento e alertas de cada tenant que o usuário implanta. */
+  findClientsHealth: async (): Promise<ImplanterClientHealth[]> => {
+    const response = await api.get("/implanter/clients/health");
+    return response.data;
+  },
   renewClientPlan: async ({ clientId, months }: { clientId: string; months: number }): Promise<ImplanterClient> => {
     const response = await api.post(`/implanter/clients/${clientId}/plan/renew`, { months });
     return response.data;

@@ -1,11 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
+import { serviceGroupService } from "@/services/api/serviceGroupService";
 import { Input } from "@/components/ui/input";
 import { memberService } from "@/services/api/memberService";
 import { requestErrorHandling } from "@/utils/request";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type FC } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { toast } from "sonner";
@@ -18,11 +20,12 @@ type DialogInviteMemberProps = { className?: string; clientId: string };
 const schema = z
   .object({
     email: z.email("E-mail inválido"),
+    serviceGroupIds: z.array(z.string()),
     ...memberRoleShape,
   })
   .superRefine(refineMemberRole);
 
-const defaultValues: z.infer<typeof schema> = { email: "", role: "ATTENDANT", permissionGroupId: "" };
+const defaultValues: z.infer<typeof schema> = { email: "", serviceGroupIds: [], role: "ATTENDANT", permissionGroupId: "" };
 
 type SchemaType = z.infer<typeof schema>;
 
@@ -39,6 +42,13 @@ export const DialogInviteMember: FC<DialogInviteMemberProps> = ({ clientId, clas
       setIsOpen(false);
     },
   });
+
+  const findServiceGroupsQuery = useQuery({
+    queryKey: ["serviceGroups", clientId],
+    queryFn: () => serviceGroupService.findAll({ params: { clientId } }),
+    enabled: isOpen,
+  });
+  const serviceGroups = findServiceGroupsQuery.data ?? [];
 
   const form = useForm<SchemaType>({
     resolver: zodResolver(schema),
@@ -62,7 +72,7 @@ export const DialogInviteMember: FC<DialogInviteMemberProps> = ({ clientId, clas
       <DialogTrigger asChild>
         <Button className={className}>Convidar usuário</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-h-[90dvh] max-w-md overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Convidar usuário</DialogTitle>
           <DialogDescription>Envie um convite por e-mail para adicionar um novo usuário a este cliente.</DialogDescription>
@@ -83,6 +93,36 @@ export const DialogInviteMember: FC<DialogInviteMemberProps> = ({ clientId, clas
               )}
             />
             <MemberRoleFields clientId={clientId} />
+            {serviceGroups.length > 0 && (
+              <FormField
+                control={form.control}
+                name="serviceGroupIds"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Grupos de atendimento</FormLabel>
+                    <FormDescription>A pessoa já entra nestes grupos quando aceitar o convite. Dá para mudar depois.</FormDescription>
+                    <div className="grid max-h-40 gap-2 overflow-auto rounded-md border p-2">
+                      {serviceGroups.map((group) => {
+                        const checked = field.value.includes(group.id);
+                        return (
+                          <label key={group.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                            <Checkbox
+                              checked={checked}
+                              disabled={field.disabled}
+                              onCheckedChange={(value) =>
+                                field.onChange(value ? [...field.value, group.id] : field.value.filter((id) => id !== group.id))
+                              }
+                            />
+                            <span className="truncate">{group.name}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
           </form>
         </Form>
         <DialogFooter>
