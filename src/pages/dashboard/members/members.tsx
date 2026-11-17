@@ -16,6 +16,11 @@ import { useDebounceValue } from "usehooks-ts";
 import { DialogInviteMember } from "./components/dialogInviteMember";
 import { MemberCard } from "./components/memberCard";
 import { getColumns } from "./membersColumns";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AuditLogTab } from "./components/auditLogTab";
+import { SecurityTab } from "./components/securityTab";
+
+const MEMBER_TABS = ["users", "history", "security"];
 
 const STATUS_OPTIONS: { value: "" | MemberStatus; label: string }[] = [
   { value: "", label: "Todos os status" },
@@ -35,9 +40,11 @@ export const Members = () => {
   const searchInput = searchParams.get("q") ?? "";
   const statusParam = searchParams.get("status") ?? "";
   const status = STATUS_OPTIONS.some((option) => option.value === statusParam) ? (statusParam as "" | MemberStatus) : "";
+  const tabParam = searchParams.get("tab") ?? "";
+  const tab = MEMBER_TABS.includes(tabParam) ? tabParam : "users";
   const [search] = useDebounceValue(searchInput.trim(), globalContants.DEBOUNCE_DELAY);
 
-  const updateFilter = (key: "q" | "status", value: string) => {
+  const updateFilter = (key: "q" | "status" | "tab", value: string) => {
     setSearchParams(
       (current) => {
         const next = new URLSearchParams(current);
@@ -53,6 +60,7 @@ export const Members = () => {
   const findAllMembersQuery = useQuery({
     meta: { errorHandledInline: true },
     queryKey: ["members", client.id, pagination, search, status],
+    enabled: tab === "users",
     queryFn: () =>
       memberService.findAll({
         params: { clientId: client.id },
@@ -75,107 +83,126 @@ export const Members = () => {
         <h1 className="text-2xl">Usuários</h1>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-6 lg:grid-cols-8">
-        <div className="sm:col-span-3 lg:col-span-4">
-          <div className="space-y-2">
-            <Label htmlFor="search">Buscar</Label>
-            <div className="relative">
-              <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-              <Input
-                id="search"
-                name="search"
-                type="search"
-                placeholder="Buscar por nome ou e-mail"
-                value={searchInput}
-                onChange={(event) => updateFilter("q", event.currentTarget.value)}
-                className="pr-9 pl-9 [&::-webkit-search-cancel-button]:hidden"
-              />
-              {searchInput && (
-                <button
-                  type="button"
-                  aria-label="Limpar busca"
-                  onClick={() => updateFilter("q", "")}
-                  className="text-muted-foreground hover:text-foreground absolute top-1/2 right-1 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md"
+      <Tabs
+        value={tab}
+        onValueChange={(value) => updateFilter("tab", value === "users" ? "" : value)}
+        className="min-h-0 flex-1 overflow-hidden"
+      >
+        <TabsList className="h-auto flex-wrap">
+          <TabsTrigger value="users">Usuários</TabsTrigger>
+          <TabsTrigger value="history">Histórico de alterações</TabsTrigger>
+          <TabsTrigger value="security">Segurança</TabsTrigger>
+        </TabsList>
+        <TabsContent value="history" className="overflow-auto pt-2">
+          <AuditLogTab />
+        </TabsContent>
+        <TabsContent value="security" className="overflow-auto pt-2">
+          <SecurityTab />
+        </TabsContent>
+        <TabsContent value="users" className="flex min-h-0 flex-col gap-4 overflow-hidden pt-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-6 lg:grid-cols-8">
+            <div className="sm:col-span-3 lg:col-span-4">
+              <div className="space-y-2">
+                <Label htmlFor="search">Buscar</Label>
+                <div className="relative">
+                  <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                  <Input
+                    id="search"
+                    name="search"
+                    type="search"
+                    placeholder="Buscar por nome ou e-mail"
+                    value={searchInput}
+                    onChange={(event) => updateFilter("q", event.currentTarget.value)}
+                    className="pr-9 pl-9 [&::-webkit-search-cancel-button]:hidden"
+                  />
+                  {searchInput && (
+                    <button
+                      type="button"
+                      aria-label="Limpar busca"
+                      onClick={() => updateFilter("q", "")}
+                      className="text-muted-foreground hover:text-foreground absolute top-1/2 right-1 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="sm:col-span-3 lg:col-span-2">
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <select
+                  id="status"
+                  value={status}
+                  onChange={(event) => updateFilter("status", event.target.value)}
+                  className="border-input dark:bg-input/30 focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border bg-transparent px-3 py-1 text-base shadow-xs outline-none focus-visible:ring-[3px] md:text-sm"
                 >
-                  <X className="h-4 w-4" />
-                </button>
+                  {STATUS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <DialogInviteMember clientId={client.id} className="w-full self-end sm:col-span-6 sm:w-auto lg:col-span-2 lg:col-start-7" />
+          </div>
+
+          {findAllMembersQuery.isLoading && <LoadingState />}
+          {findAllMembersQuery.isError && (
+            <ErrorState
+              message="Não foi possível buscar os usuários."
+              onRetry={() => findAllMembersQuery.refetch()}
+              isRetrying={findAllMembersQuery.isFetching}
+            />
+          )}
+
+          {members && isMobile && (
+            <div className="space-y-3 overflow-auto">
+              {members.items.length === 0 && <EmptyState title="Nenhum usuário encontrado" />}
+
+              {members.items.map((member) => (
+                <MemberCard key={member.id} member={member} clientId={client.id} />
+              ))}
+
+              {(members.canPreviousPage || members.canNextPage) && (
+                <div className="flex items-center justify-between gap-2 pt-2 text-sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!members.canPreviousPage}
+                    onClick={() => setPagination((prev) => ({ ...prev, pageIndex: prev.pageIndex - 1 }))}
+                  >
+                    Anterior
+                  </Button>
+                  <span className="text-muted-foreground tabular-nums">
+                    Página {pagination.pageIndex + 1} de {pageCount}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!members.canNextPage}
+                    onClick={() => setPagination((prev) => ({ ...prev, pageIndex: prev.pageIndex + 1 }))}
+                  >
+                    Próxima
+                  </Button>
+                </div>
               )}
             </div>
-          </div>
-        </div>
-        <div className="sm:col-span-3 lg:col-span-2">
-          <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
-            <select
-              id="status"
-              value={status}
-              onChange={(event) => updateFilter("status", event.target.value)}
-              className="border-input dark:bg-input/30 focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border bg-transparent px-3 py-1 text-base shadow-xs outline-none focus-visible:ring-[3px] md:text-sm"
-            >
-              {STATUS_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <DialogInviteMember clientId={client.id} className="w-full self-end sm:col-span-6 sm:w-auto lg:col-span-2 lg:col-start-7" />
-      </div>
-
-      {findAllMembersQuery.isLoading && <LoadingState />}
-      {findAllMembersQuery.isError && (
-        <ErrorState
-          message="Não foi possível buscar os usuários."
-          onRetry={() => findAllMembersQuery.refetch()}
-          isRetrying={findAllMembersQuery.isFetching}
-        />
-      )}
-
-      {members && isMobile && (
-        <div className="space-y-3 overflow-auto">
-          {members.items.length === 0 && <EmptyState title="Nenhum usuário encontrado" />}
-
-          {members.items.map((member) => (
-            <MemberCard key={member.id} member={member} clientId={client.id} />
-          ))}
-
-          {(members.canPreviousPage || members.canNextPage) && (
-            <div className="flex items-center justify-between gap-2 pt-2 text-sm">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!members.canPreviousPage}
-                onClick={() => setPagination((prev) => ({ ...prev, pageIndex: prev.pageIndex - 1 }))}
-              >
-                Anterior
-              </Button>
-              <span className="text-muted-foreground tabular-nums">
-                Página {pagination.pageIndex + 1} de {pageCount}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!members.canNextPage}
-                onClick={() => setPagination((prev) => ({ ...prev, pageIndex: prev.pageIndex + 1 }))}
-              >
-                Próxima
-              </Button>
-            </div>
           )}
-        </div>
-      )}
 
-      {members && !isMobile && (
-        <DataTablePaginate columns={columns} data={members} onPaginationChange={setPagination} pagination={pagination} />
-      )}
+          {members && !isMobile && (
+            <DataTablePaginate columns={columns} data={members} onPaginationChange={setPagination} pagination={pagination} />
+          )}
 
-      {members && members.total > 0 && (
-        <p className="text-muted-foreground text-xs tabular-nums" aria-live="polite">
-          {members.total} {members.total === 1 ? "usuário" : "usuários"}
-          {pageCount > 1 && ` · Página ${pagination.pageIndex + 1} de ${pageCount}`}
-        </p>
-      )}
+          {members && members.total > 0 && (
+            <p className="text-muted-foreground text-xs tabular-nums" aria-live="polite">
+              {members.total} {members.total === 1 ? "usuário" : "usuários"}
+              {pageCount > 1 && ` · Página ${pagination.pageIndex + 1} de ${pageCount}`}
+            </p>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

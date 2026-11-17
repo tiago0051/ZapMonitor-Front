@@ -28,6 +28,18 @@ type MemberRoleRequestBody = {
 
 type InviteMemberRequestBody = MemberRoleRequestBody & {
   email: string;
+  // Grupos de atendimento em que a pessoa entra ao aceitar
+  serviceGroupIds?: string[];
+};
+
+type InvitationRequestParams = {
+  clientId: string;
+  invitationId: string;
+};
+
+type InvitationLink = {
+  url: string;
+  expiresAt: string;
 };
 
 type ChangeMemberRoleRequestData = {
