@@ -45,6 +45,11 @@ type PlannerPlanItem = {
   status: "SUGGESTED" | "ACCEPTED" | "DISCARDED";
   socialPostId: string | null;
   plannerTaskId: string | null;
+  // Rascunho de campanha criado ao aceitar um anúncio
+  adDraftId: string | null;
+  // Estratégia ativa de onde a IA tirou a ação
+  strategyId: string | null;
+  strategyName: string | null;
 };
 
 type PlannerPlan = {

@@ -512,6 +512,7 @@ type AdDraftRouting = {
 
 type AdCampaignDraft = AdDraftRouting & {
   id: string;
+  adAccountId: string;
   name: string;
   status: AdDraftStatus;
   // Status da campanha na Meta pela última sincronização (ex.: ACTIVE, PAUSED); nulo antes de criar ou sincronizar

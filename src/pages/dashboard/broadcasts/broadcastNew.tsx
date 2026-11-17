@@ -25,7 +25,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ArrowLeft } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import {
   describeSendWindow,
@@ -65,7 +65,9 @@ export const BroadcastNew = () => {
   const queryClient = useQueryClient();
 
   const [step, setStep] = useState(0);
-  const [name, setName] = useState("");
+  // O plano do mês abre já com o nome da ação (?name=)
+  const [searchParams] = useSearchParams();
+  const [name, setName] = useState(() => searchParams.get("name")?.substring(0, 191) ?? "");
   const [configurationId, setConfigurationId] = useState("");
   const [template, setTemplate] = useState<WhatsappTemplate | null>(null);
   const [headerFile, setHeaderFile] = useState<File | null>(null);

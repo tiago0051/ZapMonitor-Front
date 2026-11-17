@@ -51,7 +51,11 @@ export const plannerService = {
     body: { date?: string; title?: string; description?: string; format?: SocialPostFormat },
   ): Promise<PlannerPlanItem> => (await api.put(`${base(clientId)}/plan-item/${id}`, body)).data,
 
-  acceptItem: async (clientId: string, id: string, body: { platforms?: SocialPlatform[] } = {}): Promise<PlannerPlanItem> =>
+  acceptItem: async (
+    clientId: string,
+    id: string,
+    body: { platforms?: SocialPlatform[]; adAccountId?: string } = {},
+  ): Promise<PlannerPlanItem> =>
     (await api.post(`${base(clientId)}/plan-item/${id}/accept`, body)).data,
 
   discardItem: async (clientId: string, id: string): Promise<PlannerPlanItem> =>

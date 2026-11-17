@@ -8,6 +8,7 @@ import { useBaseUrl } from "@/hooks/use-baseUrl";
 import { cn } from "@/lib/utils";
 import { crmSelectClassName } from "@/pages/dashboard/crm/crmUtils";
 import { metaAdsService } from "@/services/api/metaAdsService";
+import { requestErrorHandling } from "@/utils/request";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ChevronDown, ChevronRight, Megaphone, RefreshCw } from "lucide-react";
@@ -227,7 +228,7 @@ const TAB_LABEL: Record<string, string> = {
   suggestions: "Sugestões",
   experiments: "Testes",
   learnings: "Aprendizados",
-  strategy: "Estratégia",
+  strategy: "Conversar com a IA",
   wiki: "Wiki",
   changes: "Mudanças",
   automation: "Automação",
@@ -271,6 +272,30 @@ export const AdsPage = () => {
   const tabsListRef = useRef<HTMLDivElement>(null);
   // Última aba aberta em cada grupo, para voltar nela ao trocar de grupo
   const [lastTabByGroup, setLastTabByGroup] = useState<Record<string, string>>({});
+  // Rascunho montado pelo piloto (ou pelo plano do mês) que a aba Criar campanha abre
+  const [pilotDraftId, setPilotDraftId] = useState<string | null>(null);
+  // Rascunho criado pelo plano do mês (?draft=): abre a conta dele na aba Criar campanha
+  const requestedDraftId = searchParams.get("draft");
+  useEffect(() => {
+    if (!requestedDraftId) return;
+    let canceled = false;
+    metaAdsService
+      .findDraft({ params: { clientId: client.id, draftId: requestedDraftId } })
+      .then((draft) => {
+        if (canceled) return;
+        setStoredPlatform("META");
+        setStoredAccountId(draft.adAccountId);
+        setPilotDraftId(draft.id);
+        setTab("create");
+      })
+      .catch(requestErrorHandling)
+      .finally(() => {
+        if (!canceled) setSearchParams({}, { replace: true });
+      });
+    return () => {
+      canceled = true;
+    };
+  }, [requestedDraftId, client.id, setSearchParams, setStoredAccountId, setStoredPlatform, setTab]);
 
   const accountsQuery = useQuery({
     queryKey: ["metaAds", "accounts", client.id],
@@ -311,8 +336,6 @@ export const AdsPage = () => {
   useEffect(() => {
     tabsListRef.current?.querySelector<HTMLElement>('[data-state="active"]')?.scrollIntoView({ block: "nearest", inline: "center" });
   }, [activeTab]);
-  // Rascunho montado pelo piloto que a aba Criar campanha abre
-  const [pilotDraftId, setPilotDraftId] = useState<string | null>(null);
 
   const structureQuery = useQuery({
     meta: { errorHandledInline: true },

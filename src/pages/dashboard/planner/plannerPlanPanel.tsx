@@ -13,10 +13,12 @@ import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addMonths, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Check, ExternalLink, Loader2, RotateCw, Sparkles, Trash2, X } from "lucide-react";
+import { Check, ExternalLink, Loader2, Megaphone, RotateCw, Sparkles, Trash2, X } from "lucide-react";
 import { useEffect, useState, type FC, type FormEvent } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
+import { useReadLocalStorage } from "usehooks-ts";
+import { copyText } from "../strategies/strategyUtils";
 import {
   eventTypeInfo,
   itemKindEventType,
@@ -39,24 +41,53 @@ const goalExamples = [
   "Lotar a agenda de dezembro com clientes novos",
 ];
 
+// Disparo e e-mail precisam de lista e modelo escolhidos na tela: o plano abre a criação com o nome e o briefing copiado
+const moduleByKind: Partial<Record<PlannerItemKind, { path: string; label: string }>> = {
+  WHATSAPP_BROADCAST: { path: "broadcasts/new", label: "Montar disparo" },
+  EMAIL_CAMPAIGN: { path: "broadcasts/email/new", label: "Montar e-mail" },
+};
+
 const monthLabel = (month: string) => format(new Date(`${month}-01T12:00`), "MMMM 'de' yyyy", { locale: ptBR });
 
-const PlanItemRow: FC<{ item: PlannerPlanItem; canManage: boolean; createsPosts: boolean }> = ({ item, canManage, createsPosts }) => {
-  const { client } = useClientContext();
+const PlanItemRow: FC<{ item: PlannerPlanItem; canManage: boolean; createsPosts: boolean; createsAds: boolean }> = ({
+  item,
+  canManage,
+  createsPosts,
+  createsAds,
+}) => {
+  const { client, can } = useClientContext();
   const baseUrl = useBaseUrl();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  // Conta de anúncio aberta por último em Anúncios: o rascunho nasce nela
+  const adAccountId = useReadLocalStorage<string | null>(`ads:account:${client.id}`);
+  const moduleTarget = moduleByKind[item.kind];
+  const canBuildInModule = !!moduleTarget && can("broadcasts.send");
+  const openModule = async () => {
+    if (!moduleTarget) return;
+    const copied = await copyText(item.description ? `${item.title}\n\n${item.description}` : item.title);
+    if (copied) toast.success("Briefing copiado. Cole onde precisar ao montar.");
+    navigate(`${baseUrl}/${moduleTarget.path}?name=${encodeURIComponent(item.title.substring(0, 191))}`);
+  };
   const [day, setDay] = useState(format(new Date(item.date), "yyyy-MM-dd"));
   const info = eventTypeInfo[itemKindEventType[item.kind]];
   const Icon = info.icon;
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["planner", client.id] });
 
   const accept = useMutation({
-    mutationFn: () => plannerService.acceptItem(client.id, item.id),
+    mutationFn: () => plannerService.acceptItem(client.id, item.id, { adAccountId: adAccountId ?? undefined }),
     onError: requestErrorHandling,
     onSuccess: (updated) => {
       refresh();
       queryClient.invalidateQueries({ queryKey: ["socialPosts", client.id] });
-      toast.success(updated.socialPostId ? "A IA está escrevendo a postagem" : "Virou tarefa");
+      if (updated.socialPostId) toast.success("A IA está escrevendo a postagem");
+      else if (updated.adDraftId)
+        toast.success("Rascunho do anúncio criado em Anúncios, com uma tarefa no dia para revisar e publicar", {
+          action: { label: "Abrir", onClick: () => navigate(`${baseUrl}/ads?draft=${updated.adDraftId}`) },
+        });
+      else if (canBuildInModule && moduleTarget)
+        toast.success("Virou tarefa no dia", { action: { label: moduleTarget.label, onClick: () => void openModule() } });
+      else toast.success("Virou tarefa");
     },
   });
   const discard = useMutation({
@@ -99,13 +130,29 @@ const PlanItemRow: FC<{ item: PlannerPlanItem; canManage: boolean; createsPosts:
         {item.status === "DISCARDED" && <span className="text-muted-foreground text-xs">Descartada</span>}
       </div>
       <p className="text-sm font-medium">{item.title}</p>
+      {item.strategyName && (
+        <p className="text-muted-foreground text-xs">
+          Da estratégia{" "}
+          {item.strategyId ? (
+            <Link to={`${baseUrl}/strategies/${item.strategyId}`} className="text-foreground underline-offset-2 hover:underline">
+              {item.strategyName}
+            </Link>
+          ) : (
+            item.strategyName
+          )}
+        </p>
+      )}
       {item.description && <p className="text-muted-foreground text-sm whitespace-pre-line">{item.description}</p>}
       <div className="flex flex-wrap gap-2">
         {suggested && canManage && (
           <>
             <Button size="sm" disabled={busy} onClick={() => accept.mutate()}>
               {accept.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" aria-hidden />}
-              {item.kind === "SOCIAL_POST" && createsPosts ? "Criar postagem" : "Virar tarefa"}
+              {item.kind === "SOCIAL_POST" && createsPosts
+                ? "Criar postagem"
+                : item.kind === "AD_CAMPAIGN" && createsAds
+                  ? "Criar rascunho do anúncio"
+                  : "Virar tarefa"}
             </Button>
             <Button size="sm" variant="ghost" disabled={busy} onClick={() => discard.mutate()}>
               <X className="h-4 w-4" aria-hidden />
@@ -121,6 +168,20 @@ const PlanItemRow: FC<{ item: PlannerPlanItem; canManage: boolean; createsPosts:
             </Link>
           </Button>
         )}
+        {item.adDraftId && (
+          <Button asChild size="sm" variant="outline">
+            <Link to={`${baseUrl}/ads?draft=${item.adDraftId}`}>
+              <Megaphone className="h-4 w-4" aria-hidden />
+              Abrir rascunho do anúncio
+            </Link>
+          </Button>
+        )}
+        {item.status === "ACCEPTED" && canBuildInModule && moduleTarget && (
+          <Button size="sm" variant="outline" onClick={() => void openModule()}>
+            <ExternalLink className="h-4 w-4" aria-hidden />
+            {moduleTarget.label}
+          </Button>
+        )}
       </div>
     </li>
   );
@@ -133,6 +194,8 @@ export const PlannerPlanPanel: FC = () => {
   const { confirm, confirmDialog } = useConfirm();
   const canManage = can("planner.manage");
   const createsPosts = can("posts.manage") && access.adsEnabled;
+  const createsAds = can("ads.manage") && access.adsEnabled;
+  const adAccountId = useReadLocalStorage<string | null>(`ads:account:${client.id}`);
 
   const monthOptions = [0, 1, 2, 3].map((offset) => format(addMonths(new Date(), offset), "yyyy-MM"));
   const [month, setMonth] = useState(monthOptions[0]);
@@ -214,13 +277,16 @@ export const PlannerPlanPanel: FC = () => {
       }
     }
     const posts = pending.filter((item) => item.kind === "SOCIAL_POST").length;
+    const ads = createsAds ? pending.filter((item) => item.kind === "AD_CAMPAIGN").length : 0;
     if (
       !(await confirm({
         title: `Aceitar ${pending.length} sugestões?`,
         description:
           (createsPosts && posts
             ? `${posts} viram postagens em rascunho (a IA escreve e gera as imagens de cada uma, usando a cota) e o resto vira tarefa.`
-            : "Cada sugestão vira uma tarefa no dia, com o briefing.") + quotaNote,
+            : "Cada sugestão vira uma tarefa no dia, com o briefing.") +
+          (ads ? ` ${ads} anúncio(s) também viram rascunho de campanha em Anúncios, sem publicar.` : "") +
+          quotaNote,
         confirmLabel: "Aceitar",
       }))
     )
@@ -229,7 +295,7 @@ export const PlannerPlanPanel: FC = () => {
     let accepted = 0;
     try {
       for (const item of pending) {
-        await plannerService.acceptItem(client.id, item.id);
+        await plannerService.acceptItem(client.id, item.id, { adAccountId: adAccountId ?? undefined });
         accepted++;
       }
       toast.success(`${accepted} sugestões aceitas`);
@@ -423,7 +489,7 @@ export const PlannerPlanPanel: FC = () => {
             {plan.status === "READY" && (
               <ul className="grid gap-2">
                 {plan.items.map((item) => (
-                  <PlanItemRow key={item.id} item={item} canManage={canManage} createsPosts={createsPosts} />
+                  <PlanItemRow key={item.id} item={item} canManage={canManage} createsPosts={createsPosts} createsAds={createsAds} />
                 ))}
               </ul>
             )}
