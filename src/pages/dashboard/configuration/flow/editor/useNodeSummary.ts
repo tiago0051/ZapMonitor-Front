@@ -1,6 +1,13 @@
 import { useFlowEditorContext } from "./flowEditorContext";
 import { WEEKDAY_LABELS } from "./flowNodeConfig";
 
+/** 90 → "1h30"; 1440 → "1 dia". */
+export function formatWaitMinutes(minutes: number) {
+  if (minutes % 1440 === 0) return `${minutes / 1440} dia${minutes > 1440 ? "s" : ""}`;
+  if (minutes < 60) return `${minutes} min`;
+  return `${Math.floor(minutes / 60)}h${minutes % 60 ? String(minutes % 60).padStart(2, "0") : ""}`;
+}
+
 // Texto curto que descreve o que o nó faz, mostrado no canvas e na lista de pendências
 export function useNodeSummary(type: FlowNodeType, data: FlowNodeData) {
   const { serviceGroups, aiAgents, categories, flows, pipelines, emailOptions } = useFlowEditorContext();
@@ -9,8 +16,14 @@ export function useNodeSummary(type: FlowNodeType, data: FlowNodeData) {
     case "start":
       return "Quando um novo atendimento começa";
     case "message":
+      if (data.media) return data.text?.trim() ? `${data.text.trim()} + ${data.media.fileName}` : `Anexo: ${data.media.fileName}`;
+      return data.text?.trim() || "Mensagem não preenchida";
     case "end":
-      return data.text?.trim() || (type === "end" ? "Finaliza sem mensagem" : "Mensagem não preenchida");
+      return data.text?.trim() || "Finaliza sem mensagem";
+    case "wait":
+      return data.minutes ? `Espera ${formatWaitMinutes(data.minutes)} e segue` : "Defina o tempo de espera";
+    case "askField":
+      return data.question?.trim() || "Pergunta não preenchida";
     case "condition":
       return data.question?.trim() || "Pergunta não preenchida";
     case "aiAgent":
@@ -45,6 +58,7 @@ export function useNodeSummary(type: FlowNodeType, data: FlowNodeData) {
     case "flow":
       return flows.find((flow) => flow.id === data.flowId)?.name ?? "Selecione um fluxo";
     case "businessHours": {
+      if (data.useCompanyHours) return "Horário da empresa (com feriados)";
       const weekdays = [...new Set((data.intervals ?? []).map((interval) => interval.weekday))].sort();
       return weekdays.length ? weekdays.map((weekday) => WEEKDAY_LABELS[weekday].slice(0, 3)).join(", ") : "Sem horários";
     }

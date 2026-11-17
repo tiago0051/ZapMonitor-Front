@@ -21,6 +21,8 @@ type CreateFlowRequestData = {
     name: string;
     resetAfterMinutes?: number;
     kind?: FlowKind;
+    // Modelo por tipo de negócio (só fluxo de atendimento); omitido começa em branco
+    templateId?: string;
   };
 };
 
@@ -38,7 +40,18 @@ type UpdateFlowRequestData = {
 
 type PublishFlowRequestData = {
   params: FlowRequestParams;
-  body: { expectedUpdatedAt?: string };
+  // activate: põe o fluxo no ar logo depois de publicar
+  body: { expectedUpdatedAt?: string; activate?: boolean };
+};
+
+type SaveCompanyHoursRequestData = {
+  params: { clientId: string };
+  body: Pick<CompanyHours, "timezone" | "intervals" | "holidays">;
+};
+
+type GetFlowMediaUploadUrlRequestData = {
+  params: { clientId: string; fileType: FlowMessageMediaKind };
+  body: { fileName: string; mimeType: string; fileSize: number };
 };
 
 type RestoreFlowVersionRequestData = {

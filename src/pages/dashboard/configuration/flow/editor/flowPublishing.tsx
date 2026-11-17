@@ -1,11 +1,13 @@
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { flowService } from "@/services/api/flowService";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { History, Loader2, Minus, Pencil, Plus } from "lucide-react";
-import { useMemo, type FC } from "react";
+import { History, Loader2, Minus, Pencil, Phone, Plus } from "lucide-react";
+import { useMemo, useState, type FC } from "react";
 import { diffFlowDefinitions } from "./flowDiff";
 import { flowNodeConfigs } from "./flowNodeConfig";
 import { useNodeSummary } from "./useNodeSummary";
@@ -37,64 +39,115 @@ type PublishDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   isPending: boolean;
-  onConfirm: () => void;
+  // Números (já formatados) em que o fluxo começa os atendimentos
+  phoneNumbers: string[];
+  onConfirm: (options: { activate: boolean }) => void;
 };
 
-/** Confirmação do publicar, com o resumo do que muda em relação à versão no ar. */
-export const PublishFlowDialog: FC<PublishDialogProps> = ({ flow, open, onOpenChange, isPending, onConfirm }) => {
+/** Confirmação do publicar, com o resumo do que muda em relação à versão no ar e a opção de já ativar. */
+export const PublishFlowDialog: FC<PublishDialogProps> = (props) => (
+  <Dialog open={props.open} onOpenChange={props.onOpenChange}>
+    {/* O conteúdo só existe aberto: assim o "Ativar agora" volta ao padrão a cada abertura */}
+    {props.open && <PublishFlowDialogContent {...props} />}
+  </Dialog>
+);
+
+const PublishFlowDialogContent: FC<PublishDialogProps> = ({ flow, onOpenChange, isPending, phoneNumbers, onConfirm }) => {
   const draft = flow.draftDefinition;
   const diff = useMemo(() => (draft ? diffFlowDefinitions(flow.definition, draft) : null), [flow.definition, draft]);
   const isFirstVersion = flow.version === 0;
   const hasNodeChanges = !!diff && diff.added.length + diff.removed.length + diff.changed.length > 0;
+  const isQueueFlow = flow.kind === "QUEUE";
+  const isArchived = !!flow.archivedAt;
+  // Fluxo inativo já sai ativado por padrão: é o que quase todo mundo quer ao publicar
+  const [activateNow, setActivateNow] = useState(!flow.active && !isArchived);
+  const willBeLive = flow.active || activateNow;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85dvh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{isFirstVersion ? "Publicar a primeira versão" : `Publicar a versão ${flow.version + 1}`}</DialogTitle>
-          <DialogDescription>
-            {flow.active
-              ? "Os novos atendimentos passam a usar esta versão. Os atendimentos em andamento terminam na versão em que começaram."
-              : "O fluxo está inativo: a versão publicada só passa a atender quando você ativar o fluxo."}
-          </DialogDescription>
-        </DialogHeader>
+    <DialogContent className="max-h-[85dvh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>{isFirstVersion ? "Publicar a primeira versão" : `Publicar a versão ${flow.version + 1}`}</DialogTitle>
+        <DialogDescription>
+          {flow.active
+            ? "O fluxo já está ativo: os novos atendimentos passam a usar esta versão na hora. Os atendimentos em andamento terminam na versão em que começaram."
+            : willBeLive
+              ? "O fluxo vai ser publicado e ativado: os novos atendimentos já passam por ele."
+              : "O fluxo continua inativo: a versão publicada só passa a atender quando você ativar o fluxo."}
+        </DialogDescription>
+      </DialogHeader>
 
-        {!isFirstVersion && diff && (
-          <div className="space-y-2">
-            <p className="text-sm font-medium">O que muda em relação à versão {flow.version}</p>
-            {hasNodeChanges ? (
-              <ul className="space-y-1.5">
-                {diff.added.map((node) => (
-                  <DiffRow key={`a-${node.id}`} node={node} kind="added" />
-                ))}
-                {diff.changed.map((node) => (
-                  <DiffRow key={`c-${node.id}`} node={node} kind="changed" />
-                ))}
-                {diff.removed.map((node) => (
-                  <DiffRow key={`r-${node.id}`} node={node} kind="removed" />
-                ))}
-              </ul>
-            ) : (
-              <p className="text-muted-foreground text-sm">Nenhum nó mudou.</p>
-            )}
-            {diff.edgeChanges > 0 && (
-              <p className="text-muted-foreground text-sm">{diff.edgeChanges} conexão(ões) criada(s) ou removida(s).</p>
-            )}
-            {diff.followUpChanged && <p className="text-muted-foreground text-sm">O follow-up mudou.</p>}
+      {!flow.active &&
+        (isArchived ? (
+          <p className="text-muted-foreground text-sm">Este fluxo está arquivado. Desarquive na lista de fluxos para poder ativá-lo.</p>
+        ) : (
+          <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
+            <Label htmlFor="flow-publish-activate" className="flex-col items-start gap-0.5">
+              <span>Ativar agora</span>
+              <span className="text-muted-foreground text-xs font-normal">Desligue para publicar e ativar depois</span>
+            </Label>
+            <Switch id="flow-publish-activate" checked={activateNow} onCheckedChange={setActivateNow} disabled={isPending} />
           </div>
-        )}
+        ))}
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
-            Cancelar
-          </Button>
-          <Button onClick={onConfirm} disabled={isPending}>
-            {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-            Publicar
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      {/* Onde o fluxo passa a valer, para o usuário não publicar achando que já está atendendo */}
+      <div className="space-y-1.5">
+        <p className="text-sm font-medium">{willBeLive ? "Onde vai atender" : "Onde vai atender quando ativado"}</p>
+        {isQueueFlow ? (
+          <p className="text-muted-foreground text-sm">
+            Roda nos grupos de atendimento que usam este fluxo de fila, enquanto o contato espera.
+          </p>
+        ) : phoneNumbers.length > 0 ? (
+          <ul className="flex flex-wrap gap-1.5">
+            {phoneNumbers.map((phoneNumber) => (
+              <li key={phoneNumber} className="bg-muted flex items-center gap-1 rounded-md px-2 py-1 text-sm">
+                <Phone className="h-3.5 w-3.5" />
+                {phoneNumber}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-muted-foreground text-sm">
+            Nenhum número ligado: escolha um número em "Números", no topo do editor, para ele começar a atender. Sem número, o fluxo só roda
+            quando outro fluxo chama ele pelo nó "Ir para fluxo".
+          </p>
+        )}
+      </div>
+
+      {!isFirstVersion && diff && (
+        <div className="space-y-2">
+          <p className="text-sm font-medium">O que muda em relação à versão {flow.version}</p>
+          {hasNodeChanges ? (
+            <ul className="space-y-1.5">
+              {diff.added.map((node) => (
+                <DiffRow key={`a-${node.id}`} node={node} kind="added" />
+              ))}
+              {diff.changed.map((node) => (
+                <DiffRow key={`c-${node.id}`} node={node} kind="changed" />
+              ))}
+              {diff.removed.map((node) => (
+                <DiffRow key={`r-${node.id}`} node={node} kind="removed" />
+              ))}
+            </ul>
+          ) : (
+            <p className="text-muted-foreground text-sm">Nenhum nó mudou.</p>
+          )}
+          {diff.edgeChanges > 0 && (
+            <p className="text-muted-foreground text-sm">{diff.edgeChanges} conexão(ões) criada(s) ou removida(s).</p>
+          )}
+          {diff.followUpChanged && <p className="text-muted-foreground text-sm">O follow-up mudou.</p>}
+        </div>
+      )}
+
+      <DialogFooter>
+        <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
+          Cancelar
+        </Button>
+        <Button onClick={() => onConfirm({ activate: !flow.active && activateNow })} disabled={isPending}>
+          {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+          {!flow.active && activateNow ? "Publicar e ativar" : "Publicar"}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
   );
 };
 
