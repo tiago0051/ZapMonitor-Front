@@ -52,6 +52,7 @@ import { SpendCapBar } from "./components/spendCapBar";
 import { AdsLearnings } from "./learnings/adsLearnings";
 import { AdsExperiments } from "./experiments/adsExperiments";
 import { AdsStrategyWiki } from "./wiki/adsStrategyWiki";
+import { StrategyIntentBanner } from "../strategies/strategyIntentBanner";
 
 const StatusChip: FC<{ status: string }> = ({ status }) => {
   const info = effectiveStatusInfo(status);
@@ -506,6 +507,7 @@ export const AdsPage = () => {
         </TabsContent>
 
         <TabsContent value="create" className={tabContentClassName}>
+          <StrategyIntentBanner kinds={["AD_DRAFT", "AD_VIDEO_CAMPAIGN"]} className="mb-4" />
           {isMeta ? (
             <div className="space-y-4">
               <AdsInstagramVideos key={currentAccount.id} account={currentAccount} />

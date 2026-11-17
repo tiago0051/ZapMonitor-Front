@@ -1,6 +1,7 @@
 import { NotFound } from "@/components/not-found";
 import { PermissionRoute } from "@/components/permission-route";
 import { EditClientLayout } from "@/pages/dashboard/configuration/layout";
+import { StrategyIntentFrame } from "@/pages/dashboard/strategies/strategyIntentBanner";
 import { WhatsappTemplateNew } from "@/pages/dashboard/configuration/whatsapp/whatsappTemplate/whatsappTemplateNew";
 import { lazy } from "react";
 import { Route, Routes } from "react-router";
@@ -26,7 +27,9 @@ const ConfigurationRouter = () => {
         path="templates/new"
         element={
           <PermissionRoute permission="templates.manage">
-            <WhatsappTemplateNew />
+            <StrategyIntentFrame kinds={["WHATSAPP_TEMPLATE"]}>
+              <WhatsappTemplateNew />
+            </StrategyIntentFrame>
           </PermissionRoute>
         }
       />

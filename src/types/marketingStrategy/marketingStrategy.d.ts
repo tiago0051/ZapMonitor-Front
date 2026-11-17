@@ -224,3 +224,13 @@ type MarketingStrategy = {
   // Vínculos de passos que sumiram quando o plano foi refeito
   unassignedLinks: MarketingStrategyLink[];
 };
+
+// Atalho aberto num passo: o próximo item criado no módulo nasce ligado a ele
+type MarketingActiveIntent = {
+  kind: MarketingIntentKind;
+  strategyId: string;
+  strategyName: string;
+  stepOrder: number;
+  stepTitle: string;
+  expiresAt: string;
+};
