@@ -80,6 +80,36 @@ export const flowService = {
     return response.data;
   },
 
+  findTemplates: async (clientId: string): Promise<FlowTemplate[]> => {
+    const response = await api.get<FlowTemplate[]>(`/client/${clientId}/flow/templates`);
+    return response.data;
+  },
+
+  archive: async ({ params }: ToggleFlowRequestData): Promise<Flow> => {
+    const response = await api.put(`/client/${params.clientId}/flow/${params.flowId}/archive`);
+    return response.data;
+  },
+
+  unarchive: async ({ params }: ToggleFlowRequestData): Promise<Flow> => {
+    const response = await api.put(`/client/${params.clientId}/flow/${params.flowId}/unarchive`);
+    return response.data;
+  },
+
+  getMediaUploadUrl: async ({ params, body }: GetFlowMediaUploadUrlRequestData): Promise<{ url: string; fileId: string }> => {
+    const response = await api.post(`/client/${params.clientId}/flow/media/${params.fileType}/upload-url`, body);
+    return response.data;
+  },
+
+  findCompanyHours: async (clientId: string): Promise<CompanyHours> => {
+    const response = await api.get<CompanyHours>(`/client/${clientId}/company-hours`);
+    return response.data;
+  },
+
+  saveCompanyHours: async ({ params, body }: SaveCompanyHoursRequestData): Promise<CompanyHours> => {
+    const response = await api.put<CompanyHours>(`/client/${params.clientId}/company-hours`, body);
+    return response.data;
+  },
+
   deactivate: async ({ params }: ToggleFlowRequestData): Promise<Flow> => {
     const response = await api.put(`/client/${params.clientId}/flow/${params.flowId}/deactivate`);
     return response.data;

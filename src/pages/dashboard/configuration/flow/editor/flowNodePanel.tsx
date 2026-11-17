@@ -2,12 +2,21 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, X } from "lucide-react";
-import type { FC, ReactNode } from "react";
+import { useClientContext } from "@/context/ClientContext/clientContext";
+import { Copy, Plus, Trash2, X } from "lucide-react";
+import { useState, type FC, type ReactNode } from "react";
+import { Link } from "react-router";
 import { textareaClassName } from "../../aiAgent/aiAgentConstants";
+import { DialogSaveAiAgent } from "../../aiAgent/components/dialogSaveAiAgent";
+import { DialogSaveServiceGroup } from "../../serviceGroup/components/dialogSaveServiceGroup";
 import { useFlowEditorContext } from "./flowEditorContext";
+import { FlowMessageMediaField, FlowVariableTextarea } from "./flowMessageExtras";
 import {
   createFlowId,
+  FLOW_ASK_TARGET_LABELS,
+  FLOW_ASK_VALIDATION_LABELS,
+  FLOW_WAIT_MAX_MINUTES,
+  FLOW_WAIT_MIN_MINUTES,
   FLOW_CONDITION_MAX_BUTTON_TITLE,
   FLOW_CONDITION_MAX_BUTTONS,
   DEFAULT_CALL_PERMISSION_TEXT,
@@ -31,11 +40,72 @@ const TIMEZONES = [
   "America/Noronha",
 ];
 
+// Valor especial dos selects de agente e grupo: abre o cadastro sem sair do editor
+const CREATE_NEW_OPTION = "__create__";
+
+// Unidades do nó Aguardar; o valor salvo é sempre em minutos
+const WAIT_UNITS = [
+  { id: "minutes", label: "minutos", factor: 1 },
+  { id: "hours", label: "horas", factor: 60 },
+  { id: "days", label: "dias", factor: 1440 },
+] as const;
+type WaitUnit = (typeof WAIT_UNITS)[number]["id"];
+
+const pickWaitUnit = (minutes: number | undefined): WaitUnit =>
+  minutes && minutes % 1440 === 0 ? "days" : minutes && minutes % 60 === 0 ? "hours" : "minutes";
+
+const WaitSettings: FC<{ minutes: number | undefined; onChange: (minutes: number) => void }> = ({ minutes, onChange }) => {
+  const [unit, setUnit] = useState<WaitUnit>(() => pickWaitUnit(minutes));
+  const factor = WAIT_UNITS.find((item) => item.id === unit)!.factor;
+  const amount = minutes ? Math.round((minutes / factor) * 100) / 100 : "";
+
+  return (
+    <Field
+      label="Esperar"
+      hint="De 1 minuto a 7 dias. Se o contato escrever nesse meio tempo, o fluxo continua esperando; se o atendimento for encerrado ou assumido por alguém, a espera é cancelada."
+    >
+      <div className="flex gap-2">
+        <Input
+          type="number"
+          min={1}
+          value={amount}
+          onChange={(e) => onChange(Math.round(e.target.valueAsNumber * factor))}
+          className="flex-1"
+        />
+        <select
+          className={`${selectClassName} w-28`}
+          value={unit}
+          aria-label="Unidade de tempo"
+          onChange={(e) => {
+            const nextUnit = e.target.value as WaitUnit;
+            const nextFactor = WAIT_UNITS.find((item) => item.id === nextUnit)!.factor;
+            setUnit(nextUnit);
+            // Mantém o número digitado e troca só a unidade (2 horas → 2 dias)
+            if (minutes) onChange(Math.round((minutes / factor) * nextFactor));
+          }}
+        >
+          {WAIT_UNITS.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      {minutes !== undefined && (Number.isNaN(minutes) || minutes < FLOW_WAIT_MIN_MINUTES || minutes > FLOW_WAIT_MAX_MINUTES) && (
+        <p className="text-destructive text-xs">A espera precisa ser de 1 minuto a 7 dias.</p>
+      )}
+    </Field>
+  );
+};
+
 type FlowNodePanelProps = {
+  clientId: string;
   type: FlowNodeType;
   data: FlowNodeData;
   onChange: (data: FlowNodeData) => void;
   onDelete: () => void;
+  // Ausente nos nós que não podem ser copiados (ex.: Início)
+  onDuplicate?: () => void;
   onClose: () => void;
 };
 
@@ -197,8 +267,13 @@ const AgentCrmSettings: FC<{
   );
 };
 
-export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, onDelete, onClose }) => {
-  const { serviceGroups, aiAgents, categories, flows, pipelines, crmFields, emailOptions, currentFlowId } = useFlowEditorContext();
+export const FlowNodePanel: FC<FlowNodePanelProps> = ({ clientId, type, data, onChange, onDelete, onDuplicate, onClose }) => {
+  const { serviceGroups, aiAgents, categories, flows, pipelines, crmFields, contactFields, emailOptions, currentFlowId } =
+    useFlowEditorContext();
+  const { can, access } = useClientContext();
+  const canCreateAgent = can("aiAgents.manage");
+  const canCreateGroup = can("serviceGroups.manage");
+  const [creating, setCreating] = useState<"aiAgent" | "serviceGroup" | null>(null);
   const isQueueFlow = flows.find((flow) => flow.id === currentFlowId)?.kind === "QUEUE";
   const queueFlows = flows.filter((flow) => flow.kind === "QUEUE");
   const queueTextHint = isQueueFlow ? `Use ${QUEUE_MESSAGE_VARIABLES}. Só é enviada dentro da janela de 24h do WhatsApp.` : undefined;
@@ -271,14 +346,95 @@ export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, on
         )}
 
         {type === "message" && (
-          <Field label="Mensagem" hint={queueTextHint}>
-            <textarea
-              value={data.text ?? ""}
-              onChange={(e) => update({ text: e.target.value })}
-              placeholder="Olá! Seja bem-vindo à ..."
-              className={`${textareaClassName} min-h-32`}
-            />
-          </Field>
+          <>
+            <Field label="Mensagem" hint={queueTextHint ?? (data.media ? "Opcional com anexo: vai antes do arquivo." : undefined)}>
+              <FlowVariableTextarea
+                value={data.text ?? ""}
+                onChange={(text) => update({ text })}
+                placeholder="Olá, {{primeiro_nome}}! Seja bem-vindo à ..."
+                className="min-h-32"
+              />
+            </Field>
+            <Field label="Anexo" hint="Opcional. Imagem, PDF, áudio ou vídeo enviado logo depois do texto.">
+              <FlowMessageMediaField clientId={clientId} media={data.media} onChange={(media) => update({ media })} />
+            </Field>
+          </>
+        )}
+
+        {type === "wait" && <WaitSettings minutes={data.minutes} onChange={(minutes) => update({ minutes })} />}
+
+        {type === "askField" && (
+          <>
+            <Field label="Pergunta enviada ao contato">
+              <FlowVariableTextarea
+                value={data.question ?? ""}
+                onChange={(question) => update({ question })}
+                placeholder="Qual é a sua data de nascimento?"
+                className="min-h-20"
+              />
+            </Field>
+            <Field label="Onde salvar a resposta">
+              <select
+                className={selectClassName}
+                value={data.target ?? "contactField"}
+                onChange={(e) => {
+                  const target = e.target.value as FlowAskTarget;
+                  // E-mail da ficha só aceita resposta do tipo e-mail
+                  update({ target, fieldId: null, ...(target === "email" ? { validation: "email" as const } : {}) });
+                }}
+              >
+                {(Object.keys(FLOW_ASK_TARGET_LABELS) as FlowAskTarget[])
+                  .filter((target) => target !== "dealField" || access.crmEnabled)
+                  .map((target) => (
+                    <option key={target} value={target}>
+                      {FLOW_ASK_TARGET_LABELS[target]}
+                    </option>
+                  ))}
+              </select>
+            </Field>
+            {(data.target === "contactField" || data.target === "dealField") && (
+              <Field
+                label="Campo"
+                hint={
+                  (data.target === "contactField" ? contactFields : crmFields).length === 0
+                    ? "Cadastre campos em Configurações › Campos personalizados."
+                    : data.target === "dealField"
+                      ? "Vai para o negócio aberto mais recente do contato; sem negócio aberto, a resposta não é salva e o fluxo segue."
+                      : undefined
+                }
+              >
+                <select
+                  className={selectClassName}
+                  value={data.fieldId ?? ""}
+                  onChange={(e) => update({ fieldId: e.target.value || null })}
+                >
+                  <option value="">Selecione...</option>
+                  {(data.target === "contactField" ? contactFields : crmFields).map((field) => (
+                    <option key={field.id} value={field.id}>
+                      {field.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
+            <Field
+              label="Tipo de resposta"
+              hint='Respostas fora do tipo seguem por "Resposta inválida"; sem ligação nela, o contato recebe uma explicação e a pergunta de novo.'
+            >
+              <select
+                className={selectClassName}
+                value={data.validation ?? "text"}
+                disabled={data.target === "email"}
+                onChange={(e) => update({ validation: e.target.value as FlowAskValidation })}
+              >
+                {(Object.keys(FLOW_ASK_VALIDATION_LABELS) as FlowAskValidation[]).map((validation) => (
+                  <option key={validation} value={validation}>
+                    {FLOW_ASK_VALIDATION_LABELS[validation]}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </>
         )}
 
         {type === "callPermission" && (
@@ -301,11 +457,10 @@ export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, on
             label="Mensagem de despedida"
             hint={`Opcional. Enviada antes de finalizar o atendimento.${queueTextHint ? ` ${queueTextHint}` : ""}`}
           >
-            <textarea
+            <FlowVariableTextarea
               value={data.text ?? ""}
-              onChange={(e) => update({ text: e.target.value })}
-              placeholder="Obrigado pelo contato!"
-              className={`${textareaClassName} min-h-24`}
+              onChange={(text) => update({ text })}
+              placeholder="Obrigado pelo contato, {{primeiro_nome}}!"
             />
           </Field>
         )}
@@ -358,14 +513,22 @@ export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, on
 
         {type === "aiAgent" && (
           <>
-            <Field label="Agente" hint={aiAgents.length === 0 ? "Cadastre um agente na aba Agentes de IA." : undefined}>
-              <select className={selectClassName} value={data.aiAgentId ?? ""} onChange={(e) => update({ aiAgentId: e.target.value })}>
+            <Field
+              label="Agente"
+              hint={aiAgents.length === 0 && !canCreateAgent ? "Peça a quem cuida dos agentes de IA para cadastrar um." : undefined}
+            >
+              <select
+                className={selectClassName}
+                value={data.aiAgentId ?? ""}
+                onChange={(e) => (e.target.value === CREATE_NEW_OPTION ? setCreating("aiAgent") : update({ aiAgentId: e.target.value }))}
+              >
                 <option value="">Selecione...</option>
                 {aiAgents.map((agent) => (
                   <option key={agent.id} value={agent.id}>
                     {agent.name}
                   </option>
                 ))}
+                {canCreateAgent && <option value={CREATE_NEW_OPTION}>+ Criar novo agente…</option>}
               </select>
             </Field>
 
@@ -413,11 +576,18 @@ export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, on
 
         {type === "serviceGroup" && (
           <>
-            <Field label="Grupo" hint={serviceGroups.length === 0 ? "Cadastre um grupo na aba Grupos de atendimento." : undefined}>
+            <Field
+              label="Grupo"
+              hint={
+                serviceGroups.length === 0 && !canCreateGroup ? "Peça a quem cuida dos grupos de atendimento para cadastrar um." : undefined
+              }
+            >
               <select
                 className={selectClassName}
                 value={data.serviceGroupId ?? ""}
-                onChange={(e) => update({ serviceGroupId: e.target.value })}
+                onChange={(e) =>
+                  e.target.value === CREATE_NEW_OPTION ? setCreating("serviceGroup") : update({ serviceGroupId: e.target.value })
+                }
               >
                 <option value="">Selecione...</option>
                 {serviceGroups.map((group) => (
@@ -425,6 +595,7 @@ export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, on
                     {group.name}
                   </option>
                 ))}
+                {canCreateGroup && <option value={CREATE_NEW_OPTION}>+ Criar novo grupo…</option>}
               </select>
             </Field>
 
@@ -621,6 +792,27 @@ export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, on
         )}
 
         {type === "businessHours" && (
+          <label className="flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-sm">
+            <Checkbox
+              className="mt-0.5"
+              checked={!!data.useCompanyHours}
+              onCheckedChange={(checked) => update({ useCompanyHours: checked === true })}
+            />
+            <span className="space-y-1">
+              <span className="block font-medium">Usar o horário da empresa</span>
+              <span className="text-muted-foreground block text-xs">
+                Um só horário para todos os fluxos, com feriados e datas fechadas.{" "}
+                {can("flows.manage") && (
+                  <Link to="../..?tab=companyHours" relative="path" className="text-primary underline">
+                    Ver ou mudar o horário da empresa
+                  </Link>
+                )}
+              </span>
+            </span>
+          </label>
+        )}
+
+        {type === "businessHours" && !data.useCompanyHours && (
           <>
             <Field label="Fuso horário">
               <select className={selectClassName} value={data.timezone ?? ""} onChange={(e) => update({ timezone: e.target.value })}>
@@ -670,12 +862,37 @@ export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, on
       </div>
 
       {type !== "start" && (
-        <div className="border-t p-4">
-          <Button variant="outline" className="text-destructive w-full" onClick={onDelete}>
+        <div className="flex gap-2 border-t p-4">
+          {onDuplicate && (
+            <Button variant="outline" className="flex-1" onClick={onDuplicate}>
+              <Copy className="h-4 w-4" />
+              Duplicar
+            </Button>
+          )}
+          <Button variant="outline" className="text-destructive flex-1" onClick={onDelete}>
             <Trash2 className="h-4 w-4" />
-            Remover nó
+            Remover
           </Button>
         </div>
+      )}
+
+      {/* Cadastro sem sair do editor: o criado já fica escolhido no nó */}
+      {canCreateAgent && (
+        <DialogSaveAiAgent
+          clientId={clientId}
+          open={creating === "aiAgent"}
+          onOpenChange={(open) => setCreating(open ? "aiAgent" : null)}
+          onCreated={(agent) => update({ aiAgentId: agent.id })}
+        />
+      )}
+      {canCreateGroup && (
+        <DialogSaveServiceGroup
+          clientId={clientId}
+          serviceGroups={serviceGroups}
+          open={creating === "serviceGroup"}
+          onOpenChange={(open) => setCreating(open ? "serviceGroup" : null)}
+          onCreated={(group) => update({ serviceGroupId: group.id })}
+        />
       )}
     </div>
   );

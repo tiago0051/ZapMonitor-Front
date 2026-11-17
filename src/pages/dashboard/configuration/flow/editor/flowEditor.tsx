@@ -24,11 +24,14 @@ import {
   useReactFlow,
   type Connection,
   type Edge,
+  type OnBeforeDelete,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import {
   ArrowLeft,
+  Copy,
   FlaskConical,
+  LayoutGrid,
   History,
   Loader2,
   MessageSquareText,
@@ -36,6 +39,7 @@ import {
   MoreHorizontal,
   Phone,
   Power,
+  Redo2,
   Rocket,
   Save,
   Undo2,
@@ -54,7 +58,7 @@ import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useWhatsappConfigurations } from "../flowLinks";
-import { useCallback, useMemo, useState, type FC } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FC } from "react";
 import { Link, useParams } from "react-router";
 import { toast } from "sonner";
 import { FlowCanvasNode, type FlowCanvasNodeType } from "./flowCanvasNode";
@@ -66,6 +70,11 @@ import { DiscardDraftDialog, FlowVersionHistory, PublishFlowDialog } from "./flo
 import { FlowFollowUpButton } from "./flowFollowUp";
 import { FlowSimulator } from "./flowSimulator";
 import { FlowTestContacts } from "./flowTesting";
+import { layoutFlowNodes } from "./flowAutoLayout";
+import { canCopyFlowNode, cloneFlowNodes, copyFlowNodes, hasCopiedFlowNodes, pasteFlowNodes } from "./flowClipboard";
+import { FlowNodeSearch } from "./flowNodeSearch";
+import { useFlowHistory, type FlowSnapshot } from "./useFlowHistory";
+import { formatPhoneNumber } from "@/utils/formatString";
 
 const MOBILE_BANNER_KEY = "zapmonitor:flowEditorMobileBannerDismissed";
 const readMobileBannerDismissed = () => {
@@ -96,6 +105,8 @@ const queuePaletteNodeTypes: FlowNodeType[] = [
 const paletteNodeTypes: FlowNodeType[] = [
   "message",
   "condition",
+  "askField",
+  "wait",
   "aiAgent",
   "serviceGroup",
   "businessHours",
@@ -153,6 +164,17 @@ const editingDefinition = (flow: Flow) => flow.draftDefinition ?? flow.definitio
 
 const isConflict = (error: unknown) => isAxiosError(error) && error.response?.status === 409;
 
+// Atalhos do editor não valem enquanto a pessoa digita ou está num diálogo/painel aberto por cima
+const isTypingTarget = (target: EventTarget | null) =>
+  target instanceof HTMLElement &&
+  (target.isContentEditable ||
+    ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName) ||
+    !!target.closest("[role='dialog'], [role='menu'], [role='listbox']"));
+
+// Metade do nó (w-60) e altura aproximada, para o nó novo nascer centralizado
+const NEW_NODE_HALF_WIDTH = 120;
+const NEW_NODE_HALF_HEIGHT = 50;
+
 const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
   const queryClient = useQueryClient();
   const { screenToFlowPosition, fitView } = useReactFlow();
@@ -182,6 +204,14 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
   // No celular "Testar" e "Histórico" abrem pelo menu "⋯"
   const [mobilePanel, setMobilePanel] = useState<"test" | "history" | null>(null);
   const [isMobileBannerDismissed, setIsMobileBannerDismissed] = useState(readMobileBannerDismissed);
+  const canvasWrapperRef = useRef<HTMLDivElement>(null);
+  // O "Publicar" salva antes; nesse caso o aviso de rascunho salvo seria só barulho
+  const isSavingForPublishRef = useRef(false);
+  // Mesmo estado para a tela: mostra o carregando no botão Publicar enquanto salva
+  const [isSavingForPublish, setIsSavingForPublish] = useState(false);
+
+  const history = useFlowHistory({ nodes, edges, setNodes, setEdges, onRestore: useCallback(() => setIsDirty(true), []) });
+  const { record } = history;
 
   // O nó em que a simulação está fica selecionado no canvas
   const highlightSimulationNode = useCallback(
@@ -210,6 +240,7 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
     setSelectedNodeId(null);
     setRejectedIssues(null);
     setIsDirty(false);
+    history.reset();
     onFlowSaved(loadedFlow);
   };
 
@@ -242,6 +273,7 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
       onFlowSaved(savedFlow);
       setIsDirty(false);
       setRejectedIssues(null);
+      if (isSavingForPublishRef.current) return;
       toast.success(savedFlow.draftDefinition ? "Rascunho salvo. Publique para colocar as alterações no ar." : "Fluxo salvo");
     },
   });
@@ -252,14 +284,16 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
       setIsPublishOpen(false);
       handleIssuesError("Fluxo não publicado")(error);
     },
-    onSuccess: (publishedFlow) => {
+    onSuccess: (publishedFlow, { body }) => {
       onFlowSaved(publishedFlow);
       setIsPublishOpen(false);
       setRejectedIssues(null);
       toast.success(
-        publishedFlow.active
-          ? `Versão ${publishedFlow.version} publicada. Novos atendimentos já usam esta versão.`
-          : `Versão ${publishedFlow.version} publicada. Ative o fluxo para ela começar a atender.`,
+        body.activate && publishedFlow.active
+          ? `Versão ${publishedFlow.version} publicada e fluxo ativado. Os novos atendimentos já passam por ele.`
+          : publishedFlow.active
+            ? `Versão ${publishedFlow.version} publicada. Novos atendimentos já usam esta versão.`
+            : `Versão ${publishedFlow.version} publicada. Ative o fluxo para ela começar a atender.`,
       );
     },
   });
@@ -295,17 +329,44 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
     },
   });
 
-  const handleSave = () => {
-    updateFlow.mutate({
-      params: { clientId, flowId: flow.id },
-      body: {
-        name: name.trim(),
-        resetAfterMinutes,
-        definition: toDefinition(nodes, edges, followUp),
-        whatsappConfigurationIds,
-        expectedUpdatedAt: flow.updatedAt,
-      },
-    });
+  const saveRequest = () => ({
+    params: { clientId, flowId: flow.id },
+    body: {
+      name: name.trim(),
+      resetAfterMinutes,
+      definition: toDefinition(nodes, edges, followUp),
+      whatsappConfigurationIds,
+      expectedUpdatedAt: flow.updatedAt,
+    },
+  });
+
+  const handleSave = () => updateFlow.mutate(saveRequest());
+
+  // Publicar em um passo: salva o que mudou, confere as pendências e abre a confirmação
+  const handlePublish = async () => {
+    if (!isDirty) return setIsPublishOpen(true);
+
+    let savedFlow: Flow;
+    isSavingForPublishRef.current = true;
+    setIsSavingForPublish(true);
+    try {
+      savedFlow = await updateFlow.mutateAsync(saveRequest());
+    } catch {
+      // O erro já foi mostrado pelo onError do salvar (pendências, conflito ou falha)
+      return;
+    } finally {
+      isSavingForPublishRef.current = false;
+      setIsSavingForPublish(false);
+    }
+
+    if (savedFlow.issues.length > 0) {
+      setIsIssuesOpen(true);
+      return toast.error("Rascunho salvo, mas ainda não dá para publicar", {
+        description: `Corrija as ${savedFlow.issues.length} pendência(s) listadas sobre o fluxo.`,
+      });
+    }
+    if (!savedFlow.draftDefinition) return toast.success("Fluxo salvo. Ele já está igual à versão no ar, nada para publicar.");
+    setIsPublishOpen(true);
   };
 
   // Mudanças na estrutura (mover, conectar, remover) marcam o fluxo como não salvo
@@ -313,6 +374,7 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
 
   const onConnect = useCallback(
     (connection: Connection) => {
+      record();
       // Cada saída leva a um único destino: a nova conexão substitui a anterior
       setEdges((currentEdges) =>
         addEdge(
@@ -322,17 +384,128 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
       );
       setIsDirty(true);
     },
-    [setEdges],
+    [setEdges, record],
   );
+
+  // Centro da parte visível do canvas (a tela tem paleta e painéis em volta, então não é o centro da janela)
+  const visibleCenter = () => {
+    const rect = canvasWrapperRef.current?.getBoundingClientRect();
+    const center = rect
+      ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+      : { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    return screenToFlowPosition(center);
+  };
 
   const addNode = (type: FlowNodeType) => {
     const id = createFlowId();
-    const position = screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+    const center = visibleCenter();
+    const position = { x: center.x - NEW_NODE_HALF_WIDTH, y: center.y - NEW_NODE_HALF_HEIGHT };
+    // Vários nós seguidos sem mexer no canvas: cada um desce um pouco para não ficar um em cima do outro
+    while (nodes.some((node) => Math.abs(node.position.x - position.x) < 10 && Math.abs(node.position.y - position.y) < 10)) {
+      position.x += 30;
+      position.y += 30;
+    }
 
-    setNodes((currentNodes) => [...currentNodes, { id, type, position, data: flowNodeConfigs[type].defaultData(), deletable: true }]);
+    record();
+    setNodes((currentNodes) => [
+      ...currentNodes.map((node) => ({ ...node, selected: false })),
+      { id, type, position, data: flowNodeConfigs[type].defaultData(), deletable: true, selected: true },
+    ]);
     setSelectedNodeId(id);
     setIsDirty(true);
   };
+
+  // Nós que podem ser copiados: os selecionados no canvas (ou o aberto no painel), menos o Início
+  const copyableSelection = () => {
+    const selected = nodes.filter((node) => node.selected || node.id === selectedNodeId);
+    return selected.filter((node) => canCopyFlowNode(node, availableNodeTypes));
+  };
+
+  const insertCopies = (copies: FlowCanvasNodeType[]) => {
+    if (copies.length === 0) return;
+    record();
+    setNodes((currentNodes) => [...currentNodes.map((node) => ({ ...node, selected: false })), ...copies]);
+    setSelectedNodeId(copies.length === 1 ? copies[0].id : null);
+    setIsDirty(true);
+  };
+
+  const duplicateSelection = () => insertCopies(cloneFlowNodes(copyableSelection(), 1));
+
+  const copySelection = () => {
+    const selection = copyableSelection();
+    if (selection.length === 0) return false;
+    copyFlowNodes(selection);
+    toast.success(
+      selection.length === 1 ? "Nó copiado. Use Ctrl+V para colar." : `${selection.length} nós copiados. Use Ctrl+V para colar.`,
+    );
+    return true;
+  };
+
+  const pasteCopies = () => {
+    const copies = pasteFlowNodes(availableNodeTypes);
+    if (copies.length === 0) toast.error("O que foi copiado não pode ser usado neste tipo de fluxo");
+    insertCopies(copies);
+  };
+
+  const organizeNodes = () => {
+    record();
+    setNodes((currentNodes) => layoutFlowNodes(currentNodes, edges));
+    setIsDirty(true);
+    // Espera o canvas aplicar as novas posições antes de enquadrar
+    requestAnimationFrame(() => void fitView({ duration: 300 }));
+  };
+
+  // Mover nós: um passo no histórico por arraste, e só se algo saiu do lugar
+  const dragSnapshotRef = useRef<FlowSnapshot | null>(null);
+  const onDragStart = () => {
+    dragSnapshotRef.current = history.takeSnapshot();
+  };
+  const onDragStop = (draggedNodes: FlowCanvasNodeType[]) => {
+    const snapshot = dragSnapshotRef.current;
+    dragSnapshotRef.current = null;
+    if (!snapshot) return;
+    const moved = draggedNodes.some((dragged) => {
+      const before = snapshot.nodes.find((node) => node.id === dragged.id)?.position;
+      return !before || before.x !== dragged.position.x || before.y !== dragged.position.y;
+    });
+    if (moved) record({ snapshot });
+  };
+
+  // Apagar pela tecla Delete/Backspace: um passo só para o nó e as conexões dele
+  const onBeforeDelete: OnBeforeDelete<FlowCanvasNodeType, Edge> = async () => {
+    record();
+    return true;
+  };
+
+  // Atalhos de teclado; o ref guarda as funções da última renderização sem recriar o listener
+  const shortcutsRef = useRef({ undo: history.undo, redo: history.redo, copy: copySelection, paste: pasteCopies });
+  useEffect(() => {
+    shortcutsRef.current = { undo: history.undo, redo: history.redo, copy: copySelection, paste: pasteCopies };
+  });
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey || isTypingTarget(event.target)) return;
+      const key = event.key.toLowerCase();
+      const shortcuts = shortcutsRef.current;
+
+      if ((key === "z" && event.shiftKey) || key === "y") {
+        event.preventDefault();
+        shortcuts.redo();
+      } else if (key === "z") {
+        event.preventDefault();
+        shortcuts.undo();
+      } else if (key === "c" && !event.shiftKey) {
+        // Com texto selecionado na página, o Ctrl+C continua copiando o texto
+        if (window.getSelection()?.toString()) return;
+        if (shortcuts.copy()) event.preventDefault();
+      } else if (key === "v" && !event.shiftKey && hasCopiedFlowNodes()) {
+        event.preventDefault();
+        shortcuts.paste();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   const updateNodeData = (nodeId: string, data: FlowNodeData) => {
     const node = nodes.find((item) => item.id === nodeId);
@@ -341,6 +514,8 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
     // Conexões de saídas que deixaram de existir são removidas
     const outputIds = new Set(getFlowNodeOutputs(node.type as FlowNodeType, data).map((output) => output.id));
 
+    // Digitação seguida no mesmo nó vira um passo só no desfazer
+    record({ key: `data:${nodeId}` });
     setNodes((currentNodes) => currentNodes.map((item) => (item.id === nodeId ? { ...item, data } : item)));
     setEdges((currentEdges) => currentEdges.filter((edge) => edge.source !== nodeId || outputIds.has(edge.sourceHandle ?? "")));
     setIsDirty(true);
@@ -353,6 +528,7 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
   };
 
   const deleteNode = (nodeId: string) => {
+    record();
     setNodes((currentNodes) => currentNodes.filter((node) => node.id !== nodeId));
     setEdges((currentEdges) => currentEdges.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
     setSelectedNodeId(null);
@@ -401,9 +577,10 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
   const isPending =
     updateFlow.isPending || toggleFlow.isPending || publishFlow.isPending || discardDraft.isPending || restoreVersion.isPending;
   const hasDraft = !!flow.draftDefinition;
-  const canPublish = hasDraft && !isDirty && flow.issues.length === 0;
+  // Com alterações não salvas o "Publicar" salva antes e confere as pendências do que acabou de salvar
+  const canPublish = isDirty ? !!name.trim() && Number.isInteger(resetAfterMinutes) : hasDraft && flow.issues.length === 0;
   const publishTitle = isDirty
-    ? "Salve as alterações antes de publicar"
+    ? "Salva as alterações e publica"
     : !hasDraft
       ? "Nada para publicar: o editor está igual à versão no ar"
       : flow.issues.length > 0
@@ -416,7 +593,7 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
       : flow.publishedIssues.length > 0
         ? "A versão publicada tem pendências: corrija, publique e ative"
         : undefined;
-  const publishReason = !canPublish ? publishTitle : undefined;
+  const publishReason = !canPublish && !isDirty ? publishTitle : undefined;
   const activateReason = !flow.active && !canActivate ? activateTitle : undefined;
   const canDiscard = hasDraft && flow.version > 0;
 
@@ -565,9 +742,9 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
               disabled={isPending || !canPublish}
               title={publishTitle}
               aria-describedby={publishReason ? "flow-publish-reason" : undefined}
-              onClick={() => setIsPublishOpen(true)}
+              onClick={() => void handlePublish()}
             >
-              <Rocket className="h-4 w-4" />
+              {publishFlow.isPending || isSavingForPublish ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
               Publicar
             </Button>
             {!isMobile && discardButton}
@@ -670,7 +847,12 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
           open={isPublishOpen}
           onOpenChange={setIsPublishOpen}
           isPending={publishFlow.isPending}
-          onConfirm={() => publishFlow.mutate({ params: { clientId, flowId: flow.id }, body: { expectedUpdatedAt: flow.updatedAt } })}
+          phoneNumbers={configurations
+            .filter((configuration) => whatsappConfigurationIds.includes(configuration.id))
+            .map((configuration) => formatPhoneNumber(configuration.phoneNumber))}
+          onConfirm={({ activate }) =>
+            publishFlow.mutate({ params: { clientId, flowId: flow.id }, body: { expectedUpdatedAt: flow.updatedAt, activate } })
+          }
         />
         <DiscardDraftDialog
           flow={flow}
@@ -716,7 +898,7 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
           })}
         </aside>
 
-        <div className="relative min-w-0 flex-1">
+        <div ref={canvasWrapperRef} className="relative min-w-0 flex-1">
           {issues.length > 0 && (
             <FlowIssuesPanel
               title={issuesTitle}
@@ -728,6 +910,53 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
               onSelectNode={showNode}
             />
           )}
+          {/* Ferramentas do canvas: desfazer/refazer, buscar, duplicar e organizar */}
+          <div className="bg-card absolute top-3 right-3 z-10 flex items-center gap-0.5 rounded-lg border p-0.5 shadow-sm">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label="Desfazer"
+              title="Desfazer (Ctrl+Z)"
+              disabled={!history.canUndo}
+              onClick={history.undo}
+            >
+              <Undo2 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label="Refazer"
+              title="Refazer (Ctrl+Shift+Z ou Ctrl+Y)"
+              disabled={!history.canRedo}
+              onClick={history.redo}
+            >
+              <Redo2 className="h-4 w-4" />
+            </Button>
+            <FlowNodeSearch nodes={nodes} onSelect={showNode} triggerClassName="h-8 w-8" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label="Duplicar nó selecionado"
+              title="Duplicar nó selecionado (Ctrl+C e Ctrl+V também funcionam)"
+              disabled={!nodes.some((node) => (node.selected || node.id === selectedNodeId) && canCopyFlowNode(node, availableNodeTypes))}
+              onClick={duplicateSelection}
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label="Organizar"
+              title="Organizar os nós automaticamente"
+              onClick={organizeNodes}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+          </div>
           <FlowIssuesContext.Provider value={issueCountByNodeId}>
             <ReactFlow
               nodes={nodes}
@@ -742,6 +971,9 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
                 if (changes.some((change) => change.type === "remove")) markDirty();
               }}
               onConnect={onConnect}
+              onNodeDragStart={onDragStart}
+              onNodeDragStop={(_, __, draggedNodes) => onDragStop(draggedNodes)}
+              onBeforeDelete={onBeforeDelete}
               onNodeClick={(_, node) => setSelectedNodeId(node.id)}
               onPaneClick={() => setSelectedNodeId(null)}
               defaultEdgeOptions={{ animated: true }}
@@ -773,10 +1005,14 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
           <aside className="bg-card absolute inset-0 z-20 md:static md:w-80 md:shrink-0 md:border-l">
             <FlowNodePanel
               key={selectedNode.id}
+              clientId={clientId}
               type={selectedNode.type as FlowNodeType}
               data={selectedNode.data}
               onChange={(data) => updateNodeData(selectedNode.id, data)}
               onDelete={() => deleteNode(selectedNode.id)}
+              onDuplicate={
+                canCopyFlowNode(selectedNode, availableNodeTypes) ? () => insertCopies(cloneFlowNodes([selectedNode], 1)) : undefined
+              }
               onClose={() => setSelectedNodeId(null)}
             />
           </aside>
@@ -823,9 +1059,10 @@ export const FlowEditor = () => {
     enabled: access.crmEnabled,
   });
 
+  // Campos do negócio e da ficha juntos; o contexto separa pelo escopo
   const crmFieldsQuery = useQuery({
-    queryKey: ["crm", "fields", clientId],
-    queryFn: () => crmService.findAllCrmFields({ params: { clientId: clientId! } }),
+    queryKey: ["crm", "fields", clientId, "all"],
+    queryFn: () => crmService.findAllCrmFields({ params: { clientId: clientId! }, includeContactFields: true }),
     enabled: access.crmEnabled,
   });
 
@@ -839,9 +1076,11 @@ export const FlowEditor = () => {
       serviceGroups: serviceGroupsQuery.data ?? [],
       aiAgents: aiAgentsQuery.data ?? [],
       categories: categoriesQuery.data?.items ?? [],
-      flows: flowsQuery.data ?? [],
+      // Arquivados somem dos seletores; o próprio fluxo continua, mesmo arquivado
+      flows: (flowsQuery.data ?? []).filter((item) => !item.archivedAt || item.id === flowId),
       pipelines: (pipelinesQuery.data ?? []).filter((pipeline) => pipeline.active),
-      crmFields: (crmFieldsQuery.data ?? []).filter((field) => field.active),
+      crmFields: (crmFieldsQuery.data ?? []).filter((field) => field.active && field.scope !== "CONTACT"),
+      contactFields: (crmFieldsQuery.data ?? []).filter((field) => field.active && field.scope === "CONTACT"),
       emailOptions: emailOptionsQuery.data ?? { senders: [], templates: [] },
       currentFlowId: flowId!,
     }),

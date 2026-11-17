@@ -17,6 +17,7 @@ import {
   Phone,
   ShieldCheck,
   CalendarDays,
+  Clock,
   Tags,
   TextCursorInput,
   Users,
@@ -32,6 +33,7 @@ import { AiAgents } from "./aiAgent/aiAgents";
 import { GoogleCalendarSettings } from "./googleCalendar/googleCalendarSettings";
 import { ClientConfiguration } from "./client";
 import { Flows } from "./flow/flows";
+import { CompanyHoursSettings } from "./companyHours/companyHoursSettings";
 import { PermissionGroups } from "./permissionGroup/permissionGroups";
 import { Pipelines } from "./pipeline/pipelines";
 import { LostReasons } from "./lostReason/lostReasons";
@@ -75,6 +77,13 @@ const configurationGroups: { label: string; sections: ConfigurationSection[] }[]
         permission: "serviceGroups.manage",
       },
       { id: "aiAgent", label: "Agentes de IA", icon: Bot, content: <AiAgents />, permission: "aiAgents.manage" },
+      {
+        id: "companyHours",
+        label: "Horário da empresa",
+        icon: Clock,
+        content: <CompanyHoursSettings />,
+        permission: "flows.manage",
+      },
     ],
   },
   {

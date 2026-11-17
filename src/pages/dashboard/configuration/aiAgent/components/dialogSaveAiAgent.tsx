@@ -16,6 +16,10 @@ import { PromptAssistant } from "./promptAssistant";
 
 type DialogSaveAiAgentProps = {
   clientId: string;
+  // Aberto de fora (ex.: "+ Criar novo…" no editor de fluxo): sem botão próprio, avisa o agente criado
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onCreated?: (aiAgent: AiAgent) => void;
   aiAgent?: AiAgent;
 };
 
@@ -28,14 +32,18 @@ const schema = z.object({
 
 type SchemaType = z.infer<typeof schema>;
 
-export const DialogSaveAiAgent: FC<DialogSaveAiAgentProps> = ({ clientId, aiAgent }) => {
-  const [isOpen, setIsOpen] = useState<boolean>(false);
+export const DialogSaveAiAgent: FC<DialogSaveAiAgentProps> = ({ clientId, aiAgent, open, onOpenChange, onCreated }) => {
+  const [internalOpen, setInternalOpen] = useState<boolean>(false);
+  const isControlled = open !== undefined;
+  const isOpen = isControlled ? open : internalOpen;
+  const setIsOpen = (value: boolean) => (isControlled ? onOpenChange?.(value) : setInternalOpen(value));
   const isEditing = !!aiAgent;
 
   const queryClient = useQueryClient();
 
-  const onSuccess = () => {
+  const onSuccess = (saved: AiAgent) => {
     queryClient.invalidateQueries({ queryKey: ["aiAgents", clientId] });
+    if (!isEditing) onCreated?.(saved);
     toast.success(isEditing ? "Agente atualizado com sucesso" : "Agente criado com sucesso");
     setIsOpen(false);
   };
@@ -91,21 +99,23 @@ export const DialogSaveAiAgent: FC<DialogSaveAiAgentProps> = ({ clientId, aiAgen
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        {isEditing ? (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground h-8 w-8 shrink-0"
-            aria-label={`Editar ${aiAgent?.name ?? "agente"}`}
-            title="Editar"
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-        ) : (
-          <Button>Novo agente</Button>
-        )}
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          {isEditing ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground h-8 w-8 shrink-0"
+              aria-label={`Editar ${aiAgent?.name ?? "agente"}`}
+              title="Editar"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button>Novo agente</Button>
+          )}
+        </DialogTrigger>
+      )}
 
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-5xl">
         <DialogHeader>

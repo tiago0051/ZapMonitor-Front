@@ -5,6 +5,8 @@ import {
   Flag,
   GitBranch,
   Hourglass,
+  MessageCircleQuestion,
+  Timer,
   ListOrdered,
   Mail,
   MessageCircleReply,
@@ -51,7 +53,7 @@ export const flowNodeConfigs: Record<FlowNodeType, FlowNodeConfig> = {
   },
   message: {
     label: "Mensagem",
-    description: "Envia um texto fixo e segue",
+    description: "Envia um texto (e um anexo, se quiser) e segue",
     icon: MessageSquareText,
     colorClassName: "text-sky-600 border-sky-500/60",
     defaultData: () => ({ text: "" }),
@@ -89,10 +91,26 @@ export const flowNodeConfigs: Record<FlowNodeType, FlowNodeConfig> = {
     description: "Segue por dentro ou fora do horário",
     icon: Clock,
     colorClassName: "text-orange-600 border-orange-500/60",
+    // Nó novo usa o horário da empresa: um só lugar para mudar horário e feriados
     defaultData: () => ({
+      useCompanyHours: true,
       timezone: "America/Sao_Paulo",
       intervals: [1, 2, 3, 4, 5].map((weekday) => ({ weekday, start: "08:00", end: "18:00" })),
     }),
+  },
+  wait: {
+    label: "Aguardar",
+    description: "Espera um tempo e segue sozinho",
+    icon: Timer,
+    colorClassName: "text-slate-600 border-slate-500/60",
+    defaultData: () => ({ minutes: 60 }),
+  },
+  askField: {
+    label: "Perguntar e salvar",
+    description: "Pergunta, espera a resposta e salva na ficha ou no negócio",
+    icon: MessageCircleQuestion,
+    colorClassName: "text-amber-600 border-amber-500/60",
+    defaultData: () => ({ question: "", target: "contactField", fieldId: null, validation: "text" }),
   },
   category: {
     label: "Adicionar categoria",
@@ -186,6 +204,36 @@ export const FLOW_ENTRY_NODE_TYPES: FlowNodeType[] = ["start", "queueTimer", "qu
 // Variáveis aceitas nas mensagens do fluxo de fila
 export const QUEUE_MESSAGE_VARIABLES = "{{nome}}, {{posicao}} (posição na fila) e {{espera}} (tempo esperando)";
 
+// Limites do nó Aguardar (espelham o backend): de 1 minuto a 7 dias
+export const FLOW_WAIT_MIN_MINUTES = 1;
+export const FLOW_WAIT_MAX_MINUTES = 7 * 24 * 60;
+
+export const FLOW_ASK_TARGET_LABELS: Record<FlowAskTarget, string> = {
+  name: "Nome da ficha",
+  email: "E-mail da ficha",
+  document: "CPF/CNPJ da ficha",
+  contactField: "Campo da ficha do contato",
+  dealField: "Campo do negócio aberto",
+};
+
+export const FLOW_ASK_VALIDATION_LABELS: Record<FlowAskValidation, string> = {
+  text: "Texto livre",
+  number: "Número",
+  email: "E-mail",
+  date: "Data",
+  phone: "Telefone",
+};
+
+/** Chave da variável a partir do nome do campo (igual ao backend): "Data de nascimento" → data_de_nascimento. */
+export function toFlowVariableKey(name: string) {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
 export function createFlowId() {
   return Math.random().toString(36).slice(2, 10);
 }
@@ -201,7 +249,13 @@ export function getFlowNodeOutputs(type: FlowNodeType, data: FlowNodeData): Flow
     case "crmAnalysis":
     case "queueTimer":
     case "queueMessage":
+    case "wait":
       return [{ id: FLOW_OUTPUT_NEXT, label: "Próximo" }];
+    case "askField":
+      return [
+        { id: FLOW_OUTPUT_NEXT, label: "Respondeu" },
+        { id: "invalid", label: "Resposta inválida" },
+      ];
     case "businessHours":
       return [
         { id: "open", label: "Dentro do horário" },

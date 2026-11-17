@@ -18,6 +18,10 @@ type FlowNodeType =
   | "emailSequence"
   // Pede ao contato a autorização para receber ligações pelo WhatsApp e espera a resposta
   | "callPermission"
+  // Espera um tempo e segue sozinho
+  | "wait"
+  // Pergunta, espera a resposta em texto livre e salva na ficha ou no negócio
+  | "askField"
   | "end"
   // Pontos de entrada do fluxo de fila
   | "queueTimer"
@@ -38,6 +42,15 @@ type FlowBusinessHoursInterval = {
   start: string;
   end: string;
 };
+
+type FlowMessageMediaKind = "image" | "document" | "audio" | "video";
+
+// Anexo do nó Mensagem, já enviado ao armazenamento de arquivos
+type FlowMessageMedia = { fileId: string; fileName: string; kind: FlowMessageMediaKind };
+
+// Onde o "Perguntar e salvar" grava a resposta e como ela é conferida
+type FlowAskTarget = "name" | "email" | "document" | "contactField" | "dealField";
+type FlowAskValidation = "text" | "number" | "email" | "date" | "phone";
 
 type FlowNodeData = {
   serviceGroupId?: string;
@@ -68,6 +81,16 @@ type FlowNodeData = {
   templateId?: string;
   // "Sequência de e-mails"
   sequenceId?: string;
+  // Mensagem: anexo opcional (com ele o texto é opcional)
+  media?: FlowMessageMedia | null;
+  // Horário: usa o horário da empresa (com feriados) em vez dos intervalos do nó
+  useCompanyHours?: boolean;
+  // Aguardar: minutos de espera
+  minutes?: number;
+  // Perguntar e salvar
+  target?: FlowAskTarget;
+  fieldId?: string | null;
+  validation?: FlowAskValidation;
 };
 
 type FlowDefinitionNode = {
@@ -137,6 +160,8 @@ type Flow = {
   draftUpdatedAt: string | null;
   // Última vez que o fluxo foi testado no simulador
   lastSimulatedAt?: string | null;
+  // Arquivado: fora da lista principal e dos seletores de fluxo
+  archivedAt: string | null;
   // Números cujos novos atendimentos começam neste fluxo
   whatsappConfigurationIds: string[];
   // Pendências do que está no editor (impedem publicar) e da versão publicada (impedem ativar)
@@ -204,4 +229,30 @@ type FlowResourceUsage = {
 type ResourceUsage = {
   canDelete: boolean;
   flows: FlowResourceUsage[];
+};
+
+// Modelo do "Novo fluxo" por tipo de negócio
+type FlowTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  // stethoscope, store, wrench, landmark, utensils ou file
+  icon: string;
+};
+
+type CompanyHoliday = {
+  // AAAA-MM-DD; com recurring vale todo ano no mesmo dia e mês
+  date: string;
+  description: string;
+  recurring?: boolean;
+};
+
+// Horário de funcionamento da empresa, usado pelos nós "Horário de atendimento" que escolhem o horário da empresa
+type CompanyHours = {
+  timezone: string;
+  intervals: FlowBusinessHoursInterval[];
+  holidays: CompanyHoliday[];
+  // false enquanto a empresa não salvou (vem o padrão seg a sex, 8h às 18h)
+  configured: boolean;
+  updatedAt: string | null;
 };

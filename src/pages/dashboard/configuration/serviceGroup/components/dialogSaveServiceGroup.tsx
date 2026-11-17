@@ -18,6 +18,10 @@ import { useServiceGroupOptions } from "../useServiceGroupOptions";
 
 type DialogSaveServiceGroupProps = {
   clientId: string;
+  // Aberto de fora (ex.: "+ Criar novo…" no editor de fluxo): sem botão próprio, avisa o grupo criado
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onCreated?: (serviceGroup: ServiceGroup) => void;
   serviceGroup?: ServiceGroup;
   serviceGroups: ServiceGroup[];
 };
@@ -31,8 +35,18 @@ const schema = z.object({
 
 type SchemaType = z.infer<typeof schema>;
 
-export const DialogSaveServiceGroup: FC<DialogSaveServiceGroupProps> = ({ clientId, serviceGroup, serviceGroups }) => {
-  const [isOpen, setIsOpen] = useState<boolean>(false);
+export const DialogSaveServiceGroup: FC<DialogSaveServiceGroupProps> = ({
+  clientId,
+  serviceGroup,
+  serviceGroups,
+  open,
+  onOpenChange,
+  onCreated,
+}) => {
+  const [internalOpen, setInternalOpen] = useState<boolean>(false);
+  const isControlled = open !== undefined;
+  const isOpen = isControlled ? open : internalOpen;
+  const setIsOpen = (value: boolean) => (isControlled ? onOpenChange?.(value) : setInternalOpen(value));
   const isEditing = !!serviceGroup;
 
   const queryClient = useQueryClient();
@@ -42,10 +56,11 @@ export const DialogSaveServiceGroup: FC<DialogSaveServiceGroupProps> = ({ client
     queryFn: () => flowService.findAll({ params: { clientId } }),
     enabled: isOpen,
   });
-  const queueFlows = (flowsQuery.data ?? []).filter((flow) => flow.kind === "QUEUE");
+  const queueFlows = (flowsQuery.data ?? []).filter((flow) => flow.kind === "QUEUE" && !flow.archivedAt);
 
-  const onSuccess = () => {
+  const onSuccess = (saved: ServiceGroup) => {
     queryClient.invalidateQueries({ queryKey: ["serviceGroups", clientId] });
+    if (!isEditing) onCreated?.(saved);
     toast.success(isEditing ? "Grupo atualizado com sucesso" : "Grupo criado com sucesso");
     setIsOpen(false);
   };
@@ -105,21 +120,23 @@ export const DialogSaveServiceGroup: FC<DialogSaveServiceGroupProps> = ({ client
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        {isEditing ? (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground h-8 w-8 shrink-0"
-            aria-label={`Editar ${serviceGroup?.name ?? "grupo"}`}
-            title="Editar"
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-        ) : (
-          <Button>Novo grupo</Button>
-        )}
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          {isEditing ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground h-8 w-8 shrink-0"
+              aria-label={`Editar ${serviceGroup?.name ?? "grupo"}`}
+              title="Editar"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button>Novo grupo</Button>
+          )}
+        </DialogTrigger>
+      )}
 
       <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader>

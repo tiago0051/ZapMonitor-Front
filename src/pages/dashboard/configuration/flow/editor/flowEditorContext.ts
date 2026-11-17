@@ -10,6 +10,8 @@ type FlowEditorContextValue = {
   pipelines: Pipeline[];
   // Campos ativos do CRM, que o agente de IA pode preencher
   crmFields: CrmField[];
+  // Campos ativos da ficha do contato (variáveis e "Perguntar e salvar")
+  contactFields: CrmField[];
   // Remetentes verificados e modelos para o nó "Enviar e-mail"
   emailOptions: EmailCampaignOptions;
   currentFlowId: string;
@@ -22,6 +24,7 @@ export const FlowEditorContext = createContext<FlowEditorContextValue>({
   flows: [],
   pipelines: [],
   crmFields: [],
+  contactFields: [],
   emailOptions: { senders: [], templates: [] },
   currentFlowId: "",
 });

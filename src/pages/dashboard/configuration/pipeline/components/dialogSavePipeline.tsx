@@ -186,7 +186,8 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
     queryFn: () => flowService.findAll({ params: { clientId } }),
     enabled: isOpen,
   });
-  const flows = flowsQuery.data ?? [];
+  // Arquivados não aparecem para escolher
+  const flows = (flowsQuery.data ?? []).filter((flow) => !flow.archivedAt);
 
   const fieldsQuery = useQuery({
     queryKey: ["crm", "fields", clientId],
