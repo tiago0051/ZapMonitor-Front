@@ -187,3 +187,19 @@ type FlowSimulationResult = {
   // Fluxo de fila: dá para avançar o tempo
   canTick: boolean;
 };
+
+// Onde um agente de IA ou grupo é usado; com algum uso, a exclusão é recusada
+type FlowResourceUsage = {
+  flowId: string;
+  flowName: string;
+  kind: FlowKind;
+  active: boolean;
+  inPublished: boolean;
+  inDraft: boolean;
+  description: string;
+};
+
+type ResourceUsage = {
+  canDelete: boolean;
+  flows: FlowResourceUsage[];
+};

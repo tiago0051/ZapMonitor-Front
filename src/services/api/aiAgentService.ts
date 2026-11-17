@@ -24,4 +24,9 @@ export const aiAgentService = {
     const response = await api.post(`/client/${params.clientId}/ai-agent/prompt-assistant`, body);
     return response.data;
   },
+
+  findUsage: async (clientId: string, id: string): Promise<ResourceUsage> => {
+    const response = await api.get<ResourceUsage>(`/client/${clientId}/ai-agent/${id}/usage`);
+    return response.data;
+  },
 };

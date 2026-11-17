@@ -2,7 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { serviceGroupService } from "@/services/api/serviceGroupService";
 import { requestErrorHandling } from "@/utils/request";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { usageFromConflict } from "../../components/resourceUsage";
+import { ResourceUsageNotice } from "../../components/resourceUsageNotice";
 import { Trash2, X } from "lucide-react";
 import { useState, type FC } from "react";
 import { toast } from "sonner";
@@ -16,9 +18,24 @@ export const DialogDeleteServiceGroup: FC<DialogDeleteServiceGroupProps> = ({ cl
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const queryClient = useQueryClient();
 
+  // Confere antes onde é usado, para não deixar um fluxo no ar sem destino
+  const usageKey = ["serviceGroups", clientId, "usage", serviceGroup.id];
+  const usageQuery = useQuery({
+    queryKey: usageKey,
+    queryFn: () => serviceGroupService.findUsage(clientId, serviceGroup.id),
+    enabled: isOpen,
+    staleTime: 0,
+  });
+  const isBlocked = !!usageQuery.data?.flows.length;
+
   const deleteServiceGroup = useMutation({
     mutationFn: serviceGroupService.delete,
-    onError: requestErrorHandling,
+    onError: (error) => {
+      // Alguém usou num fluxo depois que o diálogo abriu: mostra a lista atualizada
+      const usage = usageFromConflict(error);
+      if (usage) queryClient.setQueryData(usageKey, usage);
+      else requestErrorHandling(error);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["serviceGroups", clientId] });
       toast.success("Grupo excluído com sucesso");
@@ -56,11 +73,18 @@ export const DialogDeleteServiceGroup: FC<DialogDeleteServiceGroupProps> = ({ cl
           </DialogDescription>
         </DialogHeader>
 
+        <ResourceUsageNotice
+          usage={usageQuery.data}
+          isLoading={usageQuery.isLoading}
+          resourceLabel="o grupo"
+          onNavigate={() => setIsOpen(false)}
+        />
+
         <DialogFooter className="gap-2 sm:justify-end">
           <Button type="button" variant="outline" onClick={() => setIsOpen(false)} disabled={deleteServiceGroup.isPending}>
             Cancelar
           </Button>
-          <Button type="button" variant="destructive" onClick={handleDelete} disabled={deleteServiceGroup.isPending}>
+          <Button type="button" variant="destructive" onClick={handleDelete} disabled={deleteServiceGroup.isPending || usageQuery.isLoading || isBlocked}>
             Excluir
           </Button>
         </DialogFooter>
