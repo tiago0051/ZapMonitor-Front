@@ -33,7 +33,15 @@ import {
   FiZap,
 } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
-import { PanelLeftIcon } from "lucide-react";
+import { ChevronsUpDown, PanelLeftIcon } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Link, useLocation } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { clientService } from "@/services/api/clientService";
@@ -140,12 +148,22 @@ const navMain: {
   },
 ];
 
+// Até duas iniciais do nome, para o avatar do menu da conta
+const initialsOf = (name: string | undefined) =>
+  (name ?? "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]!.toUpperCase())
+    .join("") || "?";
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { logout, user } = useUserContext();
   const { toggleSidebar, setOpenMobile, isMobile } = useSidebar();
   const baseUrl = useBaseUrl();
   const { can, canUseCrm, canUseAds, client } = useClientContext();
-  const { pathname, search } = useLocation();
+  const { pathname } = useLocation();
 
   // No celular o menu é um Sheet: fecha ao navegar
   React.useEffect(() => {
@@ -195,7 +213,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarMenu className="gap-2">
+          <SidebarMenu className="gap-1">
             {navMain
               .filter(
                 (item) =>
@@ -217,48 +235,73 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
+      {/* Conta, troca de cliente e painéis num menu só: o rodapé ocupa uma linha e sobra espaço para o menu principal */}
       <SidebarFooter>
         <SidebarMenu>
-          {canSwitchClient && (
-            <SidebarMenuButton asChild tooltip={"Trocar cliente"}>
-              <Link to={`/auth/select_client`}>
-                <FiRepeat />
-                Trocar cliente
-              </Link>
-            </SidebarMenuButton>
-          )}
-          {user?.isImplanter && (
-            <SidebarMenuButton asChild tooltip={"Painel do implantador"}>
-              <Link to={`/dashboard/implanter`}>
-                <FiBriefcase />
-                Painel do implantador
-              </Link>
-            </SidebarMenuButton>
-          )}
-          {user?.isOwner && (
-            <SidebarMenuButton asChild tooltip={"Tela do dono"}>
-              <Link to={`/dashboard/owner`}>
-                <FiTrendingUp />
-                Tela do dono
-              </Link>
-            </SidebarMenuButton>
-          )}
-          <SidebarMenuButton
-            asChild
-            tooltip={"Alterar senha"}
-            isActive={pathname === `${baseUrl}/configuration` && search.includes("tab=account")}
-          >
-            <Link to={`${baseUrl}/configuration?tab=account`}>
-              <FiKey />
-              Alterar senha
-            </Link>
-          </SidebarMenuButton>
-          <SidebarMenuButton onClick={() => logout()} asChild tooltip={"Sair"}>
-            <Link to={`/auth/logout`}>
-              <FiLogOut />
-              Sair
-            </Link>
-          </SidebarMenuButton>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton
+                  size="lg"
+                  tooltip={user?.name ?? "Conta"}
+                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                >
+                  <span className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-md text-xs font-semibold">
+                    {initialsOf(user?.name)}
+                  </span>
+                  <span className="grid min-w-0 flex-1 text-left leading-tight">
+                    <span className="truncate text-sm font-medium">{user?.name ?? "Conta"}</span>
+                    <span className="text-muted-foreground truncate text-xs">{user?.email}</span>
+                  </span>
+                  <ChevronsUpDown className="ml-auto size-4" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side={isMobile ? "top" : "right"} align="end" sideOffset={8} className="min-w-56">
+                <DropdownMenuLabel className="font-normal">
+                  <p className="truncate text-sm font-medium">{user?.name}</p>
+                  <p className="text-muted-foreground truncate text-xs">{user?.email}</p>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {canSwitchClient && (
+                  <DropdownMenuItem asChild>
+                    <Link to={`/auth/select_client`}>
+                      <FiRepeat />
+                      Trocar cliente
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                {user?.isImplanter && (
+                  <DropdownMenuItem asChild>
+                    <Link to={`/dashboard/implanter`}>
+                      <FiBriefcase />
+                      Painel do implantador
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                {user?.isOwner && (
+                  <DropdownMenuItem asChild>
+                    <Link to={`/dashboard/owner`}>
+                      <FiTrendingUp />
+                      Tela do dono
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem asChild>
+                  <Link to={`${baseUrl}/configuration?tab=account`}>
+                    <FiKey />
+                    Alterar senha
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild onClick={() => logout()}>
+                  <Link to={`/auth/logout`}>
+                    <FiLogOut />
+                    Sair
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
