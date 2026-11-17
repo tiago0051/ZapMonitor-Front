@@ -207,6 +207,8 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
   const canvasWrapperRef = useRef<HTMLDivElement>(null);
   // O "Publicar" salva antes; nesse caso o aviso de rascunho salvo seria só barulho
   const isSavingForPublishRef = useRef(false);
+  // Mesmo estado para a tela: mostra o carregando no botão Publicar enquanto salva
+  const [isSavingForPublish, setIsSavingForPublish] = useState(false);
 
   const history = useFlowHistory({ nodes, edges, setNodes, setEdges, onRestore: useCallback(() => setIsDirty(true), []) });
   const { record } = history;
@@ -346,6 +348,7 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
 
     let savedFlow: Flow;
     isSavingForPublishRef.current = true;
+    setIsSavingForPublish(true);
     try {
       savedFlow = await updateFlow.mutateAsync(saveRequest());
     } catch {
@@ -353,6 +356,7 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
       return;
     } finally {
       isSavingForPublishRef.current = false;
+      setIsSavingForPublish(false);
     }
 
     if (savedFlow.issues.length > 0) {
@@ -431,7 +435,9 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
     const selection = copyableSelection();
     if (selection.length === 0) return false;
     copyFlowNodes(selection);
-    toast.success(selection.length === 1 ? "Nó copiado. Use Ctrl+V para colar." : `${selection.length} nós copiados. Use Ctrl+V para colar.`);
+    toast.success(
+      selection.length === 1 ? "Nó copiado. Use Ctrl+V para colar." : `${selection.length} nós copiados. Use Ctrl+V para colar.`,
+    );
     return true;
   };
 
@@ -571,9 +577,10 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
   const isPending =
     updateFlow.isPending || toggleFlow.isPending || publishFlow.isPending || discardDraft.isPending || restoreVersion.isPending;
   const hasDraft = !!flow.draftDefinition;
-  const canPublish = hasDraft && !isDirty && flow.issues.length === 0;
+  // Com alterações não salvas o "Publicar" salva antes e confere as pendências do que acabou de salvar
+  const canPublish = isDirty ? !!name.trim() && Number.isInteger(resetAfterMinutes) : hasDraft && flow.issues.length === 0;
   const publishTitle = isDirty
-    ? "Salve as alterações antes de publicar"
+    ? "Salva as alterações e publica"
     : !hasDraft
       ? "Nada para publicar: o editor está igual à versão no ar"
       : flow.issues.length > 0
@@ -586,7 +593,7 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
       : flow.publishedIssues.length > 0
         ? "A versão publicada tem pendências: corrija, publique e ative"
         : undefined;
-  const publishReason = !canPublish ? publishTitle : undefined;
+  const publishReason = !canPublish && !isDirty ? publishTitle : undefined;
   const activateReason = !flow.active && !canActivate ? activateTitle : undefined;
   const canDiscard = hasDraft && flow.version > 0;
 
@@ -735,9 +742,9 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
               disabled={isPending || !canPublish}
               title={publishTitle}
               aria-describedby={publishReason ? "flow-publish-reason" : undefined}
-              onClick={() => setIsPublishOpen(true)}
+              onClick={() => void handlePublish()}
             >
-              <Rocket className="h-4 w-4" />
+              {publishFlow.isPending || isSavingForPublish ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
               Publicar
             </Button>
             {!isMobile && discardButton}
@@ -840,7 +847,12 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
           open={isPublishOpen}
           onOpenChange={setIsPublishOpen}
           isPending={publishFlow.isPending}
-          onConfirm={() => publishFlow.mutate({ params: { clientId, flowId: flow.id }, body: { expectedUpdatedAt: flow.updatedAt } })}
+          phoneNumbers={configurations
+            .filter((configuration) => whatsappConfigurationIds.includes(configuration.id))
+            .map((configuration) => formatPhoneNumber(configuration.phoneNumber))}
+          onConfirm={({ activate }) =>
+            publishFlow.mutate({ params: { clientId, flowId: flow.id }, body: { expectedUpdatedAt: flow.updatedAt, activate } })
+          }
         />
         <DiscardDraftDialog
           flow={flow}
@@ -886,7 +898,7 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
           })}
         </aside>
 
-        <div className="relative min-w-0 flex-1">
+        <div ref={canvasWrapperRef} className="relative min-w-0 flex-1">
           {issues.length > 0 && (
             <FlowIssuesPanel
               title={issuesTitle}
@@ -898,6 +910,53 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
               onSelectNode={showNode}
             />
           )}
+          {/* Ferramentas do canvas: desfazer/refazer, buscar, duplicar e organizar */}
+          <div className="bg-card absolute top-3 right-3 z-10 flex items-center gap-0.5 rounded-lg border p-0.5 shadow-sm">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label="Desfazer"
+              title="Desfazer (Ctrl+Z)"
+              disabled={!history.canUndo}
+              onClick={history.undo}
+            >
+              <Undo2 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label="Refazer"
+              title="Refazer (Ctrl+Shift+Z ou Ctrl+Y)"
+              disabled={!history.canRedo}
+              onClick={history.redo}
+            >
+              <Redo2 className="h-4 w-4" />
+            </Button>
+            <FlowNodeSearch nodes={nodes} onSelect={showNode} triggerClassName="h-8 w-8" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label="Duplicar nó selecionado"
+              title="Duplicar nó selecionado (Ctrl+C e Ctrl+V também funcionam)"
+              disabled={!nodes.some((node) => (node.selected || node.id === selectedNodeId) && canCopyFlowNode(node, availableNodeTypes))}
+              onClick={duplicateSelection}
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label="Organizar"
+              title="Organizar os nós automaticamente"
+              onClick={organizeNodes}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+          </div>
           <FlowIssuesContext.Provider value={issueCountByNodeId}>
             <ReactFlow
               nodes={nodes}
@@ -912,6 +971,9 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
                 if (changes.some((change) => change.type === "remove")) markDirty();
               }}
               onConnect={onConnect}
+              onNodeDragStart={onDragStart}
+              onNodeDragStop={(_, __, draggedNodes) => onDragStop(draggedNodes)}
+              onBeforeDelete={onBeforeDelete}
               onNodeClick={(_, node) => setSelectedNodeId(node.id)}
               onPaneClick={() => setSelectedNodeId(null)}
               defaultEdgeOptions={{ animated: true }}
@@ -943,10 +1005,14 @@ const FlowEditorCanvas: FC<FlowEditorCanvasProps> = ({ clientId, flow }) => {
           <aside className="bg-card absolute inset-0 z-20 md:static md:w-80 md:shrink-0 md:border-l">
             <FlowNodePanel
               key={selectedNode.id}
+              clientId={clientId}
               type={selectedNode.type as FlowNodeType}
               data={selectedNode.data}
               onChange={(data) => updateNodeData(selectedNode.id, data)}
               onDelete={() => deleteNode(selectedNode.id)}
+              onDuplicate={
+                canCopyFlowNode(selectedNode, availableNodeTypes) ? () => insertCopies(cloneFlowNodes([selectedNode], 1)) : undefined
+              }
               onClose={() => setSelectedNodeId(null)}
             />
           </aside>
@@ -993,9 +1059,10 @@ export const FlowEditor = () => {
     enabled: access.crmEnabled,
   });
 
+  // Campos do negócio e da ficha juntos; o contexto separa pelo escopo
   const crmFieldsQuery = useQuery({
-    queryKey: ["crm", "fields", clientId],
-    queryFn: () => crmService.findAllCrmFields({ params: { clientId: clientId! } }),
+    queryKey: ["crm", "fields", clientId, "all"],
+    queryFn: () => crmService.findAllCrmFields({ params: { clientId: clientId! }, includeContactFields: true }),
     enabled: access.crmEnabled,
   });
 
@@ -1009,9 +1076,11 @@ export const FlowEditor = () => {
       serviceGroups: serviceGroupsQuery.data ?? [],
       aiAgents: aiAgentsQuery.data ?? [],
       categories: categoriesQuery.data?.items ?? [],
-      flows: flowsQuery.data ?? [],
+      // Arquivados somem dos seletores; o próprio fluxo continua, mesmo arquivado
+      flows: (flowsQuery.data ?? []).filter((item) => !item.archivedAt || item.id === flowId),
       pipelines: (pipelinesQuery.data ?? []).filter((pipeline) => pipeline.active),
-      crmFields: (crmFieldsQuery.data ?? []).filter((field) => field.active),
+      crmFields: (crmFieldsQuery.data ?? []).filter((field) => field.active && field.scope !== "CONTACT"),
+      contactFields: (crmFieldsQuery.data ?? []).filter((field) => field.active && field.scope === "CONTACT"),
       emailOptions: emailOptionsQuery.data ?? { senders: [], templates: [] },
       currentFlowId: flowId!,
     }),
