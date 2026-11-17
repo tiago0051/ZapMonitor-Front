@@ -15,6 +15,7 @@ type SavePipelineStageRequestBody = {
   staleAfterDays?: number | null;
   requiredFieldIds?: string[];
   conversionEvent?: ConversionEventName | null;
+  countsAsMeeting?: boolean;
 };
 
 type SavePipelineRequestBody = {

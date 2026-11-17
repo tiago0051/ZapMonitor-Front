@@ -31,6 +31,8 @@ type PipelineStage = {
   requiredFieldIds: string[];
   // Evento mandado à Meta quando um negócio vindo de anúncio entra na etapa
   conversionEvent: ConversionEventName | null;
+  // Negócio que entra na etapa conta como reunião agendada (manual) no custo por reunião
+  countsAsMeeting: boolean;
 };
 
 type ConversionEventName = "LEAD_SUBMITTED" | "QUALIFIED_LEAD" | "PURCHASE";

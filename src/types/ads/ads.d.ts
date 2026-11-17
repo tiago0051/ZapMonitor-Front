@@ -121,6 +121,10 @@ type AdReportMetrics = {
   qualifiedDeals: number;
   wonDeals: number;
   wonValue: number;
+  // Reuniões agendadas (não canceladas) de contatos vindos do anúncio: pela IA e manuais (etapa do funil)
+  meetings: number;
+  aiMeetings: number;
+  manualMeetings: number;
   ctr: number | null;
   cpc: number | null;
   cpm: number | null;
@@ -129,6 +133,7 @@ type AdReportMetrics = {
   costPerDeal: number | null;
   costPerQualifiedDeal: number | null;
   costPerWonDeal: number | null;
+  costPerMeeting: number | null;
   roas: number | null;
 };
 

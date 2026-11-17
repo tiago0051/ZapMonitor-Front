@@ -62,6 +62,10 @@ const CardMetric: FC<{ label: string; value: string; highlight?: boolean }> = ({
   </div>
 );
 
+// Total de reuniões com a divisão entre as agendadas pela IA e as manuais (etapa do funil)
+const meetingsLabel = (row: AdReportMetrics) =>
+  row.meetings ? `${formatCount(row.meetings)} (${formatCount(row.aiMeetings)} IA · ${formatCount(row.manualMeetings)} manuais)` : "0";
+
 /** No celular, cada linha vira um cartão com as métricas principais; o resto abre em "ver mais". */
 const ResultCard: FC<{ row: AdReportRow; currency: string }> = ({ row, currency }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -86,6 +90,8 @@ const ResultCard: FC<{ row: AdReportRow; currency: string }> = ({ row, currency 
           <CardMetric label="Leads" value={`${formatCount(row.metaLeads)} (${formatCount(row.crmLeads)} no CRM)`} />
           <CardMetric label="Negócios" value={formatCount(row.deals)} />
           <CardMetric label="Qualificados" value={formatCount(row.qualifiedDeals)} />
+          <CardMetric label="Reuniões" value={meetingsLabel(row)} />
+          <CardMetric label="Custo por reunião" value={formatMoney(row.costPerMeeting, currency)} />
           <CardMetric label="ROAS" value={row.roas === null ? "—" : `${formatCount(row.roas, 2)}x`} />
         </dl>
       )}
@@ -218,7 +224,7 @@ export const AdsResults: FC<{ account: AdAccount }> = ({ account }) => {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-7">
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-8">
             <Total label="Gasto" value={formatMoney(report.total.spend, currency)} />
             <Total
               label="Conversas"
@@ -238,6 +244,11 @@ export const AdsResults: FC<{ account: AdAccount }> = ({ account }) => {
               label="Negócios"
               value={formatCount(report.total.deals)}
               hint={`${formatCount(report.total.qualifiedDeals)} qualificados · ${formatMoney(report.total.costPerQualifiedDeal, currency)} cada`}
+            />
+            <Total
+              label="Reuniões"
+              value={formatCount(report.total.meetings)}
+              hint={`${formatCount(report.total.aiMeetings)} pela IA · ${formatCount(report.total.manualMeetings)} manuais · ${formatMoney(report.total.costPerMeeting, currency)} cada`}
             />
             <Total
               label="Ganhos"
@@ -318,6 +329,8 @@ export const AdsResults: FC<{ account: AdAccount }> = ({ account }) => {
                     <TableHead className="text-right">Leads</TableHead>
                     <TableHead className="text-right">Negócios</TableHead>
                     <TableHead className="text-right">Qualificados</TableHead>
+                    <TableHead className="text-right">Reuniões</TableHead>
+                    <TableHead className="text-right">Custo/reunião</TableHead>
                     <TableHead className="text-right">Ganhos</TableHead>
                     <TableHead className="text-right">
                       <HeadWithHelp label="Custo/ganho" term="CPA" />
@@ -348,6 +361,13 @@ export const AdsResults: FC<{ account: AdAccount }> = ({ account }) => {
                         </TableCell>
                         <TableCell className="text-right tabular-nums">{formatCount(row.deals)}</TableCell>
                         <TableCell className="text-right tabular-nums">{formatCount(row.qualifiedDeals)}</TableCell>
+                        <TableCell
+                          className="text-right tabular-nums"
+                          title={`${row.aiMeetings} agendada(s) pela IA · ${row.manualMeetings} manual(is)`}
+                        >
+                          {formatCount(row.meetings)}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">{formatMoney(row.costPerMeeting, currency)}</TableCell>
                         <TableCell className="text-right whitespace-nowrap tabular-nums">
                           {formatCount(row.wonDeals)} · {formatMoney(row.wonValue, currency)}
                         </TableCell>
@@ -364,7 +384,8 @@ export const AdsResults: FC<{ account: AdAccount }> = ({ account }) => {
           )}
           <p className="text-muted-foreground text-xs">
             Conversas e leads são contados pela Meta. Negócios, qualificados e ganhos vêm do CRM: negócios criados no período a partir de um
-            anúncio, e qualificados são os que entraram numa etapa com o evento QualifiedLead ou passaram do corte de nota da IA.
+            anúncio, e qualificados são os que entraram numa etapa com o evento QualifiedLead ou passaram do corte de nota da IA. Reuniões são as agendadas pela IA no Google Agenda e os negócios que entraram numa etapa
+            marcada como reunião no funil, sem contar canceladas.
           </p>
           <AdsSignalReadiness account={account} />
           <AdsAttendanceInsights account={account} startDate={startDate} endDate={endDate} />

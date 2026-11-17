@@ -139,6 +139,17 @@ const StageRow: FC<StageRowProps> = ({ stage, flows, fields, onChange, disabled,
         </label>
       )}
       {stage.type === "OPEN" && (
+        <label className="flex cursor-pointer items-center gap-2" title="Negócio que entra nesta etapa conta como reunião agendada no custo por reunião dos anúncios">
+          <Checkbox
+            aria-label={`Etapa ${stage.name} conta como reunião`}
+            checked={!!stage.countsAsMeeting}
+            disabled={disabled}
+            onCheckedChange={(checked) => onChange({ ...stage, countsAsMeeting: checked === true })}
+          />
+          <span className="text-muted-foreground">Conta como reunião</span>
+        </label>
+      )}
+      {stage.type === "OPEN" && (
         <label className="flex items-center gap-2">
           <span className="text-muted-foreground">Esfria após</span>
           <Input
@@ -228,7 +239,7 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
 
     const body: SavePipelineRequestBody = {
       name: name.trim(),
-      stages: stages.map(({ id, name: stageName, color, type, entryFlowId, staleAfterDays, requiredFieldIds, conversionEvent }) => ({
+      stages: stages.map(({ id, name: stageName, color, type, entryFlowId, staleAfterDays, requiredFieldIds, conversionEvent, countsAsMeeting }) => ({
         id,
         name: stageName.trim(),
         color,
@@ -238,6 +249,7 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
         // Só campos ativos; um campo desativado depois deixa de ser exigido
         requiredFieldIds: (requiredFieldIds ?? []).filter((fieldId) => fields.some((field) => field.id === fieldId)),
         conversionEvent: conversionEvent ?? null,
+        countsAsMeeting: type === "OPEN" && !!countsAsMeeting,
       })),
     };
 
