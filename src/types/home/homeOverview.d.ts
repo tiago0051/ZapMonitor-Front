@@ -11,8 +11,16 @@ type HomeMetrics = {
 
 type HomeOnboarding = {
   hasNumber: boolean;
+  // Algum grupo com ao menos uma pessoa
   hasServiceGroup: boolean;
+  // Todo número ativo tem um fluxo de atendimento ativo
   hasActiveFlow: boolean;
+  numbersWithoutActiveFlow: number;
+  hasAiAgent: boolean;
+  // O plano inclui IA
+  aiAvailable: boolean;
+  // Algum fluxo foi testado no simulador ou por número de teste
+  hasTestedFlow: boolean;
   hasTeam: boolean;
   hasTemplate: boolean;
   hasContacts: boolean;

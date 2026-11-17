@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { flowService } from "@/services/api/flowService";
 import { requestErrorHandling } from "@/utils/request";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, FastForward, Info, Loader2, RotateCcw, Send, Users, X } from "lucide-react";
 import { useEffect, useRef, useState, type FC } from "react";
 
@@ -35,10 +35,13 @@ export const FlowSimulator: FC<Props> = ({ clientId, flow, isDirty, onClose, onC
   const push = (newItems: Omit<ChatItem, "id">[]) =>
     setItems((current) => [...current, ...newItems.map((item) => ({ ...item, id: nextId.current++ }) as ChatItem)]);
 
+  const queryClient = useQueryClient();
   const step = useMutation({
     mutationFn: (body: SimulateFlowRequestData["body"]) => flowService.simulate({ params: { clientId, flowId: flow.id }, body }),
     onError: requestErrorHandling,
-    onSuccess: (stepResult) => {
+    onSuccess: (stepResult, body) => {
+      // O passo "Testar o fluxo" dos primeiros passos vem do resumo do Início
+      if (body.action === "start") void queryClient.invalidateQueries({ queryKey: ["home", "overview", clientId] });
       setResult(stepResult);
       push(stepResult.events);
       const isCurrentFlow = stepResult.state.flowId === flow.id;

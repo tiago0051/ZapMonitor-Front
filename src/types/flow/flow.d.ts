@@ -135,6 +135,8 @@ type Flow = {
   // Rascunho em edição; nulo quando o editor está igual à versão publicada
   draftDefinition: FlowDefinition | null;
   draftUpdatedAt: string | null;
+  // Última vez que o fluxo foi testado no simulador
+  lastSimulatedAt?: string | null;
   // Números cujos novos atendimentos começam neste fluxo
   whatsappConfigurationIds: string[];
   // Pendências do que está no editor (impedem publicar) e da versão publicada (impedem ativar)
