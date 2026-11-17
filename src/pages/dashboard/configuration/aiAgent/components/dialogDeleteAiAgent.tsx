@@ -2,7 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { aiAgentService } from "@/services/api/aiAgentService";
 import { requestErrorHandling } from "@/utils/request";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { usageFromConflict } from "../../components/resourceUsage";
+import { ResourceUsageNotice } from "../../components/resourceUsageNotice";
 import { Trash2, X } from "lucide-react";
 import { useState, type FC } from "react";
 import { toast } from "sonner";
@@ -16,9 +18,24 @@ export const DialogDeleteAiAgent: FC<DialogDeleteAiAgentProps> = ({ clientId, ai
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const queryClient = useQueryClient();
 
+  // Confere antes onde é usado, para não deixar um fluxo no ar sem destino
+  const usageKey = ["aiAgents", clientId, "usage", aiAgent.id];
+  const usageQuery = useQuery({
+    queryKey: usageKey,
+    queryFn: () => aiAgentService.findUsage(clientId, aiAgent.id),
+    enabled: isOpen,
+    staleTime: 0,
+  });
+  const isBlocked = !!usageQuery.data?.flows.length;
+
   const deleteAiAgent = useMutation({
     mutationFn: aiAgentService.delete,
-    onError: requestErrorHandling,
+    onError: (error) => {
+      // Alguém usou num fluxo depois que o diálogo abriu: mostra a lista atualizada
+      const usage = usageFromConflict(error);
+      if (usage) queryClient.setQueryData(usageKey, usage);
+      else requestErrorHandling(error);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["aiAgents", clientId] });
       toast.success("Agente excluído com sucesso");
@@ -56,11 +73,18 @@ export const DialogDeleteAiAgent: FC<DialogDeleteAiAgentProps> = ({ clientId, ai
           </DialogDescription>
         </DialogHeader>
 
+        <ResourceUsageNotice
+          usage={usageQuery.data}
+          isLoading={usageQuery.isLoading}
+          resourceLabel="o agente"
+          onNavigate={() => setIsOpen(false)}
+        />
+
         <DialogFooter className="gap-2 sm:justify-end">
           <Button type="button" variant="outline" onClick={() => setIsOpen(false)} disabled={deleteAiAgent.isPending}>
             Cancelar
           </Button>
-          <Button type="button" variant="destructive" onClick={handleDelete} disabled={deleteAiAgent.isPending}>
+          <Button type="button" variant="destructive" onClick={handleDelete} disabled={deleteAiAgent.isPending || usageQuery.isLoading || isBlocked}>
             Excluir
           </Button>
         </DialogFooter>

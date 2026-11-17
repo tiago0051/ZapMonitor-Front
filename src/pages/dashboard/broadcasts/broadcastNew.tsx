@@ -20,11 +20,11 @@ import { broadcastService } from "@/services/api/broadcastService";
 import { crmService } from "@/services/api/crmService";
 import { templateService } from "@/services/api/templateService";
 import { whatsappService } from "@/services/api/whatsappService";
-import { requestErrorHandling } from "@/utils/request";
+import { requestErrorHandling, requestErrorMessage } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ArrowLeft } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
 import {
@@ -57,6 +57,16 @@ import { VariablesStep } from "./components/variablesStep";
 import { formatConfigurationPhoneNumber, isWhatsappWeb, WHATSAPP_WEB_TEMPLATE_HINT } from "@/utils/whatsappConfiguration";
 
 const STEPS = ["Mensagem", "Público", "Variáveis", "Revisão"] as const;
+
+// Erro depois que a campanha já existe como rascunho (o back recusou iniciar/agendar)
+class DraftKeptError extends Error {
+  constructor(
+    readonly broadcastId: string,
+    readonly cause: unknown,
+  ) {
+    super("Rascunho mantido");
+  }
+}
 
 export const BroadcastNew = () => {
   const { client } = useClientContext();
@@ -153,6 +163,9 @@ export const BroadcastNew = () => {
     onSuccess: () => toast.success("Teste enviado", { description: "Confira no WhatsApp do número de teste." }),
   });
 
+  // Campanha já criada nesta tela cujo envio da lista falhou no meio: nova tentativa continua dela em vez de criar outra
+  const pendingUpload = useRef<{ id: string; signature: string; uploadedChunks: number } | null>(null);
+
   const createMutation = useMutation({
     mutationFn: async (action: "draft" | "now" | "schedule") => {
       const recipients: BroadcastRecipientInput[] = summary.ready.map(({ row, variables }) => ({
@@ -166,8 +179,7 @@ export const BroadcastNew = () => {
 
       setUploadProgress(0);
       const fileId = await headerFileId();
-      // Cria em rascunho, completa em lotes e só então inicia, para o envio não começar pela metade da lista
-      let broadcast = await broadcastService.create(client.id, {
+      const body = {
         name: name.trim(),
         configurationId,
         templateId: template!.id,
@@ -176,19 +188,52 @@ export const BroadcastNew = () => {
         reply: Object.values(reply).some(Boolean) ? reply : undefined,
         frequencyCapDays: capEnabled && capDays ? Number(capDays) : undefined,
         consentConfirmed: consent,
-        recipients: chunks[0],
-      });
-      for (let index = 1; index < chunks.length; index++) {
-        await broadcastService.addRecipients(client.id, broadcast.id, chunks[index]);
+      };
+      // O arquivo do cabeçalho muda a cada envio; fica fora da comparação
+      const signature = JSON.stringify({ ...body, headerFileId: undefined, recipients });
+      const resumable = pendingUpload.current?.signature === signature ? pendingUpload.current : null;
+      pendingUpload.current = null;
+
+      // Cria em rascunho, completa em lotes e só então inicia, para o envio não começar pela metade da lista
+      let broadcast: Broadcast | null = null;
+      let broadcastId = resumable?.id;
+      let uploadedChunks = resumable?.uploadedChunks ?? 0;
+      if (!broadcastId) {
+        broadcast = await broadcastService.create(client.id, { ...body, recipients: chunks[0] });
+        broadcastId = broadcast.id;
+        uploadedChunks = 1;
+      }
+      for (let index = uploadedChunks; index < chunks.length; index++) {
+        try {
+          await broadcastService.addRecipients(client.id, broadcastId, chunks[index]);
+        } catch (error) {
+          pendingUpload.current = { id: broadcastId, signature, uploadedChunks: index };
+          throw error;
+        }
         setUploadProgress(Math.round(((index + 1) / chunks.length) * 100));
       }
       setUploadProgress(100);
-      if (action === "now") broadcast = await broadcastService.action(client.id, broadcast.id, "start");
-      if (action === "schedule") broadcast = await broadcastService.schedule(client.id, broadcast.id, new Date(scheduledAt).toISOString());
+      try {
+        if (action === "now") broadcast = await broadcastService.action(client.id, broadcastId, "start");
+        if (action === "schedule") broadcast = await broadcastService.schedule(client.id, broadcastId, new Date(scheduledAt).toISOString());
+        if (!broadcast) broadcast = await broadcastService.findOne(client.id, broadcastId);
+      } catch (error) {
+        // A lista já está completa no rascunho: leva até ele em vez de deixar um novo clique criar outra campanha
+        throw new DraftKeptError(broadcastId, error);
+      }
       return broadcast;
     },
     onError: (error) => {
       setUploadProgress(null);
+      if (error instanceof DraftKeptError) {
+        queryClient.invalidateQueries({ queryKey: ["broadcasts", client.id] });
+        toast.error("A campanha foi salva como rascunho, mas não começou", {
+          description: `${requestErrorMessage(error.cause)} — depois de resolver, use "Iniciar envio" no rascunho.`,
+          duration: 10000,
+        });
+        navigate(`${baseUrl}/broadcasts/${error.broadcastId}`);
+        return;
+      }
       requestErrorHandling(error);
     },
     onSuccess: (broadcast, action) => {

@@ -6,13 +6,15 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Pause, Play } from "lucide-react";
 import type { FC } from "react";
 import { toast } from "sonner";
+import { adPlatformSubject, onAdPlatform } from "../adsUtils";
 
 type Props = {
   accountId: string;
   level: Exclude<AdTargetLevel, "account">;
   metaId: string;
-  // Status configurado na Meta (ACTIVE ou PAUSED), não o efetivo
+  // Status configurado na plataforma (ACTIVE ou PAUSED), não o efetivo
   status: string;
+  platform?: AdPlatform;
   size?: "sm" | "icon";
 };
 
@@ -22,7 +24,7 @@ const levelLabel: Record<Exclude<AdTargetLevel, "account">, string> = { campaign
  * Pausar ou ativar sem passar pela IA. Fica no histórico de mudanças, com desfazer. Pausar vale a qualquer hora;
  * ativar respeita o horário das travas.
  */
-export const AdStatusToggle: FC<Props> = ({ accountId, level, metaId, status, size = "icon" }) => {
+export const AdStatusToggle: FC<Props> = ({ accountId, level, metaId, status, platform = "META", size = "icon" }) => {
   const { client, can } = useClientContext();
   const queryClient = useQueryClient();
   const isActive = status === "ACTIVE";
@@ -33,8 +35,8 @@ export const AdStatusToggle: FC<Props> = ({ accountId, level, metaId, status, si
     onError: requestErrorHandling,
     onSuccess: (change) => {
       queryClient.invalidateQueries({ queryKey: ["metaAds"] });
-      if (change.status === "APPLIED") toast.success(`${levelLabel[level]} ${target === "PAUSED" ? "pausado" : "ativado"} na Meta`);
-      else toast.error(change.error ?? "A Meta não aplicou a mudança", { description: "Veja na aba Mudanças." });
+      if (change.status === "APPLIED") toast.success(`${levelLabel[level]} ${target === "PAUSED" ? "pausado" : "ativado"} ${onAdPlatform(platform)}`);
+      else toast.error(change.error ?? `${adPlatformSubject(platform)} não aplicou a mudança`, { description: "Veja na aba Mudanças." });
     },
   });
 

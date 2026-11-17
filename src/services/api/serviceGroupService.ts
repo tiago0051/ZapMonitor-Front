@@ -24,4 +24,9 @@ export const serviceGroupService = {
   delete: async ({ params }: DeleteServiceGroupRequestData): Promise<void> => {
     await api.delete(`/client/${params.clientId}/service-group/${params.serviceGroupId}`);
   },
+
+  findUsage: async (clientId: string, id: string): Promise<ResourceUsage> => {
+    const response = await api.get<ResourceUsage>(`/client/${clientId}/service-group/${id}/usage`);
+    return response.data;
+  },
 };

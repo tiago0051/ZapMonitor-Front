@@ -1,16 +1,16 @@
 import { isAxiosError } from "axios";
 import { toast } from "sonner";
 
-export function requestErrorHandling(error: unknown) {
+/** Mensagem da API para mostrar ao usuário (ou uma genérica). */
+export function requestErrorMessage(error: unknown) {
   if (isAxiosError(error)) {
     const message = error.response?.data?.message;
-    if (Array.isArray(message)) {
-      toast.error(message.join("\n"));
-      return;
-    }
-
-    toast.error(message || "Erro desconhecido");
-  } else {
-    toast.error("Erro desconhecido");
+    if (Array.isArray(message)) return message.join("\n");
+    return message || "Erro desconhecido";
   }
+  return "Erro desconhecido";
+}
+
+export function requestErrorHandling(error: unknown) {
+  toast.error(requestErrorMessage(error));
 }

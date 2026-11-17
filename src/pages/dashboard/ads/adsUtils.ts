@@ -83,6 +83,11 @@ export const adPlatformLabel: Record<AdPlatform, string> = {
   TIKTOK: "TikTok",
 };
 
+// "na Meta", "no YouTube", "no TikTok": para frases como "pausado na Meta"
+export const onAdPlatform = (platform: AdPlatform) => (platform === "META" ? "na Meta" : `no ${adPlatformLabel[platform]}`);
+// "A Meta", "O YouTube", "O TikTok": sujeito da frase
+export const adPlatformSubject = (platform: AdPlatform) => (platform === "META" ? "A Meta" : `O ${adPlatformLabel[platform]}`);
+
 // Ordem fixa dos botões de plataforma
 export const AD_PLATFORMS: AdPlatform[] = ["META", "GOOGLE", "TIKTOK"];
 

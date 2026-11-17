@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { crmService } from "@/services/api/crmService";
 import { whatsappService } from "@/services/api/whatsappService";
 import { useQuery } from "@tanstack/react-query";
-import { endOfDay, startOfDay } from "date-fns";
+import { endOfDay, startOfDay, subDays } from "date-fns";
 import { ChevronDown, Columns3, List, SlidersHorizontal, Users, X } from "lucide-react";
 import { useState, type DragEvent } from "react";
 import { Link } from "react-router";
@@ -42,6 +42,10 @@ type CrmBoardFilters = {
   origin: string;
 };
 
+// Janelas dos ganhos/perdidos no quadro; 0 = todos. Fechados antigos pesam e quase nunca são consultados
+const closedWindows = [30, 90, 365, 0] as const;
+const closedWindowLabel = (days: number) => (days === 365 ? "no último ano" : `nos últimos ${days} dias`);
+
 const emptyFilters: CrmBoardFilters = { ownerUserId: "", onlyMine: false, categoryId: "", startDate: "", endDate: "", origin: "" };
 
 export const CrmBoard = () => {
@@ -61,6 +65,7 @@ export const CrmBoard = () => {
   const [openDealId, setOpenDealId] = useState<string | null>(null);
   const [dropStageId, setDropStageId] = useState<string | null>(null);
   const [view, setView] = useLocalStorage<"board" | "list">(`crm:view:${client.id}`, "board");
+  const [closedWindowIndex, setClosedWindowIndex] = useState(0);
   useCrmRealtime();
 
   const pipeline = activePipelines.find((item) => item.id === storedPipelineId) ?? activePipelines[0];
@@ -74,7 +79,11 @@ export const CrmBoard = () => {
       whatsappService.findAllMessageCategoriesByClient({ params: { clientId: client.id }, queries: { page: 1, take: 100, text: "" } }),
   });
 
+  // Com período de criação escolhido, os fechados seguem esse período
+  const closedDays = startDate || endDate ? 0 : closedWindows[closedWindowIndex];
   const queries: FindDealBoardRequestQuery = {
+    // Início do dia, para a chave da consulta não mudar a cada render
+    closedSince: closedDays ? startOfDay(subDays(new Date(), closedDays)).toISOString() : undefined,
     pipelineId: pipeline?.id ?? "",
     serviceGroupIds: selectedServiceGroupIds.length ? selectedServiceGroupIds.join(",") : undefined,
     ownerUserId: onlyMine ? user?.id : ownerUserId || undefined,
@@ -165,6 +174,17 @@ export const CrmBoard = () => {
     setStoredFilters(emptyFilters);
     setStoredServiceGroupIds([]);
   };
+
+  const showOlderClosed = () => setClosedWindowIndex((current) => Math.min(current + 1, closedWindows.length - 1));
+  const closedNotice = (className?: string) =>
+    closedDays > 0 && (
+      <p className={cn("text-muted-foreground text-xs", className)}>
+        Ganhos e perdidos fechados {closedWindowLabel(closedDays)}.{" "}
+        <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={showOlderClosed}>
+          Ver mais antigos
+        </Button>
+      </p>
+    );
 
   const serviceGroupOptions = (
     <>
@@ -410,7 +430,12 @@ export const CrmBoard = () => {
         boardQuery.isLoading ? (
           <LoadingState />
         ) : (
-          <DealList deals={deals} pipeline={pipeline} onOpen={(deal) => setOpenDealId(deal.id)} />
+          <DealList
+            deals={deals}
+            pipeline={pipeline}
+            onOpen={(deal) => setOpenDealId(deal.id)}
+            footer={closedNotice("mt-3 text-center")}
+          />
         )
       ) : (
         <div className="flex flex-1 gap-3 overflow-x-auto p-4">
@@ -461,6 +486,7 @@ export const CrmBoard = () => {
                       onMove={(target) => actions.requestMove(deal, target)}
                     />
                   ))}
+                  {stage.type !== "OPEN" && !boardQuery.isLoading && closedNotice("px-1 py-2 text-center")}
                 </div>
               </div>
             );

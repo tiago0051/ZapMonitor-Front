@@ -1,12 +1,11 @@
 import { ErrorState, LoadingState } from "@/components/state-message";
-import { Input } from "@/components/ui/input";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { cn } from "@/lib/utils";
 import { metaAdsService } from "@/services/api/metaAdsService";
 import { useQuery } from "@tanstack/react-query";
 import { AlertOctagon, AlertTriangle, CheckCircle2, Info } from "lucide-react";
-import { useState, type FC } from "react";
-import { addDaysToDate, dateInputClassName, formatCount, formatMoney, percentChange, shortDate, todayInTimeZone } from "./adsUtils";
+import type { FC } from "react";
+import { adPlatformLabel, addDaysToDate, formatCount, formatMoney, percentChange, shortDate, todayInTimeZone } from "./adsUtils";
 
 const alertStyle: Record<AdAlertSeverity, { icon: typeof Info; className: string }> = {
   critical: {
@@ -49,11 +48,15 @@ const Metric: FC<MetricProps> = ({ label, value, current, base, lowerIsBetter })
   );
 };
 
-/** Um dia da conta comparado à média dos 7 anteriores, com o que pede atenção. */
-export const AdsDailySummary: FC<{ account: AdAccount }> = ({ account }) => {
+/**
+ * Um dia da conta comparado à média dos 7 anteriores, com o que pede atenção. Segue o fim do período da aba, limitado a
+ * ontem (o dia de hoje ainda não fechou), no fuso da conta.
+ */
+export const AdsDailySummary: FC<{ account: AdAccount; endDate: string }> = ({ account, endDate }) => {
   const { client } = useClientContext();
   const yesterday = addDaysToDate(todayInTimeZone(account.timezoneName), -1);
-  const [date, setDate] = useState(yesterday);
+  const date = endDate < yesterday ? endDate : yesterday;
+  const platformLabel = adPlatformLabel[account.platform];
 
   const summaryQuery = useQuery({
     meta: { errorHandledInline: true },
@@ -64,17 +67,12 @@ export const AdsDailySummary: FC<{ account: AdAccount }> = ({ account }) => {
 
   return (
     <section className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <h2 className="text-base font-semibold">Resumo do dia</h2>
-        <Input
-          type="date"
-          aria-label="Dia do resumo"
-          value={date}
-          max={yesterday}
-          onChange={(event) => event.target.value && setDate(event.target.value)}
-          className={cn(dateInputClassName, "w-44")}
-        />
-        {date === yesterday && <span className="text-muted-foreground text-xs">ontem, no fuso da conta</span>}
+      <div>
+        <h2 className="text-base font-semibold">{date === yesterday ? "Ontem" : `Dia ${shortDate(date)}`}</h2>
+        <p className="text-muted-foreground text-xs">
+          {date === yesterday ? `${shortDate(date)}, último dia completo` : "Último dia do período escolhido"}, comparado à média dos 7 dias
+          anteriores.
+        </p>
       </div>
 
       {summaryQuery.isLoading && <LoadingState className="justify-start py-2" />}
@@ -96,7 +94,7 @@ export const AdsDailySummary: FC<{ account: AdAccount }> = ({ account }) => {
               base={summary.previousAverage.spend}
             />
             <Metric
-              label="Conversas (Meta)"
+              label={`Conversas (${platformLabel})`}
               value={formatCount(summary.day.metaConversations)}
               current={summary.day.metaConversations}
               base={summary.previousAverage.metaConversations}
@@ -109,7 +107,7 @@ export const AdsDailySummary: FC<{ account: AdAccount }> = ({ account }) => {
               lowerIsBetter
             />
             <Metric
-              label="Leads (Meta)"
+              label={`Leads (${platformLabel})`}
               value={formatCount(summary.day.metaLeads)}
               current={summary.day.metaLeads}
               base={summary.previousAverage.metaLeads}

@@ -135,6 +135,8 @@ type Flow = {
   // Rascunho em edição; nulo quando o editor está igual à versão publicada
   draftDefinition: FlowDefinition | null;
   draftUpdatedAt: string | null;
+  // Última vez que o fluxo foi testado no simulador
+  lastSimulatedAt?: string | null;
   // Números cujos novos atendimentos começam neste fluxo
   whatsappConfigurationIds: string[];
   // Pendências do que está no editor (impedem publicar) e da versão publicada (impedem ativar)
@@ -186,4 +188,20 @@ type FlowSimulationResult = {
   forwardOptions: FlowOutput[];
   // Fluxo de fila: dá para avançar o tempo
   canTick: boolean;
+};
+
+// Onde um agente de IA ou grupo é usado; com algum uso, a exclusão é recusada
+type FlowResourceUsage = {
+  flowId: string;
+  flowName: string;
+  kind: FlowKind;
+  active: boolean;
+  inPublished: boolean;
+  inDraft: boolean;
+  description: string;
+};
+
+type ResourceUsage = {
+  canDelete: boolean;
+  flows: FlowResourceUsage[];
 };

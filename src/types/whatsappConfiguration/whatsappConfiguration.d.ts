@@ -15,6 +15,9 @@ type WhatsappConfiguration = {
   connectedAt: string | null;
   // Ligações pelo WhatsApp ligadas na Meta (só na API oficial)
   callingEnabled: boolean;
+  // Só na listagem: fluxo de atendimento (active = fluxo de atendimento ativo) e grupo padrão do número
+  flow?: { id: string; name: string; active: boolean } | null;
+  serviceGroup?: { id: string; name: string; memberCount: number } | null;
 };
 
 // CLOUD_API: API oficial da Meta. WHATSAPP_WEB: número conectado por QR code (não oficial)

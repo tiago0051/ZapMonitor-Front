@@ -11,6 +11,8 @@ export type GuideStep = {
   url: string;
   permission: Permission;
   requiresCrm?: boolean;
+  // Some quando não se aplica ao cliente (ex.: plano sem IA)
+  isAvailable?: (onboarding: HomeOnboarding) => boolean;
   isDone: (onboarding: HomeOnboarding) => boolean;
 };
 
@@ -39,7 +41,7 @@ const guideSteps: GuideStep[] = [
   {
     id: "serviceGroup",
     title: "Crie um grupo de atendimento",
-    description: "Junte quem atende e escolha quais números o grupo recebe.",
+    description: "Junte quem atende (ao menos uma pessoa) e escolha quais números o grupo recebe.",
     why: "O grupo forma a fila: quando o contato pede um humano, a conversa vai para as pessoas certas.",
     action: "Criar grupo",
     url: "configuration?tab=serviceGroup",
@@ -48,13 +50,34 @@ const guideSteps: GuideStep[] = [
   },
   {
     id: "flow",
-    title: "Monte e ative o fluxo de atendimento",
+    title: "Monte e ative o fluxo em cada número",
     description: "Defina a mensagem de boas-vindas, as perguntas e quando chamar um atendente ou a IA.",
-    why: "O fluxo responde na hora, 24 horas por dia, e só passa para a equipe o que precisa de uma pessoa.",
+    why: "O fluxo responde na hora, 24 horas por dia, e só passa para a equipe o que precisa de uma pessoa. Número sem fluxo ativo não responde ninguém.",
     action: "Abrir fluxos",
     url: "configuration?tab=flow",
     permission: "flows.manage",
     isDone: (onboarding) => onboarding.hasActiveFlow,
+  },
+  {
+    id: "aiAgent",
+    title: "Crie um agente de IA",
+    description: "Conte sobre o seu negócio e deixe a IA responder os contatos dentro do fluxo.",
+    why: "O agente tira dúvidas e qualifica o contato a qualquer hora, e chama a equipe quando precisa de uma pessoa.",
+    action: "Criar agente",
+    url: "configuration?tab=aiAgent",
+    permission: "aiAgents.manage",
+    isAvailable: (onboarding) => onboarding.aiAvailable,
+    isDone: (onboarding) => onboarding.hasAiAgent,
+  },
+  {
+    id: "testFlow",
+    title: "Teste o fluxo no simulador",
+    description: "Abra o fluxo, clique em Simular e converse com ele como se fosse um cliente.",
+    why: "Você vê as respostas e corrige o caminho antes de um cliente de verdade passar por ele.",
+    action: "Abrir fluxos",
+    url: "configuration?tab=flow",
+    permission: "flows.manage",
+    isDone: (onboarding) => onboarding.hasTestedFlow,
   },
   {
     id: "contacts",
@@ -135,7 +158,10 @@ export const useGuideSteps = (onboarding?: HomeOnboarding) => {
   if (!onboarding) return [];
 
   return guideSteps
-    .filter((step) => can(step.permission) && (!step.requiresCrm || access.crmEnabled))
+    .filter(
+      (step) =>
+        can(step.permission) && (!step.requiresCrm || access.crmEnabled) && (!step.isAvailable || step.isAvailable(onboarding)),
+    )
     .map((step) => ({ ...step, done: step.isDone(onboarding) }));
 };
 
