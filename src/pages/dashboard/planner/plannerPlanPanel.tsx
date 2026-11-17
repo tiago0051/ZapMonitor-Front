@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useBaseUrl } from "@/hooks/use-baseUrl";
 import { cn } from "@/lib/utils";
+import { creativeStudioService } from "@/services/api/creativeStudioService";
 import { plannerService } from "@/services/api/plannerService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -181,19 +182,46 @@ export const PlannerPlanPanel: FC = () => {
     },
   });
 
-  // Aceita em sequência e para no primeiro erro (ex.: limite diário de imagens da IA)
+  // Aceita em sequência e para no primeiro erro. Com postagens, confere antes o limite de imagens/vídeos de hoje
+  // e para antes da primeira que passaria dele, explicando
   const acceptAll = async () => {
     if (!plan) return;
-    const pending = plan.items.filter((item) => item.status === "SUGGESTED");
+    let pending = plan.items.filter((item) => item.status === "SUGGESTED");
+    let quotaNote = "";
+    if (createsPosts && pending.some((item) => item.kind === "SOCIAL_POST")) {
+      const usage = await creativeStudioService.findDailyUsage(client.id).catch(() => null);
+      if (usage) {
+        let imagesLeft = usage.posts.images.max - usage.posts.images.used;
+        let videosLeft = usage.posts.videos.max - usage.posts.videos.used;
+        const stopAt = pending.findIndex((item) => {
+          if (item.kind !== "SOCIAL_POST") return false;
+          const postFormat = item.format ?? "IMAGE";
+          if (postFormat === "REEL") return videosLeft-- < 1;
+          imagesLeft -= usage.posts.defaultImagesByFormat[postFormat];
+          return imagesLeft < 0;
+        });
+        if (stopAt === 0) {
+          toast.warning(
+            "O limite de imagens e vídeos com IA de hoje não deixa criar a próxima postagem. Tente amanhã ou aceite outras sugestões uma por uma.",
+          );
+          return;
+        }
+        if (stopAt > 0) {
+          const blocked = pending[stopAt];
+          quotaNote = ` Paramos antes da postagem de ${format(new Date(blocked.date), "dd/MM")} ("${blocked.title}"): ela passaria do limite de imagens e vídeos com IA de hoje. As ${pending.length - stopAt} restantes ficam para aceitar amanhã.`;
+          pending = pending.slice(0, stopAt);
+        }
+      }
+    }
     const posts = pending.filter((item) => item.kind === "SOCIAL_POST").length;
     if (
       !(await confirm({
-        title: `Aceitar as ${pending.length} sugestões?`,
+        title: `Aceitar ${pending.length} sugestões?`,
         description:
-          createsPosts && posts
+          (createsPosts && posts
             ? `${posts} viram postagens em rascunho (a IA escreve e gera as imagens de cada uma, usando a cota) e o resto vira tarefa.`
-            : "Cada sugestão vira uma tarefa no dia, com o briefing.",
-        confirmLabel: "Aceitar todas",
+            : "Cada sugestão vira uma tarefa no dia, com o briefing.") + quotaNote,
+        confirmLabel: "Aceitar",
       }))
     )
       return;
@@ -212,6 +240,7 @@ export const PlannerPlanPanel: FC = () => {
       setAcceptingAll(false);
       queryClient.invalidateQueries({ queryKey: ["planner", client.id] });
       queryClient.invalidateQueries({ queryKey: ["socialPosts", client.id] });
+      queryClient.invalidateQueries({ queryKey: ["creativeStudio", client.id, "usage"] });
     }
   };
 

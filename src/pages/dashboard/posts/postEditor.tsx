@@ -42,6 +42,8 @@ import {
   socialTextareaClassName,
   toLocalInputValue,
 } from "./postsUtils";
+import { MediaQuotaMeter } from "../studio/mediaQuota";
+import { quotaReachedText, useMediaQuota } from "../studio/mediaQuotaUtils";
 
 const CAPTION_LIMIT = 2200;
 
@@ -58,6 +60,7 @@ const MediaCard: FC<{ post: SocialPost; media: SocialPostMedia; editable: boolea
   const [editingPrompt, setEditingPrompt] = useState(false);
   const [prompt, setPrompt] = useState(media.prompt ?? "");
   const running = media.status === "QUEUED" || media.status === "RUNNING";
+  const quota = useMediaQuota("posts", editable);
 
   const regenerate = useMutation({
     mutationFn: () => socialPostService.regenerateImage(client.id, post.id, media.id, prompt.trim() || undefined),
@@ -65,6 +68,7 @@ const MediaCard: FC<{ post: SocialPost; media: SocialPostMedia; editable: boolea
     onSuccess: (updated) => {
       setEditingPrompt(false);
       onChange(updated);
+      quota.refresh();
     },
   });
   const remove = useMutation({
@@ -124,7 +128,12 @@ const MediaCard: FC<{ post: SocialPost; media: SocialPostMedia; editable: boolea
             className={socialTextareaClassName}
           />
           <div className="flex gap-2">
-            <Button size="sm" disabled={regenerate.isPending} onClick={() => regenerate.mutate()}>
+            <Button
+              size="sm"
+              disabled={regenerate.isPending || quota.imagesLeft < 1}
+              title={quota.imagesLeft < 1 ? quotaReachedText("image") : undefined}
+              onClick={() => regenerate.mutate()}
+            >
               Gerar
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setEditingPrompt(false)}>
@@ -269,6 +278,7 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
   );
 
   const editable = editableStatuses.includes(post.status) && can("posts.manage");
+  const quota = useMediaQuota("posts", editable);
   const canPublish = can("posts.publish") && ["READY", "FAILED", "PARTIAL", "SCHEDULED"].includes(post.status);
   const busy = isSocialPostBusy(post);
   const dirty =
@@ -319,7 +329,10 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
   const addImage = useMutation({
     mutationFn: () => socialPostService.addImage(client.id, post.id),
     onError: requestErrorHandling,
-    onSuccess: apply,
+    onSuccess: (updated) => {
+      apply(updated);
+      quota.refresh();
+    },
   });
   const upload = useMutation({
     mutationFn: (file: File) => socialPostService.uploadMedia(client.id, post.id, file),
@@ -337,6 +350,7 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
     onError: requestErrorHandling,
     onSuccess: (updated) => {
       apply(updated);
+      quota.refresh();
       toast.success("A IA começou a gerar o vídeo; leva alguns minutos");
     },
   });
@@ -438,7 +452,13 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
           {editable && (
             <div className="flex flex-wrap gap-2">
               {canAddImage && (
-                <Button variant="outline" size="sm" disabled={addImage.isPending} onClick={() => addImage.mutate()}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={addImage.isPending || quota.imagesLeft < 1}
+                  title={quota.imagesLeft < 1 ? quotaReachedText("image") : undefined}
+                  onClick={() => addImage.mutate()}
+                >
                   <ImagePlus className="mr-2 h-4 w-4" aria-hidden />
                   Gerar {images.length ? "outra" : "a"} imagem com IA
                 </Button>
@@ -455,6 +475,7 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
                   {upload.isPending ? "Enviando..." : post.format === "REEL" ? "Enviar meu vídeo" : "Enviar minha imagem"}
                 </Button>
               )}
+              {canAddImage && <MediaQuotaMeter scope="posts" show="image" className="basis-full" />}
               <CreativeStudioDialog
                 open={studioOpen}
                 startNew={searchParams.get("studio") === "1"}
@@ -513,14 +534,19 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
                 <Button
                   className="justify-self-start"
                   disabled={
-                    generateVideo.isPending || busy || !(script.cenas ?? []).some((scene) => scene.fala?.trim() || scene.imagem?.trim())
+                    generateVideo.isPending ||
+                    busy ||
+                    quota.videosLeft < 1 ||
+                    !(script.cenas ?? []).some((scene) => scene.fala?.trim() || scene.imagem?.trim())
                   }
+                  title={quota.videosLeft < 1 ? quotaReachedText("video") : undefined}
                   onClick={() => generateVideo.mutate()}
                 >
                   <Film className="mr-2 h-4 w-4" aria-hidden />
                   {videos.some((media) => media.status === "DONE") ? "Gerar outro vídeo" : "Gerar vídeo com IA"}
                 </Button>
               )}
+              {editable && <MediaQuotaMeter scope="posts" show="video" />}
             </div>
           )}
         </section>

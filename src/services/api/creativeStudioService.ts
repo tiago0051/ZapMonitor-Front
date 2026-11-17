@@ -9,6 +9,9 @@ export const creativeStudioService = {
   ): Promise<{ total: number; page: number; take: number; items: CreativeProjectSummary[] }> =>
     (await api.get(base(clientId), { params: queries })).data,
 
+  // Imagens e vídeos gerados hoje (últimas 24 horas) no estúdio e nas postagens, com os limites
+  findDailyUsage: async (clientId: string): Promise<MediaDailyUsage> => (await api.get(`${base(clientId)}/usage`)).data,
+
   findOne: async (clientId: string, id: string): Promise<CreativeProject> => (await api.get(`${base(clientId)}/${id}`)).data,
 
   create: async (

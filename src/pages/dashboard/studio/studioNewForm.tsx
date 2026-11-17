@@ -11,6 +11,8 @@ import { Film, Image as ImageIcon, ImagePlus, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type FC, type FormEvent } from "react";
 import { toast } from "sonner";
 import { socialTextareaClassName } from "../posts/postsUtils";
+import { MediaQuotaMeter } from "./mediaQuota";
+import { quotaReachedText, useMediaQuota } from "./mediaQuotaUtils";
 import {
   BASE_IMAGE_ACCEPT,
   briefExamples,
@@ -48,11 +50,15 @@ export const StudioNewForm: FC<StudioNewFormProps> = ({ defaults, onCreated, onC
   const [useBrand, setUseBrand] = useState(true);
   const [files, setFiles] = useState<File[]>([]);
   const [step, setStep] = useState<string | null>(null);
+  const quota = useMediaQuota("studio");
 
   const previews = useMemo(() => files.map((file) => URL.createObjectURL(file)), [files]);
   useEffect(() => () => previews.forEach((url) => URL.revokeObjectURL(url)), [previews]);
 
   const ratios = kind === "VIDEO" ? videoRatios : imageRatios;
+  // Limite do dia: desabilita antes de bater nele, com a explicação
+  const quotaLeft = kind === "VIDEO" ? quota.videosLeft : quota.imagesLeft;
+  const quotaBlocked = (kind === "VIDEO" ? 1 : variations) > quotaLeft;
 
   const selectKind = (value: CreativeKind) => {
     setKind(value);
@@ -92,6 +98,7 @@ export const StudioNewForm: FC<StudioNewFormProps> = ({ defaults, onCreated, onC
     onSettled: () => setStep(null),
     onSuccess: (project) => {
       queryClient.invalidateQueries({ queryKey: ["creativeStudio", client.id, "list"] });
+      quota.refresh();
       if (project.generations.length)
         toast.success(kind === "VIDEO" ? "A IA está gravando o vídeo (leva alguns minutos)" : "A IA está criando");
       onCreated(project);
@@ -266,6 +273,7 @@ export const StudioNewForm: FC<StudioNewFormProps> = ({ defaults, onCreated, onC
                   size="sm"
                   variant={variations === value ? "secondary" : "outline"}
                   aria-pressed={variations === value}
+                  disabled={value > quotaLeft}
                   onClick={() => setVariations(value)}
                 >
                   {value}
@@ -304,13 +312,19 @@ export const StudioNewForm: FC<StudioNewFormProps> = ({ defaults, onCreated, onC
         />
       </div>
 
-      <div className="flex flex-wrap justify-end gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <MediaQuotaMeter scope="studio" show={kind === "VIDEO" ? "video" : "image"} className="mr-auto" />
+        {quotaBlocked && (
+          <p className="text-destructive w-full text-xs">
+            {quotaLeft <= 0 ? quotaReachedText(kind === "VIDEO" ? "video" : "image") : `Restam ${quotaLeft} hoje; escolha menos variações.`}
+          </p>
+        )}
         {onCancel && (
           <Button type="button" variant="ghost" onClick={onCancel}>
             Cancelar
           </Button>
         )}
-        <Button type="submit" disabled={(!brief.trim() && !files.length) || create.isPending}>
+        <Button type="submit" disabled={(!brief.trim() && !files.length) || create.isPending || quotaBlocked}>
           <Sparkles className="mr-2 h-4 w-4" aria-hidden />
           {step ?? (kind === "VIDEO" ? "Criar e gerar o vídeo" : "Criar e gerar")}
         </Button>

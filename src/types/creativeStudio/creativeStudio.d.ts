@@ -61,3 +61,16 @@ type CreativeProjectDefaults = {
   // Trava o tipo (ex.: reel só aceita vídeo)
   lockKind?: boolean;
 };
+
+// Gerado nas últimas 24 horas contra o limite diário
+type MediaQuotaCount = { used: number; max: number };
+
+type MediaDailyUsage = {
+  studio: { images: MediaQuotaCount; videos: MediaQuotaCount };
+  posts: {
+    images: MediaQuotaCount;
+    videos: MediaQuotaCount;
+    // Imagens que a IA gera ao criar uma postagem sem pedir quantidade
+    defaultImagesByFormat: Record<"IMAGE" | "CAROUSEL" | "REEL", number>;
+  };
+};
