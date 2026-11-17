@@ -6,7 +6,10 @@ import { DataTable } from "@/components/ui/dataTable";
 import { clientService } from "@/services/api/clientService";
 import { useQuery } from "@tanstack/react-query";
 import { getColumns } from "./clientListColumns";
-import { Link, Navigate } from "react-router";
+import { Link, Navigate, useSearchParams } from "react-router";
+import { RETURN_TO_PARAM, returnToClientId, sanitizeReturnTo } from "@/utils/returnTo";
+import { useEffect } from "react";
+import { toast } from "sonner";
 
 export const ClientList = () => {
   const { user } = useUserContext();
@@ -19,9 +22,24 @@ export const ClientList = () => {
   const clientsList = findAllClientQuery.data;
   const onlyClient = clientsList?.length === 1 && clientsList[0];
 
+  // Volta do login para a tela guardada (ex.: conversa do aviso), pulando a escolha quando o acesso ao cliente existe
+  const [searchParams, setSearchParams] = useSearchParams();
+  const returnTo = sanitizeReturnTo(searchParams.get(RETURN_TO_PARAM));
+  const returnToClient = returnTo && returnToClientId(returnTo);
+  const canReturn = !!returnTo && (!returnToClient || !!clientsList?.some((client) => client.id === returnToClient));
+  const lostAccess = !!returnTo && !!clientsList && !canReturn;
+
+  useEffect(() => {
+    if (!lostAccess) return;
+
+    toast.error("Você não tem mais acesso a esse cliente", { description: "Escolha um dos seus clientes para continuar." });
+    setSearchParams({}, { replace: true });
+  }, [lostAccess, setSearchParams]);
+
   const columns = getColumns();
 
-  if (onlyClient) return <Navigate to={`/dashboard/client/${onlyClient.id}`} />;
+  if (canReturn) return <Navigate to={returnTo} replace />;
+  if (onlyClient && !returnTo) return <Navigate to={`/dashboard/client/${onlyClient.id}`} />;
 
   return (
     <Card className="w-full">

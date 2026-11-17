@@ -20,9 +20,11 @@ type FormSchemaType = z.infer<typeof FormSchema>;
 
 type LoginFormProps = React.ComponentProps<"form"> & {
   onLoginSuccess?: () => void;
+  /** Para onde vai quem já está logado */
+  redirectTo?: string;
 };
 
-export function LoginForm({ className, onLoginSuccess, ...props }: LoginFormProps) {
+export function LoginForm({ className, onLoginSuccess, redirectTo = "/auth/select_client", ...props }: LoginFormProps) {
   const { login, isLogged } = useUserContext();
 
   const loginRequestMutation = useMutation({
@@ -52,7 +54,7 @@ export function LoginForm({ className, onLoginSuccess, ...props }: LoginFormProp
     });
   };
 
-  if (isLogged) return <Navigate to="/auth/select_client" />;
+  if (isLogged) return <Navigate to={redirectTo} replace />;
 
   return (
     <Form {...form}>
