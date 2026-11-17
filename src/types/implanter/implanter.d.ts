@@ -27,3 +27,18 @@ type ImplanterUser = {
   // Falso quando o usuário também está em tenants que o implantador não implanta
   canEditProfile: boolean;
 };
+
+// Saúde do tenant no painel do implantador: primeiros passos, último atendimento e alertas
+type ImplanterClientHealth = {
+  clientId: string;
+  steps: {
+    numberConnected: boolean;
+    flowOnEveryNumber: boolean;
+    groupWithPeople: boolean;
+    aiAgent: boolean;
+  };
+  completedSteps: number;
+  totalSteps: number;
+  lastServiceAt: string | null;
+  alerts: { type: "NUMBER_DISCONNECTED" | "NUMBER_WITHOUT_FLOW" | "AI_PAUSED"; message: string }[];
+};
