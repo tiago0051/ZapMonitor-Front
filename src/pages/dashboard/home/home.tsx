@@ -15,6 +15,7 @@ import { GettingStarted } from "./components/gettingStarted";
 import { useGuideSteps, useGuideVisibility } from "./components/gettingStartedSteps";
 import { HomeMetrics } from "./components/homeMetrics";
 import { HomeShortcuts } from "./components/homeShortcuts";
+import { MarketingSteps } from "./components/marketingSteps";
 
 // Fila e conversas mudam o tempo todo; o resto é barato de recontar
 const REFRESH_INTERVAL_MS = 60 * 1000;
@@ -78,6 +79,8 @@ export const HomePage: FC = () => {
         </header>
 
         {showGuide && <GettingStarted steps={steps} onHide={() => setHidden(true)} />}
+
+        {(can("ads.view") || can("strategies.view")) && <MarketingSteps marketing={overviewQuery.data?.marketing} />}
 
         {overviewQuery.isError ? (
           <ErrorState

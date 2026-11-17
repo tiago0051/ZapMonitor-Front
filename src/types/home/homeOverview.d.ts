@@ -23,7 +23,16 @@ type HomeOnboarding = {
   hasPushNotifications: boolean;
 };
 
+// Marketing em 4 passos; nulo quando o plano não tem anúncios
+type HomeMarketing = {
+  hasBrandIdentity: boolean;
+  hasAdAccount: boolean;
+  hasSaleEvent: boolean;
+  hasStrategy: boolean;
+};
+
 type HomeOverview = {
   metrics: HomeMetrics;
   onboarding: HomeOnboarding;
+  marketing: HomeMarketing | null;
 };
