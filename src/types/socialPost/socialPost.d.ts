@@ -1,3 +1,5 @@
+type SocialPostApproval = "PENDING" | "CHANGES";
+
 type SocialPostFormat = "IMAGE" | "CAROUSEL" | "REEL";
 type SocialPlatform = "FACEBOOK" | "INSTAGRAM";
 type SocialPostStatus = "GENERATING" | "READY" | "SCHEDULED" | "PUBLISHING" | "PUBLISHED" | "PARTIAL" | "FAILED";
@@ -53,6 +55,11 @@ type SocialPost = {
   publishedAt: string | null;
   // Dia previsto no planejamento enquanto não é agendada
   plannedFor?: string | null;
+  // Aprovação de quem cria sem poder publicar: PENDING aguardando, CHANGES com ajuste pedido; nulo sem pedido aberto
+  approvalStatus: SocialPostApproval | null;
+  approvalNote: string | null;
+  approvalRequestedByUserId: string | null;
+  approvalRequestedAt: string | null;
   createdAt: string;
   updatedAt: string;
   media: SocialPostMedia[];

@@ -19,6 +19,11 @@ export const socialStatusInfo: Record<SocialPostStatus, { label: string; classNa
   FAILED: { label: "Falhou", className: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200" },
 };
 
+export const socialApprovalInfo: Record<SocialPostApproval, { label: string; className: string }> = {
+  PENDING: { label: "Aguardando aprovação", className: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200" },
+  CHANGES: { label: "Ajuste pedido", className: "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200" },
+};
+
 export const socialScopeLabel: Record<string, string> = {
   pages_manage_posts: "publicar na página",
   pages_read_engagement: "ler as postagens da página",

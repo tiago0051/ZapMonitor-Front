@@ -33,6 +33,7 @@ import { creativeStudioService } from "@/services/api/creativeStudioService";
 import { CreativeStudioDialog } from "../studio/creativeStudioDialog";
 import { toast } from "sonner";
 import { PostSetupNotice } from "./postSetupNotice";
+import { PostApprovalNotice, PostApprovalRequest, PostRequestChanges } from "./postApproval";
 import {
   editableStatuses,
   isSocialPostBusy,
@@ -280,6 +281,9 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
   const editable = editableStatuses.includes(post.status) && can("posts.manage");
   const quota = useMediaQuota("posts", editable);
   const canPublish = can("posts.publish") && ["READY", "FAILED", "PARTIAL", "SCHEDULED"].includes(post.status);
+  // Quem cria sem poder publicar envia para aprovar; quem publica vê "Aprovar e ..." enquanto há pedido aberto
+  const needsApproval = editable && !can("posts.publish");
+  const approving = canPublish && post.approvalStatus === "PENDING";
   const busy = isSocialPostBusy(post);
   const dirty =
     caption !== (post.caption ?? "") ||
@@ -435,6 +439,7 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
         <span className="font-medium">Ideia:</span> {post.idea}
       </p>
       {post.error && <p className="rounded-md bg-red-50 p-2 text-sm text-red-800 dark:bg-red-950/50 dark:text-red-200">{post.error}</p>}
+      <PostApprovalNotice post={post} />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <section className="grid content-start gap-3" aria-label="Mídias">
@@ -651,10 +656,17 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
             {canPublish && (
               <Button disabled={publish.isPending || busy || !platforms.length} onClick={confirmPublish}>
                 <Send className="mr-2 h-4 w-4" aria-hidden />
-                {post.status === "FAILED" || post.status === "PARTIAL" ? "Tentar publicar de novo" : "Publicar agora"}
+                {approving
+                  ? "Aprovar e publicar agora"
+                  : post.status === "FAILED" || post.status === "PARTIAL"
+                    ? "Tentar publicar de novo"
+                    : "Publicar agora"}
               </Button>
             )}
+            {approving && <PostRequestChanges post={post} onChange={apply} />}
           </div>
+
+          {needsApproval && <PostApprovalRequest post={post} beforeSend={saveIfDirty} onChange={apply} />}
 
           {canPublish && post.status !== "PARTIAL" && (
             <div className="grid gap-2 rounded-lg border p-3">
@@ -676,7 +688,7 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
                   disabled={schedule.isPending || busy || !scheduledAt || !platforms.length}
                   onClick={() => schedule.mutate()}
                 >
-                  {post.status === "SCHEDULED" ? "Mudar horário" : "Agendar"}
+                  {post.status === "SCHEDULED" ? "Mudar horário" : approving ? "Aprovar e agendar" : "Agendar"}
                 </Button>
                 {post.status === "SCHEDULED" && (
                   <Button variant="ghost" disabled={unschedule.isPending} onClick={() => unschedule.mutate()}>

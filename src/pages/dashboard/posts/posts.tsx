@@ -14,7 +14,14 @@ import { Film, GalleryHorizontal, Image as ImageIcon, Plus, Sparkles } from "luc
 import { useState, type FC, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import { PostSetupNotice } from "./postSetupNotice";
-import { isSocialPostBusy, socialFormatLabel, socialPlatformLabel, socialStatusInfo, socialTextareaClassName } from "./postsUtils";
+import {
+  isSocialPostBusy,
+  socialApprovalInfo,
+  socialFormatLabel,
+  socialPlatformLabel,
+  socialStatusInfo,
+  socialTextareaClassName,
+} from "./postsUtils";
 
 const TAKE = 20;
 
@@ -23,6 +30,8 @@ const statusFilters: { value: string; label: string }[] = [
   { value: "READY,GENERATING,FAILED", label: "Rascunhos" },
   { value: "SCHEDULED", label: "Agendadas" },
   { value: "PUBLISHED,PARTIAL,PUBLISHING", label: "Publicadas" },
+  { value: "approval:PENDING", label: "Aguardando aprovação" },
+  { value: "approval:CHANGES", label: "Ajuste pedido" },
 ];
 
 const formatOptions: { value: SocialPostFormat; icon: typeof ImageIcon; hint: string }[] = [
@@ -223,7 +232,14 @@ export const Posts = () => {
   });
   const query = useQuery({
     queryKey: ["socialPosts", client.id, "list", status, page],
-    queryFn: () => socialPostService.findAll(client.id, { page, take: TAKE, status: status || undefined }),
+    // "approval:..." filtra pelo pedido de aprovação em vez do status
+    queryFn: () =>
+      socialPostService.findAll(
+        client.id,
+        status.startsWith("approval:")
+          ? { page, take: TAKE, approval: status.split(":")[1] as SocialPostApproval }
+          : { page, take: TAKE, status: status || undefined },
+      ),
     refetchInterval: (current) => (current.state.data?.items.some(isSocialPostBusy) ? 5000 : false),
   });
 
@@ -292,6 +308,13 @@ export const Posts = () => {
                 <div className="grid min-w-0 flex-1 content-start gap-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-medium", info.className)}>{info.label}</span>
+                    {post.approvalStatus && (
+                      <span
+                        className={cn("rounded px-1.5 py-0.5 text-[11px] font-medium", socialApprovalInfo[post.approvalStatus].className)}
+                      >
+                        {socialApprovalInfo[post.approvalStatus].label}
+                      </span>
+                    )}
                     <span className="text-muted-foreground text-xs">
                       {socialFormatLabel[post.format]} · {post.platforms.map((platform) => socialPlatformLabel[platform]).join(" e ")}
                     </span>
