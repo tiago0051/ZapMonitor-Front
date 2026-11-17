@@ -13,7 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ChevronDown, ChevronRight, Megaphone, RefreshCw } from "lucide-react";
 import { Fragment, useEffect, useRef, useState, type FC } from "react";
-import { Link, useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { useLocalStorage } from "usehooks-ts";
 import {
   AD_PLATFORMS,
@@ -52,7 +52,6 @@ import { AdBudgetEditor } from "./components/adBudgetEditor";
 import { SpendCapBar } from "./components/spendCapBar";
 import { AdsLearnings } from "./learnings/adsLearnings";
 import { AdsExperiments } from "./experiments/adsExperiments";
-import { AdsStrategyWiki } from "./wiki/adsStrategyWiki";
 import { StrategyIntentBanner } from "../strategies/strategyIntentBanner";
 
 const StatusChip: FC<{ status: string }> = ({ status }) => {
@@ -205,7 +204,6 @@ const MULTI_PLATFORM_TABS = [
   "experiments",
   "learnings",
   "strategy",
-  "wiki",
   "changes",
   "automation",
 ];
@@ -214,7 +212,7 @@ const MULTI_PLATFORM_TABS = [
 const TAB_GROUPS: TabGroup[] = [
   { id: "overview", label: "Visão geral", tabs: ["results", "campaigns", "audiences", "leads"] },
   { id: "create", label: "Criar", tabs: ["create", "pilot"] },
-  { id: "ai", label: "IA", tabs: ["suggestions", "experiments", "learnings", "strategy", "wiki", "changes"] },
+  { id: "ai", label: "IA", tabs: ["suggestions", "experiments", "learnings", "strategy", "changes"] },
   { id: "settings", label: "Configurar", tabs: ["automation", "conversions"] },
 ];
 
@@ -229,7 +227,6 @@ const TAB_LABEL: Record<string, string> = {
   experiments: "Testes",
   learnings: "Aprendizados",
   strategy: "Conversar com a IA",
-  wiki: "Wiki",
   changes: "Mudanças",
   automation: "Automação",
   conversions: "Eventos",
@@ -263,12 +260,18 @@ export const AdsPage = () => {
   const [tab, setTab] = useLocalStorage<string>(`ads:tab:${client.id}`, "results");
   // Aviso no celular abre direto numa aba (ex.: ?tab=changes para aprovar uma proposta de verba)
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   useEffect(() => {
     const requested = searchParams.get("tab");
+    // A Wiki mudou para Estratégias > Biblioteca: link antigo vai para lá (a aba guardada cai em Resultados sozinha)
+    if (requested === "wiki") {
+      navigate(`${baseUrl}/strategies?tab=library&section=articles`, { replace: true });
+      return;
+    }
     if (!requested) return;
     setTab(requested);
     setSearchParams({}, { replace: true });
-  }, [searchParams, setSearchParams, setTab]);
+  }, [searchParams, setSearchParams, setTab, navigate, baseUrl]);
   const tabsListRef = useRef<HTMLDivElement>(null);
   // Última aba aberta em cada grupo, para voltar nela ao trocar de grupo
   const [lastTabByGroup, setLastTabByGroup] = useState<Record<string, string>>({});
@@ -555,10 +558,6 @@ export const AdsPage = () => {
 
         <TabsContent value="learnings" className={tabContentClassName}>
           <AdsLearnings key={currentAccount.id} account={currentAccount} />
-        </TabsContent>
-
-        <TabsContent value="wiki" className={tabContentClassName}>
-          <AdsStrategyWiki platform={currentAccount.platform} />
         </TabsContent>
 
         {can("ads.manage") && (
