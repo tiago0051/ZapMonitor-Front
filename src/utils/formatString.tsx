@@ -58,7 +58,7 @@ export function formatWhatsappText(text: string | null | undefined): React.React
   if (!text) return [];
 
   // O bloco monoespaçado é literal: o que está dentro dele não é formatado
-  return text.split(WHATSAPP_MONOSPACE_PATTERN).flatMap((part, index) =>
+  return text.split(WHATSAPP_MONOSPACE_PATTERN).flatMap<React.ReactNode>((part, index) =>
     index % 2 === 1
       ? [
           <code key={`code-${index}`} className="font-mono text-[0.95em]">
