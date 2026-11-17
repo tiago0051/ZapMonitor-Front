@@ -10,6 +10,8 @@ import {
   createFlowId,
   FLOW_CONDITION_MAX_BUTTON_TITLE,
   FLOW_CONDITION_MAX_BUTTONS,
+  DEFAULT_CALL_PERMISSION_TEXT,
+  FLOW_CALL_PERMISSION_MAX_TEXT,
   flowNodeConfigs,
   QUEUE_MESSAGE_VARIABLES,
   WEEKDAY_LABELS,
@@ -275,6 +277,21 @@ export const FlowNodePanel: FC<FlowNodePanelProps> = ({ type, data, onChange, on
               onChange={(e) => update({ text: e.target.value })}
               placeholder="Olá! Seja bem-vindo à ..."
               className={`${textareaClassName} min-h-32`}
+            />
+          </Field>
+        )}
+
+        {type === "callPermission" && (
+          <Field
+            label="Texto do pedido"
+            hint='Opcional. O contato recebe o pedido da Meta com os botões para autorizar ou não as ligações, e o fluxo espera a resposta. Se ele já autorizou, segue direto por "Autorizou". Número por QR code, sem as ligações ligadas ou com o limite de pedidos da Meta atingido segue por "Não deu para pedir". Se o contato escrever em vez de tocar no botão, segue por "Outra resposta" (se ligada) ou continua esperando.'
+          >
+            <textarea
+              value={data.text ?? ""}
+              maxLength={FLOW_CALL_PERMISSION_MAX_TEXT}
+              onChange={(e) => update({ text: e.target.value })}
+              placeholder={DEFAULT_CALL_PERMISSION_TEXT}
+              className={`${textareaClassName} min-h-24`}
             />
           </Field>
         )}

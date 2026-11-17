@@ -106,6 +106,7 @@ const paletteNodeTypes: FlowNodeType[] = [
   "crmAnalysis",
   "email",
   "emailSequence",
+  "callPermission",
   "flow",
   "end",
 ];

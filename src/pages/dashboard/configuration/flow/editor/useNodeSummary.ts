@@ -36,6 +36,8 @@ export function useNodeSummary(type: FlowNodeType, data: FlowNodeData) {
       return emailOptions.templates.find((template) => template.id === data.templateId)?.name ?? "Selecione o modelo de e-mail";
     case "emailSequence":
       return emailOptions.sequences?.find((sequence) => sequence.id === data.sequenceId)?.name ?? "Selecione a sequência de e-mails";
+    case "callPermission":
+      return data.text?.trim() || "Pedido com o texto padrão";
     case "queueTimer":
       return `A cada ${data.everyMinutes ?? "?"} min, até ${data.maxRepetitions ?? "?"} vez(es)`;
     case "queueMessage":

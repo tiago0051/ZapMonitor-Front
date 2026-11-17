@@ -9,6 +9,7 @@ import {
   Mail,
   MessageCircleReply,
   MessageSquareText,
+  PhoneCall,
   Play,
   Replace,
   Sparkles,
@@ -25,6 +26,9 @@ export const FLOW_OUTPUT_OTHER = "other";
 export const FLOW_OUTPUT_NOT_SENT = "notSent";
 export const FLOW_CONDITION_MAX_BUTTONS = 3;
 export const FLOW_CONDITION_MAX_BUTTON_TITLE = 20;
+// Texto do pedido de ligação e o que vai quando ele fica vazio (espelham o backend)
+export const FLOW_CALL_PERMISSION_MAX_TEXT = 1024;
+export const DEFAULT_CALL_PERMISSION_TEXT = "Podemos te ligar pelo WhatsApp para continuar o seu atendimento?";
 
 export const WEEKDAY_LABELS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
@@ -146,6 +150,13 @@ export const flowNodeConfigs: Record<FlowNodeType, FlowNodeConfig> = {
     colorClassName: "text-blue-600 border-blue-500/60",
     defaultData: () => ({ sequenceId: "" }),
   },
+  callPermission: {
+    label: "Pedir permissão para ligar",
+    description: "Pede ao contato a autorização para receber ligações e espera a resposta",
+    icon: PhoneCall,
+    colorClassName: "text-green-600 border-green-500/60",
+    defaultData: () => ({ text: "" }),
+  },
   end: {
     label: "Encerrar atendimento",
     description: "Envia uma despedida e finaliza",
@@ -208,6 +219,13 @@ export function getFlowNodeOutputs(type: FlowNodeType, data: FlowNodeData): Flow
       ];
     case "condition":
       return [...(data.options ?? []), { id: FLOW_OUTPUT_OTHER, label: "Outra resposta" }];
+    case "callPermission":
+      return [
+        { id: "accepted", label: "Autorizou" },
+        { id: "rejected", label: "Não autorizou" },
+        { id: FLOW_OUTPUT_OTHER, label: "Outra resposta" },
+        { id: "unavailable", label: "Não deu para pedir" },
+      ];
     case "serviceGroup":
     case "aiAgent":
       return data.outputs ?? [];

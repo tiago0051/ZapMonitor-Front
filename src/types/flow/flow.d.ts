@@ -16,6 +16,8 @@ type FlowNodeType =
   | "email"
   // Coloca a ficha do contato numa sequência de e-mails
   | "emailSequence"
+  // Pede ao contato a autorização para receber ligações pelo WhatsApp e espera a resposta
+  | "callPermission"
   | "end"
   // Pontos de entrada do fluxo de fila
   | "queueTimer"
