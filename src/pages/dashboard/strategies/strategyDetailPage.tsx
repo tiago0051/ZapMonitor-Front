@@ -14,6 +14,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import { StrategyBriefDialog } from "./strategyBriefDialog";
 import { StrategyLinkList } from "./strategyLinkList";
+import { StrategyMarkerHelp } from "./strategyMarkerHelp";
 import { StrategyResultsPanel } from "./strategyResultsPanel";
 import { StrategyReviewPanel } from "./strategyReviewPanel";
 import { StrategyStepCard } from "./strategyStepCard";
@@ -117,30 +118,26 @@ export const StrategyDetailPage = () => {
           <div className="flex flex-wrap items-center gap-2">
             <span className={cn("rounded px-1.5 py-0.5 text-xs font-medium", status.className)}>{status.label}</span>
             {strategy.verdict && strategy.verdict !== "NO_DATA" && (
-              <span
-                className={cn("rounded px-1.5 py-0.5 text-xs font-medium", verdictInfo[strategy.verdict].className)}
-                title={strategy.verdictReason ?? undefined}
-              >
+              <span className={cn("rounded px-1.5 py-0.5 text-xs font-medium", verdictInfo[strategy.verdict].className)}>
                 {verdictInfo[strategy.verdict].label}
               </span>
             )}
-            <code
-              className="bg-muted rounded px-1.5 py-0.5 text-xs"
-              title="Vai no nome das campanhas e conjuntos criados pela estratégia, para reconhecer no Gerenciador de Anúncios"
-            >
-              {strategy.marker}
-            </code>
+
             {strategy.steps.length > 0 && (
               <span className="text-muted-foreground text-xs tabular-nums">
                 {doneCount}/{strategy.steps.length} passos feitos
               </span>
             )}
           </div>
+          {strategy.verdict && strategy.verdict !== "NO_DATA" && strategy.verdictReason && (
+            <p className="text-muted-foreground text-xs">{strategy.verdictReason}</p>
+          )}
           <h1 className="text-2xl font-semibold text-balance">{strategy.name}</h1>
           <p className="text-muted-foreground text-sm">
             {strategy.brief.product} · {goalLabel[strategy.brief.goal]}
             {strategy.startsOn && ` · começou em ${format(new Date(strategy.startsOn), "dd/MM/yyyy")}`}
           </p>
+          <StrategyMarkerHelp marker={strategy.marker} />
         </div>
         {canManage && !isGenerating && (
           <div className="flex flex-wrap gap-2">

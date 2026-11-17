@@ -108,8 +108,10 @@ const StrategyList = ({ strategies, baseUrl }: { strategies: MarketingStrategySu
                   {verdictInfo[strategy.verdict].label}
                 </span>
               )}
-              <code className="text-muted-foreground text-xs">{strategy.marker}</code>
             </div>
+            {strategy.verdict && strategy.verdict !== "NO_DATA" && strategy.verdictReason && (
+              <p className="text-muted-foreground text-xs">{strategy.verdictReason}</p>
+            )}
             <p className="font-medium">{strategy.name}</p>
             <p className="text-muted-foreground text-sm">
               {goalLabel[strategy.goal]}
