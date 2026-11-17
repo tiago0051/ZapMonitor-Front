@@ -52,6 +52,8 @@ type FindDealBoardRequestQuery = {
   // NONE traz os negócios sem anúncio de origem
   originType?: DealOriginType | "NONE";
   originMetaCampaignId?: string;
+  // Ganhos e perdidos só fechados a partir desta data (ISO); os abertos vêm sempre
+  closedSince?: string;
 };
 
 type FindDealBoardRequestData = {

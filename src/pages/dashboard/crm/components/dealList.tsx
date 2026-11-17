@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { format, formatDistanceToNow, isPast } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ArrowDown, ArrowUp, Snowflake } from "lucide-react";
-import { useState, type FC } from "react";
+import { useState, type FC, type ReactNode } from "react";
 import { OpenChatButton } from "../chatDock/openChatButton";
 import { dealContactName, dealStatusLabel, findPipelineStage, formatCurrency, staleDays } from "../crmUtils";
 
@@ -13,6 +13,8 @@ type DealListProps = {
   deals: Deal[];
   pipeline: Pipeline;
   onOpen: (deal: Deal) => void;
+  // Aviso abaixo da tabela (ex.: até quando os fechados aparecem)
+  footer?: ReactNode;
 };
 
 const compareBy: Record<SortKey, (first: Deal, second: Deal, pipeline: Pipeline) => number> = {
@@ -26,7 +28,7 @@ const compareBy: Record<SortKey, (first: Deal, second: Deal, pipeline: Pipeline)
 };
 
 /** Os mesmos negócios do quadro em tabela, para comparar e ordenar muitos de uma vez. */
-export const DealList: FC<DealListProps> = ({ deals, pipeline, onOpen }) => {
+export const DealList: FC<DealListProps> = ({ deals, pipeline, onOpen, footer }) => {
   const [sortKey, setSortKey] = useState<SortKey>("lastActivityAt");
   const [direction, setDirection] = useState<"asc" | "desc">("desc");
 
@@ -52,7 +54,13 @@ export const DealList: FC<DealListProps> = ({ deals, pipeline, onOpen }) => {
     </TableHead>
   );
 
-  if (deals.length === 0) return <p className="text-muted-foreground p-6 text-center text-sm">Nenhum negócio com esses filtros.</p>;
+  if (deals.length === 0)
+    return (
+      <div className="p-6 text-center">
+        <p className="text-muted-foreground text-sm">Nenhum negócio com esses filtros.</p>
+        {footer}
+      </div>
+    );
 
   return (
     <div className="flex-1 overflow-auto p-4">
@@ -134,6 +142,7 @@ export const DealList: FC<DealListProps> = ({ deals, pipeline, onOpen }) => {
           </TableBody>
         </Table>
       </div>
+      {footer}
     </div>
   );
 };
