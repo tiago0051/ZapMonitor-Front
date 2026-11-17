@@ -56,6 +56,9 @@ type AppointmentReminderSettings = {
   templateId: string | null;
   /** { "body.1": "contact_name" } */
   templateVariables: Record<string, string> | null;
+  /** Arquivo do cabeçalho do modelo (imagem, vídeo ou PDF), o mesmo em todos os lembretes */
+  headerFileId: string | null;
+  headerFileName: string | null;
   /** Texto livre com {nome}, {data}, {hora}, {dia_semana} e {titulo} */
   message: string;
   timeZone: string;

@@ -5,7 +5,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { templateCategoryLabel, templateStatusInfo } from "@/components/whatsappTemplate/templateUtils";
+import { headerFileType, templateCategoryLabel, templateStatusInfo } from "@/components/whatsappTemplate/templateUtils";
+import { TemplateHeaderFileInput } from "@/components/whatsappTemplate/templateHeaderFileInput";
 import { cn } from "@/lib/utils";
 import { googleCalendarService } from "@/services/api/googleCalendarService";
 import { templateService } from "@/services/api/templateService";
@@ -164,6 +165,9 @@ const AppointmentRemindersForm: FC<AppointmentRemindersProps & { initial: Appoin
     const defaults: AppointmentReminderVariableSource[] = ["contact_name", "title", "weekday_date", "time"];
     update({
       templateId: templateId || null,
+      // Trocar de modelo descarta o arquivo do cabeçalho do anterior
+      headerFileId: null,
+      headerFileName: null,
       templateVariables: selected
         ? Object.fromEntries(
             selected.parameters
@@ -175,6 +179,7 @@ const AppointmentRemindersForm: FC<AppointmentRemindersProps & { initial: Appoin
   };
 
   const templateParameters = template?.parameters.filter((parameter) => parameter.source !== "BUTTON") ?? [];
+  const missingHeaderFile = usesTemplate && !!headerFileType(template) && !form.headerFileId;
   const hasButtonParameters = !!template?.parameters.some((parameter) => parameter.source === "BUTTON");
 
   return (
@@ -284,7 +289,13 @@ const AppointmentRemindersForm: FC<AppointmentRemindersProps & { initial: Appoin
               value={form.whatsappConfigurationId ?? ""}
               disabled={busy}
               onChange={(event) =>
-                update({ whatsappConfigurationId: event.target.value || null, templateId: null, templateVariables: null })
+                update({
+                  whatsappConfigurationId: event.target.value || null,
+                  templateId: null,
+                  templateVariables: null,
+                  headerFileId: null,
+                  headerFileName: null,
+                })
               }
             >
               <option value="">Selecione</option>
@@ -360,6 +371,14 @@ const AppointmentRemindersForm: FC<AppointmentRemindersProps & { initial: Appoin
               {hasButtonParameters && (
                 <p className="text-destructive text-sm">Modelos com link dinâmico ou código no botão não servem para lembrete.</p>
               )}
+              <TemplateHeaderFileInput
+                clientId={clientId}
+                configurationId={form.whatsappConfigurationId}
+                template={template}
+                fileName={form.headerFileName}
+                hasFile={!!form.headerFileId}
+                onUploaded={({ fileId, fileName }) => update({ headerFileId: fileId, headerFileName: fileName })}
+              />
               {templateParameters.length > 0 && (
                 <div className="grid gap-2 sm:grid-cols-2">
                   {templateParameters.map((parameter) => (
@@ -411,7 +430,12 @@ const AppointmentRemindersForm: FC<AppointmentRemindersProps & { initial: Appoin
         </section>
 
         <div className="flex justify-end">
-          <Button type="button" disabled={busy} onClick={() => save.mutate({ params: { clientId }, body: form })}>
+          <Button
+            type="button"
+            disabled={busy || missingHeaderFile}
+            title={missingHeaderFile ? "Envie o arquivo do cabeçalho do modelo" : undefined}
+            onClick={() => save.mutate({ params: { clientId }, body: form })}
+          >
             {save.isPending ? "Salvando..." : "Salvar lembretes"}
           </Button>
         </div>

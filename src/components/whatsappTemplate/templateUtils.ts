@@ -86,6 +86,17 @@ export const templateDraftError = (draft: TemplateDraft) => {
   return null;
 };
 
+/** Sobe o arquivo do cabeçalho de um modelo (imagem, vídeo ou PDF) e devolve o id dele para o envio. */
+export async function uploadTemplateHeaderFile(clientId: string, configurationId: string, fileType: TemplateHeaderFileType, file: File) {
+  const { fileId, url } = await whatsappService.getTemplateHeaderUploadUrl({
+    params: { clientId, configurationId, fileType },
+    body: { fileName: file.name, fileSize: file.size, mimeType: file.type },
+  });
+
+  await new BlockBlobClient(url).uploadData(file, { blobHTTPHeaders: { blobContentType: file.type }, blockSize: file.size });
+  return fileId;
+}
+
 /** Sobe o arquivo do cabeçalho (quando há) e devolve o corpo do envio. */
 export async function buildTemplateSendBody(
   clientId: string,
@@ -96,16 +107,7 @@ export async function buildTemplateSendBody(
   const fileType = headerFileType(template);
   let headerFileId: string | undefined;
 
-  if (fileType && draft.headerFile) {
-    const file = draft.headerFile;
-    const { fileId, url } = await whatsappService.getTemplateHeaderUploadUrl({
-      params: { clientId, configurationId, fileType },
-      body: { fileName: file.name, fileSize: file.size, mimeType: file.type },
-    });
-
-    await new BlockBlobClient(url).uploadData(file, { blobHTTPHeaders: { blobContentType: file.type }, blockSize: file.size });
-    headerFileId = fileId;
-  }
+  if (fileType && draft.headerFile) headerFileId = await uploadTemplateHeaderFile(clientId, configurationId, fileType, draft.headerFile);
 
   const variables = Object.fromEntries(
     template.parameters.map((parameter) => [parameter.key, draft.variables[parameter.key]?.trim() ?? ""]),

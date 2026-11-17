@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { templateCategoryLabel, templateStatusInfo } from "@/components/whatsappTemplate/templateUtils";
+import { headerFileType, templateCategoryLabel, templateStatusInfo } from "@/components/whatsappTemplate/templateUtils";
+import { TemplateHeaderFileInput } from "@/components/whatsappTemplate/templateHeaderFileInput";
 import { templateService } from "@/services/api/templateService";
 import { formatConfigurationPhoneNumber, isWhatsappWeb } from "@/utils/whatsappConfiguration";
 import { useQuery } from "@tanstack/react-query";
@@ -64,13 +65,16 @@ const exampleSteps = (): FlowFollowUpStep[] => [
 
 const emptyFollowUp = (): FlowFollowUp => ({ enabled: true, steps: exampleSteps(), noReply: { action: "none", afterMinutes: 60 } });
 
-const isStepValid = (step: FlowFollowUpStep) =>
+// Modelo com imagem, vídeo ou PDF no cabeçalho precisa do arquivo
+const isStepValid = (step: FlowFollowUpStep, templates: WhatsappTemplate[]) =>
   Number.isInteger(step.delayMinutes) &&
   step.delayMinutes >= 1 &&
   step.delayMinutes <= MAX_DELAY_MINUTES &&
   (step.kind === "text"
     ? !!step.text?.trim()
-    : !!step.templateId && Object.values(step.templateVariables ?? {}).every((value) => !!value.trim()));
+    : !!step.templateId &&
+      Object.values(step.templateVariables ?? {}).every((value) => !!value.trim()) &&
+      (!headerFileType(templates.find((template) => template.id === step.templateId) ?? null) || !!step.headerFileId));
 
 type FlowFollowUpButtonProps = {
   clientId: string;
@@ -155,14 +159,20 @@ const FlowFollowUpDialog: FC<FlowFollowUpDialogProps> = ({ clientId, initial, wh
             .map((parameter) => [parameter.key, step.templateVariables?.[parameter.key] ?? "contact_first_name"]),
         )
       : undefined;
-    updateStep(step.id, { templateId: templateId || undefined, templateVariables: variables });
+    // Trocar de modelo descarta o arquivo do cabeçalho do anterior
+    updateStep(step.id, {
+      templateId: templateId || undefined,
+      templateVariables: variables,
+      headerFileId: undefined,
+      headerFileName: undefined,
+    });
   };
 
   const totalMinutes = form.steps.reduce((sum, step) => sum + (Number.isInteger(step.delayMinutes) ? step.delayMinutes : 0), 0);
   const isValid =
     !form.enabled ||
     (form.steps.length > 0 &&
-      form.steps.every(isStepValid) &&
+      form.steps.every((step) => isStepValid(step, templates)) &&
       (noReply.action === "none" || (Number.isInteger(noReply.afterMinutes) && noReply.afterMinutes >= 1)));
 
   const apply = () => {
@@ -207,7 +217,8 @@ const FlowFollowUpDialog: FC<FlowFollowUpDialogProps> = ({ clientId, initial, wh
                 total={form.steps.length}
                 templates={templates}
                 templatesLoading={templatesQuery.isLoading}
-                hasOfficialNumber={!!configurationId}
+                clientId={clientId}
+                configurationId={configurationId}
                 onChange={(changes) => updateStep(step.id, changes)}
                 onSelectTemplate={(templateId) => selectTemplate(step, templateId)}
                 onMove={(offset) => moveStep(index, offset)}
@@ -286,7 +297,7 @@ const FlowFollowUpDialog: FC<FlowFollowUpDialogProps> = ({ clientId, initial, wh
           <Button
             onClick={apply}
             disabled={!isValid}
-            title={isValid ? undefined : "Preencha a espera e a mensagem ou o modelo de cada envio"}
+            title={isValid ? undefined : "Preencha a espera e a mensagem ou o modelo (com o arquivo do cabeçalho, quando houver) de cada envio"}
           >
             Aplicar
           </Button>
@@ -303,7 +314,8 @@ type FollowUpStepCardProps = {
   total: number;
   templates: WhatsappTemplate[];
   templatesLoading: boolean;
-  hasOfficialNumber: boolean;
+  clientId: string;
+  configurationId: string | null;
   onChange: (changes: Partial<FlowFollowUpStep>) => void;
   onSelectTemplate: (templateId: string) => void;
   onMove: (offset: number) => void;
@@ -316,7 +328,8 @@ const FollowUpStepCard: FC<FollowUpStepCardProps> = ({
   total,
   templates,
   templatesLoading,
-  hasOfficialNumber,
+  clientId,
+  configurationId,
   onChange,
   onSelectTemplate,
   onMove,
@@ -385,7 +398,7 @@ const FollowUpStepCard: FC<FollowUpStepCardProps> = ({
             é pulado. Para depois de 24h, use um modelo aprovado.
           </p>
         </div>
-      ) : !hasOfficialNumber ? (
+      ) : !configurationId ? (
         <p className="text-destructive text-sm">
           Modelos precisam de um número da API oficial do WhatsApp; números por QR code não enviam modelos.
         </p>
@@ -415,9 +428,14 @@ const FollowUpStepCard: FC<FollowUpStepCardProps> = ({
               Este modelo está "{templateStatusInfo(template).label}". O envio só sai depois da aprovação da Meta.
             </p>
           )}
-          {template?.headerFormat && template.headerFormat !== "TEXT" && (
-            <p className="text-destructive text-sm">Modelos com imagem, vídeo ou documento no cabeçalho não servem para o follow-up.</p>
-          )}
+          <TemplateHeaderFileInput
+            clientId={clientId}
+            configurationId={configurationId}
+            template={template}
+            fileName={step.headerFileName}
+            hasFile={!!step.headerFileId}
+            onUploaded={({ fileId, fileName }) => onChange({ headerFileId: fileId, headerFileName: fileName })}
+          />
           {template?.parameters.some((parameter) => parameter.source === "BUTTON") && (
             <p className="text-destructive text-sm">Modelos com link dinâmico ou código no botão não servem para o follow-up.</p>
           )}

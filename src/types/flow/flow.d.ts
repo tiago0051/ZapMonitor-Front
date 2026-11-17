@@ -93,6 +93,9 @@ type FlowFollowUpStep = {
   templateId?: string;
   // { "body.1": "contact_name" } ou texto fixo
   templateVariables?: Record<string, string>;
+  // Arquivo do cabeçalho (imagem, vídeo ou PDF) quando o modelo tem mídia no cabeçalho
+  headerFileId?: string;
+  headerFileName?: string;
 };
 
 type FlowFollowUpNoReplyAction = "none" | "queue" | "end";
