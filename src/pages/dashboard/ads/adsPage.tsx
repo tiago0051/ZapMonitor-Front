@@ -48,6 +48,7 @@ import { AdsInstagramVideos } from "./video/adsInstagramVideos";
 import { AdsPilot } from "./pilot/adsPilot";
 import { AdStatusToggle } from "./components/adStatusToggle";
 import { AdBudgetEditor } from "./components/adBudgetEditor";
+import { SpendCapBar } from "./components/spendCapBar";
 import { AdsLearnings } from "./learnings/adsLearnings";
 import { AdsExperiments } from "./experiments/adsExperiments";
 import { AdsStrategyWiki } from "./wiki/adsStrategyWiki";
@@ -452,6 +453,8 @@ export const AdsPage = () => {
           </Button>
         )}
       </div>
+
+      <SpendCapBar accountId={currentAccount.id} />
 
       <Tabs value={activeTab} onValueChange={setTab} className="flex flex-col gap-0 md:min-h-0 md:flex-1 md:overflow-hidden">
         {/* Grupos em cima e as abas do grupo embaixo; no celular a barra fica presa no topo e rola para o lado */}

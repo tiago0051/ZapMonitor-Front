@@ -358,6 +358,23 @@ type AdGuardrails = {
   allowWeekends: boolean;
   // Regras automáticas podem aplicar sem aprovação
   allowAutoApply: boolean;
+  // Teto de gasto da conta (verba diária somada e gasto previsto do mês), na moeda dela; nulo = sem teto
+  maxAccountDailySpend: number | null;
+  maxAccountMonthlySpend: number | null;
+};
+
+// Gasto do mês da conta contra o teto das travas
+type AdSpendStatus = {
+  currency: string;
+  // Até ontem
+  monthSpend: number;
+  // Verba diária somada dos itens ligados
+  dailyBudget: number;
+  // Dias que faltam no mês, contando hoje
+  daysLeft: number;
+  forecastMonthSpend: number;
+  maxAccountDailySpend: number | null;
+  maxAccountMonthlySpend: number | null;
 };
 
 type AdRuleMetric =

@@ -316,6 +316,11 @@ export const metaAdsService = {
     return response.data;
   },
 
+  findSpendStatus: async ({ params }: MetaAdsAccountParams): Promise<AdSpendStatus> => {
+    const response = await api.get<AdSpendStatus>(`/client/${params.clientId}/meta-ads/account/${params.accountId}/spend-status`);
+    return response.data;
+  },
+
   saveGuardrails: async ({ params, body }: MetaAdsClientParams & { body: AdGuardrails }): Promise<AdGuardrails> => {
     const response = await api.put(`/client/${params.clientId}/meta-ads/guardrails`, body);
     return response.data;
