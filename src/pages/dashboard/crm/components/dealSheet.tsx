@@ -14,7 +14,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PhoneOff, RotateCcw, UserRound } from "lucide-react";
-import { useState, type FC } from "react";
+import { useEffect, useRef, useState, type FC } from "react";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes";
 import { Link } from "react-router";
 import { toast } from "sonner";
 import {
@@ -47,20 +48,70 @@ const statusVariant: Record<DealStatus, string> = {
   LOST: "bg-red-50 text-red-700",
 };
 
-// A key do pai recria o formulário quando o negócio muda no servidor, trazendo os valores salvos
-const DealDetailsForm: FC<{ deal: Deal }> = ({ deal }) => {
+type DetailsValues = { title: string; value: string; ownerUserId: string; notes: string; custom: Record<string, string> };
+
+const toDetailsValues = (deal: Deal, fields: CrmField[]): DetailsValues => ({
+  title: deal.title,
+  value: deal.value === null ? "" : String(deal.value),
+  ownerUserId: deal.owner?.id ?? "",
+  notes: deal.notes ?? "",
+  custom: toCustomFieldsForm(fields, deal.customFields),
+});
+
+type BaseField = Exclude<keyof DetailsValues, "custom">;
+const BASE_FIELDS: BaseField[] = ["title", "value", "ownerUserId", "notes"];
+
+/**
+ * O formulário guarda só o que a pessoa mexeu; o resto acompanha o servidor. Assim um refetch (tempo real, IA,
+ * troca de etapa) não apaga o que foi digitado e os campos não tocados continuam atualizados.
+ */
+const DealDetailsForm: FC<{ deal: Deal; onDirtyChange: (dirty: boolean) => void }> = ({ deal, onDirtyChange }) => {
   const { client } = useClientContext();
   const { members, activeFields } = useCrmOptions();
   const actions = useDealActions();
+
+  const server = toDetailsValues(deal, activeFields);
+  const [edits, setEdits] = useState<Partial<Record<BaseField, string>>>({});
   // Só os campos editados vão para a API, para nada ser apagado se a lista de campos chegar depois do formulário
   const [customEdits, setCustomEdits] = useState<Record<string, string>>({});
-  const customValues = { ...toCustomFieldsForm(activeFields, deal.customFields), ...customEdits };
+  // Valores do servidor quando a edição começou, para avisar se alguém mudou o negócio no meio
+  const [snapshot, setSnapshot] = useState<DetailsValues | null>(null);
+
+  const title = edits.title ?? server.title;
+  const value = edits.value ?? server.value;
+  const ownerUserId = edits.ownerUserId ?? server.ownerUserId;
+  const notes = edits.notes ?? server.notes;
+  const customValues = { ...server.custom, ...customEdits };
   const editedFields = activeFields.filter((field) => field.id in customEdits);
 
-  const [title, setTitle] = useState(deal.title);
-  const [value, setValue] = useState(deal.value === null ? "" : String(deal.value));
-  const [ownerUserId, setOwnerUserId] = useState(deal.owner?.id ?? "");
-  const [notes, setNotes] = useState(deal.notes ?? "");
+  const isDirty =
+    BASE_FIELDS.some((key) => edits[key] !== undefined && edits[key] !== server[key]) ||
+    editedFields.some((field) => customEdits[field.id] !== server.custom[field.id]);
+  const changedOnServer =
+    isDirty &&
+    !!snapshot &&
+    (BASE_FIELDS.some((key) => snapshot[key] !== server[key]) ||
+      activeFields.some((field) => (snapshot.custom[field.id] ?? "") !== (server.custom[field.id] ?? "")));
+
+  const onDirtyChangeRef = useRef(onDirtyChange);
+  useEffect(() => {
+    onDirtyChangeRef.current = onDirtyChange;
+  });
+  useEffect(() => {
+    onDirtyChangeRef.current(isDirty);
+  }, [isDirty]);
+  useEffect(() => () => onDirtyChangeRef.current(false), []);
+
+  const startEditing = () => setSnapshot((current) => current ?? server);
+  const editField = (key: BaseField, next: string) => {
+    startEditing();
+    setEdits((current) => ({ ...current, [key]: next }));
+  };
+  const resetEdits = () => {
+    setEdits({});
+    setCustomEdits({});
+    setSnapshot(null);
+  };
 
   const parsedValue = value.trim() === "" ? null : Number(value.replace(",", "."));
   const isValueInvalid = parsedValue !== null && (Number.isNaN(parsedValue) || parsedValue < 0);
@@ -79,15 +130,31 @@ const DealDetailsForm: FC<{ deal: Deal }> = ({ deal }) => {
           ...(editedFields.length > 0 && { customFields: toCustomFieldsBody(editedFields, customEdits) }),
         },
       },
-      { onSuccess: () => toast.success("Negócio atualizado") },
+      {
+        onSuccess: () => {
+          resetEdits();
+          toast.success("Negócio atualizado");
+        },
+      },
     );
   };
 
   return (
     <section className="space-y-3">
+      {changedOnServer && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50/60 px-3 py-2 text-sm text-amber-800 dark:border-amber-700/60 dark:bg-amber-950/30 dark:text-amber-300"
+        >
+          <span>Atualizado por outra pessoa enquanto você editava.</span>
+          <Button size="sm" variant="outline" onClick={resetEdits}>
+            Recarregar
+          </Button>
+        </div>
+      )}
       <div className="grid gap-2">
         <Label htmlFor="deal-title">Título</Label>
-        <Input id="deal-title" value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} />
+        <Input id="deal-title" value={title} onChange={(event) => editField("title", event.target.value)} maxLength={120} />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="deal-value">Valor (R$)</Label>
@@ -95,14 +162,14 @@ const DealDetailsForm: FC<{ deal: Deal }> = ({ deal }) => {
           id="deal-value"
           inputMode="decimal"
           value={value}
-          onChange={(event) => setValue(event.target.value)}
+          onChange={(event) => editField("value", event.target.value)}
           placeholder="0,00"
           aria-invalid={isValueInvalid}
         />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="deal-owner">Responsável</Label>
-        <select id="deal-owner" value={ownerUserId} onChange={(event) => setOwnerUserId(event.target.value)} className={crmSelectClassName}>
+        <select id="deal-owner" value={ownerUserId} onChange={(event) => editField("ownerUserId", event.target.value)} className={crmSelectClassName}>
           <option value="">Sem responsável</option>
           {members.map((member) => (
             <option key={member.id} value={member.id}>
@@ -116,7 +183,7 @@ const DealDetailsForm: FC<{ deal: Deal }> = ({ deal }) => {
         <textarea
           id="deal-notes"
           value={notes}
-          onChange={(event) => setNotes(event.target.value)}
+          onChange={(event) => editField("notes", event.target.value)}
           maxLength={5000}
           className={crmTextareaClassName}
         />
@@ -128,7 +195,10 @@ const DealDetailsForm: FC<{ deal: Deal }> = ({ deal }) => {
             id={`deal-field-${field.id}`}
             field={field}
             value={customValues[field.id] ?? ""}
-            onChange={(value) => setCustomEdits((edits) => ({ ...edits, [field.id]: value }))}
+            onChange={(value) => {
+              startEditing();
+              setCustomEdits((current) => ({ ...current, [field.id]: value }));
+            }}
           />
         </div>
       ))}
@@ -144,6 +214,11 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
   const baseUrl = useBaseUrl();
   const { pipelines, allServiceGroups } = useCrmOptions();
   const actions = useDealActions();
+
+  // Fechar a ficha com alterações não salvas pergunta antes
+  const [isFormDirty, setIsFormDirty] = useState(false);
+  const { guard, guardDialog } = useUnsavedChangesGuard(isFormDirty);
+  const close = () => guard(onClose);
 
   const dealQuery = useQuery({
     queryKey: ["crm", "deals", "detail", dealId],
@@ -191,7 +266,7 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
   };
 
   return (
-    <Sheet open={!!dealId} onOpenChange={(open) => !open && onClose()}>
+    <Sheet open={!!dealId} onOpenChange={(open) => !open && close()}>
       <SheetContent className="w-full overflow-y-auto sm:max-w-md">
         <SheetHeader>
           <SheetTitle className="pr-6 break-words">{deal?.title ?? "Negócio"}</SheetTitle>
@@ -228,7 +303,7 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
               )}
               {deal.contact && (
                 // Com a janela no rodapé, a ficha fecha para a conversa ficar visível
-                <OpenChatButton contact={deal.contact} className="ml-auto" onOpened={onClose} />
+                <OpenChatButton contact={deal.contact} className="ml-auto" onOpened={close} />
               )}
             </div>
 
@@ -341,7 +416,7 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
                   onAccepted={() => queryClient.invalidateQueries({ queryKey: ["crm", "deals"] })}
                 />
 
-                <DealDetailsForm key={`${deal.id}-${deal.updatedAt}`} deal={deal} />
+                <DealDetailsForm key={deal.id} deal={deal} onDirtyChange={setIsFormDirty} />
               </TabsContent>
 
               <TabsContent value="tasks" forceMount className="data-[state=inactive]:hidden">
@@ -371,6 +446,7 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
           </div>
         )}
         {actions.dialogs}
+        {guardDialog}
       </SheetContent>
     </Sheet>
   );
