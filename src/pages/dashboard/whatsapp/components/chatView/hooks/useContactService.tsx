@@ -1,5 +1,6 @@
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useSocketContext } from "@/context/SocketContext/socketContext";
+import { useSocketReconnect } from "@/context/SocketContext/useSocketReconnect";
 import { whatsappService } from "@/services/api/whatsappService";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
@@ -22,6 +23,9 @@ export const useContactService = ({ contactId }: UseContactServiceProps) => {
         },
       }),
   });
+
+  // O atendimento pode ter mudado (assumido, transferido, encerrado) enquanto o socket estava caído
+  useSocketReconnect(() => findContactServiceByContact.refetch());
 
   useEffect(() => {
     const handleServiceUpdate = () => {

@@ -2,6 +2,7 @@ import { globalContants } from "@/contants/globalContants";
 import { WhatsappServiceStatus } from "@/enums/whatsappServiceStatus.enum";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useSocketContext } from "@/context/SocketContext/socketContext";
+import { useSocketReconnect } from "@/context/SocketContext/useSocketReconnect";
 import { useUserContext } from "@/context/UserContext/userContext";
 import { whatsappService } from "@/services/api/whatsappService";
 import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
@@ -68,13 +69,11 @@ export const useContactsListService = ({ search, tab, serviceGroupId, enabled = 
 
   const refetchStats = contactsStatsQuery.refetch;
 
-  // Refaz as requisições ao (re)conectar o socket
-  useEffect(() => {
-    if (!isConnected) return;
-
+  // Refaz as requisições ao reconectar o socket: atualizações emitidas enquanto ele estava caído se perderam
+  useSocketReconnect(() => {
     queryClient.invalidateQueries({ queryKey: ["whatsapp", "contacts"] });
     queryClient.invalidateQueries({ queryKey: ["whatsapp", "contactsStats"] });
-  }, [isConnected, queryClient]);
+  });
 
   useEffect(() => {
     const isTabQueue = tab === "queue";

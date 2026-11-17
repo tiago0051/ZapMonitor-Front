@@ -1,5 +1,6 @@
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useSocketContext } from "@/context/SocketContext/socketContext";
+import { useSocketReconnect } from "@/context/SocketContext/useSocketReconnect";
 import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
 import { whatsappService } from "@/services/api/whatsappService";
 import { useQuery } from "@tanstack/react-query";
@@ -27,6 +28,9 @@ export const useDockContact = (contact: DealContact) => {
   });
 
   const { refetch } = query;
+
+  // O prazo de resposta pode ter sido renovado enquanto o socket estava caído
+  useSocketReconnect(() => refetch());
 
   useEffect(() => {
     const handleNewMessage = (message: WhatsappMessage) => {

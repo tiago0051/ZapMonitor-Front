@@ -7,6 +7,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { whatsappService } from "@/services/api/whatsappService";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useSocketContext } from "@/context/SocketContext/socketContext";
+import { useSocketReconnect } from "@/context/SocketContext/useSocketReconnect";
 import { useEffect } from "react";
 import { WhatsappMessageContentType } from "@/enums/whatsappMessageContentType.enum";
 import { IsTopScrolled } from "@/utils/scroll";
@@ -90,6 +91,9 @@ export function InfoPanel({
     getNextPageParam: (lastPage, allPages) => (lastPage.canNextPage ? allPages.length + 1 : undefined),
     initialPageParam: 1,
   });
+
+  // Histórico (e o resumo, que vem dele) podem ter mudado enquanto o socket estava caído
+  useSocketReconnect(() => findAllServicesHistoryByContact.refetch());
 
   useEffect(() => {
     const handleServiceUpdate = () => {
