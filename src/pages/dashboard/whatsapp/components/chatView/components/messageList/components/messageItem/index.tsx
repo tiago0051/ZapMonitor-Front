@@ -317,7 +317,8 @@ const ChatMessageItem: FC<MessageItemProps> = ({ message, contactId, contactName
           <span className="text-xs">{format(message.createdAt, "PPp")}</span>
           {message.type === WhatsappMessageType.OUTGOING && (
             <>
-              {status === WhatsappMessageStatus.UNKNOWN || (status === WhatsappMessageStatus.EXECUTED && <IoTimeOutline />)}
+              {/* Sem status confirmado ainda: relógio, como "enviando" */}
+              {(status === WhatsappMessageStatus.UNKNOWN || status === WhatsappMessageStatus.EXECUTED) && <IoTimeOutline />}
               {status === WhatsappMessageStatus.SENT && <IoCheckmarkOutline />}
               {status === WhatsappMessageStatus.DELIVERED && <IoCheckmarkDoneOutline />}
               {status === WhatsappMessageStatus.READ && <IoCheckmarkDoneOutline className="text-blue-500" />}

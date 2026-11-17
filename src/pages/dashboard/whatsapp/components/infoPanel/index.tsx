@@ -7,11 +7,13 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { whatsappService } from "@/services/api/whatsappService";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useSocketContext } from "@/context/SocketContext/socketContext";
+import { useSocketReconnect } from "@/context/SocketContext/useSocketReconnect";
 import { useEffect } from "react";
 import { WhatsappMessageContentType } from "@/enums/whatsappMessageContentType.enum";
 import { IsTopScrolled } from "@/utils/scroll";
 import { format } from "date-fns";
 import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
+import { contactDisplayName } from "../../contactDisplayName";
 
 type MessageFileContent = { url: string; filename: string };
 
@@ -90,6 +92,9 @@ export function InfoPanel({
     getNextPageParam: (lastPage, allPages) => (lastPage.canNextPage ? allPages.length + 1 : undefined),
     initialPageParam: 1,
   });
+
+  // Histórico (e o resumo, que vem dele) podem ter mudado enquanto o socket estava caído
+  useSocketReconnect(() => findAllServicesHistoryByContact.refetch());
 
   useEffect(() => {
     const handleServiceUpdate = () => {
@@ -205,7 +210,9 @@ export function InfoPanel({
         <div className="flex items-center gap-3">
           <ContactAvatar contact={selected} size="sm" />
           <div className="min-w-0">
-            <p className="text-foreground truncate text-xs font-semibold">{selected.name}</p>
+            <p className="text-foreground truncate text-xs font-semibold">
+              {contactDisplayName(selected, formatPhoneNumber(selected.phoneNumber))}
+            </p>
             <p className="text-muted-foreground text-[11px]">{formatPhoneNumber(selected.phoneNumber)}</p>
           </div>
         </div>

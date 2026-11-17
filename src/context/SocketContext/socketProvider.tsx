@@ -4,12 +4,15 @@ import { io } from "socket.io-client";
 import { useClientContext } from "../ClientContext/clientContext";
 
 interface SocketProviderProps {
+  // Sem atendimento nem CRM o painel não precisa de tempo real: o socket fica desligado
+  enabled?: boolean;
   children: React.ReactNode;
 }
 
-export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
-  const URL = import.meta.env.VITE_API_URL;
+const URL = import.meta.env.VITE_API_URL;
 
+/** Um socket só para o painel do cliente inteiro (atendimento, ligações, avisos e CRM). */
+export const SocketProvider: React.FC<SocketProviderProps> = ({ enabled = true, children }) => {
   const { client } = useClientContext();
 
   const socket = useMemo(
@@ -20,10 +23,12 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
             path: `${URL.replace(/\/$/, "")}/socket.io`,
             reconnection: true,
             withCredentials: true,
+            autoConnect: false,
           })
         : io(URL, {
             reconnection: true,
             withCredentials: true,
+            autoConnect: false,
           }),
     [],
   );
@@ -46,7 +51,18 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
     };
-  }, []);
+  }, [socket]);
+
+  // Conecta só enquanto for útil; sair do painel fecha a conexão
+  useEffect(() => {
+    if (!enabled) return;
+
+    socket.connect();
+    return () => {
+      socket.disconnect();
+      setIsConnected(false);
+    };
+  }, [enabled, socket]);
 
   useEffect(() => {
     if (isConnected) {

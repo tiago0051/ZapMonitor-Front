@@ -1,4 +1,5 @@
 import axios from "axios";
+import { currentReturnTo, withReturnTo } from "@/utils/returnTo";
 
 // Resposta do back quando o plano do tenant venceu e o usuário perdeu o acesso
 export const PLAN_EXPIRED_CODE = "PLAN_EXPIRED";
@@ -70,7 +71,8 @@ api.interceptors.response.use(
       } catch (refreshError) {
         console.error("Failed to refresh token:", refreshError);
 
-        window.location.pathname = "/auth/logout";
+        // Sessão vencida: sai, mas guarda a tela atual para voltar a ela depois do login
+        window.location.href = withReturnTo("/auth/logout", currentReturnTo());
         return Promise.reject(refreshError);
       }
     }

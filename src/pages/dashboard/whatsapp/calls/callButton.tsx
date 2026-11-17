@@ -17,6 +17,7 @@ import { Loader2, Phone } from "lucide-react";
 import { useState, type FC } from "react";
 import { toast } from "sonner";
 import { useCallContext } from "./callContext";
+import { contactDisplayName } from "../contactDisplayName";
 
 // O atendimento vem da mesma consulta que libera o envio de mensagens: atualiza assim que o atendente assume
 type CallButtonProps = { contact: WhatsappContactMessage; contactService?: WhatsappContactService };
@@ -39,7 +40,7 @@ export const CallButton: FC<CallButtonProps> = ({ contact, contactService }) => 
 
   const configuration = configurationsQuery.data?.items.find((item) => item.id === contact.whatsappConfigurationId);
   const params = { clientId: client.id, contactId: contact.id, configurationId: contact.whatsappConfigurationId };
-  const contactName = contact.surname?.trim() || contact.name?.trim() || contact.phoneNumber;
+  const contactName = contactDisplayName(contact, contact.phoneNumber);
   const isAttending = !!contactService?.canBeSentMessage;
 
   const call = useMutation({

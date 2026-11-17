@@ -21,15 +21,16 @@ function endedMessage(call: WhatsappCall) {
 }
 
 /**
- * Ligações pelo WhatsApp na tela de atendimento. O áudio vai direto entre o navegador e a Meta (WebRTC); a API só
- * repassa a oferta e a resposta de áudio. Uma ligação recebida toca para todos com a permissão; o primeiro que atende
- * fica com ela. Sair do atendimento desliga a ligação em andamento.
+ * Ligações pelo WhatsApp em qualquer tela do painel do cliente. O áudio vai direto entre o navegador e a Meta (WebRTC);
+ * a API só repassa a oferta e a resposta de áudio. Uma ligação recebida toca para todos com a permissão; o primeiro que
+ * atende fica com ela. Sair do painel do cliente (ou trocar de cliente) desliga a ligação em andamento.
  */
 export const CallProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const { client, can } = useClientContext();
   const { user } = useUserContext();
   const { socket, isConnected } = useSocketContext();
-  const canUseCalls = can("whatsapp.calls");
+  // Ligação é parte do atendimento: sem acesso às conversas, não toca nem liga
+  const canUseCalls = can("whatsapp.calls") && can("whatsapp.chat");
 
   const [incomingCalls, setIncomingCalls] = useState<WhatsappIncomingCall[]>([]);
   const [ignoredCallIds, setIgnoredCallIds] = useState<string[]>([]);
@@ -297,7 +298,7 @@ export const CallProvider: FC<{ children: ReactNode }> = ({ children }) => {
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [activeCall]);
 
-  // Sair do atendimento desliga: o áudio não sobrevive fora desta tela
+  // Sair do painel do cliente desliga: o áudio não sobrevive fora dele
   useEffect(
     () => () => {
       const callId = activeCallRef.current?.call?.id;

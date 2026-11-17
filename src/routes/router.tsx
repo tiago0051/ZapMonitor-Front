@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router";
 import { LoginRouter } from "./loginRouter";
 import { DashboardRouter } from "./dashboardRouter";
 import { ImplanterRouter } from "./implanterRouter";
@@ -8,6 +8,7 @@ import { useUserContext } from "@/context/UserContext/userContext";
 import { PrivacyPolicy } from "@/pages/legal/privacyPolicy";
 import { TermsOfService } from "@/pages/legal/termsOfService";
 import { TikTokAdsCallback } from "@/pages/tiktokAds/tiktokAdsCallback";
+import { withReturnTo } from "@/utils/returnTo";
 
 export const Router: FC = () => {
   return (
@@ -39,6 +40,9 @@ const PublicRouter: FC = () => {
 
 const PrivateRouter: FC = () => {
   const { isLogged } = useUserContext();
+  const location = useLocation();
+  // Sem sessão: guarda a tela pedida (ex.: conversa aberta pelo aviso) para voltar a ela depois do login
+  const loginUrl = withReturnTo("/auth/login", `${location.pathname}${location.search}${location.hash}`);
 
   return (
     <Routes>
@@ -50,7 +54,7 @@ const PrivateRouter: FC = () => {
           <Route path="*" element={<Navigate to="/auth/select_client" />} />
         </>
       ) : (
-        <Route path="*" element={<Navigate to={"/auth/login"} />} />
+        <Route path="*" element={<Navigate to={loginUrl} replace />} />
       )}
     </Routes>
   );

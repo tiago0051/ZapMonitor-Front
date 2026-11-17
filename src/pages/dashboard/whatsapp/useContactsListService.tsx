@@ -1,6 +1,8 @@
 import { globalContants } from "@/contants/globalContants";
+import { WhatsappServiceStatus } from "@/enums/whatsappServiceStatus.enum";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useSocketContext } from "@/context/SocketContext/socketContext";
+import { useSocketReconnect } from "@/context/SocketContext/useSocketReconnect";
 import { useUserContext } from "@/context/UserContext/userContext";
 import { whatsappService } from "@/services/api/whatsappService";
 import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
@@ -24,6 +26,7 @@ export const useContactsListService = ({ search, tab, serviceGroupId, enabled = 
   const { client } = useClientContext();
   const { socket, isConnected } = useSocketContext();
   const { user } = useUserContext();
+  const userId = user?.id;
 
   const [searchDebounced] = useDebounceValue(search, globalContants.DEBOUNCE_DELAY);
 
@@ -66,18 +69,20 @@ export const useContactsListService = ({ search, tab, serviceGroupId, enabled = 
 
   const refetchStats = contactsStatsQuery.refetch;
 
-  // Refaz as requisições ao (re)conectar o socket
-  useEffect(() => {
-    if (!isConnected) return;
-
+  // Refaz as requisições ao reconectar o socket: atualizações emitidas enquanto ele estava caído se perderam
+  useSocketReconnect(() => {
     queryClient.invalidateQueries({ queryKey: ["whatsapp", "contacts"] });
     queryClient.invalidateQueries({ queryKey: ["whatsapp", "contactsStats"] });
-  }, [isConnected, queryClient]);
+  });
 
   useEffect(() => {
     const isTabQueue = tab === "queue";
     const isTabMine = tab === "mine";
     const queryKey = ["whatsapp", "contacts", tab, searchDebounced, serviceGroupId];
+
+    // Mesmo critério da aba Meus no back (em atendimento humano com este usuário): pelo id, não pelo nome, que pode repetir
+    const isMine = (contact: WhatsappContactMessage) =>
+      contact.serviceStatus === WhatsappServiceStatus.HUMAN_ACTIVE && !!userId && contact.userIdInService === userId;
 
     // Contatos sem grupo aparecem na fila de todos os grupos
     const isInSelectedServiceGroup = (contact: WhatsappContactMessage) =>
@@ -101,7 +106,7 @@ export const useContactsListService = ({ search, tab, serviceGroupId, enabled = 
 
       if (hasContact) {
         const doRemoveFromQueueTab = isTabQueue && (!!contact.serviceRepresentative || !isInSelectedServiceGroup(contact));
-        const doRemoveFromMineTab = isTabMine && contact.serviceRepresentative !== user?.name;
+        const doRemoveFromMineTab = isTabMine && !isMine(contact);
 
         if (doRemoveFromQueueTab || doRemoveFromMineTab) {
           updatePages((items) => items.filter((item) => item.id !== contact.id));
@@ -115,7 +120,7 @@ export const useContactsListService = ({ search, tab, serviceGroupId, enabled = 
       }
 
       const doAddContactInQueueTab = isTabQueue && !contact.serviceRepresentative && isInSelectedServiceGroup(contact);
-      const doAddContactInMineTab = isTabMine && !!contact.serviceRepresentative && contact.serviceRepresentative === user?.name;
+      const doAddContactInMineTab = isTabMine && isMine(contact);
 
       // A fila é ordenada por chegada: com páginas por carregar, o contato novo aparece quando a rolagem chegar ao fim
       if ((doAddContactInQueueTab || doAddContactInMineTab) && !hasMorePages) {
@@ -129,7 +134,7 @@ export const useContactsListService = ({ search, tab, serviceGroupId, enabled = 
     return () => {
       socket.off("contacts:update", handleContactUpdate);
     };
-  }, [isConnected, socket, tab, searchDebounced, serviceGroupId, queryClient, refetchStats, user]);
+  }, [isConnected, socket, tab, searchDebounced, serviceGroupId, queryClient, refetchStats, userId]);
 
   const queueContactsLength = contactsStatsQuery.data?.queueCount ?? 0;
   const mineContactsLength = contactsStatsQuery.data?.myCount ?? 0;

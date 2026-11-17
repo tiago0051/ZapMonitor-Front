@@ -128,6 +128,12 @@ type FindAllWhatsappContactMessagesRequestQuery = PaginateRequestQuery & {
 };
 //#endregion
 
+//#region findContact
+type FindWhatsappContactMessageRequestData = {
+  params: { clientId: string; contactId: string };
+};
+//#endregion
+
 //#region findAllContactsStats
 type FindAllWhatsappContactMessagesStatsRequestData = {
   params: FindAllWhatsappContactMessagesStatsRequestParams;

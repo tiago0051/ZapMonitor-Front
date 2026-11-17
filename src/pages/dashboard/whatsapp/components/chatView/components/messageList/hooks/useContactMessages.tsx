@@ -1,5 +1,6 @@
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useSocketContext } from "@/context/SocketContext/socketContext";
+import { useSocketReconnect } from "@/context/SocketContext/useSocketReconnect";
 import { whatsappService } from "@/services/api/whatsappService";
 import { IsTopScrolled } from "@/utils/scroll";
 import { useInfiniteQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
@@ -37,6 +38,11 @@ export const useContactMessages = ({ contact }: UseContactMessagesProps) => {
       }),
     getNextPageParam: (lastPage, allPages) => (lastPage.canNextPage ? allPages.length + 1 : undefined),
     initialPageParam: 1,
+  });
+
+  // Mensagens que chegaram com o socket caído não vieram pelo evento: busca a conversa de novo
+  useSocketReconnect(() => {
+    queryClient.invalidateQueries({ queryKey: [`contact-${contact.id}`, "findAllWhatsappMessagesByContact", contact.id] });
   });
 
   const scrollRef = useRef<HTMLDivElement>(null);

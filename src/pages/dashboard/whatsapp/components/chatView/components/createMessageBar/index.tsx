@@ -14,6 +14,7 @@ import { FiFile, FiImage, FiMic, FiPaperclip, FiSend, FiStopCircle, FiX } from "
 import { useReactMediaRecorder } from "react-media-recorder";
 import { toast } from "sonner";
 import { MessageReplyPreview } from "../messageReplyPreview";
+import { contactDisplayName } from "@/pages/dashboard/whatsapp/contactDisplayName";
 
 const formatFileSize = (bytes: number) => {
   if (bytes < 1024) return `${bytes} B`;
@@ -281,7 +282,7 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
     }
   }, [error]);
 
-  const contactName = contact.surname?.trim() || contact.name?.trim() || "Contato";
+  const contactName = contactDisplayName(contact, "Contato");
 
   return (
     <div className="flex flex-col gap-2 pt-2">

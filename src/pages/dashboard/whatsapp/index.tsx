@@ -1,4 +1,4 @@
-import { EmptyState, ErrorState } from "@/components/state-message";
+import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
 import { useEffect, useRef, useState } from "react";
 import { MessageSquare, Search, X, ArrowLeft, Users, WifiOff } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -12,11 +12,11 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useContactsListService } from "./useContactsListService";
 import { useServiceGroupSelection } from "./useServiceGroupSelection";
 import { NotificationSettings } from "./notifications/notificationSettings";
-import { useNewContactNotifications } from "./notifications/useNewContactNotifications";
+import { OPEN_CONTACT_REQUEST_EVENT, type OpenContactRequest } from "./notifications/openContactRequest";
 import { useSearchParams } from "react-router";
-import { whatsappService } from "@/services/api/whatsappService";
-import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes";
+import { useOpenContact } from "./useOpenContact";
+import { toast } from "sonner";
 
 // ── Shared sub-panels ────────────────────────────────────────────────────────
 
@@ -44,12 +44,12 @@ function LoadMoreSentinel({ onVisible }: { onVisible: () => void }) {
 function ContactListPanel({
   tab,
   setTab,
-  selected,
+  selectedId,
   onSelectContact,
 }: {
   tab: Tab;
   setTab: (t: Tab) => void;
-  selected: WhatsappContactMessage | null;
+  selectedId: string | null;
   onSelectContact: (contact: WhatsappContactMessage) => void;
 }) {
   const [search, setSearch] = useState("");
@@ -84,7 +84,7 @@ function ContactListPanel({
     return (
       <>
         {contacts.items.map((c) => (
-          <ContactCard key={c.id} contact={c} active={selected?.id === c.id} highlight={search} onClick={() => onSelectContact(c)} />
+          <ContactCard key={c.id} contact={c} active={selectedId === c.id} highlight={search} onClick={() => onSelectContact(c)} />
         ))}
         {contacts.isFetchingNextPage && Array.from({ length: 3 }).map((_, index) => <ContactCardSkeleton key={`next-${index}`} />)}
         {contacts.hasNextPage && !contacts.isFetchingNextPage && <LoadMoreSentinel onVisible={() => contacts.fetchNextPage()} />}
@@ -238,29 +238,51 @@ const mobileViewSlideVariants = {
   exit: (direction: number) => ({ x: direction > 0 ? "-100%" : "100%" }),
 };
 
+const isTab = (value: string | null): value is Tab => value === "queue" || value === "mine" || value === "all";
+
 export function Whatsapp() {
   const { isConnected } = useSocketContext();
   const isMobile = useIsMobile();
 
+  // A conversa aberta fica na URL (?contactId=): recarregar, links do CRM e o clique no aviso abrem a mesma conversa
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedId = searchParams.get("contactId");
+  const openContact = useOpenContact(selectedId);
+  const selected = openContact.contact;
+
   const [tab, setTab] = useState<Tab>("queue");
-  const [selected, setSelected] = useState<WhatsappContactMessage | null>(null);
   const [rightPanel, setRightPanel] = useState<InfoPanelTab>("summary");
-  const [[mobileView, mobileViewDirection], setMobileViewState] = useState<[MobileView, number]>(["list", 0]);
+  const [[mobileView, mobileViewDirection], setMobileViewState] = useState<[MobileView, number]>(() => [selectedId ? "chat" : "list", 0]);
 
   // A ficha (aba "Ficha" do painel) avisa se tem edição pendente; trocar de aba/contato a desmontaria
   const [isProfileDirty, setIsProfileDirty] = useState(false);
   const { guard, guardDialog } = useUnsavedChangesGuard(isProfileDirty);
 
   const goToMobileView = (view: MobileView) => {
-    setMobileViewState(([current]) => [view, mobileViewIndex[view] > mobileViewIndex[current] ? 1 : -1]);
+    setMobileViewState((current) => (current[0] === view ? current : [view, mobileViewIndex[view] > mobileViewIndex[current[0]] ? 1 : -1]));
   };
+
+  // Troca só a conversa na URL, mantendo o resto; "tab" e "phone" são dicas de links externos, já usadas
+  const selectContactId = (contactId: string | null) =>
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        if (contactId) next.set("contactId", contactId);
+        else next.delete("contactId");
+        next.delete("tab");
+        next.delete("phone");
+        return next;
+      },
+      { replace: true },
+    );
 
   const handleSelectContact = (contact: WhatsappContactMessage) => {
     const open = () => {
-      setSelected(contact);
+      openContact.seed(contact);
+      selectContactId(contact.id);
       goToMobileView("chat");
     };
-    if (contact.id === selected?.id) return open();
+    if (contact.id === selectedId) return open();
     guard(open);
   };
 
@@ -269,36 +291,80 @@ export function Whatsapp() {
     guard(() => setRightPanel(panel));
   };
 
-  // Links de fora da tela (como o card do CRM) abrem a conversa do contato pela aba Todos
-  const { client } = useClientContext();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const linkedContactId = searchParams.get("contactId");
-  const linkedPhone = searchParams.get("phone");
+  // Conversa trocada pela URL (link, aviso, conversa não encontrada): no celular, mostra a conversa ou volta à lista.
+  // Ajuste durante a renderização, comparando com o id anterior, para não renderizar duas vezes
+  const [prevSelectedId, setPrevSelectedId] = useState(selectedId);
+  if (selectedId !== prevSelectedId) {
+    setPrevSelectedId(selectedId);
+    goToMobileView(selectedId ? "chat" : "list");
+  }
 
+  // Links de fora da tela: "tab" escolhe a aba da lista; links antigos com "phone" (CRM, ficha) usam a aba Todos
+  const linkedTab = searchParams.get("tab");
+  const hasLinkedPhone = searchParams.has("phone");
+  const linkedTabHint: Tab | null = isTab(linkedTab) ? linkedTab : hasLinkedPhone ? "all" : null;
+  const linkedTabHintKey = linkedTabHint && `${linkedTabHint}:${selectedId}`;
+  const [appliedTabHintKey, setAppliedTabHintKey] = useState<string | null>(null);
+  if (linkedTabHintKey !== appliedTabHintKey) {
+    setAppliedTabHintKey(linkedTabHintKey);
+    if (linkedTabHint) setTab(linkedTabHint);
+  }
+
+  // Dica já usada: sai da URL, para recarregar não trocar a aba de novo
   useEffect(() => {
-    if (!linkedContactId || !linkedPhone) return;
+    if (!linkedTab && !hasLinkedPhone) return;
 
-    whatsappService
-      .findAllContacts({ params: { clientId: client.id }, queries: { page: 1, take: 10, tab: "all", text: linkedPhone } })
-      .then((response) => {
-        const contact = response.items.find((item) => item.id === linkedContactId);
-        if (!contact) return;
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        next.delete("tab");
+        next.delete("phone");
+        return next;
+      },
+      { replace: true },
+    );
+  }, [linkedTab, hasLinkedPhone, setSearchParams]);
 
-        setTab("all");
-        handleSelectContact(contact);
-      })
-      .finally(() => setSearchParams({}, { replace: true }));
-  }, [linkedContactId, linkedPhone]);
+  // Conversa do link não existe (excluída, de outro cliente ou link quebrado): avisa e volta para a lista
+  const { isNotFound } = openContact;
+  useEffect(() => {
+    if (!isNotFound) return;
 
-  const { serviceGroups } = useServiceGroupSelection();
-  useNewContactNotifications({
-    serviceGroupIds: serviceGroups.map((group) => group.id),
-    selectedContactId: selected?.id,
-    onOpenContact: (contact, contactTab) => {
+    toast.error("Conversa não encontrada", { description: "Ela pode ter sido excluída ou o link não é deste cliente." });
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        next.delete("contactId");
+        return next;
+      },
+      { replace: true },
+    );
+  }, [isNotFound, setSearchParams]);
+
+  // Avisos de conversa (no layout do painel) pedem para abrir aqui, passando pela proteção de edição não salva
+  const openRequestHandler = useRef<(request: OpenContactRequest) => void>(() => undefined);
+  useEffect(() => {
+    openRequestHandler.current = ({ contact, tab: contactTab }) => {
       setTab(contactTab);
       handleSelectContact(contact);
-    },
+    };
   });
+  useEffect(() => {
+    const handleOpenRequest = (event: Event) => {
+      event.preventDefault();
+      openRequestHandler.current((event as CustomEvent<OpenContactRequest>).detail);
+    };
+
+    window.addEventListener(OPEN_CONTACT_REQUEST_EVENT, handleOpenRequest);
+    return () => window.removeEventListener(OPEN_CONTACT_REQUEST_EVENT, handleOpenRequest);
+  }, []);
+
+  // Enquanto a conversa do link carrega (ou se falhou), no lugar dela
+  const openContactPlaceholder = openContact.isError ? (
+    <ErrorState message="Não foi possível abrir esta conversa." onRetry={() => openContact.refetch()} isRetrying={openContact.isRetrying} />
+  ) : openContact.isLoading ? (
+    <LoadingState label="Abrindo a conversa..." />
+  ) : null;
 
   return (
     <div className="flex h-full flex-col">
@@ -310,7 +376,7 @@ export function Whatsapp() {
           <div className="flex h-full w-full">
             {/* Contact list */}
             <aside className="border-border flex w-80 flex-shrink-0 flex-col border-r">
-              <ContactListPanel tab={tab} setTab={setTab} selected={selected} onSelectContact={handleSelectContact} />
+              <ContactListPanel tab={tab} setTab={setTab} selectedId={selectedId} onSelectContact={handleSelectContact} />
             </aside>
 
             {/* Conversation + right panel */}
@@ -328,6 +394,8 @@ export function Whatsapp() {
                   />
                 </aside>
               </div>
+            ) : openContactPlaceholder ? (
+              <div className="bg-background flex flex-1 items-center justify-center">{openContactPlaceholder}</div>
             ) : (
               <div className="bg-background flex flex-1 items-center justify-center">
                 <div className="text-center">
@@ -356,7 +424,22 @@ export function Whatsapp() {
                   className="absolute inset-0 h-full w-full"
                 >
                   {mobileView === "list" && (
-                    <ContactListPanel tab={tab} setTab={setTab} selected={selected} onSelectContact={handleSelectContact} />
+                    <ContactListPanel tab={tab} setTab={setTab} selectedId={selectedId} onSelectContact={handleSelectContact} />
+                  )}
+
+                  {mobileView === "chat" && !selected && (
+                    <div className="flex h-full flex-col">
+                      <div className="border-border bg-card flex flex-shrink-0 items-center gap-2 border-b px-4 py-3">
+                        <button
+                          aria-label="Voltar para a lista"
+                          className="hover:bg-muted text-muted-foreground flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
+                          onClick={() => goToMobileView("list")}
+                        >
+                          <ArrowLeft className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <div className="flex min-h-0 flex-1 items-center justify-center">{openContactPlaceholder}</div>
+                    </div>
                   )}
 
                   {mobileView === "chat" && selected && (

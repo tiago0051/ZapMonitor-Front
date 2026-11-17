@@ -87,6 +87,11 @@ export const whatsappService = {
 
     return response.data;
   },
+  findContact: async ({ params }: FindWhatsappContactMessageRequestData): Promise<WhatsappContactMessage> => {
+    const response = await api.get(`/client/${params.clientId}/whatsapp/contact/${params.contactId}`);
+
+    return response.data;
+  },
   findContactsStats: async ({
     params,
     queries,

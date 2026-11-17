@@ -7,6 +7,7 @@ import { AlertCircle } from "lucide-react";
 import { Message } from "./components/message";
 import { ContactAvatar } from "@/components/contact-avatar";
 import { formatConversationTime } from "@/utils/formatString";
+import { contactDisplayName } from "../../contactDisplayName";
 
 type ContactCardProps = DetailedHTMLProps<React.HTMLAttributes<HTMLButtonElement>, HTMLButtonElement> & {
   contact: WhatsappContactMessage;
@@ -89,7 +90,7 @@ export const ContactCard: FC<ContactCardProps> = ({ contact, active, onClick, hi
   const expirationStatus = useMemo(() => getExpirationStatus(), [getExpirationStatus]);
   const isIncoming = contact.messageType === WhatsappMessageType.INCOMING;
 
-  const nameToPresentation = contact.surname?.trim() || contact.name?.trim() || "Sem nome";
+  const nameToPresentation = contactDisplayName(contact);
   const hasUnread = contact.unreadCount > 0;
 
   return (

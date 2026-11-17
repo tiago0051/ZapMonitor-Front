@@ -2,6 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AnimatePresence } from "motion/react";
 import { MessageItem } from "./components/messageItem";
 import { useContactMessages } from "./hooks/useContactMessages";
+import { contactDisplayName } from "@/pages/dashboard/whatsapp/contactDisplayName";
 
 type MessageListProps = {
   contact: WhatsappContactMessage;
@@ -13,7 +14,7 @@ export const MessageList = ({ contact, onReply }: MessageListProps) => {
     contact,
   });
 
-  const contactName = contact.surname?.trim() || contact.name?.trim() || "Contato";
+  const contactName = contactDisplayName(contact, "Contato");
 
   return (
     <div className={"grid h-full grid-rows-[auto_min-content] overflow-hidden pt-4"}>

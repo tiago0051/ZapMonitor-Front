@@ -3,7 +3,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { useBaseUrl } from "@/hooks/use-baseUrl";
 import { Sparkles } from "lucide-react";
 import { useState, type FC } from "react";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useSearchParams } from "react-router";
 import { AssistantChat } from "./components/assistantChat";
 
 type AssistantPanelProps = {
@@ -15,6 +15,10 @@ type AssistantPanelProps = {
 export const AssistantPanel: FC<AssistantPanelProps> = ({ open, onOpenChange }) => {
   const baseUrl = useBaseUrl();
   const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
+  // Conversa aberta no atendimento vai junto: o assistente consegue agir nela pelo id (conversaId)
+  const openContactId = pathname.replace(/\/$/, "") === `${baseUrl}/whatsapp` ? searchParams.get("contactId") : null;
+  const page = openContactId ? `${pathname} (conversa do WhatsApp aberta, conversaId ${openContactId})` : pathname;
   // undefined abre a conversa mais recente; fica guardada enquanto o painel fecha e abre
   const [conversationId, setConversationId] = useState<string | null | undefined>(undefined);
 
@@ -34,7 +38,7 @@ export const AssistantPanel: FC<AssistantPanelProps> = ({ open, onOpenChange }) 
           </Button>
         </SheetHeader>
         <div className="min-h-0 flex-1 p-2 sm:p-3">
-          <AssistantChat variant="panel" conversationId={conversationId} onConversationChange={setConversationId} page={pathname} />
+          <AssistantChat variant="panel" conversationId={conversationId} onConversationChange={setConversationId} page={page} />
         </div>
       </SheetContent>
     </Sheet>
