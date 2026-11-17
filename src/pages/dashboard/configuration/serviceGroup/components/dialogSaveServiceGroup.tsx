@@ -56,7 +56,7 @@ export const DialogSaveServiceGroup: FC<DialogSaveServiceGroupProps> = ({
     queryFn: () => flowService.findAll({ params: { clientId } }),
     enabled: isOpen,
   });
-  const queueFlows = (flowsQuery.data ?? []).filter((flow) => flow.kind === "QUEUE");
+  const queueFlows = (flowsQuery.data ?? []).filter((flow) => flow.kind === "QUEUE" && !flow.archivedAt);
 
   const onSuccess = (saved: ServiceGroup) => {
     queryClient.invalidateQueries({ queryKey: ["serviceGroups", clientId] });
