@@ -12,7 +12,7 @@ import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { StrategyLinkList } from "./strategyLinkList";
 import { StrategyValidationDialog } from "./strategyValidationDialog";
-import { actionInfo, copyText, savePilotPrefill, selectClassName, stepStatusInfo, verdictInfo } from "./strategyUtils";
+import { actionInfo, copyText, savePilotPrefill, selectClassName, stepDailyBudget, stepStatusInfo, verdictInfo } from "./strategyUtils";
 
 type Props = {
   strategy: MarketingStrategy;
@@ -100,6 +100,7 @@ export const StrategyStepCard: FC<Props> = ({ strategy, step, canManage, onSaved
       label: `${step.marker} ${step.title}`,
       goal: step.title.substring(0, 500),
       notes: step.briefing.substring(0, 2000),
+      maxDailyBudget: stepDailyBudget(strategy),
     });
     navigate(`${baseUrl}/ads?tab=pilot`);
   };
