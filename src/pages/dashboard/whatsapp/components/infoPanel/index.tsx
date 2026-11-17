@@ -13,6 +13,7 @@ import { WhatsappMessageContentType } from "@/enums/whatsappMessageContentType.e
 import { IsTopScrolled } from "@/utils/scroll";
 import { format } from "date-fns";
 import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
+import { contactDisplayName } from "../../contactDisplayName";
 
 type MessageFileContent = { url: string; filename: string };
 
@@ -209,7 +210,9 @@ export function InfoPanel({
         <div className="flex items-center gap-3">
           <ContactAvatar contact={selected} size="sm" />
           <div className="min-w-0">
-            <p className="text-foreground truncate text-xs font-semibold">{selected.name}</p>
+            <p className="text-foreground truncate text-xs font-semibold">
+              {contactDisplayName(selected, formatPhoneNumber(selected.phoneNumber))}
+            </p>
             <p className="text-muted-foreground text-[11px]">{formatPhoneNumber(selected.phoneNumber)}</p>
           </div>
         </div>

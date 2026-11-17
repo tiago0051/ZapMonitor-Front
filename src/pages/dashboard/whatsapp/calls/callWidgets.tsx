@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { formatPhoneNumber } from "@/utils/formatString";
-import { Mic, MicOff, Phone, PhoneOff } from "lucide-react";
+import { useBaseUrl } from "@/hooks/use-baseUrl";
+import { MessageSquare, Mic, MicOff, Phone, PhoneOff } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState, type FC } from "react";
+import { Link, useLocation, useSearchParams } from "react-router";
 import { useCallContext, type ActiveCall } from "./callContext";
 import { formatCallDuration } from "./callFormat";
 
@@ -68,6 +70,14 @@ const IncomingCallCard: FC<{ incoming: WhatsappIncomingCall; isBusy: boolean }> 
 
 const ActiveCallPanel: FC<{ activeCall: ActiveCall }> = ({ activeCall }) => {
   const { hangUp, toggleMute } = useCallContext();
+  const baseUrl = useBaseUrl();
+  const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
+
+  // A ligação continua em outras telas: atalho de volta para a conversa, quando ela não está aberta
+  const conversationUrl = `${baseUrl}/whatsapp?contactId=${activeCall.contactId}`;
+  const isConversationOpen =
+    pathname.replace(/\/$/, "") === `${baseUrl}/whatsapp` && searchParams.get("contactId") === activeCall.contactId;
 
   return (
     <motion.div
@@ -94,6 +104,13 @@ const ActiveCallPanel: FC<{ activeCall: ActiveCall }> = ({ activeCall }) => {
         </p>
       </div>
       <div className="flex shrink-0 gap-1.5">
+        {!isConversationOpen && (
+          <Button size="icon" variant="ghost" className="text-white hover:bg-white/10 hover:text-white" title="Abrir a conversa" asChild>
+            <Link to={conversationUrl} aria-label="Abrir a conversa">
+              <MessageSquare className="size-4" />
+            </Link>
+          </Button>
+        )}
         <Button
           size="icon"
           variant="ghost"

@@ -30,6 +30,7 @@ import {
 import { useState, type FC } from "react";
 import type { ServiceActions } from "../../hooks/useServiceActions";
 import { CallButton } from "@/pages/dashboard/whatsapp/calls/callButton";
+import { contactDisplayName } from "@/pages/dashboard/whatsapp/contactDisplayName";
 
 interface HeaderProps {
   contact: WhatsappContactMessage;
@@ -40,7 +41,7 @@ interface HeaderProps {
 }
 
 export const Header: FC<HeaderProps> = ({ contact, contactService, serviceActions, onBack, onShowInfo }) => {
-  const contactName = contact.surname?.trim() || contact.name?.trim() || "este contato";
+  const contactName = contactDisplayName(contact, "este contato");
   const { canUseCrm } = useClientContext();
   const [isEndDialogOpen, setIsEndDialogOpen] = useState(false);
   const [isDealsDialogOpen, setIsDealsDialogOpen] = useState(false);
@@ -65,7 +66,9 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, serviceAction
       </button>
       <ContactAvatar contact={contact} />
       <div className="min-w-0 flex-1">
-        <p className="text-foreground truncate text-sm font-semibold">{contact.name}</p>
+        <p className="text-foreground truncate text-sm font-semibold">
+          {contactDisplayName(contact, formatPhoneNumber(contact.phoneNumber))}
+        </p>
         <p className="text-muted-foreground truncate text-xs">{formatPhoneNumber(contact.phoneNumber)}</p>
       </div>
       <div className="flex flex-shrink-0 items-center gap-1">

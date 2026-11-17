@@ -4,6 +4,7 @@ import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
 import { WhatsappServiceStatus } from "@/enums/whatsappServiceStatus.enum";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
+import { contactDisplayName } from "../contactDisplayName";
 import type { ContactUpdate } from "../types/contactUpdate";
 import { wasSelfAssigned } from "./selfAssignedContacts";
 import { isBrowserNotificationSupported, useNotificationPreferences } from "./useNotificationPreferences";
@@ -17,8 +18,6 @@ interface UseNewContactNotificationsProps {
 
 // Eventos antigos (reconexão, contato atualizado por outro motivo) não devem virar aviso
 const RECENT_EVENT_WINDOW_MS = 5 * 60 * 1000;
-
-const contactDisplayName = (contact: WhatsappContactMessage) => contact.surname?.trim() || contact.name?.trim() || contact.phoneNumber;
 
 const isRecent = (date: string | null) => !!date && Date.now() - new Date(date).getTime() < RECENT_EVENT_WINDOW_MS;
 
@@ -108,7 +107,7 @@ export const useNewContactNotifications = ({ serviceGroupIds, selectedContactId,
 
     const handleContactUpdate = ({ contact }: ContactUpdate) => {
       const { preferences, serviceGroupIds, selectedContactId, userId } = latest.current;
-      const name = contactDisplayName(contact);
+      const name = contactDisplayName(contact, contact.phoneNumber);
       const isViewingContact = document.visibilityState === "visible" && selectedContactId === contact.id;
 
       const isMine = contact.serviceStatus === WhatsappServiceStatus.HUMAN_ACTIVE && !!userId && contact.userIdInService === userId;
