@@ -9,7 +9,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Pencil } from "lucide-react";
 import { useState, type FC } from "react";
 import { toast } from "sonner";
-import { budgetLabel } from "../adsUtils";
+import { adPlatformSubject, budgetLabel, onAdPlatform } from "../adsUtils";
 
 type Props = {
   accountId: string;
@@ -21,13 +21,23 @@ type Props = {
   currency: string;
   // Texto quando o item não tem orçamento próprio (ex.: o orçamento fica no conjunto)
   emptyLabel?: string;
+  platform?: AdPlatform;
 };
 
 /**
- * Orçamento diário com edição direta: aplica na hora na Meta, dentro das travas (horário e limite de aumento em 24
+ * Orçamento diário com edição direta: aplica na hora na plataforma, dentro das travas (horário e limite de aumento em 24
  * horas), e fica no histórico de mudanças com desfazer. Orçamento total não é editado por aqui.
  */
-export const AdBudgetEditor: FC<Props> = ({ accountId, level, metaId, dailyBudget, lifetimeBudget, currency, emptyLabel = "—" }) => {
+export const AdBudgetEditor: FC<Props> = ({
+  accountId,
+  level,
+  metaId,
+  dailyBudget,
+  lifetimeBudget,
+  currency,
+  emptyLabel = "—",
+  platform = "META",
+}) => {
   const { client, can } = useClientContext();
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
@@ -41,9 +51,9 @@ export const AdBudgetEditor: FC<Props> = ({ accountId, level, metaId, dailyBudge
     onSuccess: (change) => {
       queryClient.invalidateQueries({ queryKey: ["metaAds"] });
       if (change.status === "APPLIED") {
-        toast.success("Orçamento atualizado na Meta");
+        toast.success(`Orçamento atualizado ${onAdPlatform(platform)}`);
         setIsOpen(false);
-      } else toast.error(change.error ?? "A Meta não aplicou a mudança", { description: "Veja na aba Mudanças." });
+      } else toast.error(change.error ?? `${adPlatformSubject(platform)} não aplicou a mudança`, { description: "Veja na aba Mudanças." });
     },
   });
 
@@ -87,7 +97,7 @@ export const AdBudgetEditor: FC<Props> = ({ accountId, level, metaId, dailyBudge
           </Label>
           <Input id={`budget-${metaId}`} inputMode="decimal" autoFocus value={value} onChange={(event) => setValue(event.target.value)} />
           <p className="text-muted-foreground text-[11px]">
-            Aplica na hora na Meta. As travas valem: horário permitido e aumento máximo em 24 horas.
+            Aplica na hora {onAdPlatform(platform)}. As travas valem: horário permitido e aumento máximo em 24 horas.
           </p>
           <Button type="submit" size="sm" className="w-full" disabled={!isValid || setBudget.isPending}>
             {setBudget.isPending && <Loader2 className="h-4 w-4 animate-spin" />}

@@ -3,18 +3,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { metaAdsService } from "@/services/api/metaAdsService";
 import { useQuery } from "@tanstack/react-query";
-import { format, subDays } from "date-fns";
 import type { FC } from "react";
-import { adPlatformLabel } from "./adsUtils";
+import { adPlatformLabel, shortDate } from "./adsUtils";
+import type { AdsPeriod } from "./components/adsPeriodPicker";
 
 const money = (value: number | null, currency: string | null) =>
   value === null ? "—" : new Intl.NumberFormat("pt-BR", { style: "currency", currency: currency ?? "BRL" }).format(value);
 
-/** Custo por conversa, por negócio e por venda de cada plataforma nos últimos 30 dias, para comparar onde a verba rende. */
-export const AdsPlatformComparison: FC = () => {
+/** Custo por conversa, por negócio e por venda de cada plataforma no período da aba, para comparar onde a verba rende. */
+export const AdsPlatformComparison: FC<{ period: AdsPeriod }> = ({ period }) => {
   const { client } = useClientContext();
-  const endDate = format(subDays(new Date(), 1), "yyyy-MM-dd");
-  const startDate = format(subDays(new Date(), 30), "yyyy-MM-dd");
+  const { startDate, endDate } = period;
 
   const summaryQuery = useQuery({
     meta: { errorHandledInline: true },
@@ -30,7 +29,9 @@ export const AdsPlatformComparison: FC = () => {
     <section className="space-y-2">
       <div>
         <h2 className="text-base font-semibold">Plataformas lado a lado</h2>
-        <p className="text-muted-foreground text-xs">Últimos 30 dias, com as conversas e vendas registradas no CRM.</p>
+        <p className="text-muted-foreground text-xs">
+          De {shortDate(startDate)} a {shortDate(endDate)}, com as conversas e vendas registradas no CRM.
+        </p>
       </div>
       {summaryQuery.isLoading && <LoadingState className="justify-start py-2" />}
       {rows.length > 0 && (

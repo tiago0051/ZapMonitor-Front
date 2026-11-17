@@ -1,6 +1,5 @@
 import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useClientContext } from "@/context/ClientContext/clientContext";
@@ -13,23 +12,20 @@ import { ChevronDown, RefreshCw } from "lucide-react";
 import { useState, type FC, type ReactNode } from "react";
 import { Bar, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import {
-  addDaysToDate,
+  adPlatformLabel,
   effectiveStatusInfo,
-  dateInputClassName,
   formatCount,
   formatMoney,
   reportLevelLabel,
   shortDate,
   statusToneClassName,
-  todayInTimeZone,
 } from "./adsUtils";
 
 import { AdsSignalReadiness } from "./adsSignalReadiness";
 import { AdsAttendanceInsights } from "./adsAttendanceInsights";
 import { MetricHelp } from "./components/metricHelp";
 import { useSyncAccount } from "./components/useSyncAccount";
-
-const PRESETS = [7, 14, 30, 90] as const;
+import type { AdsPeriod } from "./components/adsPeriodPicker";
 
 const Total: FC<{ label: ReactNode; value: string; hint?: string }> = ({ label, value, hint }) => (
   <div className="rounded-lg border p-3">
@@ -108,15 +104,13 @@ const ResultCard: FC<{ row: AdReportRow; currency: string }> = ({ row, currency 
   );
 };
 
-/** Métricas da Meta lado a lado com o que os anúncios geraram no CRM, no período escolhido. */
-export const AdsResults: FC<{ account: AdAccount }> = ({ account }) => {
+/** Métricas da plataforma lado a lado com o que os anúncios geraram no CRM, no período escolhido no topo da aba. */
+export const AdsResults: FC<{ account: AdAccount; period: AdsPeriod }> = ({ account, period }) => {
   const { client, can } = useClientContext();
   const isMobile = useIsMobile();
   const syncAccount = useSyncAccount();
-  const today = todayInTimeZone(account.timezoneName);
   const [level, setLevel] = useState<AdReportLevel>("campaign");
-  const [startDate, setStartDate] = useState(addDaysToDate(today, -29));
-  const [endDate, setEndDate] = useState(today);
+  const { startDate, endDate } = period;
 
   const reportQuery = useQuery({
     meta: { errorHandledInline: true },
@@ -128,53 +122,10 @@ export const AdsResults: FC<{ account: AdAccount }> = ({ account }) => {
   const report = reportQuery.data;
   const currency = report?.currency ?? account.currency;
 
-  const applyPreset = (days: number) => {
-    setStartDate(addDaysToDate(today, -(days - 1)));
-    setEndDate(today);
-  };
-
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-end gap-3">
         <h2 className="mr-2 text-base font-semibold">Resultados</h2>
-        <div className="flex rounded-md border p-0.5" role="group" aria-label="Período">
-          {PRESETS.map((days) => {
-            const isActive = endDate === today && startDate === addDaysToDate(today, -(days - 1));
-            return (
-              <button
-                key={days}
-                type="button"
-                aria-pressed={isActive}
-                onClick={() => applyPreset(days)}
-                className={cn(
-                  "focus-visible:ring-ring/50 rounded px-2.5 py-1.5 text-xs outline-none focus-visible:ring-[3px] sm:px-2 sm:py-1",
-                  isActive ? "bg-primary text-primary-foreground" : "hover:bg-muted",
-                )}
-              >
-                {days} dias
-              </button>
-            );
-          })}
-        </div>
-        <div className="grid w-full grid-cols-2 gap-1 sm:flex sm:w-auto sm:items-center">
-          <Input
-            type="date"
-            aria-label="Início do período"
-            value={startDate}
-            max={endDate}
-            onChange={(event) => event.target.value && setStartDate(event.target.value)}
-            className={dateInputClassName}
-          />
-          <Input
-            type="date"
-            aria-label="Fim do período"
-            value={endDate}
-            min={startDate}
-            max={today}
-            onChange={(event) => event.target.value && setEndDate(event.target.value)}
-            className={dateInputClassName}
-          />
-        </div>
         <div className="grid gap-1">
           <Label htmlFor="ads-level" className="text-xs">
             Agrupar por
@@ -219,7 +170,7 @@ export const AdsResults: FC<{ account: AdAccount }> = ({ account }) => {
               </p>
             </div>
             <p className="text-muted-foreground max-w-md text-xs">
-              É a medida principal: as sugestões, o piloto e os testes comparam campanhas, conjuntos e anúncios por ela. A Meta mostra o
+              É a medida principal: as sugestões, o piloto e os testes comparam campanhas, conjuntos e anúncios por ela. {adPlatformLabel[account.platform]} mostra o
               custo por conversa ({formatMoney(report.total.costPerConversation, currency)}), que não diz quem comprou.
             </p>
           </div>
@@ -383,7 +334,7 @@ export const AdsResults: FC<{ account: AdAccount }> = ({ account }) => {
             </div>
           )}
           <p className="text-muted-foreground text-xs">
-            Conversas e leads são contados pela Meta. Negócios, qualificados e ganhos vêm do CRM: negócios criados no período a partir de um
+            Conversas e leads são contados {account.platform === "META" ? "pela Meta" : `pelo ${adPlatformLabel[account.platform]}`}. Negócios, qualificados e ganhos vêm do CRM: negócios criados no período a partir de um
             anúncio, e qualificados são os que entraram numa etapa com o evento QualifiedLead ou passaram do corte de nota da IA. Reuniões são as agendadas pela IA no Google Agenda e os negócios que entraram numa etapa
             marcada como reunião no funil, sem contar canceladas.
           </p>

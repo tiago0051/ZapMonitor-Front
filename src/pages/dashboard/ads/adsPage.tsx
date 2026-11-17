@@ -32,7 +32,6 @@ import {
   syncStatusLabel,
 } from "./adsUtils";
 import { useSyncAccount } from "./components/useSyncAccount";
-import { AdsDailySummary } from "./adsDailySummary";
 import { AdsLeads } from "./adsLeads";
 import { AdsConversionEvents } from "./adsConversionEvents";
 import { AdsSuggestions } from "./adsSuggestions";
@@ -41,8 +40,7 @@ import { AdsAutomation } from "./adsAutomation";
 import { AdsCampaignBuilder } from "./campaign/adsCampaignBuilder";
 import { AdsCrmAudiences } from "./campaign/adsCrmAudiences";
 import { AdsStrategyChatTab } from "./adsStrategyChatTab";
-import { AdsResults } from "./adsResults";
-import { AdsPlatformComparison } from "./adsPlatformComparison";
+import { AdsResultsTab } from "./adsResultsTab";
 import { AdsVideoCampaigns } from "./video/adsVideoCampaigns";
 import { AdsInstagramVideos } from "./video/adsInstagramVideos";
 import { AdsPilot } from "./pilot/adsPilot";
@@ -68,7 +66,12 @@ const BudgetText: FC<{ dailyBudget: number | null; lifetimeBudget: number | null
 }) => <>{budgetLabel({ dailyBudget, lifetimeBudget }, currency) ?? <span className="text-muted-foreground text-xs">{emptyLabel}</span>}</>;
 
 // Pausar, ativar e mudar verba pela tela; sem edição, só mostra o orçamento
-const AdRows: FC<{ adSet: MetaAdSet; accountId: string; editable: boolean }> = ({ adSet, accountId, editable }) => (
+const AdRows: FC<{ adSet: MetaAdSet; accountId: string; editable: boolean; platform: AdPlatform }> = ({
+  adSet,
+  accountId,
+  editable,
+  platform,
+}) => (
   <>
     {adSet.ads.map((ad) => (
       <TableRow key={ad.metaId} className="bg-muted/20">
@@ -79,7 +82,7 @@ const AdRows: FC<{ adSet: MetaAdSet; accountId: string; editable: boolean }> = (
         <TableCell>
           <span className="flex items-center gap-1.5">
             <StatusChip status={ad.effectiveStatus} />
-            {editable && <AdStatusToggle accountId={accountId} level="ad" metaId={ad.metaId} status={ad.status} />}
+            {editable && <AdStatusToggle accountId={accountId} level="ad" metaId={ad.metaId} status={ad.status} platform={platform} />}
           </span>
         </TableCell>
         <TableCell className="text-muted-foreground text-xs">{metaLabel(callToActionLabel, ad.creative?.callToActionType)}</TableCell>
@@ -89,11 +92,12 @@ const AdRows: FC<{ adSet: MetaAdSet; accountId: string; editable: boolean }> = (
   </>
 );
 
-const CampaignRows: FC<{ campaign: MetaCampaign; currency: string; accountId: string; editable: boolean }> = ({
+const CampaignRows: FC<{ campaign: MetaCampaign; currency: string; accountId: string; editable: boolean; platform: AdPlatform }> = ({
   campaign,
   currency,
   accountId,
   editable,
+  platform,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [openAdSetIds, setOpenAdSetIds] = useState<string[]>([]);
@@ -116,7 +120,7 @@ const CampaignRows: FC<{ campaign: MetaCampaign; currency: string; accountId: st
         <TableCell>
           <span className="flex items-center gap-1.5">
             <StatusChip status={campaign.effectiveStatus} />
-            {editable && <AdStatusToggle accountId={accountId} level="campaign" metaId={campaign.metaId} status={campaign.status} />}
+            {editable && <AdStatusToggle accountId={accountId} level="campaign" metaId={campaign.metaId} status={campaign.status} platform={platform} />}
           </span>
         </TableCell>
         <TableCell className="text-xs">{metaLabel(bidStrategyLabel, campaign.bidStrategy)}</TableCell>
@@ -129,6 +133,7 @@ const CampaignRows: FC<{ campaign: MetaCampaign; currency: string; accountId: st
               dailyBudget={campaign.dailyBudget}
               lifetimeBudget={campaign.lifetimeBudget}
               currency={currency}
+              platform={platform}
               emptyLabel="no conjunto"
             />
           ) : (
@@ -164,7 +169,7 @@ const CampaignRows: FC<{ campaign: MetaCampaign; currency: string; accountId: st
               <TableCell>
                 <span className="flex items-center gap-1.5">
                   <StatusChip status={adSet.effectiveStatus} />
-                  {editable && <AdStatusToggle accountId={accountId} level="adset" metaId={adSet.metaId} status={adSet.status} />}
+                  {editable && <AdStatusToggle accountId={accountId} level="adset" metaId={adSet.metaId} status={adSet.status} platform={platform} />}
                 </span>
               </TableCell>
               <TableCell className="text-xs">{metaLabel(billingEventLabel, adSet.billingEvent)}</TableCell>
@@ -177,13 +182,14 @@ const CampaignRows: FC<{ campaign: MetaCampaign; currency: string; accountId: st
                     dailyBudget={adSet.dailyBudget}
                     lifetimeBudget={adSet.lifetimeBudget}
                     currency={currency}
+                    platform={platform}
                   />
                 ) : (
                   <BudgetText dailyBudget={adSet.dailyBudget} lifetimeBudget={adSet.lifetimeBudget} currency={currency} />
                 )}
               </TableCell>
             </TableRow>
-            {openAdSetIds.includes(adSet.metaId) && <AdRows adSet={adSet} accountId={accountId} editable={editable} />}
+            {openAdSetIds.includes(adSet.metaId) && <AdRows adSet={adSet} accountId={accountId} editable={editable} platform={platform} />}
           </Fragment>
         ))}
     </>
@@ -355,12 +361,14 @@ export const AdsPage = () => {
         icon={Megaphone}
         title="Nenhuma conta de anúncio vinculada"
         description={
-          can("ads.manage") ? "Conecte a Meta e vincule as contas em Configurações." : "Peça a um administrador para conectar a Meta."
+          can("ads.manage")
+            ? "Conecte suas contas de anúncio (Meta, YouTube ou TikTok) em Configurações."
+            : "Peça a um administrador para conectar as contas de anúncio."
         }
         action={
           can("ads.manage") && (
             <Button asChild>
-              <Link to={`${baseUrl}/configuration?tab=metaAds`}>Conectar a Meta</Link>
+              <Link to={`${baseUrl}/configuration?tab=metaAds`}>Conectar contas de anúncio</Link>
             </Button>
           )
         }
@@ -485,10 +493,8 @@ export const AdsPage = () => {
         </div>
 
         <TabsContent value="results" className={cn(tabContentClassName, "space-y-8")}>
-          {platforms.length > 1 && <AdsPlatformComparison />}
-          {/* Irmãos com a mesma key fazem o React duplicar o bloco ao trocar de conta: cada um tem a sua */}
-          <AdsDailySummary key={`summary-${currentAccount.id}`} account={currentAccount} />
-          <AdsResults key={`results-${currentAccount.id}`} account={currentAccount} />
+          {/* Trocar de conta recomeça o período no fuso da nova conta */}
+          <AdsResultsTab key={`results-${currentAccount.id}`} account={currentAccount} showPlatformComparison={platforms.length > 1} />
         </TabsContent>
 
         <TabsContent value="pilot" className={tabContentClassName}>
@@ -590,6 +596,7 @@ export const AdsPage = () => {
                           campaign={campaign}
                           currency={structure.account.currency}
                           accountId={currentAccount.id}
+                          platform={currentAccount.platform}
                           editable
                         />
                       ))}
