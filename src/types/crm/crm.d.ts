@@ -37,6 +37,8 @@ type PipelineStage = {
   conversionEvent: ConversionEventName | null;
   // Negócio que entra na etapa conta como reunião agendada (manual) no custo por reunião
   countsAsMeeting: boolean;
+  // Chance de ganho (0 a 100) para a previsão do relatório, quando o negócio não tem nota da IA
+  winProbability: number | null;
 };
 
 type ConversionEventName = "LEAD_SUBMITTED" | "QUALIFIED_LEAD" | "PURCHASE";
@@ -171,6 +173,27 @@ type CrmReport = {
   winRate: number | null;
   stages: { stageId: string; reached: number; conversion: number; averageHours: number | null }[];
   lostReasons: { reason: string; count: number }[];
+  // Por responsável, os que mais ganharam em valor primeiro; ownerUserId nulo = sem responsável
+  owners: {
+    ownerUserId: string | null;
+    ownerName: string | null;
+    created: number;
+    won: number;
+    wonValue: number;
+    lost: number;
+    winRate: number | null;
+  }[];
+  // Negócios abertos agora (não depende do período)
+  forecast: { openCount: number; openValue: number; forecastValue: number; withoutProbability: number };
+  // Mesmos números no período anterior de mesmo tamanho
+  previous: {
+    startDate: string;
+    endDate: string;
+    created: number;
+    won: { count: number; value: number };
+    lost: { count: number; value: number };
+    winRate: number | null;
+  };
 };
 
 type DealAiInsight = {

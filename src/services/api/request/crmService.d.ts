@@ -16,6 +16,8 @@ type SavePipelineStageRequestBody = {
   requiredFieldIds?: string[];
   conversionEvent?: ConversionEventName | null;
   countsAsMeeting?: boolean;
+  // Chance de ganho (0 a 100) para a previsão do relatório
+  winProbability?: number | null;
 };
 
 type SavePipelineRequestBody = {
