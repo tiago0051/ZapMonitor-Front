@@ -23,7 +23,7 @@ import { useCallback, useEffect, useRef, useState, type FC, type FormEvent, type
 import { Link, useNavigate } from "react-router";
 import { DialogNewContactTemplate } from "@/pages/dashboard/whatsapp/components/dialogNewContactTemplate";
 import { toast } from "sonner";
-import { contactDetailKey } from "../contactUtils";
+import { contactDetailKey, duplicateContactFromError } from "../contactUtils";
 import { ContactMerge } from "./contactMerge";
 import { ContactTimeline } from "./contactTimeline";
 import { ContactMergeSuggestions } from "./contactMergeSuggestions";
@@ -242,12 +242,13 @@ const ContactData: FC<DraftSectionProps> = ({ contact, onSaved, registerDraft })
 
 const ContactPhones: FC<SectionProps> = ({ contact, onSaved }) => {
   const { client } = useClientContext();
+  const onDuplicateError = useDuplicateContactError();
   const [phone, setPhone] = useState("");
   const [label, setLabel] = useState("");
 
   const add = useMutation({
     mutationFn: () => contactService.addPhone(client.id, contact.id, { phone, label: label.trim() || undefined }),
-    onError: requestErrorHandling,
+    onError: onDuplicateError,
     onSuccess: (updated) => {
       onSaved(updated);
       setPhone("");
@@ -352,6 +353,24 @@ const ContactPhones: FC<SectionProps> = ({ contact, onSaved }) => {
   );
 };
 
+/** Telefone ou e-mail de outra ficha: o aviso leva à ficha que já tem o dado. */
+const useDuplicateContactError = () => {
+  const baseUrl = useBaseUrl();
+  const navigate = useNavigate();
+
+  return (error: unknown) => {
+    const existing = duplicateContactFromError(error);
+    if (!existing) return requestErrorHandling(error);
+
+    toast.error(existing.message, {
+      action: {
+        label: `Abrir ficha de ${existing.name?.trim() || "contato"}`,
+        onClick: () => navigate(`${baseUrl}/contacts/${existing.id}`),
+      },
+    });
+  };
+};
+
 const onlyDigits = (value: string) => value.replace(/\D/g, "");
 
 /** Abre a conversa deste telefone ou, sem conversa ainda, começa uma mandando um modelo. */
@@ -390,11 +409,12 @@ const PhoneConversationAction: FC<{ contact: ContactDetail; phone: ContactDetail
 
 const ContactEmails: FC<SectionProps> = ({ contact, onSaved }) => {
   const { client } = useClientContext();
+  const onDuplicateError = useDuplicateContactError();
   const [email, setEmail] = useState("");
 
   const add = useMutation({
     mutationFn: () => contactService.addEmail(client.id, contact.id, { email }),
-    onError: requestErrorHandling,
+    onError: onDuplicateError,
     onSuccess: (updated) => {
       onSaved(updated);
       setEmail("");
