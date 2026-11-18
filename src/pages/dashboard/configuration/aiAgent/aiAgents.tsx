@@ -8,6 +8,7 @@ import { useParams } from "react-router";
 import { DialogAiAgentTools } from "./components/dialogAiAgentTools";
 import { DialogDeleteAiAgent } from "./components/dialogDeleteAiAgent";
 import { DialogSaveAiAgent } from "./components/dialogSaveAiAgent";
+import { styleLabel } from "./aiAgentConstants";
 
 export const AiAgents = () => {
   const { clientId } = useParams();
@@ -26,7 +27,8 @@ export const AiAgents = () => {
         <div>
           <CardTitle>Agentes de IA</CardTitle>
           <CardDescription>
-            Crie agentes de atendimento com system prompts próprios. Eles usam a chave de API da configuração de IA do cliente.
+            Crie agentes que atendem seus contatos pelo WhatsApp seguindo as suas instruções. A IA já vem incluída no plano e o uso
+            entra no consumo de IA do mês.
           </CardDescription>
         </div>
         <DialogSaveAiAgent clientId={clientId!} />
@@ -54,10 +56,10 @@ export const AiAgents = () => {
 
                 {aiAgent.description && <p className="text-muted-foreground text-sm">{aiAgent.description}</p>}
 
-                <p className="bg-muted line-clamp-4 rounded-md p-2 font-mono text-xs whitespace-pre-wrap">{aiAgent.systemPrompt}</p>
+                <p className="bg-muted line-clamp-4 rounded-md p-2 text-xs whitespace-pre-wrap">{aiAgent.systemPrompt}</p>
 
                 <div className="text-muted-foreground mt-auto flex items-center justify-between border-t pt-2 text-xs">
-                  <span>Temperatura {aiAgent.temperature}</span>
+                  <span>Jeito: {styleLabel(aiAgent.temperature)}</span>
                   <span>{format(new Date(aiAgent.updatedAt), "dd/MM/yyyy HH:mm")}</span>
                 </div>
               </div>

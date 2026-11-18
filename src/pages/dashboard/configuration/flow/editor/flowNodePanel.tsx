@@ -543,8 +543,8 @@ export const FlowNodePanel: FC<FlowNodePanelProps> = ({ clientId, type, data, on
               label={isQueueFlow ? "O que o agente deve fazer na fila" : "Objetivo desta etapa"}
               hint={
                 isQueueFlow
-                  ? "Somado ao system prompt do agente. Ex.: tirar dúvidas enquanto o contato espera e avisar que um atendente já vai responder."
-                  : "Somado ao system prompt do agente. Diga o que precisa acontecer para a etapa terminar."
+                  ? "Somado às instruções do agente. Ex.: tirar dúvidas enquanto o contato espera e avisar que um atendente já vai responder."
+                  : "Somado às instruções do agente. Diga o que precisa acontecer para a etapa terminar."
               }
             >
               <textarea

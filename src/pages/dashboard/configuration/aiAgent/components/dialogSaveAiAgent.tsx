@@ -11,7 +11,8 @@ import { useEffect, useState, type FC } from "react";
 import { useForm, useWatch, type SubmitHandler } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
-import { textareaClassName } from "../aiAgentConstants";
+import { cn } from "@/lib/utils";
+import { AI_AGENT_STYLES, styleFromTemperature, temperatureFromStyle, textareaClassName } from "../aiAgentConstants";
 import { PromptAssistant } from "./promptAssistant";
 
 type DialogSaveAiAgentProps = {
@@ -26,8 +27,8 @@ type DialogSaveAiAgentProps = {
 const schema = z.object({
   name: z.string().trim().min(1, "O nome do agente é obrigatório").max(100, "Use no máximo 100 caracteres"),
   description: z.string().max(1000, "Use no máximo 1000 caracteres"),
-  systemPrompt: z.string().trim().min(1, "O system prompt é obrigatório"),
-  temperature: z.number().min(0, "Mínimo 0").max(2, "Máximo 2"),
+  systemPrompt: z.string().trim().min(1, "Escreva as instruções do agente"),
+  style: z.enum(["precise", "balanced", "creative"]),
 });
 
 type SchemaType = z.infer<typeof schema>;
@@ -68,13 +69,14 @@ export const DialogSaveAiAgent: FC<DialogSaveAiAgentProps> = ({ clientId, aiAgen
       name: "",
       description: "",
       systemPrompt: "",
-      temperature: 0.7,
+      style: "balanced",
     },
     disabled: isPending,
   });
 
   const handleSubmit: SubmitHandler<SchemaType> = (data) => {
-    const body = { ...data, description: data.description || undefined };
+    const { style, ...rest } = data;
+    const body = { ...rest, description: data.description || undefined, temperature: temperatureFromStyle(style) };
 
     if (aiAgent) {
       updateAiAgent.mutate({ params: { clientId, aiAgentId: aiAgent.id }, body });
@@ -91,7 +93,7 @@ export const DialogSaveAiAgent: FC<DialogSaveAiAgentProps> = ({ clientId, aiAgen
       name: aiAgent?.name ?? "",
       description: aiAgent?.description ?? "",
       systemPrompt: aiAgent?.systemPrompt ?? "",
-      temperature: aiAgent?.temperature ?? 0.7,
+      style: aiAgent ? styleFromTemperature(aiAgent.temperature) : "balanced",
     });
   }, [isOpen]);
 
@@ -120,7 +122,7 @@ export const DialogSaveAiAgent: FC<DialogSaveAiAgentProps> = ({ clientId, aiAgen
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-5xl">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar agente de IA" : "Novo agente de IA"}</DialogTitle>
-          <DialogDescription>Cada agente tem o próprio system prompt, que define como ele conduz o atendimento.</DialogDescription>
+          <DialogDescription>As instruções dizem ao agente quem ele é, o que pode responder e como conduzir o atendimento.</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
@@ -159,14 +161,15 @@ export const DialogSaveAiAgent: FC<DialogSaveAiAgentProps> = ({ clientId, aiAgen
                 name="systemPrompt"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>System prompt</FormLabel>
+                    <FormLabel>Instruções do agente</FormLabel>
                     <FormControl>
                       <textarea
                         {...field}
-                        placeholder="Escreva o prompt ou gere um com o assistente ao lado"
-                        className={`${textareaClassName} min-h-80 font-mono`}
+                        placeholder="Escreva as instruções ou peça ao assistente ao lado para escrever"
+                        className={`${textareaClassName} min-h-80`}
                       />
                     </FormControl>
+                    <FormDescription>Ex.: quem é a empresa, o que o agente pode dizer, o que nunca deve fazer e quando chamar a equipe.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -174,14 +177,29 @@ export const DialogSaveAiAgent: FC<DialogSaveAiAgentProps> = ({ clientId, aiAgen
 
               <FormField
                 control={form.control}
-                name="temperature"
+                name="style"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Temperatura</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="number" step={0.1} min={0} max={2} onChange={(e) => field.onChange(e.target.valueAsNumber)} />
-                    </FormControl>
-                    <FormDescription>Menor = respostas mais previsíveis.</FormDescription>
+                    <FormLabel>Jeito de responder</FormLabel>
+                    <div role="radiogroup" aria-label="Jeito de responder" className="grid gap-2 sm:grid-cols-3">
+                      {AI_AGENT_STYLES.map((style) => (
+                        <button
+                          key={style.value}
+                          type="button"
+                          role="radio"
+                          aria-checked={field.value === style.value}
+                          disabled={field.disabled}
+                          onClick={() => field.onChange(style.value)}
+                          className={cn(
+                            "rounded-lg border p-3 text-left text-sm transition-colors disabled:opacity-50",
+                            field.value === style.value ? "border-primary bg-primary/5 ring-primary ring-1" : "hover:bg-muted/60",
+                          )}
+                        >
+                          <span className="font-medium">{style.label}</span>
+                          <span className="text-muted-foreground mt-0.5 block text-xs">{style.description}</span>
+                        </button>
+                      ))}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
