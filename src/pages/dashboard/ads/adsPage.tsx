@@ -53,6 +53,7 @@ import { SpendCapBar } from "./components/spendCapBar";
 import { AdsLearnings } from "./learnings/adsLearnings";
 import { AdsExperiments } from "./experiments/adsExperiments";
 import { StrategyIntentBanner } from "../strategies/strategyIntentBanner";
+import { OrganicResultsBlock } from "../posts/postsResults";
 
 const StatusChip: FC<{ status: string }> = ({ status }) => {
   const info = effectiveStatusInfo(status);
@@ -519,6 +520,8 @@ export const AdsPage = () => {
           {/* Irmãos com a mesma key fazem o React duplicar o bloco ao trocar de conta: cada um tem a sua */}
           <AdsDailySummary key={`summary-${currentAccount.id}`} account={currentAccount} />
           <AdsResults key={`results-${currentAccount.id}`} account={currentAccount} />
+          {/* Orgânico fica num bloco à parte, sem mexer na comparação das plataformas pagas */}
+          {can("posts.view") && <OrganicResultsBlock />}
         </TabsContent>
 
         <TabsContent value="pilot" className={tabContentClassName}>

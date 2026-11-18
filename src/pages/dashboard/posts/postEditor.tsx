@@ -38,6 +38,7 @@ import { PostApprovalNotice, PostApprovalRequest, PostRequestChanges } from "./p
 import { PostBoostDialog } from "./postBoostDialog";
 import {
   editableStatuses,
+  insightsSummary,
   isSocialPostBusy,
   socialFormatLabel,
   socialPlatformLabel,
@@ -643,6 +644,12 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
                           ver <ExternalLink className="h-3 w-3" aria-hidden />
                         </a>
                       )}
+                    </span>
+                  )}
+                  {target?.status === "PUBLISHED" && insightsSummary(target.insights) && (
+                    <span className="text-muted-foreground basis-full text-xs tabular-nums">
+                      {insightsSummary(target.insights)}
+                      {target.insightsAt && ` · atualizado ${format(new Date(target.insightsAt), "dd/MM HH:mm")}`}
                     </span>
                   )}
                   {target?.status === "FAILED" && <span className="text-xs text-red-700 dark:text-red-300">{target.error}</span>}

@@ -39,6 +39,39 @@ type SocialPostTarget = {
   permalink: string | null;
   error: string | null;
   publishedAt: string | null;
+  // Resultados da rede copiados pela rotina (a cada 6 horas)
+  insights?: SocialPostInsights | null;
+  insightsAt?: string | null;
+};
+
+// Nulo quando a rede não informa a métrica
+type SocialPostInsights = {
+  reach: number | null;
+  impressions: number | null;
+  reactions: number | null;
+  comments: number | null;
+  shares: number | null;
+  saved: number | null;
+  clicks: number | null;
+};
+
+type SocialPostResults = {
+  days: number;
+  posts: number;
+  total: SocialPostInsights;
+  engagement: number;
+  items: {
+    id: string;
+    title: string;
+    format: SocialPostFormat;
+    platforms: SocialPlatform[];
+    publishedAt: string | null;
+    thumbnailUrl: string | null;
+    thumbnailKind: "IMAGE" | "VIDEO" | null;
+    insights: SocialPostInsights;
+    engagement: number;
+    insightsAt: string | null;
+  }[];
 };
 
 type SocialPost = {

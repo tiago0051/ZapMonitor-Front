@@ -49,6 +49,9 @@ export const socialPostService = {
   ): Promise<{ total: number; page: number; take: number; items: SocialPost[] }> =>
     (await api.get(postBase(clientId), { params: queries })).data,
 
+  findResults: async (clientId: string, days = 30): Promise<SocialPostResults> =>
+    (await api.get(`${postBase(clientId)}/results`, { params: { days } })).data,
+
   findCalendar: async (clientId: string, from: string, to: string): Promise<SocialPost[]> =>
     (await api.get(`${postBase(clientId)}/calendar`, { params: { from, to } })).data,
 

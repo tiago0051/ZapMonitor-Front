@@ -19,6 +19,47 @@ export const socialStatusInfo: Record<SocialPostStatus, { label: string; classNa
   FAILED: { label: "Falhou", className: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200" },
 };
 
+// Rótulos dos resultados das postagens, em linguagem simples
+export const socialInsightLabel: Record<keyof SocialPostInsights, string> = {
+  reach: "Pessoas alcançadas",
+  impressions: "Visualizações",
+  reactions: "Curtidas e reações",
+  comments: "Comentários",
+  shares: "Compartilhamentos",
+  saved: "Salvos",
+  clicks: "Cliques",
+};
+
+export const formatCount = (value: number | null | undefined) =>
+  value === null || value === undefined ? "—" : value.toLocaleString("pt-BR");
+
+/** Linha curta para o card: alcance · reações · comentários, só o que a rede informou. */
+export const insightsSummary = (insights: SocialPostInsights | null | undefined) => {
+  if (!insights) return null;
+  const parts = [
+    insights.reach !== null ? `${formatCount(insights.reach)} alcançadas` : null,
+    insights.reactions !== null ? `${formatCount(insights.reactions)} curtidas` : null,
+    insights.comments !== null ? `${formatCount(insights.comments)} comentários` : null,
+    insights.shares ? `${formatCount(insights.shares)} compart.` : null,
+    insights.saved ? `${formatCount(insights.saved)} salvos` : null,
+  ].filter(Boolean);
+  return parts.length ? parts.join(" · ") : null;
+};
+
+/** Soma das redes de uma postagem (a tela usa no card da lista). */
+export const sumTargetInsights = (targets: SocialPostTarget[]): SocialPostInsights | null => {
+  const withData = targets.filter((target) => target.insights);
+  if (!withData.length) return null;
+  const keys = Object.keys(socialInsightLabel) as (keyof SocialPostInsights)[];
+  const total = Object.fromEntries(keys.map((key) => [key, null])) as SocialPostInsights;
+  for (const target of withData)
+    for (const key of keys) {
+      const value = target.insights![key];
+      if (value !== null && value !== undefined) total[key] = (total[key] ?? 0) + value;
+    }
+  return total;
+};
+
 export const socialApprovalInfo: Record<SocialPostApproval, { label: string; className: string }> = {
   PENDING: { label: "Aguardando aprovação", className: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200" },
   CHANGES: { label: "Ajuste pedido", className: "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200" },

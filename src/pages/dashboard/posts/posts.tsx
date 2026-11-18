@@ -12,15 +12,18 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Film, GalleryHorizontal, Image as ImageIcon, Plus, Sparkles } from "lucide-react";
 import { useState, type FC, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
+import { PostsResults } from "./postsResults";
 import { PostSetupNotice } from "./postSetupNotice";
 import {
+  insightsSummary,
   isSocialPostBusy,
   socialApprovalInfo,
   socialFormatLabel,
   socialPlatformLabel,
   socialStatusInfo,
   socialTextareaClassName,
+  sumTargetInsights,
 } from "./postsUtils";
 
 const TAKE = 20;
@@ -32,6 +35,7 @@ const statusFilters: { value: string; label: string }[] = [
   { value: "PUBLISHED,PARTIAL,PUBLISHING", label: "Publicadas" },
   { value: "approval:PENDING", label: "Aguardando aprovação" },
   { value: "approval:CHANGES", label: "Ajuste pedido" },
+  { value: "results", label: "Resultados" },
 ];
 
 const formatOptions: { value: SocialPostFormat; icon: typeof ImageIcon; hint: string }[] = [
@@ -221,7 +225,10 @@ const PostThumb: FC<{ post: SocialPost }> = ({ post }) => {
 export const Posts = () => {
   const { client, can } = useClientContext();
   const baseUrl = useBaseUrl();
-  const [status, setStatus] = useState("");
+  // ?view=results abre direto a visão de resultados (link do bloco Orgânico em Anúncios)
+  const [searchParams] = useSearchParams();
+  const [status, setStatus] = useState(searchParams.get("view") === "results" ? "results" : "");
+  const showResults = status === "results";
   const [page, setPage] = useState(1);
   const [creating, setCreating] = useState(false);
 
@@ -241,6 +248,7 @@ export const Posts = () => {
           : { page, take: TAKE, status: status || undefined },
       ),
     refetchInterval: (current) => (current.state.data?.items.some(isSocialPostBusy) ? 5000 : false),
+    enabled: !showResults,
   });
 
   const total = query.data?.total ?? 0;
@@ -283,18 +291,19 @@ export const Posts = () => {
         ))}
       </div>
 
-      {query.isLoading && <LoadingState label="Carregando postagens..." />}
-      {query.isError && (
+      {showResults && <PostsResults />}
+      {!showResults && query.isLoading && <LoadingState label="Carregando postagens..." />}
+      {!showResults && query.isError && (
         <ErrorState message="Não foi possível buscar as postagens." onRetry={() => query.refetch()} isRetrying={query.isFetching} />
       )}
-      {query.isSuccess && items.length === 0 && (
+      {!showResults && query.isSuccess && items.length === 0 && (
         <EmptyState
           title={status ? "Nenhuma postagem aqui" : "Nenhuma postagem ainda"}
           description="Clique em Nova postagem, conte a ideia e a IA monta o conteúdo para você revisar."
         />
       )}
 
-      {items.length > 0 && (
+      {!showResults && items.length > 0 && (
         <div className="grid gap-2">
           {items.map((post) => {
             const info = socialStatusInfo[post.status];
@@ -320,6 +329,9 @@ export const Posts = () => {
                     </span>
                   </div>
                   <p className="line-clamp-2 text-sm">{post.caption || post.idea}</p>
+                  {insightsSummary(sumTargetInsights(post.targets)) && (
+                    <p className="text-xs tabular-nums">{insightsSummary(sumTargetInsights(post.targets))}</p>
+                  )}
                   <p className="text-muted-foreground text-xs tabular-nums">
                     {post.status === "SCHEDULED" && post.scheduledAt
                       ? `Agendada para ${format(new Date(post.scheduledAt), "dd/MM/yyyy 'às' HH:mm")}`
@@ -334,7 +346,7 @@ export const Posts = () => {
         </div>
       )}
 
-      {pages > 1 && (
+      {!showResults && pages > 1 && (
         <div className="flex items-center justify-end gap-2 text-sm">
           <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>
             Anterior
