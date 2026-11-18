@@ -26,6 +26,7 @@ import { DialogNewContactTemplate } from "@/pages/dashboard/whatsapp/components/
 import { toast } from "sonner";
 import { contactDetailKey, duplicateContactFromError } from "../contactUtils";
 import { ContactMerge } from "./contactMerge";
+import { ContactConsentSection } from "./contactConsent";
 import { ContactTimeline } from "./contactTimeline";
 import { ContactMergeSuggestions } from "./contactMergeSuggestions";
 import { AiFieldUpdates } from "@/components/aiFieldUpdates/aiFieldUpdates";
@@ -132,6 +133,9 @@ export const ContactProfile: FC<ContactProfileProps> = ({ contactId, conversatio
       <ContactData key={contact.updatedAt} contact={contact} onSaved={onSaved} registerDraft={registerDraft} />
       <ContactPhones contact={contact} onSaved={onSaved} />
       <ContactEmails contact={contact} onSaved={onSaved} />
+      <Section title="Marketing">
+        <ContactConsentSection contact={contact} />
+      </Section>
       {!!fieldsQuery.data?.some((field) => field.active) && (
         <ContactFields
           key={`fields-${contact.updatedAt}`}

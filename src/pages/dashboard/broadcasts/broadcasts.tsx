@@ -15,6 +15,7 @@ import { useDebounceValue } from "usehooks-ts";
 import { Link, useSearchParams } from "react-router";
 import { broadcastStatusInfo, formatCount, progressOf, rate } from "./broadcastUtils";
 import { OptOutList } from "./components/optOutList";
+import { EmailSuppressions } from "@/pages/dashboard/configuration/emailSending/emailSenders";
 import { EmailCampaignList } from "./email/emailCampaignList";
 import { EmailSequenceList } from "./sequences/emailSequenceList";
 
@@ -186,6 +187,26 @@ const BroadcastList = () => {
   );
 };
 
+/** Descadastros dos dois canais na mesma aba; o de e-mail é o mesmo da configuração de e-mail. */
+const OptOutsByChannel = () => {
+  const { can } = useClientContext();
+
+  return (
+    <div className="grid gap-8">
+      <section className="grid gap-3">
+        <h2 className="text-base font-semibold">WhatsApp</h2>
+        <OptOutList />
+      </section>
+      {can("email.view") && (
+        <section className="grid gap-3">
+          <h2 className="text-base font-semibold">E-mail</h2>
+          <EmailSuppressions />
+        </section>
+      )}
+    </div>
+  );
+};
+
 export const Broadcasts = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get("canal") ?? "whatsapp";
@@ -206,9 +227,7 @@ export const Broadcasts = () => {
           <TabsTrigger value="sequencias">
             Sequências<span className="hidden sm:inline"> de e-mail</span>
           </TabsTrigger>
-          <TabsTrigger value="optOut">
-            Descadastrados<span className="hidden sm:inline"> do WhatsApp</span>
-          </TabsTrigger>
+          <TabsTrigger value="optOut">Descadastrados</TabsTrigger>
         </TabsList>
         <TabsContent value="whatsapp" className="pt-2">
           <BroadcastList />
@@ -220,7 +239,7 @@ export const Broadcasts = () => {
           <EmailSequenceList />
         </TabsContent>
         <TabsContent value="optOut" className="pt-2">
-          <OptOutList />
+          <OptOutsByChannel />
         </TabsContent>
       </Tabs>
     </div>
