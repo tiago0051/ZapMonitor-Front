@@ -187,8 +187,8 @@ export const whatsappService = {
       `/client/${params.clientId}/whatsapp/contact/${params.contactId}/service/flow/forward/${encodeURIComponent(params.outputId)}`,
     );
   },
-  endService: async ({ params }: EndWhatsappServiceRequestData): Promise<WhatsappConfiguration> => {
-    const response = await api.post(`/client/${params.clientId}/whatsapp/contact/${params.contactId}/service/end`);
+  endService: async ({ params, body }: EndWhatsappServiceRequestData): Promise<WhatsappConfiguration> => {
+    const response = await api.post(`/client/${params.clientId}/whatsapp/contact/${params.contactId}/service/end`, body ?? {});
     return response.data;
   },
   updateContact: async ({ params, body }: UpdateContactRequestData) => {

@@ -22,6 +22,7 @@ export const useServiceActions = ({ contact, contactService, onServiceAssumed }:
   const queryClient = useQueryClient();
   // Encerrado nesta tela: em vez de "Assumir atendimento", mostra o caminho para a próxima conversa
   const [hasJustEnded, setHasJustEnded] = useState(false);
+  const [isEndDialogOpen, setIsEndDialogOpen] = useState(false);
 
   const contactServiceQueryKey = [`contact-${contact.id}`, "findContactServiceByContact", contact.id];
 
@@ -139,8 +140,8 @@ export const useServiceActions = ({ contact, contactService, onServiceAssumed }:
     }
   }
 
-  function endService() {
-    endServiceMutation.mutate({ params: { contactId: contact.id, clientId: client.id } });
+  function endService(body?: EndWhatsappServiceRequestBody) {
+    endServiceMutation.mutate({ params: { contactId: contact.id, clientId: client.id }, body });
   }
 
   return {
@@ -154,6 +155,8 @@ export const useServiceActions = ({ contact, contactService, onServiceAssumed }:
       forwardServiceMutation.isPending,
     assumeService,
     endService,
+    isEndDialogOpen,
+    setIsEndDialogOpen,
     forwardService,
   };
 };

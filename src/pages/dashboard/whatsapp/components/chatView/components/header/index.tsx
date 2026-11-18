@@ -1,17 +1,6 @@
 import { ContactAvatar } from "@/components/contact-avatar";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { buttonVariants } from "@/components/ui/button";
 import { formatPhoneNumber } from "@/utils/formatString";
 import { ArrowLeft, Briefcase, Forward, Info, MoreHorizontal, XCircle, UserCheck } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -31,6 +20,7 @@ import { useState, type FC } from "react";
 import type { ServiceActions } from "../../hooks/useServiceActions";
 import { CallButton } from "@/pages/dashboard/whatsapp/calls/callButton";
 import { contactDisplayName } from "@/pages/dashboard/whatsapp/contactDisplayName";
+import { EndServiceDialog } from "../endServiceDialog";
 
 interface HeaderProps {
   contact: WhatsappContactMessage;
@@ -43,7 +33,8 @@ interface HeaderProps {
 export const Header: FC<HeaderProps> = ({ contact, contactService, serviceActions, onBack, onShowInfo }) => {
   const contactName = contactDisplayName(contact, "este contato");
   const { canUseCrm } = useClientContext();
-  const [isEndDialogOpen, setIsEndDialogOpen] = useState(false);
+  // O diálogo de encerrar fica nas ações do atendimento: o atalho de teclado também o abre
+  const { isEndDialogOpen, setIsEndDialogOpen } = serviceActions;
   const [isDealsDialogOpen, setIsDealsDialogOpen] = useState(false);
 
   // No celular só a ação principal fica à vista; o resto vai para o menu "⋯"
@@ -187,22 +178,12 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, serviceAction
           </DropdownMenu>
         )}
         {canEnd && (
-          <AlertDialog open={isEndDialogOpen} onOpenChange={setIsEndDialogOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Encerrar atendimento?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  O atendimento de {contactName} será finalizado. Para responder de novo, será preciso assumir o atendimento.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction className={buttonVariants({ variant: "destructive" })} onClick={serviceActions.endService}>
-                  Encerrar
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <EndServiceDialog
+            open={isEndDialogOpen}
+            onOpenChange={setIsEndDialogOpen}
+            contactName={contactName}
+            onConfirm={serviceActions.endService}
+          />
         )}
         {canUseCrm && (
           <Dialog open={isDealsDialogOpen} onOpenChange={setIsDealsDialogOpen}>

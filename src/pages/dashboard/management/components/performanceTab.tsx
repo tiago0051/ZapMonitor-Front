@@ -13,6 +13,7 @@ import { useState, type ComponentType, type ReactNode } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { thisMonthPeriod, toPeriodQuery, type Period } from "./period";
 import { PeriodFilter } from "./periodFilter";
+import { serviceOutcomeLabel } from "@/pages/dashboard/whatsapp/serviceOutcome";
 
 // Acima disso a série diária fica ilegível: agrupa por semana
 const MAX_DAILY_POINTS = 62;
@@ -428,6 +429,42 @@ const PerformanceContent = ({
           )}
         </div>
       </div>
+
+      <OutcomesCard outcomes={data.outcomes ?? []} />
     </div>
   );
 };
+
+/** Resultados escolhidos pelos atendentes ao encerrar (chips do diálogo de encerramento). */
+function OutcomesCard({ outcomes }: { outcomes: { outcome: string; total: number }[] }) {
+  const total = outcomes.reduce((sum, item) => sum + item.total, 0);
+
+  return (
+    <div className="bg-card rounded-xl border p-4 shadow-xs">
+      <h2 className="text-base font-semibold">Resultado dos atendimentos</h2>
+      <p className="text-muted-foreground mb-4 text-xs">O que os atendentes marcaram ao encerrar: venda feita, resolvido, sem resposta...</p>
+      {total === 0 ? (
+        <p className="text-muted-foreground py-6 text-center text-sm">Nenhum atendimento encerrado com resultado no período.</p>
+      ) : (
+        <ul className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+          {outcomes.map((item) => {
+            const part = share(item.total, total) ?? 0;
+            return (
+              <li key={item.outcome} className="min-w-0">
+                <div className="mb-1 flex items-baseline justify-between gap-2 text-sm">
+                  <span className="truncate font-medium">{serviceOutcomeLabel(item.outcome) ?? item.outcome}</span>
+                  <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
+                    {formatNumber(item.total)} · {formatPercentage(part, 0)}
+                  </span>
+                </div>
+                <span className="bg-muted block h-1.5 w-full overflow-hidden rounded-full" aria-hidden>
+                  <span className="block h-full rounded-full" style={{ width: `${part}%`, background: SERIES.received.color }} />
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}

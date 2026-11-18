@@ -299,6 +299,13 @@ type TransferWhatsappServiceRequestParams = {
 //#region endService
 type EndWhatsappServiceRequestData = {
   params: EndWhatsappServiceRequestParams;
+  body?: EndWhatsappServiceRequestBody;
+};
+
+type EndWhatsappServiceRequestBody = {
+  // Resultado escolhido nos chips (resolved, sale, noReply, notInterested, forwarded, other)
+  outcome?: string;
+  annotation?: string;
 };
 
 type EndWhatsappServiceRequestParams = {
