@@ -54,6 +54,7 @@ import { AdsLearnings } from "./learnings/adsLearnings";
 import { AdsExperiments } from "./experiments/adsExperiments";
 import { StrategyIntentBanner } from "../strategies/strategyIntentBanner";
 import { OrganicResultsBlock } from "../posts/postsResults";
+import { MarketingReportButton } from "@/pages/report/marketingReportDialog";
 
 const StatusChip: FC<{ status: string }> = ({ status }) => {
   const info = effectiveStatusInfo(status);
@@ -480,6 +481,7 @@ export const AdsPage = () => {
             {isSyncing ? "Sincronizando…" : "Sincronizar agora"}
           </Button>
         )}
+        <MarketingReportButton className={cn("h-8", !can("ads.manage") && "ml-auto")} />
       </div>
 
       <SpendCapBar accountId={currentAccount.id} />

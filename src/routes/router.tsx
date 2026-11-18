@@ -8,6 +8,7 @@ import { useUserContext } from "@/context/UserContext/userContext";
 import { PrivacyPolicy } from "@/pages/legal/privacyPolicy";
 import { TermsOfService } from "@/pages/legal/termsOfService";
 import { TikTokAdsCallback } from "@/pages/tiktokAds/tiktokAdsCallback";
+import { PublicMarketingReport } from "@/pages/report/publicMarketingReport";
 
 export const Router: FC = () => {
   return (
@@ -20,6 +21,8 @@ export const Router: FC = () => {
         <Route path="termos-de-servico" element={<Navigate to="/termos" replace />} />
         {/* Volta do login do TikTok no popup; só repassa o código para a janela do painel */}
         <Route path="tiktok-ads/callback" element={<TikTokAdsCallback />} />
+        {/* Relatório do mês compartilhado por link: público, somente leitura */}
+        <Route path="relatorio/:token" element={<PublicMarketingReport />} />
         <Route path="dashboard/*" element={<PrivateRouter />} />
         <Route path="*" element={<PublicRouter />} />
       </Routes>

@@ -12,12 +12,13 @@ import { StrategyLibrary } from "./strategyLibrary";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { AdsStrategyWiki } from "../ads/wiki/adsStrategyWiki";
+import { MarketingReportButton } from "@/pages/report/marketingReportDialog";
 import { StrategyBriefDialog } from "./strategyBriefDialog";
 import { goalLabel, strategyStatusInfo, verdictInfo } from "./strategyUtils";
 
 /** Estratégias de marketing: o cliente descreve o produto e a IA monta o passo a passo a partir de estratégias conhecidas. */
 export const StrategiesPage = () => {
-  const { client, can } = useClientContext();
+  const { client, can, access } = useClientContext();
   const baseUrl = useBaseUrl();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const canManage = can("strategies.manage");
@@ -54,7 +55,10 @@ export const StrategiesPage = () => {
             (campanha, postagem, tarefa) e tudo o que nasce dela leva a marca da estratégia, para dar para medir o que funcionou.
           </p>
         </div>
-        {newButton}
+        <div className="flex flex-wrap gap-2">
+          {can("ads.view") && access.adsEnabled && <MarketingReportButton />}
+          {newButton}
+        </div>
       </div>
 
       <Tabs value={tab} onValueChange={(value) => go({ tab: value })}>
@@ -65,8 +69,8 @@ export const StrategiesPage = () => {
         <TabsContent value="library" className="space-y-4 pt-4">
           <div className="space-y-2">
             <p className="text-muted-foreground text-sm">
-              Tudo o que a IA sabe de marketing, num lugar só: as estratégias prontas que ela segue para montar o passo a passo e os
-              artigos de boas práticas que ela lê ao criar anúncios, postagens e o plano do mês.
+              Tudo o que a IA sabe de marketing, num lugar só: as estratégias prontas que ela segue para montar o passo a passo e os artigos
+              de boas práticas que ela lê ao criar anúncios, postagens e o plano do mês.
             </p>
             <div className="flex flex-wrap gap-2" role="group" aria-label="Parte da biblioteca">
               {(
