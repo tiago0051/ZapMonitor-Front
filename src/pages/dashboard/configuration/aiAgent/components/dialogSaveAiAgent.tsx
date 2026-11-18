@@ -14,6 +14,8 @@ import z from "zod";
 import { cn } from "@/lib/utils";
 import { AI_AGENT_STYLES, styleFromTemperature, temperatureFromStyle, textareaClassName } from "../aiAgentConstants";
 import { PromptAssistant } from "./promptAssistant";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AiAgentTestChat } from "./aiAgentTestChat";
 
 type DialogSaveAiAgentProps = {
   clientId: string;
@@ -33,11 +35,19 @@ const schema = z.object({
 
 type SchemaType = z.infer<typeof schema>;
 
+type AgentTab = "instructions" | "knowledge" | "test";
+
 export const DialogSaveAiAgent: FC<DialogSaveAiAgentProps> = ({ clientId, aiAgent, open, onOpenChange, onCreated }) => {
   const [internalOpen, setInternalOpen] = useState<boolean>(false);
+  const [tab, setTab] = useState<AgentTab>("instructions");
   const isControlled = open !== undefined;
   const isOpen = isControlled ? open : internalOpen;
-  const setIsOpen = (value: boolean) => (isControlled ? onOpenChange?.(value) : setInternalOpen(value));
+  const setIsOpen = (value: boolean) => {
+    // Ao fechar, a próxima abertura começa nas instruções
+    if (!value) setTab("instructions");
+    if (isControlled) onOpenChange?.(value);
+    else setInternalOpen(value);
+  };
   const isEditing = !!aiAgent;
 
   const queryClient = useQueryClient();
@@ -74,6 +84,9 @@ export const DialogSaveAiAgent: FC<DialogSaveAiAgentProps> = ({ clientId, aiAgen
     disabled: isPending,
   });
 
+  // Erro de validação aparece na aba das instruções, mesmo que o Salvar tenha sido clicado em outra
+  const handleInvalid = () => setTab("instructions");
+
   const handleSubmit: SubmitHandler<SchemaType> = (data) => {
     const { style, ...rest } = data;
     const body = { ...rest, description: data.description || undefined, temperature: temperatureFromStyle(style) };
@@ -88,7 +101,6 @@ export const DialogSaveAiAgent: FC<DialogSaveAiAgentProps> = ({ clientId, aiAgen
 
   useEffect(() => {
     if (!isOpen) return;
-
     form.reset({
       name: aiAgent?.name ?? "",
       description: aiAgent?.description ?? "",
@@ -98,6 +110,7 @@ export const DialogSaveAiAgent: FC<DialogSaveAiAgentProps> = ({ clientId, aiAgen
   }, [isOpen]);
 
   const systemPrompt = useWatch({ control: form.control, name: "systemPrompt" });
+  const style = useWatch({ control: form.control, name: "style" });
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -122,101 +135,133 @@ export const DialogSaveAiAgent: FC<DialogSaveAiAgentProps> = ({ clientId, aiAgen
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-5xl">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar agente de IA" : "Novo agente de IA"}</DialogTitle>
-          <DialogDescription>As instruções dizem ao agente quem ele é, o que pode responder e como conduzir o atendimento.</DialogDescription>
+          <DialogDescription>
+            As instruções dizem ao agente quem ele é, o que pode responder e como conduzir o atendimento.
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="grid content-start gap-4" id="form-ai-agent">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Ex.: Agente de vendas" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+        <Tabs value={tab} onValueChange={(value) => setTab(value as AgentTab)}>
+          <div className="-mx-1 overflow-x-auto px-1">
+            <TabsList className="w-max">
+              <TabsTrigger value="instructions">Instruções</TabsTrigger>
+              <TabsTrigger value="test">Testar agente</TabsTrigger>
+            </TabsList>
+          </div>
 
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Descrição</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Para que serve este agente (uso interno)" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          {/* Fica montada nas outras abas para o formulário e o botão Salvar continuarem valendo */}
+          <TabsContent value="instructions" forceMount className="data-[state=inactive]:hidden">
+            <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleSubmit, handleInvalid)} className="grid content-start gap-4" id="form-ai-agent">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Ex.: Agente de vendas" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="systemPrompt"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Instruções do agente</FormLabel>
-                    <FormControl>
-                      <textarea
-                        {...field}
-                        placeholder="Escreva as instruções ou peça ao assistente ao lado para escrever"
-                        className={`${textareaClassName} min-h-80`}
-                      />
-                    </FormControl>
-                    <FormDescription>Ex.: quem é a empresa, o que o agente pode dizer, o que nunca deve fazer e quando chamar a equipe.</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Descrição</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Para que serve este agente (uso interno)" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="style"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Jeito de responder</FormLabel>
-                    <div role="radiogroup" aria-label="Jeito de responder" className="grid gap-2 sm:grid-cols-3">
-                      {AI_AGENT_STYLES.map((style) => (
-                        <button
-                          key={style.value}
-                          type="button"
-                          role="radio"
-                          aria-checked={field.value === style.value}
-                          disabled={field.disabled}
-                          onClick={() => field.onChange(style.value)}
-                          className={cn(
-                            "rounded-lg border p-3 text-left text-sm transition-colors disabled:opacity-50",
-                            field.value === style.value ? "border-primary bg-primary/5 ring-primary ring-1" : "hover:bg-muted/60",
-                          )}
-                        >
-                          <span className="font-medium">{style.label}</span>
-                          <span className="text-muted-foreground mt-0.5 block text-xs">{style.description}</span>
-                        </button>
-                      ))}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </form>
-          </Form>
+                  <FormField
+                    control={form.control}
+                    name="systemPrompt"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Instruções do agente</FormLabel>
+                        <FormControl>
+                          <textarea
+                            {...field}
+                            placeholder="Escreva as instruções ou peça ao assistente ao lado para escrever"
+                            className={`${textareaClassName} min-h-80`}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Ex.: quem é a empresa, o que o agente pode dizer, o que nunca deve fazer e quando chamar a equipe.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-          {isOpen && (
-            <PromptAssistant
-              clientId={clientId}
-              defaultObjective={aiAgent?.description ?? ""}
-              currentPrompt={systemPrompt}
-              disabled={isPending}
-              onGenerated={(prompt) => form.setValue("systemPrompt", prompt, { shouldDirty: true, shouldValidate: true })}
-            />
-          )}
-        </div>
+                  <FormField
+                    control={form.control}
+                    name="style"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Jeito de responder</FormLabel>
+                        <div role="radiogroup" aria-label="Jeito de responder" className="grid gap-2 sm:grid-cols-3">
+                          {AI_AGENT_STYLES.map((style) => (
+                            <button
+                              key={style.value}
+                              type="button"
+                              role="radio"
+                              aria-checked={field.value === style.value}
+                              disabled={field.disabled}
+                              onClick={() => field.onChange(style.value)}
+                              className={cn(
+                                "rounded-lg border p-3 text-left text-sm transition-colors disabled:opacity-50",
+                                field.value === style.value ? "border-primary bg-primary/5 ring-primary ring-1" : "hover:bg-muted/60",
+                              )}
+                            >
+                              <span className="font-medium">{style.label}</span>
+                              <span className="text-muted-foreground mt-0.5 block text-xs">{style.description}</span>
+                            </button>
+                          ))}
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </form>
+              </Form>
+
+              {isOpen && (
+                <PromptAssistant
+                  clientId={clientId}
+                  defaultObjective={aiAgent?.description ?? ""}
+                  currentPrompt={systemPrompt}
+                  disabled={isPending}
+                  onGenerated={(prompt) => form.setValue("systemPrompt", prompt, { shouldDirty: true, shouldValidate: true })}
+                />
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="test">
+            {isOpen && (
+              <AiAgentTestChat
+                clientId={clientId}
+                aiAgentId={aiAgent?.id}
+                systemPrompt={systemPrompt}
+                temperature={temperatureFromStyle(style)}
+              />
+            )}
+            {isEditing && form.formState.isDirty && (
+              <p className="text-muted-foreground mt-2 text-xs">
+                O teste já usa as alterações da tela. Lembre de salvar para valerem no WhatsApp.
+              </p>
+            )}
+          </TabsContent>
+        </Tabs>
 
         <DialogFooter>
           <Button type="submit" form="form-ai-agent" disabled={isPending}>

@@ -60,7 +60,8 @@ export const PromptAssistant: FC<PromptAssistantProps> = ({ clientId, defaultObj
         <h4 className="text-sm font-semibold">Assistente de instruções</h4>
       </div>
       <p className="text-muted-foreground text-xs">
-        Descreva a empresa, o público, os assuntos que o agente resolve e o tom desejado. A IA escreve as instruções do agente para você revisar.
+        Descreva a empresa, o público, os assuntos que o agente resolve e o tom desejado. A IA escreve as instruções do agente para você
+        revisar.
       </p>
 
       <div className="space-y-2">

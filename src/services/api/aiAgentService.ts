@@ -25,6 +25,12 @@ export const aiAgentService = {
     return response.data;
   },
 
+  // Conversa de teste com as instruções da tela; nada vai para o WhatsApp
+  test: async ({ params, body }: TestAiAgentRequestData): Promise<AiAgentTestResult> => {
+    const response = await api.post<AiAgentTestResult>(`/client/${params.clientId}/ai-agent/test`, body);
+    return response.data;
+  },
+
   findUsage: async (clientId: string, id: string): Promise<ResourceUsage> => {
     const response = await api.get<ResourceUsage>(`/client/${clientId}/ai-agent/${id}/usage`);
     return response.data;
