@@ -19,11 +19,12 @@ import {
   Film,
   ImagePlus,
   Loader2,
+  Palette,
   Plus,
   RefreshCw,
+  Rocket,
   Send,
   Sparkles,
-  Palette,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -34,6 +35,7 @@ import { CreativeStudioDialog } from "../studio/creativeStudioDialog";
 import { toast } from "sonner";
 import { PostSetupNotice } from "./postSetupNotice";
 import { PostApprovalNotice, PostApprovalRequest, PostRequestChanges } from "./postApproval";
+import { PostBoostDialog } from "./postBoostDialog";
 import {
   editableStatuses,
   isSocialPostBusy,
@@ -259,11 +261,14 @@ const ScriptEditor: FC<{ script: SocialScript; onChange: (script: SocialScript) 
 };
 
 const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHashtags: string[] }> = ({ post, setup, fixedHashtags }) => {
-  const { client, can } = useClientContext();
+  const { client, can, canUseAds } = useClientContext();
   const baseUrl = useBaseUrl();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { confirm, confirmDialog } = useConfirm();
+  const [boostOpen, setBoostOpen] = useState(false);
+  // Publicada (inteira ou em parte) e quem pode criar anúncios: dá para impulsionar
+  const canBoost = canUseAds && can("ads.manage") && (post.status === "PUBLISHED" || post.status === "PARTIAL") && post.media.length > 0;
   const fileRef = useRef<HTMLInputElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   // Postagem criada para usar o estúdio: abre ele direto no formulário de criativo novo
@@ -696,6 +701,20 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
                   </Button>
                 )}
               </div>
+            </div>
+          )}
+
+          {canBoost && (
+            <div className="grid gap-2 rounded-lg border p-3">
+              <p className="text-sm font-medium">Impulsionar no WhatsApp</p>
+              <p className="text-muted-foreground text-xs">
+                Use esta postagem num anúncio que traz conversas para o seu WhatsApp, com teto de verba por dia.
+              </p>
+              <Button className="justify-self-start" onClick={() => setBoostOpen(true)}>
+                <Rocket className="mr-2 h-4 w-4" aria-hidden />
+                Impulsionar no WhatsApp
+              </Button>
+              <PostBoostDialog post={post} open={boostOpen} onOpenChange={setBoostOpen} />
             </div>
           )}
 

@@ -98,6 +98,14 @@ export const socialPostService = {
   schedule: async (clientId: string, id: string, scheduledAt: string): Promise<SocialPost> =>
     (await api.post(`${postBase(clientId)}/${id}/schedule`, { scheduledAt })).data,
 
+  /** Impulsionar no WhatsApp: cria o rascunho da campanha com a mídia e a legenda da postagem publicada. */
+  boost: async (
+    clientId: string,
+    id: string,
+    body: { adAccountId: string; dailyBudget: number; durationDays?: number; whatsappConfigurationId?: string },
+  ): Promise<{ draftId: string; adAccountId: string; assetId: string }> =>
+    (await api.post(`${postBase(clientId)}/${id}/boost`, body, { timeout: 180000 })).data,
+
   requestApproval: async (clientId: string, id: string, note?: string): Promise<SocialPost> =>
     (await api.post(`${postBase(clientId)}/${id}/approval`, { note })).data,
 
