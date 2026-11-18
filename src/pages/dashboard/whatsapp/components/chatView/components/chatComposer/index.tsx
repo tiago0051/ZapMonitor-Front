@@ -28,6 +28,14 @@ export const ChatComposer: FC<ChatComposerProps> = ({ contact, contactService, s
       </div>
     );
 
+  // Recém-encerrado: o aviso leva à próxima conversa, mesmo com o prazo de 24h vencido
+  if (contactService && serviceActions.hasJustEnded)
+    return (
+      <div className={`pt-2 ${className ?? "px-4 pb-3"}`}>
+        <ReplyBlockedNotice contact={contact} contactService={contactService} serviceActions={serviceActions} />
+      </div>
+    );
+
   if (contactService && isReplyTimeExpired)
     return (
       <div className={`flex flex-col gap-2 pt-2 ${className ?? "px-4 pb-3"}`}>
@@ -41,7 +49,7 @@ export const ChatComposer: FC<ChatComposerProps> = ({ contact, contactService, s
   if (contactService)
     return (
       <div className={`pt-2 ${className ?? "px-4 pb-3"}`}>
-        <ReplyBlockedNotice contactService={contactService} serviceActions={serviceActions} />
+        <ReplyBlockedNotice contact={contact} contactService={contactService} serviceActions={serviceActions} />
       </div>
     );
 

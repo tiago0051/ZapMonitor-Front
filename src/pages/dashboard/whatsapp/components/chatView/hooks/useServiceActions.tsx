@@ -3,6 +3,7 @@ import { useUserContext } from "@/context/UserContext/userContext";
 import { whatsappService } from "@/services/api/whatsappService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
 import { markSelfAssigned } from "../../../notifications/selfAssignedContacts";
 
@@ -19,6 +20,8 @@ export const useServiceActions = ({ contact, contactService, onServiceAssumed }:
   const { client } = useClientContext();
   const { user } = useUserContext();
   const queryClient = useQueryClient();
+  // Encerrado nesta tela: em vez de "Assumir atendimento", mostra o caminho para a próxima conversa
+  const [hasJustEnded, setHasJustEnded] = useState(false);
 
   const contactServiceQueryKey = [`contact-${contact.id}`, "findContactServiceByContact", contact.id];
 
@@ -84,16 +87,23 @@ export const useServiceActions = ({ contact, contactService, onServiceAssumed }:
 
   const endServiceMutation = useMutation({
     mutationFn: whatsappService.endService,
-    onMutate: () =>
-      applyOptimisticContactService({
-        canBeServiceStarted: true,
+    onMutate: () => {
+      setHasJustEnded(true);
+      // Ninguém está atendendo; assumir de novo só depois que o servidor confirmar
+      return applyOptimisticContactService({
+        canBeServiceStarted: false,
         canBeServiceTransferred: false,
         canBeServiceEnded: false,
+        canBeForwarded: false,
         isInService: false,
         canBeSentMessage: false,
-      }),
+      });
+    },
     onSuccess: invalidateContactService,
-    onError: rollbackContactService,
+    onError: (error, variables, context) => {
+      setHasJustEnded(false);
+      rollbackContactService(error, variables, context);
+    },
   });
 
   const forwardServiceMutation = useMutation({
@@ -112,6 +122,7 @@ export const useServiceActions = ({ contact, contactService, onServiceAssumed }:
 
   function assumeService() {
     markSelfAssigned(contact.id);
+    setHasJustEnded(false);
 
     if (contactService?.canBeServiceStarted) {
       startServiceMutation.mutate({ params: { contactId: contact.id, clientId: client.id } });
@@ -133,6 +144,8 @@ export const useServiceActions = ({ contact, contactService, onServiceAssumed }:
   }
 
   return {
+    // Se alguém assumir o contato de novo, o aviso de encerrado deixa de valer
+    hasJustEnded: hasJustEnded && !contactService?.isInService,
     canAssumeService: !!(contactService?.canBeServiceStarted || contactService?.canBeServiceTransferred),
     isPending:
       startServiceMutation.isPending ||
