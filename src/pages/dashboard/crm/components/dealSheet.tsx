@@ -29,7 +29,8 @@ import {
 } from "../crmUtils";
 import { useCrmOptions } from "../useCrmOptions";
 import { CustomFieldInput } from "./customFieldInput";
-import { describeEvent } from "./dealEventText";
+import { describeEvent, eventDetail } from "./dealEventText";
+import { DealActivityForm } from "./dealActivityForm";
 import { DealTasks } from "./dealTasks";
 import { AiFieldUpdates } from "@/components/aiFieldUpdates/aiFieldUpdates";
 import { OpenChatButton } from "../chatDock/openChatButton";
@@ -169,7 +170,12 @@ const DealDetailsForm: FC<{ deal: Deal; onDirtyChange: (dirty: boolean) => void 
       </div>
       <div className="grid gap-2">
         <Label htmlFor="deal-owner">Responsável</Label>
-        <select id="deal-owner" value={ownerUserId} onChange={(event) => editField("ownerUserId", event.target.value)} className={crmSelectClassName}>
+        <select
+          id="deal-owner"
+          value={ownerUserId}
+          onChange={(event) => editField("ownerUserId", event.target.value)}
+          className={crmSelectClassName}
+        >
           <option value="">Sem responsável</option>
           {members.map((member) => (
             <option key={member.id} value={member.id}>
@@ -180,6 +186,9 @@ const DealDetailsForm: FC<{ deal: Deal; onDirtyChange: (dirty: boolean) => void 
       </div>
       <div className="grid gap-2">
         <Label htmlFor="deal-notes">Notas</Label>
+        <p className="text-muted-foreground -mt-1 text-xs">
+          Resumo fixo do negócio. Para guardar ligações e conversas, use "Registrar atividade" em Atividades.
+        </p>
         <textarea
           id="deal-notes"
           value={notes}
@@ -400,7 +409,7 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
                   {deal.openTaskCount > 0 && <span className="text-muted-foreground tabular-nums">({deal.openTaskCount})</span>}
                 </TabsTrigger>
                 <TabsTrigger value="history">
-                  Histórico
+                  Atividades
                   {!!eventsQuery.data?.length && <span className="text-muted-foreground tabular-nums">({eventsQuery.data.length})</span>}
                 </TabsTrigger>
               </TabsList>
@@ -424,8 +433,9 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
               </TabsContent>
 
               <TabsContent value="history" forceMount className="data-[state=inactive]:hidden">
-                <section>
+                <section className="space-y-4">
                   <h3 className="sr-only">Histórico</h3>
+                  <DealActivityForm key={deal.id} deal={deal} />
                   {eventsQuery.isLoading && <LoadingState className="justify-start py-2" />}
                   {eventsQuery.isSuccess && eventsQuery.data.length === 0 && (
                     <p className="text-muted-foreground text-sm">Nada registrado ainda.</p>
@@ -434,6 +444,7 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
                     {eventsQuery.data?.map((event) => (
                       <li key={event.id} className="border-l-2 pl-3 text-sm">
                         <p>{describeEvent(event)}</p>
+                        {eventDetail(event) && <p className="text-muted-foreground whitespace-pre-line">{eventDetail(event)}</p>}
                         <p className="text-muted-foreground text-xs">
                           {event.user?.name ?? "Fluxo automático"} · {format(new Date(event.createdAt), "PPp", { locale: ptBR })}
                         </p>

@@ -139,7 +139,10 @@ const StageRow: FC<StageRowProps> = ({ stage, flows, fields, onChange, disabled,
         </label>
       )}
       {stage.type === "OPEN" && (
-        <label className="flex cursor-pointer items-center gap-2" title="Negócio que entra nesta etapa conta como reunião agendada no custo por reunião dos anúncios">
+        <label
+          className="flex cursor-pointer items-center gap-2"
+          title="Negócio que entra nesta etapa conta como reunião agendada no custo por reunião dos anúncios"
+        >
           <Checkbox
             aria-label={`Etapa ${stage.name} conta como reunião`}
             checked={!!stage.countsAsMeeting}
@@ -168,6 +171,25 @@ const StageRow: FC<StageRowProps> = ({ stage, flows, fields, onChange, disabled,
           <span className="text-muted-foreground">dias</span>
         </label>
       )}
+      {stage.type === "OPEN" && (
+        <label className="flex items-center gap-2" title="Usada na previsão de vendas do relatório quando o negócio não tem nota da IA">
+          <span className="text-muted-foreground">Chance de ganho</span>
+          <Input
+            type="number"
+            min={0}
+            max={100}
+            aria-label={`Chance de ganho na etapa ${stage.name}`}
+            value={stage.winProbability ?? ""}
+            disabled={disabled}
+            placeholder="—"
+            onChange={(event) =>
+              onChange({ ...stage, winProbability: Number.isNaN(event.target.valueAsNumber) ? null : event.target.valueAsNumber })
+            }
+            className="h-8 w-16 text-xs"
+          />
+          <span className="text-muted-foreground">%</span>
+        </label>
+      )}
     </div>
   </div>
 );
@@ -177,6 +199,7 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [stages, setStages] = useState<StageDraft[]>([]);
+  const [allowMultipleOpenDeals, setAllowMultipleOpenDeals] = useState(false);
   const isEditing = !!pipeline;
 
   const queryClient = useQueryClient();
@@ -209,6 +232,7 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
   const handleOpenChange = (open: boolean) => {
     if (open) {
       setName(pipeline?.name ?? "");
+      setAllowMultipleOpenDeals(pipeline?.allowMultipleOpenDeals ?? false);
       setStages(pipeline ? pipeline.stages.map((stage) => ({ key: stage.id, ...stage })) : buildDefaultStages());
     }
 
@@ -218,7 +242,12 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
   const openStages = stages.filter((stage) => stage.type === "OPEN");
   const finalStages = stages.filter((stage) => stage.type !== "OPEN");
   const isStaleValid = (stage: StageDraft) => stage.staleAfterDays == null || (stage.staleAfterDays >= 1 && stage.staleAfterDays <= 365);
-  const isValid = name.trim() !== "" && openStages.length > 0 && stages.every((stage) => stage.name.trim() !== "" && isStaleValid(stage));
+  const isProbabilityValid = (stage: StageDraft) =>
+    stage.winProbability == null || (Number.isInteger(stage.winProbability) && stage.winProbability >= 0 && stage.winProbability <= 100);
+  const isValid =
+    name.trim() !== "" &&
+    openStages.length > 0 &&
+    stages.every((stage) => stage.name.trim() !== "" && isStaleValid(stage) && isProbabilityValid(stage));
 
   const updateStage = (updated: StageDraft) => setStages((items) => items.map((item) => (item.key === updated.key ? updated : item)));
 
@@ -240,18 +269,33 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
 
     const body: SavePipelineRequestBody = {
       name: name.trim(),
-      stages: stages.map(({ id, name: stageName, color, type, entryFlowId, staleAfterDays, requiredFieldIds, conversionEvent, countsAsMeeting }) => ({
-        id,
-        name: stageName.trim(),
-        color,
-        type,
-        entryFlowId: entryFlowId ?? null,
-        staleAfterDays: type === "OPEN" ? (staleAfterDays ?? null) : null,
-        // Só campos ativos; um campo desativado depois deixa de ser exigido
-        requiredFieldIds: (requiredFieldIds ?? []).filter((fieldId) => fields.some((field) => field.id === fieldId)),
-        conversionEvent: conversionEvent ?? null,
-        countsAsMeeting: type === "OPEN" && !!countsAsMeeting,
-      })),
+      allowMultipleOpenDeals,
+      stages: stages.map(
+        ({
+          id,
+          name: stageName,
+          color,
+          type,
+          entryFlowId,
+          staleAfterDays,
+          requiredFieldIds,
+          conversionEvent,
+          countsAsMeeting,
+          winProbability,
+        }) => ({
+          id,
+          name: stageName.trim(),
+          color,
+          type,
+          entryFlowId: entryFlowId ?? null,
+          staleAfterDays: type === "OPEN" ? (staleAfterDays ?? null) : null,
+          // Só campos ativos; um campo desativado depois deixa de ser exigido
+          requiredFieldIds: (requiredFieldIds ?? []).filter((fieldId) => fields.some((field) => field.id === fieldId)),
+          conversionEvent: conversionEvent ?? null,
+          countsAsMeeting: type === "OPEN" && !!countsAsMeeting,
+          winProbability: type === "OPEN" ? (winProbability ?? null) : null,
+        }),
+      ),
     };
 
     if (pipeline) {
@@ -301,6 +345,21 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
               placeholder="Ex.: Vendas"
             />
           </div>
+
+          <label className="flex cursor-pointer items-start gap-2 text-sm">
+            <Checkbox
+              className="mt-0.5"
+              checked={allowMultipleOpenDeals}
+              disabled={isPending}
+              onCheckedChange={(checked) => setAllowMultipleOpenDeals(checked === true)}
+            />
+            <span>
+              Permitir mais de um negócio aberto por contato
+              <span className="text-muted-foreground block text-xs">
+                Para recompra ou vários pedidos ao mesmo tempo. Desligado, cada contato tem no máximo um negócio aberto neste funil.
+              </span>
+            </span>
+          </label>
 
           <div className="grid gap-2">
             <Label>Etapas</Label>

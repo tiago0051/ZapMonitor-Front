@@ -7,6 +7,7 @@ import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useBaseUrl } from "@/hooks/use-baseUrl";
 import { cn } from "@/lib/utils";
 import { CustomFieldInput } from "@/pages/dashboard/crm/components/customFieldInput";
+import { ContactDeals as CrmContactDeals } from "@/pages/dashboard/crm/components/contactDeals";
 import {
   crmTextareaClassName,
   dealStatusLabel,
@@ -23,8 +24,9 @@ import { useCallback, useEffect, useRef, useState, type FC, type FormEvent, type
 import { Link, useNavigate } from "react-router";
 import { DialogNewContactTemplate } from "@/pages/dashboard/whatsapp/components/dialogNewContactTemplate";
 import { toast } from "sonner";
-import { contactDetailKey } from "../contactUtils";
+import { contactDetailKey, duplicateContactFromError } from "../contactUtils";
 import { ContactMerge } from "./contactMerge";
+import { ContactConsentSection } from "./contactConsent";
 import { ContactTimeline } from "./contactTimeline";
 import { ContactMergeSuggestions } from "./contactMergeSuggestions";
 import { AiFieldUpdates } from "@/components/aiFieldUpdates/aiFieldUpdates";
@@ -131,6 +133,9 @@ export const ContactProfile: FC<ContactProfileProps> = ({ contactId, conversatio
       <ContactData key={contact.updatedAt} contact={contact} onSaved={onSaved} registerDraft={registerDraft} />
       <ContactPhones contact={contact} onSaved={onSaved} />
       <ContactEmails contact={contact} onSaved={onSaved} />
+      <Section title="Marketing">
+        <ContactConsentSection contact={contact} />
+      </Section>
       {!!fieldsQuery.data?.some((field) => field.active) && (
         <ContactFields
           key={`fields-${contact.updatedAt}`}
@@ -242,12 +247,13 @@ const ContactData: FC<DraftSectionProps> = ({ contact, onSaved, registerDraft })
 
 const ContactPhones: FC<SectionProps> = ({ contact, onSaved }) => {
   const { client } = useClientContext();
+  const onDuplicateError = useDuplicateContactError();
   const [phone, setPhone] = useState("");
   const [label, setLabel] = useState("");
 
   const add = useMutation({
     mutationFn: () => contactService.addPhone(client.id, contact.id, { phone, label: label.trim() || undefined }),
-    onError: requestErrorHandling,
+    onError: onDuplicateError,
     onSuccess: (updated) => {
       onSaved(updated);
       setPhone("");
@@ -352,6 +358,24 @@ const ContactPhones: FC<SectionProps> = ({ contact, onSaved }) => {
   );
 };
 
+/** Telefone ou e-mail de outra ficha: o aviso leva à ficha que já tem o dado. */
+const useDuplicateContactError = () => {
+  const baseUrl = useBaseUrl();
+  const navigate = useNavigate();
+
+  return (error: unknown) => {
+    const existing = duplicateContactFromError(error);
+    if (!existing) return requestErrorHandling(error);
+
+    toast.error(existing.message, {
+      action: {
+        label: `Abrir ficha de ${existing.name?.trim() || "contato"}`,
+        onClick: () => navigate(`${baseUrl}/contacts/${existing.id}`),
+      },
+    });
+  };
+};
+
 const onlyDigits = (value: string) => value.replace(/\D/g, "");
 
 /** Abre a conversa deste telefone ou, sem conversa ainda, começa uma mandando um modelo. */
@@ -390,11 +414,12 @@ const PhoneConversationAction: FC<{ contact: ContactDetail; phone: ContactDetail
 
 const ContactEmails: FC<SectionProps> = ({ contact, onSaved }) => {
   const { client } = useClientContext();
+  const onDuplicateError = useDuplicateContactError();
   const [email, setEmail] = useState("");
 
   const add = useMutation({
     mutationFn: () => contactService.addEmail(client.id, contact.id, { email }),
-    onError: requestErrorHandling,
+    onError: onDuplicateError,
     onSuccess: (updated) => {
       onSaved(updated);
       setEmail("");
@@ -580,17 +605,24 @@ const ContactDeals: FC<{ contact: ContactDetail }> = ({ contact }) => {
 
   if (!canUseCrm) return null;
 
-  return (
-    <Section
-      title="Negócios"
-      action={
-        can("crm.view") && contact.deals.length > 0 ? (
+  // Quem vê o CRM mexe nos negócios aqui mesmo: abre a ficha do negócio, muda a etapa e cria um novo
+  if (can("crm.view"))
+    return (
+      <Section
+        title="Negócios"
+        action={
           <Link to={`${baseUrl}/crm`} className="text-primary text-xs hover:underline">
             Abrir o CRM
           </Link>
-        ) : undefined
-      }
-    >
+        }
+      >
+        <CrmContactDeals person={{ id: contact.id, name: contact.name }} />
+      </Section>
+    );
+
+  // Sem acesso ao CRM, só o resumo
+  return (
+    <Section title="Negócios">
       {contact.deals.length === 0 && <p className="text-muted-foreground text-sm">Nenhum negócio.</p>}
       <ul className="grid gap-1.5">
         {contact.deals.map((deal) => (

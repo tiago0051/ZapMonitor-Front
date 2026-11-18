@@ -97,3 +97,22 @@ type ContactImportResult = {
   failed: number;
   errors: { line: number; message: string }[];
 };
+
+// Se a pessoa recebe marketing por WhatsApp e por e-mail, juntando os descadastros dos dois canais
+type ContactConsent = {
+  whatsapp: {
+    receivesMarketing: boolean;
+    phones: { phoneNumber: string; optedOut: boolean; source: string | null; optedOutAt: string | null }[];
+  };
+  email: {
+    receivesMarketing: boolean;
+    emails: {
+      email: string;
+      suppressed: boolean;
+      reason: EmailSuppressionReason | null;
+      suppressedAt: string | null;
+      // E-mail que voltou ou foi marcado como spam não pode ser recadastrado
+      canResubscribe: boolean;
+    }[];
+  };
+};

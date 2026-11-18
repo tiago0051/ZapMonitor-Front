@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { useLocalStorage } from "usehooks-ts";
+import { dealPath } from "./taskUtils";
 
 const REFRESH_INTERVAL_MS = 60 * 1000;
 const CHECK_INTERVAL_MS = 30 * 1000;
@@ -46,16 +47,16 @@ export const useTaskReminders = (enabled: boolean) => {
     });
     if (dueTasks.length === 0) return;
 
-    const openTasks = () => navigate(`${baseUrl}/crm?tab=tasks`);
-
     dueTasks.forEach((task) => {
-      toast(`Tarefa vencendo: ${task.title}`, { description: task.deal.title, action: { label: "Ver tarefas", onClick: openTasks } });
+      // O lembrete leva direto ao negócio da tarefa, onde está a conversa, o histórico e o "Adiar"
+      const openDeal = () => navigate(dealPath(baseUrl, task.deal.id));
+      toast(`Tarefa vencendo: ${task.title}`, { description: task.deal.title, action: { label: "Abrir negócio", onClick: openDeal } });
 
       if (isBrowserNotificationSupported() && Notification.permission === "granted") {
         const notification = new Notification(`Tarefa vencendo: ${task.title}`, { body: task.deal.title, tag: `crm-task-${task.id}` });
         notification.onclick = () => {
           window.focus();
-          openTasks();
+          openDeal();
         };
       }
     });

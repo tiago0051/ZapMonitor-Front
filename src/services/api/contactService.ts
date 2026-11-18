@@ -32,6 +32,21 @@ export const contactService = {
     return response.data;
   },
 
+  findConsent: async (clientId: string, contactId: string): Promise<ContactConsent> => {
+    const response = await api.get(`${base(clientId)}/${contactId}/consent`);
+    return response.data;
+  },
+
+  setWhatsappConsent: async (clientId: string, contactId: string, subscribed: boolean): Promise<ContactConsent> => {
+    const response = await api.put(`${base(clientId)}/${contactId}/consent/whatsapp`, { subscribed });
+    return response.data;
+  },
+
+  setEmailConsent: async (clientId: string, contactId: string, body: { email: string; subscribed: boolean }): Promise<ContactConsent> => {
+    const response = await api.put(`${base(clientId)}/${contactId}/consent/email`, body);
+    return response.data;
+  },
+
   findFields: async (clientId: string): Promise<CrmField[]> => {
     const response = await api.get(`${base(clientId)}/field`);
     return response.data;

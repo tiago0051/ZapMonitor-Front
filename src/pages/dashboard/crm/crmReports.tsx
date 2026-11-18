@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { crmService } from "@/services/api/crmService";
 import { useQuery } from "@tanstack/react-query";
 import { endOfDay, format, startOfDay, startOfMonth, subDays } from "date-fns";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, TrendingDown, TrendingUp } from "lucide-react";
 import { useState, type FC } from "react";
 import { useLocalStorage } from "usehooks-ts";
 import { crmSelectClassName, formatCurrency } from "./crmUtils";
@@ -38,11 +38,37 @@ const formatDuration = (hours: number | null) => {
   return `${(hours / 24).toFixed(1).replace(".", ",")} dias`;
 };
 
-const StatTile: FC<{ label: string; value: string; detail?: string }> = ({ label, value, detail }) => (
+// Variação contra o período anterior; "melhor" diz se subir é bom (perdas: subir é ruim)
+type Change = { current: number; previous: number; higherIsBetter?: boolean; isRate?: boolean };
+
+const ChangeLabel: FC<Change> = ({ current, previous, higherIsBetter = true, isRate }) => {
+  if (current === previous) return <span className="text-muted-foreground">igual ao período anterior</span>;
+  // Taxa compara em pontos percentuais; contagens, em % do anterior
+  const text = isRate
+    ? `${current > previous ? "+" : "−"}${Math.abs(Math.round((current - previous) * 100))} p.p.`
+    : previous === 0
+      ? "novo no período"
+      : `${current > previous ? "+" : "−"}${Math.abs(Math.round(((current - previous) / previous) * 100))}%`;
+  const isGood = current > previous === higherIsBetter;
+
+  return (
+    <span className={cn("font-medium", isGood ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400")}>
+      {current > previous ? <TrendingUp className="mr-0.5 inline h-3.5 w-3.5" /> : <TrendingDown className="mr-0.5 inline h-3.5 w-3.5" />}
+      {text} <span className="text-muted-foreground font-normal">vs. anterior</span>
+    </span>
+  );
+};
+
+const StatTile: FC<{ label: string; value: string; detail?: string; change?: Change }> = ({ label, value, detail, change }) => (
   <div className="bg-card rounded-xl border p-4">
     <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">{label}</p>
     <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
     {detail && <p className="text-muted-foreground text-sm tabular-nums">{detail}</p>}
+    {change && (
+      <p className="mt-1 text-xs tabular-nums">
+        <ChangeLabel {...change} />
+      </p>
+    )}
   </div>
 );
 
@@ -182,15 +208,99 @@ export const CrmReports = () => {
       {report && (
         <>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <StatTile label="Criados" value={String(report.created)} detail="negócios novos no período" />
-            <StatTile label="Ganhos" value={String(report.won.count)} detail={formatCurrency(report.won.value)} />
-            <StatTile label="Perdidos" value={String(report.lost.count)} detail={formatCurrency(report.lost.value)} />
+            <StatTile
+              label="Em aberto"
+              value={formatCurrency(report.forecast.openValue)}
+              detail={`${report.forecast.openCount} ${report.forecast.openCount === 1 ? "negócio aberto" : "negócios abertos"} agora`}
+            />
+            <StatTile
+              label="Previsão"
+              value={formatCurrency(report.forecast.forecastValue)}
+              detail={
+                report.forecast.withoutProbability > 0
+                  ? `${report.forecast.withoutProbability} com valor ficaram fora (sem nota da IA nem chance na etapa)`
+                  : "valor × chance de ganho"
+              }
+            />
+          </div>
+          <p className="text-muted-foreground -mt-3 text-xs">
+            Em aberto e previsão olham os negócios abertos agora, sem depender do período. A previsão soma o valor de cada negócio vezes a
+            chance de ganho: a nota da IA do negócio, quando existe; senão, a chance cadastrada na etapa (configuração do funil).
+          </p>
+
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <StatTile
+              label="Criados"
+              value={String(report.created)}
+              detail="negócios novos no período"
+              change={{ current: report.created, previous: report.previous.created }}
+            />
+            <StatTile
+              label="Ganhos"
+              value={String(report.won.count)}
+              detail={formatCurrency(report.won.value)}
+              change={{ current: report.won.count, previous: report.previous.won.count }}
+            />
+            <StatTile
+              label="Perdidos"
+              value={String(report.lost.count)}
+              detail={formatCurrency(report.lost.value)}
+              change={{ current: report.lost.count, previous: report.previous.lost.count, higherIsBetter: false }}
+            />
             <StatTile
               label="Taxa de ganho"
               value={report.winRate === null ? "—" : percent(report.winRate)}
               detail="dos encerrados no período"
+              change={
+                report.winRate !== null && report.previous.winRate !== null
+                  ? { current: report.winRate, previous: report.previous.winRate, isRate: true }
+                  : undefined
+              }
             />
           </div>
+          <p className="text-muted-foreground -mt-3 text-xs">
+            Comparado com {format(new Date(report.previous.startDate), "dd/MM")} a {format(new Date(report.previous.endDate), "dd/MM/yyyy")}
+            , período anterior de mesmo tamanho.
+          </p>
+
+          <section className="space-y-3">
+            <div>
+              <h2 className="text-base font-semibold">Por vendedor</h2>
+              <p className="text-muted-foreground text-sm">
+                Pelo responsável de cada negócio. Ganhos, perdidos e valor contam os encerrados no período.
+              </p>
+            </div>
+            {report.owners.length === 0 ? (
+              <p className="text-muted-foreground text-sm">Nenhum negócio no período.</p>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Responsável</TableHead>
+                      <TableHead className="text-right">Negócios</TableHead>
+                      <TableHead className="text-right">Ganhos</TableHead>
+                      <TableHead className="text-right">Valor ganho</TableHead>
+                      <TableHead className="text-right">Taxa</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {report.owners.map((owner) => (
+                      <TableRow key={owner.ownerUserId ?? "none"}>
+                        <TableCell className={cn(!owner.ownerUserId && "text-muted-foreground")}>
+                          {owner.ownerName ?? "Sem responsável"}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">{owner.created}</TableCell>
+                        <TableCell className="text-right tabular-nums">{owner.won}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatCurrency(owner.wonValue)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{owner.winRate === null ? "—" : percent(owner.winRate)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </section>
 
           <section className="space-y-3">
             <div>

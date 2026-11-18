@@ -11,7 +11,11 @@ type DealEventType =
   | "FLOW_TRIGGERED"
   | "TASK_CREATED"
   | "TASK_COMPLETED"
-  | "EMAIL_CLICKED";
+  | "EMAIL_CLICKED"
+  // Atividade registrada à mão; o payload traz activityType, outcome e text
+  | "ACTIVITY_LOGGED";
+
+type DealActivityType = "CALL" | "MEETING" | "NOTE" | "EMAIL" | "WHATSAPP";
 
 type CrmFieldType = "TEXT" | "NUMBER" | "DATE" | "SELECT";
 
@@ -33,6 +37,8 @@ type PipelineStage = {
   conversionEvent: ConversionEventName | null;
   // Negócio que entra na etapa conta como reunião agendada (manual) no custo por reunião
   countsAsMeeting: boolean;
+  // Chance de ganho (0 a 100) para a previsão do relatório, quando o negócio não tem nota da IA
+  winProbability: number | null;
 };
 
 type ConversionEventName = "LEAD_SUBMITTED" | "QUALIFIED_LEAD" | "PURCHASE";
@@ -41,6 +47,8 @@ type Pipeline = {
   id: string;
   name: string;
   active: boolean;
+  // Mais de um negócio aberto do mesmo contato no funil (recompra); por padrão, um só
+  allowMultipleOpenDeals: boolean;
   stages: PipelineStage[];
   createdAt: string;
   updatedAt: string;
@@ -144,10 +152,14 @@ type CrmField = {
   active: boolean;
 };
 
+// Tipo da tarefa: ligar, mandar mensagem, reunião, e-mail ou outro
+type DealTaskType = "CALL" | "MESSAGE" | "MEETING" | "EMAIL" | "OTHER";
+
 type DealTask = {
   id: string;
   deal: { id: string; title: string; pipelineId: string };
   title: string;
+  type: DealTaskType;
   dueAt: string;
   assignee: NamedSummary | null;
   completedAt: string | null;
@@ -161,6 +173,27 @@ type CrmReport = {
   winRate: number | null;
   stages: { stageId: string; reached: number; conversion: number; averageHours: number | null }[];
   lostReasons: { reason: string; count: number }[];
+  // Por responsável, os que mais ganharam em valor primeiro; ownerUserId nulo = sem responsável
+  owners: {
+    ownerUserId: string | null;
+    ownerName: string | null;
+    created: number;
+    won: number;
+    wonValue: number;
+    lost: number;
+    winRate: number | null;
+  }[];
+  // Negócios abertos agora (não depende do período)
+  forecast: { openCount: number; openValue: number; forecastValue: number; withoutProbability: number };
+  // Mesmos números no período anterior de mesmo tamanho
+  previous: {
+    startDate: string;
+    endDate: string;
+    created: number;
+    won: { count: number; value: number };
+    lost: { count: number; value: number };
+    winRate: number | null;
+  };
 };
 
 type DealAiInsight = {

@@ -12,7 +12,7 @@ import { Mail, Phone, Plus, Search } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import { useDebounceValue } from "usehooks-ts";
-import { contactDisplayName } from "./contactUtils";
+import { contactDisplayName, duplicateContactFromError, type DuplicateContact } from "./contactUtils";
 import { ImportContactsDialog } from "./components/importContactsDialog";
 
 const TAKE = 20;
@@ -26,6 +26,8 @@ const DialogNewContact = () => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  // Telefone ou e-mail que já está numa ficha: em vez de só avisar, oferece abrir a ficha existente
+  const [duplicate, setDuplicate] = useState<DuplicateContact | null>(null);
 
   const create = useMutation({
     mutationFn: () =>
@@ -34,7 +36,11 @@ const DialogNewContact = () => {
         phone: phone.trim() || undefined,
         email: email.trim() || undefined,
       }),
-    onError: requestErrorHandling,
+    onError: (error) => {
+      const existing = duplicateContactFromError(error);
+      if (existing) setDuplicate(existing);
+      else requestErrorHandling(error);
+    },
     onSuccess: (contact) => {
       queryClient.invalidateQueries({ queryKey: ["contacts", "list", client.id] });
       setIsOpen(false);
@@ -57,6 +63,7 @@ const DialogNewContact = () => {
           setName("");
           setPhone("");
           setEmail("");
+          setDuplicate(null);
         }
         setIsOpen(open);
       }}
@@ -84,7 +91,10 @@ const DialogNewContact = () => {
               value={phone}
               maxLength={40}
               placeholder="(21) 98086-2828"
-              onChange={(event) => setPhone(event.target.value)}
+              onChange={(event) => {
+                setPhone(event.target.value);
+                setDuplicate(null);
+              }}
             />
           </div>
           <div className="grid gap-2">
@@ -95,9 +105,25 @@ const DialogNewContact = () => {
               value={email}
               maxLength={191}
               placeholder="nome@empresa.com"
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                setDuplicate(null);
+              }}
             />
           </div>
+          {duplicate && (
+            <div
+              role="alert"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50/60 px-3 py-2 text-sm text-amber-800 dark:border-amber-700/60 dark:bg-amber-950/30 dark:text-amber-300"
+            >
+              <span className="min-w-0">Já existe uma ficha com este telefone ou e-mail.</span>
+              <Button type="button" size="sm" variant="outline" asChild>
+                <Link to={`${baseUrl}/contacts/${duplicate.id}`} onClick={() => setIsOpen(false)}>
+                  Abrir ficha de {duplicate.name?.trim() || "contato"}
+                </Link>
+              </Button>
+            </div>
+          )}
           <DialogFooter>
             <Button type="submit" disabled={!isValid || create.isPending}>
               Criar contato

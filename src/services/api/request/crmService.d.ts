@@ -16,10 +16,13 @@ type SavePipelineStageRequestBody = {
   requiredFieldIds?: string[];
   conversionEvent?: ConversionEventName | null;
   countsAsMeeting?: boolean;
+  // Chance de ganho (0 a 100) para a previsão do relatório
+  winProbability?: number | null;
 };
 
 type SavePipelineRequestBody = {
   name: string;
+  allowMultipleOpenDeals?: boolean;
   stages: SavePipelineStageRequestBody[];
 };
 
@@ -76,7 +79,9 @@ type FindDealRequestData = {
 type CreateDealRequestBody = {
   pipelineId: string;
   stageId?: string;
-  whatsappContactId: string;
+  // A conversa do WhatsApp ou a ficha do contato (contactId); pela ficha vale a conversa do telefone principal
+  whatsappContactId?: string;
+  contactId?: string;
   serviceGroupId?: string | null;
   title?: string;
   value?: number | null;
@@ -172,6 +177,8 @@ type SetCrmFieldActiveRequestData = {
 type SaveDealTaskRequestBody = {
   title: string;
   dueAt: string;
+  // Sem tipo, "Outro" na criação; na edição mantém o atual
+  type?: DealTaskType;
   assigneeUserId?: string | null;
 };
 
@@ -201,4 +208,17 @@ type DeleteDealTaskRequestData = {
 type FindCrmReportRequestData = {
   params: CrmClientRequestParams;
   queries: { pipelineId: string; startDate: string; endDate: string; serviceGroupIds?: string };
+};
+
+type LogDealActivityRequestData = {
+  params: DealRequestParams;
+  body: {
+    type: DealActivityType;
+    outcome?: string | null;
+    text?: string | null;
+    // Quando aconteceu (ISO); sem a data, agora
+    occurredAt?: string;
+    // Cria uma tarefa para o próximo passo
+    nextStep?: { title: string; dueAt: string; type?: DealTaskType };
+  };
 };

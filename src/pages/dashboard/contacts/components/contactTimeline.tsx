@@ -2,7 +2,7 @@ import { EmptyState, ErrorState, LoadingState } from "@/components/state-message
 import { Button } from "@/components/ui/button";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { cn } from "@/lib/utils";
-import { describeEvent } from "@/pages/dashboard/crm/components/dealEventText";
+import { describeEvent, eventDetail } from "@/pages/dashboard/crm/components/dealEventText";
 import { enrollmentStatusInfo, stopReasonLabel } from "@/pages/dashboard/broadcasts/sequences/sequenceUtils";
 import { contactService } from "@/services/api/contactService";
 import { useInfiniteQuery } from "@tanstack/react-query";
@@ -94,18 +94,20 @@ const WhatsappEntry: FC<{ item: ContactTimelineWhatsapp }> = ({ item }) => {
   );
 };
 
-const DealEntry: FC<{ item: ContactTimelineDeal }> = ({ item }) => (
-  <Entry
-    icon={<Columns3 className="h-3.5 w-3.5" />}
-    title={describeEvent({ type: item.type, payload: item.payload as DealEvent["payload"] })}
-    at={item.at}
-  >
-    <p>
-      {item.dealTitle} · {item.pipelineName}
-      {item.userName && ` · por ${item.userName}`}
-    </p>
-  </Entry>
-);
+const DealEntry: FC<{ item: ContactTimelineDeal }> = ({ item }) => {
+  const event = { type: item.type, payload: item.payload as DealEvent["payload"] };
+  const detail = eventDetail(event);
+
+  return (
+    <Entry icon={<Columns3 className="h-3.5 w-3.5" />} title={describeEvent(event)} at={item.at}>
+      <p>
+        {item.dealTitle} · {item.pipelineName}
+        {item.userName && ` · por ${item.userName}`}
+      </p>
+      {detail && <p className="whitespace-pre-line">{detail}</p>}
+    </Entry>
+  );
+};
 
 const SequenceEntry: FC<{ item: ContactTimelineSequence }> = ({ item }) => {
   const status = enrollmentStatusInfo[item.status];

@@ -121,6 +121,11 @@ export const crmService = {
     return response.data;
   },
 
+  findPersonDeals: async ({ params }: { params: { clientId: string; personId: string } }): Promise<Deal[]> => {
+    const response = await api.get<Deal[]>(`/client/${params.clientId}/crm/person/${params.personId}/deal`);
+    return response.data;
+  },
+
   findDeal: async ({ params }: FindDealRequestData): Promise<Deal> => {
     const response = await api.get<Deal>(`/client/${params.clientId}/crm/deal/${params.dealId}`);
     return response.data;
@@ -138,6 +143,11 @@ export const crmService = {
 
   updateDeal: async ({ params, body }: UpdateDealRequestData): Promise<Deal> => {
     const response = await api.put(`/client/${params.clientId}/crm/deal/${params.dealId}`, body);
+    return response.data;
+  },
+
+  logDealActivity: async ({ params, body }: LogDealActivityRequestData): Promise<Deal> => {
+    const response = await api.post(`/client/${params.clientId}/crm/deal/${params.dealId}/activity`, body);
     return response.data;
   },
 

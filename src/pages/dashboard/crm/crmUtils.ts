@@ -99,3 +99,9 @@ export const conversionEventLabel: Record<ConversionEventName, string> = {
   QUALIFIED_LEAD: "Lead qualificado (QualifiedLead)",
   PURCHASE: "Compra (Purchase)",
 };
+
+/** Funis em que dá para criar um negócio para quem já tem estes negócios. */
+export const pipelinesForNewDeal = (activePipelines: Pipeline[], deals: Deal[]) =>
+  activePipelines.filter(
+    (pipeline) => pipeline.allowMultipleOpenDeals || !deals.some((deal) => deal.pipelineId === pipeline.id && deal.status === "OPEN"),
+  );

@@ -1,5 +1,7 @@
 import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { cn } from "@/lib/utils";
 import { crmService } from "@/services/api/crmService";
@@ -7,11 +9,12 @@ import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { endOfDay, format, isPast } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ListTodo } from "lucide-react";
+import { AlarmClock, ListTodo } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { DealSheet } from "./components/dealSheet";
 import { useCrmOptions } from "./useCrmOptions";
+import { snoozeOptions, taskTypeIcon, taskTypeLabel } from "./taskUtils";
 
 type TaskGroup = { id: string; label: string; tasks: DealTask[] };
 
@@ -38,6 +41,17 @@ export const MyTasks = () => {
     onError: requestErrorHandling,
     onSuccess: invalidate,
   });
+
+  const updateTask = useMutation({ mutationFn: crmService.updateDealTask, onError: requestErrorHandling, onSuccess: invalidate });
+
+  const snooze = (task: DealTask, until: Date, label: string) =>
+    updateTask.mutate(
+      {
+        params: { clientId: client.id, taskId: task.id },
+        body: { title: task.title, type: task.type, dueAt: until.toISOString(), assigneeUserId: task.assignee?.id ?? null },
+      },
+      { onSuccess: () => toast.success(`"${task.title}" adiada para ${label.toLowerCase()}`) },
+    );
 
   // Concluir tira a tarefa da lista; o toast permite reabrir caso o toque tenha sido sem querer
   const handleComplete = (task: DealTask) => {
@@ -88,34 +102,59 @@ export const MyTasks = () => {
               {group.label} <span className="text-muted-foreground font-normal">({group.tasks.length})</span>
             </h2>
             <ul className="divide-y rounded-lg border">
-              {group.tasks.map((task) => (
-                <li key={task.id} className="flex items-center gap-3 px-3 py-2">
-                  <Checkbox
-                    aria-label={`Concluir ${task.title}`}
-                    checked={false}
-                    disabled={setCompleted.isPending}
-                    onCheckedChange={() => handleComplete(task)}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm">{task.title}</p>
-                    <button
-                      type="button"
-                      onClick={() => setOpenDealId(task.deal.id)}
-                      className="text-muted-foreground text-xs hover:underline"
+              {group.tasks.map((task) => {
+                const TypeIcon = taskTypeIcon[task.type] ?? taskTypeIcon.OTHER;
+                return (
+                  <li key={task.id} className="flex items-center gap-3 px-3 py-2">
+                    <Checkbox
+                      aria-label={`Concluir ${task.title}`}
+                      checked={false}
+                      disabled={setCompleted.isPending}
+                      onCheckedChange={() => handleComplete(task)}
+                    />
+                    <TypeIcon className="text-muted-foreground h-4 w-4 shrink-0" aria-label={taskTypeLabel[task.type]} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm">{task.title}</p>
+                      <button
+                        type="button"
+                        onClick={() => setOpenDealId(task.deal.id)}
+                        className="text-muted-foreground text-xs hover:underline"
+                      >
+                        {task.deal.title} · {pipelines.find((pipeline) => pipeline.id === task.deal.pipelineId)?.name}
+                      </button>
+                    </div>
+                    <span
+                      className={cn(
+                        "shrink-0 text-xs tabular-nums",
+                        group.id === "overdue" ? "font-medium text-red-600" : "text-muted-foreground",
+                      )}
                     >
-                      {task.deal.title} · {pipelines.find((pipeline) => pipeline.id === task.deal.pipelineId)?.name}
-                    </button>
-                  </div>
-                  <span
-                    className={cn(
-                      "shrink-0 text-xs tabular-nums",
-                      group.id === "overdue" ? "font-medium text-red-600" : "text-muted-foreground",
-                    )}
-                  >
-                    {format(new Date(task.dueAt), "dd/MM 'às' HH:mm", { locale: ptBR })}
-                  </span>
-                </li>
-              ))}
+                      {format(new Date(task.dueAt), "dd/MM 'às' HH:mm", { locale: ptBR })}
+                    </span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground h-7 w-7 shrink-0"
+                          aria-label={`Adiar ${task.title}`}
+                          disabled={updateTask.isPending}
+                        >
+                          <AlarmClock className="h-3.5 w-3.5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">Adiar para</DropdownMenuLabel>
+                        {snoozeOptions.map((option) => (
+                          <DropdownMenuItem key={option.id} onSelect={() => snooze(task, option.dueAt(), option.label)}>
+                            {option.label}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </li>
+                );
+              })}
             </ul>
           </section>
         ))}
