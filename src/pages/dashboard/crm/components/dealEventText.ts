@@ -8,6 +8,18 @@ const fieldLabel: Record<string, string> = {
   contact: "telefone do contato",
 };
 
+export const activityTypeLabel: Record<DealActivityType, string> = {
+  CALL: "Ligação",
+  MEETING: "Reunião",
+  NOTE: "Nota",
+  EMAIL: "E-mail",
+  WHATSAPP: "WhatsApp",
+};
+
+/** Texto livre da atividade registrada, mostrado abaixo da frase; nulo para os outros eventos. */
+export const eventDetail = (event: Pick<DealEvent, "type" | "payload">) =>
+  event.type === "ACTIVITY_LOGGED" ? ((event.payload?.text as string | null | undefined) ?? null) : null;
+
 /** Frase do histórico do negócio; usada na ficha do negócio e na linha do tempo do contato. */
 export const describeEvent = (event: Pick<DealEvent, "type" | "payload">) => {
   const payload = (event.payload ?? {}) as Record<string, string | string[] | null>;
@@ -31,6 +43,10 @@ export const describeEvent = (event: Pick<DealEvent, "type" | "payload">) => {
       return `Criou a tarefa "${payload.taskTitle}"`;
     case "TASK_COMPLETED":
       return `Concluiu a tarefa "${payload.taskTitle}"`;
+    case "ACTIVITY_LOGGED": {
+      const label = activityTypeLabel[payload.activityType as DealActivityType] ?? "Atividade";
+      return payload.outcome ? `${label}: ${payload.outcome}` : `Registrou ${label.toLowerCase()}`;
+    }
     case "EMAIL_CLICKED":
       return `Clicou no e-mail da campanha "${payload.campaignName}"`;
   }

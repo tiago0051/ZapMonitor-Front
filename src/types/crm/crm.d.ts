@@ -11,7 +11,11 @@ type DealEventType =
   | "FLOW_TRIGGERED"
   | "TASK_CREATED"
   | "TASK_COMPLETED"
-  | "EMAIL_CLICKED";
+  | "EMAIL_CLICKED"
+  // Atividade registrada à mão; o payload traz activityType, outcome e text
+  | "ACTIVITY_LOGGED";
+
+type DealActivityType = "CALL" | "MEETING" | "NOTE" | "EMAIL" | "WHATSAPP";
 
 type CrmFieldType = "TEXT" | "NUMBER" | "DATE" | "SELECT";
 

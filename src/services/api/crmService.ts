@@ -141,6 +141,11 @@ export const crmService = {
     return response.data;
   },
 
+  logDealActivity: async ({ params, body }: LogDealActivityRequestData): Promise<Deal> => {
+    const response = await api.post(`/client/${params.clientId}/crm/deal/${params.dealId}/activity`, body);
+    return response.data;
+  },
+
   linkDealContact: async ({ params, body }: { params: { clientId: string; dealId: string }; body: { phone: string } }): Promise<Deal> => {
     const response = await api.put(`/client/${params.clientId}/crm/deal/${params.dealId}/contact`, body);
     return response.data;

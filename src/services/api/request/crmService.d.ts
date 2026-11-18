@@ -202,3 +202,16 @@ type FindCrmReportRequestData = {
   params: CrmClientRequestParams;
   queries: { pipelineId: string; startDate: string; endDate: string; serviceGroupIds?: string };
 };
+
+type LogDealActivityRequestData = {
+  params: DealRequestParams;
+  body: {
+    type: DealActivityType;
+    outcome?: string | null;
+    text?: string | null;
+    // Quando aconteceu (ISO); sem a data, agora
+    occurredAt?: string;
+    // Cria uma tarefa para o próximo passo
+    nextStep?: { title: string; dueAt: string };
+  };
+};
