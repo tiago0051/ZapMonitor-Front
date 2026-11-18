@@ -84,7 +84,14 @@ function ContactListPanel({
     return (
       <>
         {contacts.items.map((c) => (
-          <ContactCard key={c.id} contact={c} active={selectedId === c.id} highlight={search} onClick={() => onSelectContact(c)} />
+          <ContactCard
+            key={c.id}
+            contact={c}
+            active={selectedId === c.id}
+            highlight={search}
+            showRepresentative={tab === "all"}
+            onClick={() => onSelectContact(c)}
+          />
         ))}
         {contacts.isFetchingNextPage && Array.from({ length: 3 }).map((_, index) => <ContactCardSkeleton key={`next-${index}`} />)}
         {contacts.hasNextPage && !contacts.isFetchingNextPage && <LoadMoreSentinel onVisible={() => contacts.fetchNextPage()} />}

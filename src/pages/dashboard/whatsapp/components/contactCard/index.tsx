@@ -1,19 +1,23 @@
 import { Badge } from "@/components/ui/badge";
-import { useCallback, useMemo, type DetailedHTMLProps, type FC } from "react";
+import { type DetailedHTMLProps, type FC } from "react";
 import { WhatsappMessageType } from "@/enums/whatsappMessageType.enum";
 import { cn } from "@/lib/utils";
-import { differenceInHours, differenceInMinutes } from "date-fns";
-import { AlertCircle } from "lucide-react";
+import { differenceInHours, differenceInMinutes, format } from "date-fns";
+import { AlertCircle, UserRound } from "lucide-react";
 import { Message } from "./components/message";
 import { ContactAvatar } from "@/components/contact-avatar";
 import { formatConversationTime } from "@/utils/formatString";
 import { contactDisplayName } from "../../contactDisplayName";
+import { useNow } from "@/hooks/use-now";
+import { WhatsappServiceStatus } from "@/enums/whatsappServiceStatus.enum";
 
 type ContactCardProps = DetailedHTMLProps<React.HTMLAttributes<HTMLButtonElement>, HTMLButtonElement> & {
   contact: WhatsappContactMessage;
   active: boolean;
   /** Termo buscado, destacado no nome */
   highlight?: string;
+  /** Mostra com quem a conversa está (aba Todos) */
+  showRepresentative?: boolean;
 };
 
 /** Destaca, sem diferenciar maiúsculas, cada ocorrência do termo no texto. */
@@ -49,45 +53,52 @@ const HighlightedText: FC<{ text: string; term?: string }> = ({ text, term }) =>
   );
 };
 
-export const ContactCard: FC<ContactCardProps> = ({ contact, active, onClick, highlight }) => {
-  const getExpirationStatus = useCallback(() => {
-    if (!contact.replyTimeExpiredAt) return null;
+/** Limites da espera na fila, em minutos: até o primeiro fica verde, até o segundo amarelo, depois vermelho. */
+export const QUEUE_WAIT_WARNING_MINUTES = 5;
+export const QUEUE_WAIT_CRITICAL_MINUTES = 15;
 
-    const minutes = differenceInMinutes(new Date(contact.replyTimeExpiredAt), new Date());
-    const hours = differenceInHours(new Date(contact.replyTimeExpiredAt), new Date());
+const formatWait = (minutes: number) => {
+  if (minutes < 1) return "Chegou agora";
+  if (minutes < 60) return `Esperando há ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `Esperando há ${hours} h ${String(minutes % 60).padStart(2, "0")}`;
+  return `Esperando há ${Math.floor(hours / 24)} d`;
+};
 
-    if (minutes < 0) {
-      return null;
-    }
+const waitColor = (minutes: number) => {
+  if (minutes < QUEUE_WAIT_WARNING_MINUTES) return "bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-300";
+  if (minutes < QUEUE_WAIT_CRITICAL_MINUTES) return "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300";
+  return "bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300";
+};
 
-    if (hours < 2) {
-      const minutes = differenceInMinutes(new Date(contact.replyTimeExpiredAt), new Date());
-      return {
-        color: "bg-red-100 text-red-800 border-red-300",
-        icon: "text-red-600",
-        label: `${minutes}min`,
-        urgent: true,
-      };
-    }
+/** Prazo da janela de 24h para responder sem template, recalculado a cada tique do relógio compartilhado. */
+const getExpirationStatus = (replyTimeExpiredAt: string | null, now: number) => {
+  if (!replyTimeExpiredAt) return null;
 
-    if (hours < 6) {
-      return {
-        color: "bg-orange-100 text-orange-800 border-orange-300",
-        icon: "text-orange-600",
-        label: `${Math.round(hours)}h`,
-        urgent: false,
-      };
-    }
+  const minutes = differenceInMinutes(new Date(replyTimeExpiredAt), now);
+  if (minutes < 0) return null;
 
-    return {
-      color: "bg-green-100 text-green-800 border-green-300",
-      icon: "text-green-600",
-      label: `${Math.round(hours)}h`,
-      urgent: false,
-    };
-  }, [contact.replyTimeExpiredAt]);
+  const hours = differenceInHours(new Date(replyTimeExpiredAt), now);
 
-  const expirationStatus = useMemo(() => getExpirationStatus(), [getExpirationStatus]);
+  if (hours < 2) {
+    return { color: "bg-red-100 text-red-800 border-red-300", icon: "text-red-600", label: `${minutes}min` };
+  }
+
+  if (hours < 6) {
+    return { color: "bg-orange-100 text-orange-800 border-orange-300", icon: "text-orange-600", label: `${hours}h` };
+  }
+
+  return { color: "bg-green-100 text-green-800 border-green-300", icon: "text-green-600", label: `${hours}h` };
+};
+
+export const ContactCard: FC<ContactCardProps> = ({ contact, active, onClick, highlight, showRepresentative }) => {
+  const now = useNow();
+  const expirationStatus = getExpirationStatus(contact.replyTimeExpiredAt, now);
+
+  const isWaiting = contact.serviceStatus === WhatsappServiceStatus.WAITING_ATTENDANT && !!contact.queueEnteredAt;
+  const waitMinutes = isWaiting ? Math.max(0, differenceInMinutes(now, new Date(contact.queueEnteredAt as string))) : 0;
+  const representative = showRepresentative ? contact.serviceRepresentative : null;
+
   const isIncoming = contact.messageType === WhatsappMessageType.INCOMING;
 
   const nameToPresentation = contactDisplayName(contact);
@@ -130,6 +141,24 @@ export const ContactCard: FC<ContactCardProps> = ({ contact, active, onClick, hi
               </span>
             )}
           </div>
+          {(isWaiting || representative) && (
+            <div className="mt-1 mb-0.5 flex min-w-0 flex-wrap items-center gap-1.5">
+              {isWaiting && (
+                <span
+                  title={`Na fila desde ${format(new Date(contact.queueEnteredAt as string), "dd/MM HH:mm")}`}
+                  className={cn("rounded px-1.5 py-0.5 text-[11px] leading-none font-medium tabular-nums", waitColor(waitMinutes))}
+                >
+                  {formatWait(waitMinutes)}
+                </span>
+              )}
+              {representative && (
+                <span className="text-muted-foreground flex min-w-0 items-center gap-1 text-[11px]">
+                  <UserRound className="h-3 w-3 shrink-0" />
+                  <span className="truncate">com {representative}</span>
+                </span>
+              )}
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-1.5">
             {contact.categories &&
               contact.categories.slice(0, 2).map((t) => (
