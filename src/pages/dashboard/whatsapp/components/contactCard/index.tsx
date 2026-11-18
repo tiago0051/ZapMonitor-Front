@@ -9,6 +9,7 @@ import { ContactAvatar } from "@/components/contact-avatar";
 import { formatConversationTime } from "@/utils/formatString";
 import { contactDisplayName } from "../../contactDisplayName";
 import { useNow } from "@/hooks/use-now";
+import { useDraftPreview } from "../../conversationDrafts";
 import { WhatsappServiceStatus } from "@/enums/whatsappServiceStatus.enum";
 
 type ContactCardProps = DetailedHTMLProps<React.HTMLAttributes<HTMLButtonElement>, HTMLButtonElement> & {
@@ -93,6 +94,9 @@ const getExpirationStatus = (replyTimeExpiredAt: string | null, now: number) => 
 
 export const ContactCard: FC<ContactCardProps> = ({ contact, active, onClick, highlight, showRepresentative }) => {
   const now = useNow();
+  // Na conversa aberta o rascunho já está na caixa de mensagem
+  const draftPreview = useDraftPreview(contact.id);
+  const showDraft = !!draftPreview && !active;
   const expirationStatus = getExpirationStatus(contact.replyTimeExpiredAt, now);
 
   const isWaiting = contact.serviceStatus === WhatsappServiceStatus.WAITING_ATTENDANT && !!contact.queueEnteredAt;
@@ -128,9 +132,16 @@ export const ContactCard: FC<ContactCardProps> = ({ contact, active, onClick, hi
           </div>
           <div className="flex items-start gap-2">
             <div className="min-w-0 flex-1">
-              <Message isIncoming={isIncoming} messageContentType={contact.messageContentType}>
-                {contact.messageContent}
-              </Message>
+              {showDraft ? (
+                <p className="line-clamp-2 text-sm">
+                  <span className="font-medium text-red-600 dark:text-red-400">Rascunho: </span>
+                  <span className="text-muted-foreground">{draftPreview}</span>
+                </p>
+              ) : (
+                <Message isIncoming={isIncoming} messageContentType={contact.messageContentType}>
+                  {contact.messageContent}
+                </Message>
+              )}
             </div>
             {hasUnread && (
               <span

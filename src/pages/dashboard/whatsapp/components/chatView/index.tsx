@@ -7,6 +7,7 @@ import { useChatSubscription } from "./hooks/useChatSubscription";
 import { ChatComposer } from "./components/chatComposer";
 import { canReplyToContact } from "./components/chatComposer/canReplyToContact";
 import { TransferNoteBanner } from "./components/transferNoteBanner";
+import { getDraftReply, saveDraftReply } from "../../conversationDrafts";
 
 type ChatViewProps = {
   contact: WhatsappContactMessage;
@@ -19,13 +20,19 @@ export const ChatView = ({ contact, onServiceAssumed, onBack, onShowInfo }: Chat
   const { contactService } = useContactService({ contactId: contact.id });
   const serviceActions = useServiceActions({ contact, contactService, onServiceAssumed });
 
-  const [replyingTo, setReplyingTo] = useState<WhatsappMessage | null>(null);
+  // "Respondendo a" faz parte do rascunho da conversa: volta ao reabrir o contato
+  const [replyingTo, setReplyingToState] = useState<WhatsappMessage | null>(() => getDraftReply(contact.id));
   const [prevContactId, setPrevContactId] = useState(contact.id);
 
   if (contact.id !== prevContactId) {
     setPrevContactId(contact.id);
-    setReplyingTo(null);
+    setReplyingToState(getDraftReply(contact.id));
   }
+
+  const setReplyingTo = (message: WhatsappMessage | null) => {
+    setReplyingToState(message);
+    saveDraftReply(contact.id, message);
+  };
 
   useChatSubscription(contact.id);
 

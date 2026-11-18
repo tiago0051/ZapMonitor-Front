@@ -9,12 +9,13 @@ import { convertImageForWhatsapp, convertWavToMp3 } from "@/utils/fileConvert";
 import { requestErrorHandling } from "@/utils/request";
 import { BlockBlobClient } from "@azure/storage-blob";
 import { useMutation } from "@tanstack/react-query";
-import { type ChangeEvent, type FC, useEffect, useMemo, useRef, useState } from "react";
+import { type ChangeEvent, type FC, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { FiFile, FiImage, FiMic, FiPaperclip, FiSend, FiStopCircle, FiX } from "react-icons/fi";
 import { useReactMediaRecorder } from "react-media-recorder";
 import { toast } from "sonner";
 import { MessageReplyPreview } from "../messageReplyPreview";
 import { contactDisplayName } from "@/pages/dashboard/whatsapp/contactDisplayName";
+import { type DraftMessage, getDraftMessage, saveDraftMessage } from "@/pages/dashboard/whatsapp/conversationDrafts";
 
 const formatFileSize = (bytes: number) => {
   if (bytes < 1024) return `${bytes} B`;
@@ -52,7 +53,12 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
 
   // Percentual enviado do arquivo; null fora de um upload
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-  const [message, setMessage] = useState<{ type: WhatsappMessageContentType; value: string | Blob | File }>(defaultMessage);
+  // Começa pelo rascunho da conversa; cada mudança volta para o rascunho, para não se perder ao trocar de conversa
+  const [message, setMessageState] = useState<DraftMessage>(() => getDraftMessage(contact.id) ?? defaultMessage);
+  const setMessage = (next: DraftMessage) => {
+    setMessageState(next);
+    saveDraftMessage(contact.id, next);
+  };
   const messageIsText = message.type === WhatsappMessageContentType.TEXT;
   const messageIsAudio = message.type === WhatsappMessageContentType.AUDIO;
   const messageIsDocument = message.type === WhatsappMessageContentType.DOCUMENT;
@@ -257,6 +263,14 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
   useEffect(() => {
     if (replyingTo) inputRef.current?.focus();
   }, [replyingTo]);
+
+  // Rascunho restaurado: a caixa já abre na altura do texto
+  useLayoutEffect(() => {
+    const input = inputRef.current;
+    if (!input?.value) return;
+    input.style.height = "auto";
+    input.style.height = `${input.scrollHeight}px`;
+  }, []);
 
   useEffect(() => {
     if (!isRecording) return;
