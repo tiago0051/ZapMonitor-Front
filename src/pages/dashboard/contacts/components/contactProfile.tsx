@@ -7,6 +7,7 @@ import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useBaseUrl } from "@/hooks/use-baseUrl";
 import { cn } from "@/lib/utils";
 import { CustomFieldInput } from "@/pages/dashboard/crm/components/customFieldInput";
+import { ContactDeals as CrmContactDeals } from "@/pages/dashboard/crm/components/contactDeals";
 import {
   crmTextareaClassName,
   dealStatusLabel,
@@ -600,17 +601,24 @@ const ContactDeals: FC<{ contact: ContactDetail }> = ({ contact }) => {
 
   if (!canUseCrm) return null;
 
-  return (
-    <Section
-      title="Negócios"
-      action={
-        can("crm.view") && contact.deals.length > 0 ? (
+  // Quem vê o CRM mexe nos negócios aqui mesmo: abre a ficha do negócio, muda a etapa e cria um novo
+  if (can("crm.view"))
+    return (
+      <Section
+        title="Negócios"
+        action={
           <Link to={`${baseUrl}/crm`} className="text-primary text-xs hover:underline">
             Abrir o CRM
           </Link>
-        ) : undefined
-      }
-    >
+        }
+      >
+        <CrmContactDeals person={{ id: contact.id, name: contact.name }} />
+      </Section>
+    );
+
+  // Sem acesso ao CRM, só o resumo
+  return (
+    <Section title="Negócios">
       {contact.deals.length === 0 && <p className="text-muted-foreground text-sm">Nenhum negócio.</p>}
       <ul className="grid gap-1.5">
         {contact.deals.map((deal) => (
