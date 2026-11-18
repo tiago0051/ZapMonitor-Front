@@ -6,6 +6,12 @@ import { IsTopScrolled } from "@/utils/scroll";
 import { useInfiniteQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+// Distância do fim (em px) até onde ainda conta como "lendo as últimas mensagens"
+const NEAR_BOTTOM_PX = 120;
+
+// Na lista flex-col-reverse o scrollTop é 0 no fim e fica negativo ao subir
+const isNearBottom = (element: HTMLElement) => Math.abs(element.scrollTop) < NEAR_BOTTOM_PX;
+
 interface UseContactMessagesProps {
   contact: WhatsappContactMessage;
 }
@@ -16,11 +22,14 @@ export const useContactMessages = ({ contact }: UseContactMessagesProps) => {
   const queryClient = useQueryClient();
 
   const [newMessagesList, setNewMessagesList] = useState<WhatsappMessage[]>([]);
+  // Mensagens que chegaram enquanto o atendente lia mais acima; vira o botão "↓ N novas"
+  const [unseenCount, setUnseenCount] = useState(0);
   const [prevContactId, setPrevContactId] = useState(contact.id);
 
   if (contact.id !== prevContactId) {
     setPrevContactId(contact.id);
     setNewMessagesList([]);
+    setUnseenCount(0);
   }
 
   const findAllWhatsappMessagesByContact = useInfiniteQuery({
@@ -62,6 +71,13 @@ export const useContactMessages = ({ contact }: UseContactMessagesProps) => {
 
   function onScrollChat(event: React.UIEvent<HTMLDivElement, UIEvent>) {
     if (hasNextPage && !isFetching && IsTopScrolled(event.currentTarget)) fetchNextPage();
+    if (unseenCount > 0 && isNearBottom(event.currentTarget)) setUnseenCount(0);
+  }
+
+  function scrollToBottom() {
+    // A lista é flex-col-reverse: o fim da conversa é scrollTop 0
+    scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    setUnseenCount(0);
   }
 
   // A cada página carregada: se ainda não há rolagem, busca a próxima até encher a tela ou acabar
@@ -83,6 +99,8 @@ export const useContactMessages = ({ contact }: UseContactMessagesProps) => {
   useEffect(() => {
     const handleNewMessage = (data: WhatsappMessage) => {
       setNewMessagesList((prev) => [data, ...prev]);
+      const element = scrollRef.current;
+      if (element && !isNearBottom(element)) setUnseenCount((count) => count + 1);
     };
 
     socket.on(`contact:${contact.id}:messages:update`, handleNewMessage);
@@ -138,5 +156,7 @@ export const useContactMessages = ({ contact }: UseContactMessagesProps) => {
     onScrollChat,
     isFetching: findAllWhatsappMessagesByContact.isFetching,
     messages,
+    unseenCount,
+    scrollToBottom,
   };
 };
