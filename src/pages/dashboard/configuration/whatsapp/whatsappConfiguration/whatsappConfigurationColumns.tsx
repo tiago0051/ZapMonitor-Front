@@ -5,9 +5,11 @@ import { MissingSetup } from "./components/missingSetup";
 import { DialogManageWhatsappConfiguration } from "./components/dialogManageWhatsappConfiguration";
 import { WhatsappWebActions } from "./components/whatsappWebActions";
 import { DeleteWhatsappConfigurationButton } from "./components/deleteWhatsappConfigurationButton";
+import { NumberHealthCell } from "./components/numberHealthCell";
 import {
   formatConfigurationPhoneNumber,
   isWhatsappWeb,
+  whatsappMetaStatusLabel,
   whatsappProviderLabel,
   whatsappWebStatusInfo,
 } from "@/utils/whatsappConfiguration";
@@ -36,8 +38,11 @@ export const getColumns = (clientId: string) => {
       accessorKey: "enabled",
       header: "Status",
       cell: ({ row }) => {
-        const { enabled, connectionStatus, connectionError } = row.original;
+        const { enabled, connectionStatus, connectionError, metaStatus } = row.original;
         const connection = isWhatsappWeb(row.original) && connectionStatus ? whatsappWebStatusInfo[connectionStatus] : null;
+        // Na API oficial, só aparece o status da Meta que pede atenção (conectado é o normal)
+        const metaStatusLabel =
+          !isWhatsappWeb(row.original) && metaStatus && metaStatus !== "CONNECTED" ? whatsappMetaStatusLabel[metaStatus] : null;
 
         return (
           <div className="flex flex-wrap items-center gap-1">
@@ -47,18 +52,34 @@ export const getColumns = (clientId: string) => {
                 {connection.label}
               </Badge>
             )}
+            {metaStatusLabel && (
+              <Badge variant={["RESTRICTED", "BANNED", "FLAGGED"].includes(metaStatus!) ? "destructive" : "outline"}>
+                {metaStatusLabel}
+              </Badge>
+            )}
           </div>
         );
       },
+    },
+    {
+      id: "health",
+      header: "Qualidade e limite",
+      cell: ({ row }) => <NumberHealthCell configuration={row.original} />,
     },
     {
       id: "flow",
       header: "Fluxo",
       cell: ({ row }) => {
         const { flow } = row.original;
-        if (!flow) return <MissingSetup label="Sem fluxo" hint="Sem fluxo ativo o número não responde ninguém. Escolha o número em um fluxo." />;
+        if (!flow)
+          return <MissingSetup label="Sem fluxo" hint="Sem fluxo ativo o número não responde ninguém. Escolha o número em um fluxo." />;
         if (!flow.active)
-          return <MissingSetup label={`${flow.name} (desativado)`} hint="O fluxo deste número está desativado. Ative-o para responder os contatos." />;
+          return (
+            <MissingSetup
+              label={`${flow.name} (desativado)`}
+              hint="O fluxo deste número está desativado. Ative-o para responder os contatos."
+            />
+          );
         return <span className="text-sm">{flow.name}</span>;
       },
     },
@@ -68,9 +89,19 @@ export const getColumns = (clientId: string) => {
       cell: ({ row }) => {
         const { serviceGroup } = row.original;
         if (!serviceGroup)
-          return <MissingSetup label="Sem grupo" hint="Sem grupo, quem pede um atendente não cai na fila de ninguém. Escolha o número em um grupo." />;
+          return (
+            <MissingSetup
+              label="Sem grupo"
+              hint="Sem grupo, quem pede um atendente não cai na fila de ninguém. Escolha o número em um grupo."
+            />
+          );
         if (serviceGroup.memberCount === 0)
-          return <MissingSetup label={`${serviceGroup.name} (sem pessoas)`} hint="O grupo não tem ninguém para atender. Adicione pessoas ao grupo." />;
+          return (
+            <MissingSetup
+              label={`${serviceGroup.name} (sem pessoas)`}
+              hint="O grupo não tem ninguém para atender. Adicione pessoas ao grupo."
+            />
+          );
         return <span className="text-sm">{serviceGroup.name}</span>;
       },
     },

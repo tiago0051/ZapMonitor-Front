@@ -1,6 +1,6 @@
 import { EmptyState } from "@/components/state-message";
 import { cn } from "@/lib/utils";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { getColumns } from "./whatsappConfigurationColumns";
 import { DataTablePaginate } from "@/components/ui/dataTablePaginate";
 import { useState } from "react";
@@ -51,6 +51,20 @@ export const WhatsappConfiguration = () => {
     whatsappWeb.limit !== null && `${whatsappWeb.used} de ${whatsappWeb.limit} por QR code`,
   ].filter(Boolean);
 
+  // Ao abrir, relê na Meta a qualidade e o limite dos números com leitura de mais de 1 hora; a lista atualiza depois
+  const queryClient = useQueryClient();
+  useQuery({
+    meta: { errorHandledInline: true },
+    queryKey: ["whatsappNumberHealth", clientId],
+    queryFn: async () => {
+      const result = await whatsappService.refreshNumberHealth(clientId!);
+      if (result.refreshed > 0) await queryClient.invalidateQueries({ queryKey: ["whatsappConfigurations", clientId] });
+      return result;
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+
   const columns = getColumns(clientId!);
 
   return (
@@ -59,8 +73,8 @@ export const WhatsappConfiguration = () => {
         <div>
           <CardTitle>Números de WhatsApp</CardTitle>
           <CardDescription>
-            Conecte os números que recebem e enviam mensagens. Pela Meta, as credenciais são configuradas automaticamente; por QR code, basta
-            ler o código no celular.
+            Conecte os números que recebem e enviam mensagens. Pela Meta, as credenciais são configuradas automaticamente; por QR code,
+            basta ler o código no celular.
           </CardDescription>
           {usageParts.length > 0 && (
             <p className={cn("mt-2 text-sm", isAtLimit || isWhatsappWebAtLimit ? "text-destructive" : "text-muted-foreground")}>
@@ -72,10 +86,13 @@ export const WhatsappConfiguration = () => {
             </p>
           )}
         </div>
-        <div className="flex shrink-0 flex-wrap gap-2">
+        <div className="flex shrink-0 flex-col items-stretch gap-1 sm:items-end">
+          <div className="flex flex-wrap gap-2">
+            <WhatsappEmbeddedSignupButton />
+            <WhatsappWebConnectButton clientId={clientId!} disabled={isWhatsappWebAtLimit} />
+          </div>
+          {/* Para quem já tem os dados do painel da Meta e não consegue usar a conexão automática */}
           <DialogCreateWhatsappConfiguration clientId={clientId!} disabled={isAtLimit} />
-          <WhatsappEmbeddedSignupButton />
-          <WhatsappWebConnectButton clientId={clientId!} disabled={isWhatsappWebAtLimit} />
         </div>
       </CardHeader>
       <CardContent>

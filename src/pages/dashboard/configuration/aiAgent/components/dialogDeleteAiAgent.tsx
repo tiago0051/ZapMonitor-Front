@@ -84,7 +84,12 @@ export const DialogDeleteAiAgent: FC<DialogDeleteAiAgentProps> = ({ clientId, ai
           <Button type="button" variant="outline" onClick={() => setIsOpen(false)} disabled={deleteAiAgent.isPending}>
             Cancelar
           </Button>
-          <Button type="button" variant="destructive" onClick={handleDelete} disabled={deleteAiAgent.isPending || usageQuery.isLoading || isBlocked}>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={deleteAiAgent.isPending || usageQuery.isLoading || isBlocked}
+          >
             Excluir
           </Button>
         </DialogFooter>

@@ -23,6 +23,7 @@ import {
   Workflow,
   MonitorPlay,
   Clapperboard,
+  Gauge,
   type LucideIcon,
 } from "lucide-react";
 import { Suspense, useEffect, useRef, type ReactNode } from "react";
@@ -48,6 +49,7 @@ import { ServiceGroups } from "./serviceGroup/serviceGroup";
 import { WhatsappCategory } from "./whatsapp/whatsappCategory/whatsappCategory";
 import { WhatsappConfiguration } from "./whatsapp/whatsappConfiguration/whatsappConfiguration";
 import { WhatsappTemplate } from "./whatsapp/whatsappTemplate/whatsappTemplate";
+import { PlanUsageSettings } from "./plan/planUsageSettings";
 
 type ConfigurationSection = {
   id: string;
@@ -210,7 +212,10 @@ const configurationGroups: { label: string; sections: ConfigurationSection[] }[]
   },
   {
     label: "Conta",
-    sections: [{ id: "account", label: "Senha e segurança", icon: KeyRound, content: <AccountSettings />, hiddenFromNav: true }],
+    sections: [
+      { id: "plan", label: "Plano e consumo", icon: Gauge, content: <PlanUsageSettings />, permission: "members.manage" },
+      { id: "account", label: "Senha e segurança", icon: KeyRound, content: <AccountSettings />, hiddenFromNav: true },
+    ],
   },
 ];
 

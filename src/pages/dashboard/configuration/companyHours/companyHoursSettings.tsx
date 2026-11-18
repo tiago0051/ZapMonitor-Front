@@ -114,7 +114,8 @@ const CompanyHoursForm: FC<{ clientId: string; companyHours: CompanyHours }> = (
         <CardTitle>Horário da empresa</CardTitle>
         <CardDescription>
           Quando a empresa atende. Os nós "Horário de atendimento" dos fluxos que usam o horário da empresa seguem por "Dentro do horário"
-          ou "Fora do horário" conforme este cadastro. Feriados e datas fechadas contam como fora do horário o dia inteiro.
+          ou "Fora do horário" conforme este cadastro, e os agentes de IA com "usar o horário da empresa" na agenda só marcam dentro dele.
+          Feriados e datas fechadas contam como fora do horário o dia inteiro.
         </CardDescription>
         {!companyHours.configured && (
           <p className="rounded-md bg-amber-50 p-2 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">

@@ -55,8 +55,15 @@ const schema = z
     changeMinNoticeHours: integer(0, 720, "o prazo"),
     maxFutureAppointmentsPerContact: integer(1, 20, "o limite"),
     eventTitle: z.string().trim().min(1, "Informe o título do evento").max(200, "Máximo de 200 caracteres"),
+    useCompanyHours: z.boolean(),
   })
   .superRefine((values, context) => {
+    // Com o horário da empresa, os horários próprios ficam só guardados e não são conferidos
+    if (values.useCompanyHours) {
+      if (values.enabled && !values.calendarId) context.addIssue({ code: "custom", path: ["calendarId"], message: "Escolha a agenda" });
+      return;
+    }
+
     if (values.weeklyHours.some((interval) => !interval.start || !interval.end || toMinutes(interval.start) >= toMinutes(interval.end)))
       context.addIssue({ code: "custom", path: ["weeklyHours"], message: "Em cada horário, o início precisa ser antes do fim" });
     else if (values.weeklyHours.some((interval) => toMinutes(interval.end) - toMinutes(interval.start) < values.sessionMinutes))
@@ -90,13 +97,14 @@ export const DialogAiAgentTools: FC<DialogAiAgentToolsProps> = ({ clientId, aiAg
 
   const form = useForm<FormValues>({ resolver: zodResolver(schema) });
   const enabled = useWatch({ control: form.control, name: "enabled" });
+  const useCompanyHours = useWatch({ control: form.control, name: "useCompanyHours" });
 
   useEffect(() => {
     if (!isOpen || !tool) return;
 
     // Sem agenda escolhida, sugere a principal da conta
     const calendarId = tool.rules.calendarId || tool.calendars.find((calendar) => calendar.primary)?.id || "";
-    form.reset({ enabled: tool.enabled, ...tool.rules, calendarId });
+    form.reset({ enabled: tool.enabled, ...tool.rules, calendarId, useCompanyHours: !!tool.rules.useCompanyHours });
   }, [isOpen, tool]);
 
   const save = useMutation({
@@ -116,6 +124,10 @@ export const DialogAiAgentTools: FC<DialogAiAgentToolsProps> = ({ clientId, aiAg
   const goToConnection = () => {
     setIsOpen(false);
     setSearchParams({ tab: "googleCalendar" });
+  };
+  const goToCompanyHours = () => {
+    setIsOpen(false);
+    setSearchParams({ tab: "companyHours" });
   };
 
   return (
@@ -208,39 +220,72 @@ export const DialogAiAgentTools: FC<DialogAiAgentToolsProps> = ({ clientId, aiAg
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="timeZone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Fuso horário</FormLabel>
-                        <FormControl>
-                          <select className={selectClassName} {...field}>
-                            {[...new Set([field.value, ...TIMEZONES].filter(Boolean))].map((timeZone) => (
-                              <option key={timeZone} value={timeZone}>
-                                {timeZone}
-                              </option>
-                            ))}
-                          </select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {!useCompanyHours && (
+                    <FormField
+                      control={form.control}
+                      name="timeZone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Fuso horário</FormLabel>
+                          <FormControl>
+                            <select className={selectClassName} {...field}>
+                              {[...new Set([field.value, ...TIMEZONES].filter(Boolean))].map((timeZone) => (
+                                <option key={timeZone} value={timeZone}>
+                                  {timeZone}
+                                </option>
+                              ))}
+                            </select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                 </div>
 
                 <FormField
                   control={form.control}
-                  name="weeklyHours"
+                  name="useCompanyHours"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Horários de atendimento</FormLabel>
-                      <FormDescription>As sessões começam no início de cada horário, uma depois da outra com o intervalo.</FormDescription>
-                      <WeeklyHoursEditor value={field.value ?? []} onChange={field.onChange} disabled={!enabled} />
-                      <FormMessage />
+                    <FormItem className="rounded-lg border p-3">
+                      <div className="flex items-center gap-2">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            disabled={!enabled || (!tool.companyHoursConfigured && !field.value)}
+                            onCheckedChange={(checked) => field.onChange(checked === true)}
+                          />
+                        </FormControl>
+                        <FormLabel className="font-medium">Usar o horário da empresa</FormLabel>
+                      </div>
+                      <FormDescription>
+                        {tool.companyHoursConfigured
+                          ? "O agente oferece horários dentro do horário de funcionamento da empresa e não marca em feriados nem datas fechadas."
+                          : "Cadastre primeiro o horário da empresa, com os feriados, para o agente seguir o mesmo horário dos fluxos."}{" "}
+                        <Button type="button" variant="link" className="h-auto p-0 text-sm" onClick={goToCompanyHours}>
+                          {tool.companyHoursConfigured ? "Ver o horário da empresa" : "Cadastrar o horário da empresa"}
+                        </Button>
+                      </FormDescription>
                     </FormItem>
                   )}
                 />
+
+                {!useCompanyHours && (
+                  <FormField
+                    control={form.control}
+                    name="weeklyHours"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Horários de atendimento</FormLabel>
+                        <FormDescription>
+                          As sessões começam no início de cada horário, uma depois da outra com o intervalo.
+                        </FormDescription>
+                        <WeeklyHoursEditor value={field.value ?? []} onChange={field.onChange} disabled={!enabled} />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <NumberField form={form} name="sessionMinutes" label="Duração da sessão (min)" />

@@ -33,6 +33,8 @@ type GoogleCalendarToolRules = {
   changeMinNoticeHours: number;
   maxFutureAppointmentsPerContact: number;
   eventTitle: string;
+  // Usa o horário da empresa (com os feriados) no lugar dos horários e do fuso acima, que ficam guardados como reserva
+  useCompanyHours?: boolean;
 };
 
 type GoogleCalendarTool = {
@@ -40,6 +42,8 @@ type GoogleCalendarTool = {
   rules: GoogleCalendarToolRules;
   connection: GoogleCalendarConnection;
   calendars: GoogleCalendarItem[];
+  // A empresa já cadastrou o horário em Configurações
+  companyHoursConfigured: boolean;
 };
 
 /** Dado do agendamento que preenche uma variável do modelo de lembrete */

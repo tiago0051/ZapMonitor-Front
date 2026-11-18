@@ -57,10 +57,11 @@ export const PromptAssistant: FC<PromptAssistantProps> = ({ clientId, defaultObj
     <div className="bg-muted/40 flex flex-col gap-3 rounded-lg border p-4">
       <div className="flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-violet-500" />
-        <h4 className="text-sm font-semibold">Assistente de prompt</h4>
+        <h4 className="text-sm font-semibold">Assistente de instruções</h4>
       </div>
       <p className="text-muted-foreground text-xs">
-        Descreva a empresa, o público, os assuntos que o agente resolve e o tom desejado. A IA escreve o system prompt para você revisar.
+        Descreva a empresa, o público, os assuntos que o agente resolve e o tom desejado. A IA escreve as instruções do agente para você
+        revisar.
       </p>
 
       <div className="space-y-2">
@@ -78,12 +79,12 @@ export const PromptAssistant: FC<PromptAssistantProps> = ({ clientId, defaultObj
 
       <Button type="button" variant="secondary" onClick={() => handleGenerate(false)} disabled={!canGenerate}>
         {generateSystemPrompt.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-        {hasCurrentPrompt ? "Gerar novo prompt" : "Gerar prompt"}
+        {hasCurrentPrompt ? "Escrever de novo" : "Escrever instruções"}
       </Button>
 
       {hasCurrentPrompt && (
         <div className="space-y-2 border-t pt-3">
-          <Label htmlFor="prompt-assistant-refinement">Ajustar o prompt atual</Label>
+          <Label htmlFor="prompt-assistant-refinement">Ajustar as instruções atuais</Label>
           <textarea
             id="prompt-assistant-refinement"
             value={refinement}
@@ -100,7 +101,7 @@ export const PromptAssistant: FC<PromptAssistantProps> = ({ clientId, defaultObj
             onClick={() => handleGenerate(true)}
             disabled={!canGenerate || refinement.trim().length === 0}
           >
-            Refinar prompt atual
+            Ajustar instruções
           </Button>
         </div>
       )}

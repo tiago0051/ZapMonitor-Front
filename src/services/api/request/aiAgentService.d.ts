@@ -55,3 +55,13 @@ type GenerateSystemPromptRequestBody = {
   currentPrompt?: string;
   refinement?: string;
 };
+
+type TestAiAgentRequestData = {
+  params: { clientId: string };
+  body: {
+    aiAgentId?: string;
+    systemPrompt: string;
+    temperature?: number;
+    messages: AiAgentTestMessage[];
+  };
+};
