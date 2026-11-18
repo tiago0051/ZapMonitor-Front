@@ -6,6 +6,7 @@ import { useServiceActions } from "./hooks/useServiceActions";
 import { useChatSubscription } from "./hooks/useChatSubscription";
 import { ChatComposer } from "./components/chatComposer";
 import { canReplyToContact } from "./components/chatComposer/canReplyToContact";
+import { TransferNoteBanner } from "./components/transferNoteBanner";
 
 type ChatViewProps = {
   contact: WhatsappContactMessage;
@@ -33,6 +34,7 @@ export const ChatView = ({ contact, onServiceAssumed, onBack, onShowInfo }: Chat
   return (
     <div className={"flex h-full flex-col overflow-hidden"}>
       <Header contact={contact} contactService={contactService} serviceActions={serviceActions} onBack={onBack} onShowInfo={onShowInfo} />
+      {contactService?.transferNote && <TransferNoteBanner transferNote={contactService.transferNote} />}
       <MessageList contact={contact} onReply={canSendMessage ? setReplyingTo : undefined} />
       <ChatComposer
         contact={contact}

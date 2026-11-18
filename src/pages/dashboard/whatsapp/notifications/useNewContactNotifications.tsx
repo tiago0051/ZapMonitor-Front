@@ -21,6 +21,12 @@ const RECENT_EVENT_WINDOW_MS = 5 * 60 * 1000;
 
 const isRecent = (date: string | null) => !!date && Date.now() - new Date(date).getTime() < RECENT_EVENT_WINDOW_MS;
 
+// Chega pelo socket logo antes da atualização do contato, com a nota de quem transferiu
+type ServiceTransferred = { contactId: string; toUserId: string | null; toServiceGroupId: string | null; fromName: string; note: string | null };
+
+// A transferência só enriquece o aviso que vem logo em seguida
+const TRANSFER_MATCH_WINDOW_MS = 30 * 1000;
+
 function playNotificationSound() {
   try {
     const audioContext = new AudioContext();
@@ -59,6 +65,7 @@ export const useNewContactNotifications = ({ serviceGroupIds, selectedContactId,
   const notifiedMessages = useRef(new Map<string, string>());
   // Se cada contato era do usuário no último evento; ausente quando ainda não houve evento dele
   const knownMineContacts = useRef(new Map<string, boolean>());
+  const recentTransfers = useRef(new Map<string, ServiceTransferred & { receivedAt: number }>());
   const unseenCount = useRef(0);
   const originalTitle = useRef(document.title);
 
@@ -105,6 +112,26 @@ export const useNewContactNotifications = ({ serviceGroupIds, selectedContactId,
       };
     };
 
+    const handleServiceTransferred = (transfer: ServiceTransferred) => {
+      const now = Date.now();
+      // Descarta as que não viraram aviso (ex.: conversa aberta na tela)
+      for (const [contactId, item] of recentTransfers.current)
+        if (now - item.receivedAt > TRANSFER_MATCH_WINDOW_MS) recentTransfers.current.delete(contactId);
+      recentTransfers.current.set(transfer.contactId, { ...transfer, receivedAt: now });
+    };
+
+    // Usa (e descarta) a transferência recente do contato, para o aviso dizer quem passou e a nota
+    const takeRecentTransfer = (contactId: string) => {
+      const transfer = recentTransfers.current.get(contactId);
+      recentTransfers.current.delete(contactId);
+      return transfer && Date.now() - transfer.receivedAt < TRANSFER_MATCH_WINDOW_MS ? transfer : null;
+    };
+
+    const transferBody = (name: string, transfer: ServiceTransferred | null) => {
+      if (!transfer) return name;
+      return transfer.note ? `${name} · ${transfer.fromName}: "${transfer.note}"` : `${name} · por ${transfer.fromName}`;
+    };
+
     const handleContactUpdate = ({ contact }: ContactUpdate) => {
       const { preferences, serviceGroupIds, selectedContactId, userId } = latest.current;
       const name = contactDisplayName(contact, contact.phoneNumber);
@@ -131,7 +158,14 @@ export const useNewContactNotifications = ({ serviceGroupIds, selectedContactId,
       if (isInMyQueue && contact.queueEnteredAt) notifiedQueueEntries.current.set(contact.id, contact.queueEnteredAt);
 
       if (isNewQueueEntry && preferences.queue) {
-        notify(contact, "queue", "Contato novo na fila", name);
+        const transfer = takeRecentTransfer(contact.id);
+        const isGroupTransfer = !!transfer?.toServiceGroupId;
+        notify(
+          contact,
+          "queue",
+          isGroupTransfer ? "Contato transferido para a fila" : "Contato novo na fila",
+          transferBody(name, isGroupTransfer ? transfer : null),
+        );
         return;
       }
 
@@ -139,15 +173,26 @@ export const useNewContactNotifications = ({ serviceGroupIds, selectedContactId,
 
       if (wasMine === false) {
         // Atribuição feita pelo próprio usuário (nesta ou em outra aba) não gera aviso
-        if (!wasSelfAssigned(contact.id)) notify(contact, "mine", "Atendimento atribuído a você", name);
+        if (!wasSelfAssigned(contact.id)) {
+          const transfer = takeRecentTransfer(contact.id);
+          const isTransferToMe = !!transfer && transfer.toUserId === userId;
+          notify(
+            contact,
+            "mine",
+            isTransferToMe ? "Atendimento transferido para você" : "Atendimento atribuído a você",
+            transferBody(name, isTransferToMe ? transfer : null),
+          );
+        }
         return;
       }
 
       if (isNewIncomingMessage) notify(contact, "mine", `Mensagem de ${name}`, contact.messageContent);
     };
 
+    socket.on("service:transferred", handleServiceTransferred);
     socket.on("contacts:update", handleContactUpdate);
     return () => {
+      socket.off("service:transferred", handleServiceTransferred);
       socket.off("contacts:update", handleContactUpdate);
     };
   }, [socket]);

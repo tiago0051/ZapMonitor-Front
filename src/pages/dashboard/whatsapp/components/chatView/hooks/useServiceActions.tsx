@@ -23,6 +23,7 @@ export const useServiceActions = ({ contact, contactService, onServiceAssumed }:
   // Encerrado nesta tela: em vez de "Assumir atendimento", mostra o caminho para a próxima conversa
   const [hasJustEnded, setHasJustEnded] = useState(false);
   const [isEndDialogOpen, setIsEndDialogOpen] = useState(false);
+  const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
 
   const contactServiceQueryKey = [`contact-${contact.id}`, "findContactServiceByContact", contact.id];
 
@@ -107,6 +108,37 @@ export const useServiceActions = ({ contact, contactService, onServiceAssumed }:
     },
   });
 
+  // Passar para outra pessoa ou grupo: quem transferiu deixa de poder responder na hora
+  const transferredAwayUpdate: Partial<WhatsappContactService> = {
+    canBeServiceStarted: false,
+    canBeServiceTransferred: false,
+    canBeServiceEnded: false,
+    canBeForwarded: false,
+    canBeSentMessage: false,
+    canBeTransferredToOthers: false,
+  };
+
+  const transferToUserMutation = useMutation({
+    mutationFn: (variables: TransferWhatsappServiceRequestData & { userName: string }) => whatsappService.transferService(variables),
+    onMutate: () => applyOptimisticContactService(transferredAwayUpdate),
+    onSuccess: (_data, variables) => {
+      toast.success(`Atendimento transferido para ${variables.userName}`);
+      invalidateContactService();
+    },
+    onError: rollbackContactService,
+  });
+
+  const transferToGroupMutation = useMutation({
+    mutationFn: (variables: TransferWhatsappServiceToGroupRequestData & { groupName: string }) =>
+      whatsappService.transferServiceToGroup(variables),
+    onMutate: () => applyOptimisticContactService(transferredAwayUpdate),
+    onSuccess: (_data, variables) => {
+      toast.success(`Contato enviado para a fila do grupo ${variables.groupName}`);
+      invalidateContactService();
+    },
+    onError: rollbackContactService,
+  });
+
   const forwardServiceMutation = useMutation({
     mutationFn: whatsappService.forwardService,
     onMutate: () => applyOptimisticContactService({ canBeForwarded: false, canBeSentMessage: false, canBeServiceEnded: false }),
@@ -140,6 +172,22 @@ export const useServiceActions = ({ contact, contactService, onServiceAssumed }:
     }
   }
 
+  function transferToUser(target: { id: string; name: string }, note?: string) {
+    transferToUserMutation.mutate({
+      params: { contactId: contact.id, userId: target.id, clientId: client.id },
+      body: { note },
+      userName: target.name,
+    });
+  }
+
+  function transferToGroup(target: { id: string; name: string }, note?: string) {
+    transferToGroupMutation.mutate({
+      params: { contactId: contact.id, serviceGroupId: target.id, clientId: client.id },
+      body: { note },
+      groupName: target.name,
+    });
+  }
+
   function endService(body?: EndWhatsappServiceRequestBody) {
     endServiceMutation.mutate({ params: { contactId: contact.id, clientId: client.id }, body });
   }
@@ -152,11 +200,18 @@ export const useServiceActions = ({ contact, contactService, onServiceAssumed }:
       startServiceMutation.isPending ||
       transferServiceMutation.isPending ||
       endServiceMutation.isPending ||
+      transferToUserMutation.isPending ||
+      transferToGroupMutation.isPending ||
       forwardServiceMutation.isPending,
     assumeService,
     endService,
     isEndDialogOpen,
     setIsEndDialogOpen,
+    canTransferToOthers: !!contactService?.canBeTransferredToOthers,
+    transferToUser,
+    transferToGroup,
+    isTransferDialogOpen,
+    setIsTransferDialogOpen,
     forwardService,
   };
 };

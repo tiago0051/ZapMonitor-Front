@@ -2,7 +2,7 @@ import { ContactAvatar } from "@/components/contact-avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { formatPhoneNumber } from "@/utils/formatString";
-import { ArrowLeft, Briefcase, Forward, Info, MoreHorizontal, XCircle, UserCheck } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft, Briefcase, Forward, Info, MoreHorizontal, XCircle, UserCheck } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { ContactDeals } from "@/pages/dashboard/crm/components/contactDeals";
@@ -21,6 +21,7 @@ import type { ServiceActions } from "../../hooks/useServiceActions";
 import { CallButton } from "@/pages/dashboard/whatsapp/calls/callButton";
 import { contactDisplayName } from "@/pages/dashboard/whatsapp/contactDisplayName";
 import { EndServiceDialog } from "../endServiceDialog";
+import { TransferDialog } from "../transferDialog";
 
 interface HeaderProps {
   contact: WhatsappContactMessage;
@@ -42,7 +43,9 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, serviceAction
   const canForward = !!contactService?.canBeForwarded;
   const primaryAction = serviceActions.canAssumeService ? "assume" : canEnd ? "end" : null;
   const showEndInMenu = canEnd && primaryAction !== "end";
-  const hasMobileMenu = canUseCrm || canForward || showEndInMenu;
+  // Transferir só existe no menu "⋯", que então aparece também no computador
+  const canTransfer = serviceActions.canTransferToOthers;
+  const hasMenu = canUseCrm || canForward || showEndInMenu || canTransfer;
 
   return (
     <header className="bg-card border-border flex flex-shrink-0 items-center gap-1.5 border-b px-2 py-2.5 sm:gap-2 sm:px-3 sm:py-3 md:px-5">
@@ -128,27 +131,36 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, serviceAction
             Encerrar
           </button>
         )}
-        {hasMobileMenu && (
+        {hasMenu && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
                 aria-label="Mais ações"
-                className="hover:bg-muted text-muted-foreground flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg transition-colors sm:hidden"
+                className={cn(
+                  "hover:bg-muted text-muted-foreground flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg transition-colors",
+                  !canTransfer && "sm:hidden",
+                )}
               >
                 <MoreHorizontal className="h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
+              {canTransfer && (
+                <DropdownMenuItem disabled={serviceActions.isPending} onSelect={() => serviceActions.setIsTransferDialogOpen(true)}>
+                  <ArrowRightLeft className="h-4 w-4" />
+                  Transferir
+                </DropdownMenuItem>
+              )}
               {canUseCrm && (
-                <DropdownMenuItem onSelect={() => setIsDealsDialogOpen(true)}>
+                <DropdownMenuItem className="sm:hidden" onSelect={() => setIsDealsDialogOpen(true)}>
                   <Briefcase className="h-4 w-4" />
                   Negócios
                 </DropdownMenuItem>
               )}
               {canForward && contactService && (
                 <DropdownMenuSub>
-                  <DropdownMenuSubTrigger disabled={serviceActions.isPending} className="gap-2">
+                  <DropdownMenuSubTrigger disabled={serviceActions.isPending} className="gap-2 sm:hidden">
                     <Forward className="text-muted-foreground h-4 w-4" />
                     Encaminhar
                   </DropdownMenuSubTrigger>
@@ -169,7 +181,12 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, serviceAction
                 </DropdownMenuItem>
               )}
               {showEndInMenu && (
-                <DropdownMenuItem variant="destructive" disabled={serviceActions.isPending} onSelect={() => setIsEndDialogOpen(true)}>
+                <DropdownMenuItem
+                  variant="destructive"
+                  className="sm:hidden"
+                  disabled={serviceActions.isPending}
+                  onSelect={() => setIsEndDialogOpen(true)}
+                >
                   <XCircle className="h-4 w-4" />
                   Encerrar
                 </DropdownMenuItem>
@@ -185,6 +202,7 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, serviceAction
             onConfirm={serviceActions.endService}
           />
         )}
+        {canTransfer && <TransferDialog contact={contact} contactName={contactName} serviceActions={serviceActions} />}
         {canUseCrm && (
           <Dialog open={isDealsDialogOpen} onOpenChange={setIsDealsDialogOpen}>
             <DialogContent className="max-h-[85dvh] overflow-y-auto">

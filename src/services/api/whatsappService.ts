@@ -178,8 +178,22 @@ export const whatsappService = {
     const response = await api.post(`/client/${params.clientId}/whatsapp/contact/${params.contactId}/service/start`);
     return response.data;
   },
-  transferService: async ({ params }: TransferWhatsappServiceRequestData): Promise<WhatsappConfiguration> => {
-    const response = await api.post(`/client/${params.clientId}/whatsapp/contact/${params.contactId}/service/transfer/${params.userId}`);
+  transferService: async ({ params, body }: TransferWhatsappServiceRequestData): Promise<WhatsappConfiguration> => {
+    const response = await api.post(
+      `/client/${params.clientId}/whatsapp/contact/${params.contactId}/service/transfer/${params.userId}`,
+      body ?? {},
+    );
+    return response.data;
+  },
+  // Devolve o contato para a fila do grupo escolhido
+  transferServiceToGroup: async ({ params, body }: TransferWhatsappServiceToGroupRequestData): Promise<void> => {
+    await api.post(
+      `/client/${params.clientId}/whatsapp/contact/${params.contactId}/service/transfer-group/${params.serviceGroupId}`,
+      body ?? {},
+    );
+  },
+  findTransferOptions: async ({ params }: { params: { clientId: string; contactId: string } }): Promise<WhatsappTransferOptions> => {
+    const response = await api.get(`/client/${params.clientId}/whatsapp/contact/${params.contactId}/service/transfer-options`);
     return response.data;
   },
   forwardService: async ({ params }: ForwardWhatsappServiceRequestData): Promise<void> => {
