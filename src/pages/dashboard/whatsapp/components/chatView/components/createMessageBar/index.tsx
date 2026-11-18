@@ -16,6 +16,9 @@ import { toast } from "sonner";
 import { MessageReplyPreview } from "../messageReplyPreview";
 import { contactDisplayName } from "@/pages/dashboard/whatsapp/contactDisplayName";
 import { type DraftMessage, getDraftMessage, saveDraftMessage } from "@/pages/dashboard/whatsapp/conversationDrafts";
+import { useUserContext } from "@/context/UserContext/userContext";
+import { useQuickReplyPicker } from "@/pages/dashboard/whatsapp/quickReplies/useQuickReplyPicker";
+import { fillQuickReply } from "@/pages/dashboard/whatsapp/quickReplies/quickReplies";
 
 const formatFileSize = (bytes: number) => {
   if (bytes < 1024) return `${bytes} B`;
@@ -45,6 +48,7 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const { client } = useClientContext();
+  const { user } = useUserContext();
 
   const defaultMessage = {
     type: WhatsappMessageContentType.TEXT,
@@ -211,7 +215,24 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
     }
   }
 
+  const quickReplyPicker = useQuickReplyPicker({
+    text: messageIsText ? (message.value as string) : "",
+    onSelect: (reply) => {
+      const text = fillQuickReply(reply.content, { contactName: contactDisplayName(contact, ""), attendantName: user?.name ?? null });
+      setMessage({ type: WhatsappMessageContentType.TEXT, value: text });
+      requestAnimationFrame(() => {
+        const input = inputRef.current;
+        if (!input) return;
+        input.focus();
+        input.setSelectionRange(text.length, text.length);
+        input.style.height = "auto";
+        input.style.height = `${input.scrollHeight}px`;
+      });
+    },
+  });
+
   function onKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (quickReplyPicker.handleKeyDown(event)) return;
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       // O texto fica na caixa até o envio terminar; um segundo Enter não pode duplicar a mensagem
@@ -312,6 +333,8 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
         </MessageReplyPreview>
       )}
 
+      {quickReplyPicker.panel}
+
       {uploadProgress !== null && (
         <div className="flex items-center gap-2" role="status">
           <Progress value={uploadProgress} aria-label="Progresso do envio do arquivo" className="flex-1" />
@@ -323,7 +346,7 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
         {!isRecording && messageIsText && (
           <textarea
             className="focus:ring-primary max-h-40 w-full resize-none overflow-auto rounded border px-4 py-2 leading-5 transition focus:ring-2 focus:outline-none"
-            placeholder="Sua mensagem"
+            placeholder="Sua mensagem (digite / para respostas rápidas)"
             onKeyDown={onKeyDown}
             onChange={onInput}
             value={message.value as string}

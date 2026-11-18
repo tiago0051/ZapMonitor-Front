@@ -13,6 +13,7 @@ import {
   Mail,
   Megaphone,
   MessageSquareText,
+  Zap,
   Phone,
   ShieldCheck,
   CalendarDays,
@@ -50,6 +51,7 @@ import { WhatsappCategory } from "./whatsapp/whatsappCategory/whatsappCategory";
 import { WhatsappConfiguration } from "./whatsapp/whatsappConfiguration/whatsappConfiguration";
 import { WhatsappTemplate } from "./whatsapp/whatsappTemplate/whatsappTemplate";
 import { PlanUsageSettings } from "./plan/planUsageSettings";
+import { QuickReplies } from "./quickReply/quickReplies";
 
 type ConfigurationSection = {
   id: string;
@@ -133,6 +135,7 @@ const configurationGroups: { label: string; sections: ConfigurationSection[] }[]
         permission: "templates.manage",
       },
       { id: "category", label: "Categorias", icon: Tags, content: <WhatsappCategory />, permission: "categories.manage" },
+      { id: "quickReplies", label: "Respostas rápidas", icon: Zap, content: <QuickReplies />, permission: "whatsapp.chat" },
     ],
   },
   {

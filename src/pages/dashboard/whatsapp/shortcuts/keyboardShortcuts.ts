@@ -14,6 +14,7 @@ export const SHORTCUTS = [
   { keys: [alt, shift, "A"], label: "Assumir o atendimento" },
   { keys: [alt, shift, "E"], label: "Encerrar o atendimento" },
   { keys: [alt, shift, "T"], label: "Transferir o atendimento" },
+  { keys: ["/"], label: "Respostas rápidas (no começo da caixa de mensagem)" },
   { keys: ["Esc"], label: "Fechar painel ou janela aberta" },
   { keys: ["?"], label: "Mostrar esta lista de atalhos" },
 ] as const;
