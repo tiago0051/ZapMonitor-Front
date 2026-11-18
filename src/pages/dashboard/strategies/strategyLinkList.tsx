@@ -1,7 +1,7 @@
 import { useBaseUrl } from "@/hooks/use-baseUrl";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { ExternalLink, ShieldCheck, X } from "lucide-react";
+import { AlertTriangle, ExternalLink, ShieldCheck, X } from "lucide-react";
 import { type FC } from "react";
 import { Link } from "react-router";
 import { linkKindLabel, linkSourceLabel, linkTarget } from "./strategyUtils";
@@ -29,8 +29,18 @@ export const StrategyLinkList: FC<Props> = ({ links, canManage, onValidate, onUn
             title={`${linkKindLabel[link.kind]} ligada ${linkSourceLabel[link.source]} em ${format(new Date(link.createdAt), "dd/MM/yyyy")}`}
           >
             <ExternalLink className="h-3 w-3" aria-hidden />
-            {linkKindLabel[link.kind]} · {format(new Date(link.createdAt), "dd/MM")}
+            {link.name ? <span className="max-w-48 truncate">{link.name}</span> : linkKindLabel[link.kind]} ·{" "}
+            {format(new Date(link.createdAt), "dd/MM")}
           </Link>
+          {link.lostMarker && (
+            <span
+              className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400"
+              title="A campanha foi renomeada sem a marca da estratégia. Ela continua ligada aqui, mas relatórios fora do sistema não vão reconhecê-la."
+            >
+              <AlertTriangle className="h-3 w-3" aria-hidden />
+              Perdeu a marca
+            </span>
+          )}
           {VALIDATABLE.includes(link.kind) && (
             <button
               type="button"

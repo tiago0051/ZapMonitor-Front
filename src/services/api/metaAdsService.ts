@@ -220,7 +220,8 @@ export const metaAdsService = {
     body,
   }: {
     params: { clientId: string; suggestionId: string };
-    body: { status: AdSuggestionStatus; note?: string | null; postponedUntil?: string | null };
+    // applyNow: aceitar já aprovando e aplicando (só quem aprova anúncios)
+    body: { status: AdSuggestionStatus; note?: string | null; postponedUntil?: string | null; applyNow?: boolean };
   }): Promise<AdSuggestion> => {
     const response = await api.put(`/client/${params.clientId}/meta-ads/suggestion/${params.suggestionId}/decision`, body);
     return response.data;
@@ -316,6 +317,11 @@ export const metaAdsService = {
     return response.data;
   },
 
+  findSpendStatus: async ({ params }: MetaAdsAccountParams): Promise<AdSpendStatus> => {
+    const response = await api.get<AdSpendStatus>(`/client/${params.clientId}/meta-ads/account/${params.accountId}/spend-status`);
+    return response.data;
+  },
+
   saveGuardrails: async ({ params, body }: MetaAdsClientParams & { body: AdGuardrails }): Promise<AdGuardrails> => {
     const response = await api.put(`/client/${params.clientId}/meta-ads/guardrails`, body);
     return response.data;
@@ -392,6 +398,11 @@ export const metaAdsService = {
     const response = await api.post(`/client/${params.clientId}/meta-ads/draft/${params.draftId}/undo-publication`, undefined, {
       timeout: 120000,
     });
+    return response.data;
+  },
+
+  findActivationPreview: async ({ params }: { params: { clientId: string; draftId: string } }): Promise<AdActivationPreview> => {
+    const response = await api.get<AdActivationPreview>(`/client/${params.clientId}/meta-ads/draft/${params.draftId}/activation-preview`);
     return response.data;
   },
 

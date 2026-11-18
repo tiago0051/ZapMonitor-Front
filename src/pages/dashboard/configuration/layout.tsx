@@ -34,6 +34,7 @@ import { GoogleCalendarSettings } from "./googleCalendar/googleCalendarSettings"
 import { ClientConfiguration } from "./client";
 import { Flows } from "./flow/flows";
 import { CompanyHoursSettings } from "./companyHours/companyHoursSettings";
+import { StrategyIntentBanner } from "../strategies/strategyIntentBanner";
 import { PermissionGroups } from "./permissionGroup/permissionGroups";
 import { Pipelines } from "./pipeline/pipelines";
 import { LostReasons } from "./lostReason/lostReasons";
@@ -68,7 +69,18 @@ const configurationGroups: { label: string; sections: ConfigurationSection[] }[]
   {
     label: "Atendimento",
     sections: [
-      { id: "flow", label: "Fluxos", icon: Workflow, content: <Flows />, permission: "flows.manage" },
+      {
+        id: "flow",
+        label: "Fluxos",
+        icon: Workflow,
+        content: (
+          <>
+            <StrategyIntentBanner kinds={["FLOW"]} className="mb-4" />
+            <Flows />
+          </>
+        ),
+        permission: "flows.manage",
+      },
       {
         id: "serviceGroup",
         label: "Grupos de atendimento",

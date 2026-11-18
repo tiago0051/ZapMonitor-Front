@@ -31,9 +31,11 @@ export const PilotCampaign: FC<Props> = ({ account, brand, configurations, pages
   const { client, can } = useClientContext();
   const queryClient = useQueryClient();
   const params = { clientId: client.id, accountId: account.id };
-  const [budget, setBudget] = useState("");
-  // Aberto pelo passo de uma estratégia: objetivo e notas vêm do briefing e a campanha nasce marcada
+  // Aberto pelo passo de uma estratégia: objetivo, notas e teto vêm do briefing e da verba do mês, e a campanha nasce marcada
   const [strategyPrefill, setStrategyPrefill] = useState(() => takePilotPrefill(client.id));
+  const [budget, setBudget] = useState(() =>
+    strategyPrefill?.maxDailyBudget ? String(strategyPrefill.maxDailyBudget).replace(".", ",") : "",
+  );
   const [goal, setGoal] = useState(strategyPrefill?.goal ?? "");
   const [notes, setNotes] = useState(strategyPrefill?.notes ?? "");
   const [whatsappConfigurationId, setWhatsappConfigurationId] = useState(brand.whatsappConfigurationId ?? "");
@@ -96,6 +98,9 @@ export const PilotCampaign: FC<Props> = ({ account, brand, configurations, pages
           <Target className="h-4 w-4 shrink-0 text-sky-700 dark:text-sky-300" aria-hidden />
           <p className="min-w-0 flex-1">
             Campanha do passo <strong>{strategyPrefill.label}</strong>. A campanha e os conjuntos vão levar a marca da estratégia no nome.
+            {strategyPrefill.maxDailyBudget
+              ? ` O teto por dia veio da verba do mês da estratégia (${strategyPrefill.maxDailyBudget.toLocaleString("pt-BR")} ${account.currency}); ajuste se quiser.`
+              : ""}
           </p>
           <Button
             size="sm"

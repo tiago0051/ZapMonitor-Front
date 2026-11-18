@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { marketingStrategyService } from "@/services/api/marketingStrategyService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { differenceInCalendarDays, format } from "date-fns";
 import { Link2, Loader2, RotateCw } from "lucide-react";
 import { useState, type FC } from "react";
 import { StrategyLinkCampaignDialog } from "./strategyLinkCampaignDialog";
@@ -23,6 +23,33 @@ const rows: { label: string; value: (metrics: StrategyMetrics, currency: string 
   { label: "Retorno (ROAS)", value: (metrics) => (metrics.roas === null ? "—" : `${metrics.roas.toFixed(2).replace(".", ",")}x`) },
   { label: "Dias com gasto", value: (metrics) => String(metrics.activeDays) },
 ];
+
+/** Gasto da estratégia contra a verba prevista: a verba do mês proporcional aos dias do período. */
+const BudgetUsage: FC<{ results: StrategyResults; monthlyBudget: number }> = ({ results, monthlyBudget }) => {
+  const days = Math.max(1, differenceInCalendarDays(new Date(`${results.until}T12:00`), new Date(`${results.since}T12:00`)) + 1);
+  const planned = days >= 28 ? monthlyBudget : (monthlyBudget / 30) * days;
+  const spent = results.strategy.spend;
+  const percent = planned > 0 ? Math.min(100, Math.round((spent / planned) * 100)) : 0;
+
+  return (
+    <div className="space-y-1">
+      <p className="text-sm">
+        Gasto <strong>{formatMoney(spent, results.currency)}</strong> de {formatMoney(planned, results.currency)} previstos
+        {days >= 28 ? " no mês" : ` em ${days} dia(s)`}
+        <span className="text-muted-foreground"> (verba de {formatMoney(monthlyBudget, results.currency)} por mês)</span>
+      </p>
+      <div
+        className="bg-muted h-2 overflow-hidden rounded-full"
+        role="progressbar"
+        aria-valuenow={percent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <div className={cn("h-full rounded-full", spent > planned ? "bg-destructive" : "bg-primary")} style={{ width: `${percent}%` }} />
+      </div>
+    </div>
+  );
+};
 
 /** Resultados: só o que tem a marca da estratégia, comparado ao que está fora dela nas mesmas contas. */
 export const StrategyResultsPanel: FC<Props> = ({ strategy, canManage, onSaved }) => {
@@ -56,7 +83,7 @@ export const StrategyResultsPanel: FC<Props> = ({ strategy, canManage, onSaved }
         <div className="space-y-1">
           <h2 className="text-base font-semibold">Resultados da estratégia</h2>
           <p className="text-muted-foreground text-xs">
-            Contam só as campanhas com a marca {strategy.marker} (ligadas pelo piloto, pelos atalhos, pela marca no nome ou à mão).
+            Contam só as campanhas ligadas à estratégia (pelo piloto, pelos atalhos, pela marca no nome ou à mão).
             {results &&
               ` Período: ${format(new Date(`${results.since}T12:00`), "dd/MM")} a ${format(new Date(`${results.until}T12:00`), "dd/MM")}.`}
           </p>
@@ -83,6 +110,8 @@ export const StrategyResultsPanel: FC<Props> = ({ strategy, canManage, onSaved }
           <span className="text-muted-foreground">{data?.verdictReason ?? strategy.verdictReason}</span>
         </div>
       )}
+
+      {results && strategy.brief.monthlyBudget ? <BudgetUsage results={results} monthlyBudget={strategy.brief.monthlyBudget} /> : null}
 
       {resultsQuery.isLoading ? (
         <div role="status" className="text-muted-foreground flex items-center gap-2 text-sm">

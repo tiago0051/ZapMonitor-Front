@@ -24,6 +24,8 @@ const hourLabel = (hour: number) => `${String(hour).padStart(2, "0")}:00`;
 const START_HOURS = Array.from({ length: 24 }, (_, hour) => hour);
 const END_HOURS = Array.from({ length: 24 }, (_, hour) => hour + 1);
 const PERIODS = [1, 3, 7, 14, 30];
+// Campo de teto vazio (ou zero) é "sem teto"
+const capValue = (value: number) => (Number.isFinite(value) && value > 0 ? value : null);
 const MONEY_METRICS: AdRuleMetric[] = ["SPEND", "COST_PER_CONVERSATION", "COST_PER_DEAL", "COST_PER_WON_DEAL"];
 
 const newRule = (): AdRuleValues => ({
@@ -53,6 +55,7 @@ const GuardrailsForm: FC<{ guardrails: AdGuardrails }> = ({ guardrails }) => {
     onError: requestErrorHandling,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["metaAds", "guardrails"] });
+      queryClient.invalidateQueries({ queryKey: ["metaAds", "spendStatus"] });
       toast.success("Travas salvas");
     },
   });
@@ -115,6 +118,40 @@ const GuardrailsForm: FC<{ guardrails: AdGuardrails }> = ({ guardrails }) => {
           </div>
           {hoursInvalid && <DisabledReason>A hora final precisa ser depois da inicial.</DisabledReason>}
         </div>
+        <div className="grid gap-1">
+          <Label htmlFor="guardrail-daily-cap" className="text-xs">
+            Gasto máximo da conta por dia (R$)
+          </Label>
+          <Input
+            id="guardrail-daily-cap"
+            type="number"
+            min={1}
+            step="0.01"
+            placeholder="Sem teto"
+            disabled={!canEdit}
+            value={values.maxAccountDailySpend ?? ""}
+            onChange={(event) => setValues({ ...values, maxAccountDailySpend: capValue(event.target.valueAsNumber) })}
+          />
+        </div>
+        <div className="grid gap-1">
+          <Label htmlFor="guardrail-monthly-cap" className="text-xs">
+            Gasto máximo da conta por mês (R$)
+          </Label>
+          <Input
+            id="guardrail-monthly-cap"
+            type="number"
+            min={1}
+            step="0.01"
+            placeholder="Sem teto"
+            disabled={!canEdit}
+            value={values.maxAccountMonthlySpend ?? ""}
+            onChange={(event) => setValues({ ...values, maxAccountMonthlySpend: capValue(event.target.valueAsNumber) })}
+          />
+        </div>
+        <p className="text-muted-foreground text-xs sm:self-end">
+          Com teto, nada que aumente a verba (ativar, subir orçamento, sugestão, piloto ou regra) passa se a verba diária somada ou o gasto
+          previsto do mês ficar acima dele. Pausar e reduzir sempre podem.
+        </p>
         <div className="grid content-end gap-2">
           <label className="flex items-center gap-2 text-xs">
             <Checkbox

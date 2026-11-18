@@ -114,7 +114,24 @@ export function linkTarget(baseUrl: string, link: Pick<MarketingStrategyLink, "k
 
 // O piloto de anúncios lê ao abrir: o passo que pediu a campanha, para ela nascer marcada
 export const PILOT_PREFILL_KEY = "zapmonitor:pilotStrategyPrefill";
-export type PilotStrategyPrefill = { clientId: string; strategyStepId: string; label: string; goal: string; notes: string };
+export type PilotStrategyPrefill = {
+  clientId: string;
+  strategyStepId: string;
+  label: string;
+  goal: string;
+  notes: string;
+  // Teto diário sugerido a partir da verba do mês da estratégia
+  maxDailyBudget?: number | null;
+};
+
+/** Teto diário de um passo de anúncio: verba do mês / 30, dividida entre os passos de anúncio que não foram pulados. */
+export function stepDailyBudget(strategy: Pick<MarketingStrategy, "brief" | "steps">): number | null {
+  const monthly = strategy.brief.monthlyBudget;
+  if (!monthly || monthly <= 0) return null;
+  const adSteps = strategy.steps.filter((step) => step.action === "AD_CAMPAIGN" && step.status !== "SKIPPED").length || 1;
+
+  return Math.max(1, Math.floor((monthly / 30 / adSteps) * 100) / 100);
+}
 
 export function savePilotPrefill(prefill: PilotStrategyPrefill) {
   try {

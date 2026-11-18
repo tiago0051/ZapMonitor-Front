@@ -87,6 +87,9 @@ type MarketingStrategyLink = {
   createdAt: string;
   // Última avaliação do anúncio pelo validador
   validation: { score: number; result: MarketingAdValidation; updatedAt: string } | null;
+  // Campanha: nome atual; lostMarker quando foi renomeada sem a marca (continua ligada pelo id)
+  name?: string | null;
+  lostMarker?: boolean;
 };
 
 type StrategyMetrics = {
@@ -187,6 +190,7 @@ type MarketingStrategySummary = {
   product: string;
   playbook: MarketingPlaybookSummary | null;
   verdict: MarketingVerdict | null;
+  verdictReason: string | null;
   stepCount: number;
   doneCount: number;
   linkCount: number;
@@ -219,4 +223,14 @@ type MarketingStrategy = {
   steps: MarketingStrategyStep[];
   // Vínculos de passos que sumiram quando o plano foi refeito
   unassignedLinks: MarketingStrategyLink[];
+};
+
+// Atalho aberto num passo: o próximo item criado no módulo nasce ligado a ele
+type MarketingActiveIntent = {
+  kind: MarketingIntentKind;
+  strategyId: string;
+  strategyName: string;
+  stepOrder: number;
+  stepTitle: string;
+  expiresAt: string;
 };

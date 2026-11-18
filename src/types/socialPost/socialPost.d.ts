@@ -1,3 +1,5 @@
+type SocialPostApproval = "PENDING" | "CHANGES";
+
 type SocialPostFormat = "IMAGE" | "CAROUSEL" | "REEL";
 type SocialPlatform = "FACEBOOK" | "INSTAGRAM";
 type SocialPostStatus = "GENERATING" | "READY" | "SCHEDULED" | "PUBLISHING" | "PUBLISHED" | "PARTIAL" | "FAILED";
@@ -37,6 +39,39 @@ type SocialPostTarget = {
   permalink: string | null;
   error: string | null;
   publishedAt: string | null;
+  // Resultados da rede copiados pela rotina (a cada 6 horas)
+  insights?: SocialPostInsights | null;
+  insightsAt?: string | null;
+};
+
+// Nulo quando a rede não informa a métrica
+type SocialPostInsights = {
+  reach: number | null;
+  impressions: number | null;
+  reactions: number | null;
+  comments: number | null;
+  shares: number | null;
+  saved: number | null;
+  clicks: number | null;
+};
+
+type SocialPostResults = {
+  days: number;
+  posts: number;
+  total: SocialPostInsights;
+  engagement: number;
+  items: {
+    id: string;
+    title: string;
+    format: SocialPostFormat;
+    platforms: SocialPlatform[];
+    publishedAt: string | null;
+    thumbnailUrl: string | null;
+    thumbnailKind: "IMAGE" | "VIDEO" | null;
+    insights: SocialPostInsights;
+    engagement: number;
+    insightsAt: string | null;
+  }[];
 };
 
 type SocialPost = {
@@ -53,6 +88,11 @@ type SocialPost = {
   publishedAt: string | null;
   // Dia previsto no planejamento enquanto não é agendada
   plannedFor?: string | null;
+  // Aprovação de quem cria sem poder publicar: PENDING aguardando, CHANGES com ajuste pedido; nulo sem pedido aberto
+  approvalStatus: SocialPostApproval | null;
+  approvalNote: string | null;
+  approvalRequestedByUserId: string | null;
+  approvalRequestedAt: string | null;
   createdAt: string;
   updatedAt: string;
   media: SocialPostMedia[];

@@ -40,6 +40,16 @@ export const marketingStrategyService = {
   createIntent: async (clientId: string, id: string, stepId: string, kind: MarketingIntentKind) =>
     (await api.post(`${base(clientId)}/${id}/step/${stepId}/intent`, { kind })).data,
 
+  // Atalho de passo ainda valendo para o usuário nestes tipos (vazio quando não há)
+  findActiveIntent: async (clientId: string, kinds: MarketingIntentKind[]): Promise<MarketingActiveIntent | null> => {
+    const data = (await api.get(`${base(clientId)}/intent`, { params: { kinds: kinds.join(",") } })).data;
+    return data?.stepTitle ? data : null;
+  },
+
+  cancelIntents: async (clientId: string, kinds: MarketingIntentKind[]): Promise<void> => {
+    await api.delete(`${base(clientId)}/intent`, { params: { kinds: kinds.join(",") } });
+  },
+
   findLinkableCampaigns: async (clientId: string): Promise<LinkableCampaign[]> => (await api.get(`${base(clientId)}/campaign`)).data,
 
   linkCampaign: async (clientId: string, id: string, body: { campaignId: string; stepId?: string | null }): Promise<MarketingStrategy> =>

@@ -13,6 +13,8 @@ import { Download, ImagePlus, Loader2, RotateCcw, Sparkles, Star, Trash2, Wand2,
 import { useRef, useState, type FC, type ReactNode } from "react";
 import { toast } from "sonner";
 import { socialTextareaClassName } from "../posts/postsUtils";
+import { MediaQuotaMeter } from "./mediaQuota";
+import { quotaReachedText, useMediaQuota } from "./mediaQuotaUtils";
 import {
   BASE_IMAGE_ACCEPT,
   changeExamples,
@@ -90,6 +92,7 @@ export const StudioWorkspace: FC<StudioWorkspaceProps> = ({ projectId, renderAct
     refetchInterval: (current) => (current.state.data?.generations.some(isGenerationBusy) ? 4000 : false),
   });
   const project = query.data;
+  const quota = useMediaQuota("studio");
 
   // Atualiza a tela com a resposta e escolhe a versão nova, se houver
   const apply = (updated: CreativeProject, selectNewest = false) => {
@@ -109,7 +112,10 @@ export const StudioWorkspace: FC<StudioWorkspaceProps> = ({ projectId, renderAct
       return creativeStudioService.generate(client.id, projectId, project?.kind === "IMAGE" ? variations : undefined);
     },
     onError: requestErrorHandling,
-    onSuccess: (updated) => apply(updated, true),
+    onSuccess: (updated) => {
+      apply(updated, true);
+      quota.refresh();
+    },
   });
   const change = useMutation({
     mutationFn: (generationId: string) => creativeStudioService.requestChange(client.id, projectId, generationId, instruction.trim()),
@@ -117,6 +123,7 @@ export const StudioWorkspace: FC<StudioWorkspaceProps> = ({ projectId, renderAct
     onSuccess: (updated) => {
       setInstruction("");
       apply(updated, true);
+      quota.refresh();
     },
   });
   const retry = useMutation({
@@ -173,6 +180,10 @@ export const StudioWorkspace: FC<StudioWorkspaceProps> = ({ projectId, renderAct
   const videoBusy = project.kind === "VIDEO" && generations.some(isGenerationBusy);
   const ratios = project.kind === "VIDEO" ? videoRatios : imageRatios;
   const currentBrief = brief ?? project.brief;
+  // Limite do dia: desabilita antes de bater nele, com a explicação
+  const quotaLeft = project.kind === "VIDEO" ? quota.videosLeft : quota.imagesLeft;
+  const quotaKind = project.kind === "VIDEO" ? "video" : "image";
+  const generateNeeds = project.kind === "VIDEO" ? 1 : variations;
 
   const pickFiles = (list: FileList | null) => {
     const files = Array.from(list ?? []);
@@ -308,6 +319,7 @@ export const StudioWorkspace: FC<StudioWorkspaceProps> = ({ projectId, renderAct
                   size="sm"
                   variant={variations === value ? "secondary" : "ghost"}
                   aria-pressed={variations === value}
+                  disabled={value > quotaLeft}
                   onClick={() => setVariations(value)}
                   title={`${value} ${value > 1 ? "variações" : "variação"}`}
                 >
@@ -317,7 +329,8 @@ export const StudioWorkspace: FC<StudioWorkspaceProps> = ({ projectId, renderAct
             </div>
           )}
           <Button
-            disabled={generate.isPending || videoBusy || (!currentBrief.trim() && !project.baseImages.length)}
+            disabled={generate.isPending || videoBusy || generateNeeds > quotaLeft || (!currentBrief.trim() && !project.baseImages.length)}
+            title={generateNeeds > quotaLeft ? quotaReachedText(quotaKind) : undefined}
             onClick={() => generate.mutate()}
           >
             <Sparkles className="mr-2 h-4 w-4" aria-hidden />
@@ -331,7 +344,13 @@ export const StudioWorkspace: FC<StudioWorkspaceProps> = ({ projectId, renderAct
                   ? "Gerar novas variações"
                   : "Gerar"}
           </Button>
+          <MediaQuotaMeter scope="studio" show={quotaKind} />
         </div>
+        {quotaLeft <= 0 ? (
+          <p className="text-destructive text-xs">{quotaReachedText(quotaKind)}</p>
+        ) : generateNeeds > quotaLeft ? (
+          <p className="text-muted-foreground text-xs">Restam {quotaLeft} hoje; escolha menos variações.</p>
+        ) : null}
 
         <Button
           variant="ghost"
@@ -457,7 +476,8 @@ export const StudioWorkspace: FC<StudioWorkspaceProps> = ({ projectId, renderAct
                   </p>
                   <Button
                     className="justify-self-start"
-                    disabled={!instruction.trim() || change.isPending || videoBusy}
+                    disabled={!instruction.trim() || change.isPending || videoBusy || quotaLeft < 1}
+                    title={quotaLeft < 1 ? quotaReachedText(quotaKind) : undefined}
                     onClick={() => change.mutate(selected.id)}
                   >
                     <Wand2 className="mr-2 h-4 w-4" aria-hidden />

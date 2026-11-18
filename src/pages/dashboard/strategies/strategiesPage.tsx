@@ -10,16 +10,24 @@ import { Plus, Target } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StrategyLibrary } from "./strategyLibrary";
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
+import { AdsStrategyWiki } from "../ads/wiki/adsStrategyWiki";
+import { MarketingReportButton } from "@/pages/report/marketingReportDialog";
 import { StrategyBriefDialog } from "./strategyBriefDialog";
 import { goalLabel, strategyStatusInfo, verdictInfo } from "./strategyUtils";
 
 /** Estratégias de marketing: o cliente descreve o produto e a IA monta o passo a passo a partir de estratégias conhecidas. */
 export const StrategiesPage = () => {
-  const { client, can } = useClientContext();
+  const { client, can, access } = useClientContext();
   const baseUrl = useBaseUrl();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const canManage = can("strategies.manage");
+  // Aba e seção no endereço (?tab=library&section=articles): links antigos da Wiki de Anúncios caem aqui
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get("tab") === "library" ? "library" : "strategies";
+  const section = searchParams.get("section") === "articles" ? "articles" : "playbooks";
+  const go = (next: { tab: string; section?: string }) =>
+    setSearchParams(next.tab === "library" ? { tab: "library", section: next.section ?? section } : {}, { replace: true });
 
   const strategiesQuery = useQuery({
     queryKey: ["marketingStrategies", client.id],
@@ -47,16 +55,43 @@ export const StrategiesPage = () => {
             (campanha, postagem, tarefa) e tudo o que nasce dela leva a marca da estratégia, para dar para medir o que funcionou.
           </p>
         </div>
-        {newButton}
+        <div className="flex flex-wrap gap-2">
+          {can("ads.view") && access.adsEnabled && <MarketingReportButton />}
+          {newButton}
+        </div>
       </div>
 
-      <Tabs defaultValue="strategies">
+      <Tabs value={tab} onValueChange={(value) => go({ tab: value })}>
         <TabsList>
           <TabsTrigger value="strategies">Minhas estratégias</TabsTrigger>
           <TabsTrigger value="library">Biblioteca</TabsTrigger>
         </TabsList>
-        <TabsContent value="library" className="pt-4">
-          <StrategyLibrary />
+        <TabsContent value="library" className="space-y-4 pt-4">
+          <div className="space-y-2">
+            <p className="text-muted-foreground text-sm">
+              Tudo o que a IA sabe de marketing, num lugar só: as estratégias prontas que ela segue para montar o passo a passo e os artigos
+              de boas práticas que ela lê ao criar anúncios, postagens e o plano do mês.
+            </p>
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Parte da biblioteca">
+              {(
+                [
+                  ["playbooks", "Estratégias prontas"],
+                  ["articles", "Artigos e boas práticas"],
+                ] as const
+              ).map(([value, label]) => (
+                <Button
+                  key={value}
+                  size="sm"
+                  variant={section === value ? "secondary" : "ghost"}
+                  aria-pressed={section === value}
+                  onClick={() => go({ tab: "library", section: value })}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+          </div>
+          {section === "articles" ? <AdsStrategyWiki /> : <StrategyLibrary />}
         </TabsContent>
         <TabsContent value="strategies" className="pt-4">
           {strategiesQuery.isLoading ? (
@@ -108,8 +143,10 @@ const StrategyList = ({ strategies, baseUrl }: { strategies: MarketingStrategySu
                   {verdictInfo[strategy.verdict].label}
                 </span>
               )}
-              <code className="text-muted-foreground text-xs">{strategy.marker}</code>
             </div>
+            {strategy.verdict && strategy.verdict !== "NO_DATA" && strategy.verdictReason && (
+              <p className="text-muted-foreground text-xs">{strategy.verdictReason}</p>
+            )}
             <p className="font-medium">{strategy.name}</p>
             <p className="text-muted-foreground text-sm">
               {goalLabel[strategy.goal]}

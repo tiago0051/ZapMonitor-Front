@@ -8,11 +8,12 @@ import { useBaseUrl } from "@/hooks/use-baseUrl";
 import { cn } from "@/lib/utils";
 import { crmSelectClassName } from "@/pages/dashboard/crm/crmUtils";
 import { metaAdsService } from "@/services/api/metaAdsService";
+import { requestErrorHandling } from "@/utils/request";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ChevronDown, ChevronRight, Megaphone, RefreshCw } from "lucide-react";
 import { Fragment, useEffect, useRef, useState, type FC } from "react";
-import { Link, useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { useLocalStorage } from "usehooks-ts";
 import {
   AD_PLATFORMS,
@@ -46,9 +47,12 @@ import { AdsInstagramVideos } from "./video/adsInstagramVideos";
 import { AdsPilot } from "./pilot/adsPilot";
 import { AdStatusToggle } from "./components/adStatusToggle";
 import { AdBudgetEditor } from "./components/adBudgetEditor";
+import { SpendCapBar } from "./components/spendCapBar";
 import { AdsLearnings } from "./learnings/adsLearnings";
 import { AdsExperiments } from "./experiments/adsExperiments";
-import { AdsStrategyWiki } from "./wiki/adsStrategyWiki";
+import { StrategyIntentBanner } from "../strategies/strategyIntentBanner";
+import { OrganicResultsBlock } from "../posts/postsResults";
+import { MarketingReportButton } from "@/pages/report/marketingReportDialog";
 
 const StatusChip: FC<{ status: string }> = ({ status }) => {
   const info = effectiveStatusInfo(status);
@@ -208,7 +212,6 @@ const MULTI_PLATFORM_TABS = [
   "experiments",
   "learnings",
   "strategy",
-  "wiki",
   "changes",
   "automation",
 ];
@@ -217,7 +220,7 @@ const MULTI_PLATFORM_TABS = [
 const TAB_GROUPS: TabGroup[] = [
   { id: "overview", label: "Visão geral", tabs: ["results", "campaigns", "audiences", "leads"] },
   { id: "create", label: "Criar", tabs: ["create", "pilot"] },
-  { id: "ai", label: "IA", tabs: ["suggestions", "experiments", "learnings", "strategy", "wiki", "changes"] },
+  { id: "ai", label: "IA", tabs: ["suggestions", "experiments", "learnings", "strategy", "changes"] },
   { id: "settings", label: "Configurar", tabs: ["automation", "conversions"] },
 ];
 
@@ -231,8 +234,7 @@ const TAB_LABEL: Record<string, string> = {
   suggestions: "Sugestões",
   experiments: "Testes",
   learnings: "Aprendizados",
-  strategy: "Estratégia",
-  wiki: "Wiki",
+  strategy: "Conversar com a IA",
   changes: "Mudanças",
   automation: "Automação",
   conversions: "Eventos",
@@ -266,15 +268,45 @@ export const AdsPage = () => {
   const [tab, setTab] = useLocalStorage<string>(`ads:tab:${client.id}`, "results");
   // Aviso no celular abre direto numa aba (ex.: ?tab=changes para aprovar uma proposta de verba)
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   useEffect(() => {
     const requested = searchParams.get("tab");
+    // A Wiki mudou para Estratégias > Biblioteca: link antigo vai para lá (a aba guardada cai em Resultados sozinha)
+    if (requested === "wiki") {
+      navigate(`${baseUrl}/strategies?tab=library&section=articles`, { replace: true });
+      return;
+    }
     if (!requested) return;
     setTab(requested);
     setSearchParams({}, { replace: true });
-  }, [searchParams, setSearchParams, setTab]);
+  }, [searchParams, setSearchParams, setTab, navigate, baseUrl]);
   const tabsListRef = useRef<HTMLDivElement>(null);
   // Última aba aberta em cada grupo, para voltar nela ao trocar de grupo
   const [lastTabByGroup, setLastTabByGroup] = useState<Record<string, string>>({});
+  // Rascunho montado pelo piloto (ou pelo plano do mês) que a aba Criar campanha abre
+  const [pilotDraftId, setPilotDraftId] = useState<string | null>(null);
+  // Rascunho criado pelo plano do mês (?draft=): abre a conta dele na aba Criar campanha
+  const requestedDraftId = searchParams.get("draft");
+  useEffect(() => {
+    if (!requestedDraftId) return;
+    let canceled = false;
+    metaAdsService
+      .findDraft({ params: { clientId: client.id, draftId: requestedDraftId } })
+      .then((draft) => {
+        if (canceled) return;
+        setStoredPlatform("META");
+        setStoredAccountId(draft.adAccountId);
+        setPilotDraftId(draft.id);
+        setTab("create");
+      })
+      .catch(requestErrorHandling)
+      .finally(() => {
+        if (!canceled) setSearchParams({}, { replace: true });
+      });
+    return () => {
+      canceled = true;
+    };
+  }, [requestedDraftId, client.id, setSearchParams, setStoredAccountId, setStoredPlatform, setTab]);
 
   const accountsQuery = useQuery({
     queryKey: ["metaAds", "accounts", client.id],
@@ -315,8 +347,6 @@ export const AdsPage = () => {
   useEffect(() => {
     tabsListRef.current?.querySelector<HTMLElement>('[data-state="active"]')?.scrollIntoView({ block: "nearest", inline: "center" });
   }, [activeTab]);
-  // Rascunho montado pelo piloto que a aba Criar campanha abre
-  const [pilotDraftId, setPilotDraftId] = useState<string | null>(null);
 
   const structureQuery = useQuery({
     meta: { errorHandledInline: true },
@@ -459,7 +489,10 @@ export const AdsPage = () => {
             {isSyncing ? "Sincronizando…" : "Sincronizar agora"}
           </Button>
         )}
+        <MarketingReportButton className={cn("h-8", !can("ads.manage") && "ml-auto")} />
       </div>
+
+      <SpendCapBar accountId={currentAccount.id} />
 
       <Tabs value={activeTab} onValueChange={setTab} className="flex flex-col gap-0 md:min-h-0 md:flex-1 md:overflow-hidden">
         {/* Grupos em cima e as abas do grupo embaixo; no celular a barra fica presa no topo e rola para o lado */}
@@ -495,6 +528,8 @@ export const AdsPage = () => {
         <TabsContent value="results" className={cn(tabContentClassName, "space-y-8")}>
           {/* Trocar de conta recomeça o período no fuso da nova conta */}
           <AdsResultsTab key={`results-${currentAccount.id}`} account={currentAccount} showPlatformComparison={platforms.length > 1} />
+          {/* Orgânico fica num bloco à parte, sem mexer na comparação das plataformas pagas */}
+          {can("posts.view") && <OrganicResultsBlock />}
         </TabsContent>
 
         <TabsContent value="pilot" className={tabContentClassName}>
@@ -509,6 +544,7 @@ export const AdsPage = () => {
         </TabsContent>
 
         <TabsContent value="create" className={tabContentClassName}>
+          <StrategyIntentBanner kinds={["AD_DRAFT", "AD_VIDEO_CAMPAIGN"]} className="mb-4" />
           {isMeta ? (
             <div className="space-y-4">
               <AdsInstagramVideos key={currentAccount.id} account={currentAccount} />
@@ -533,10 +569,6 @@ export const AdsPage = () => {
 
         <TabsContent value="learnings" className={tabContentClassName}>
           <AdsLearnings key={currentAccount.id} account={currentAccount} />
-        </TabsContent>
-
-        <TabsContent value="wiki" className={tabContentClassName}>
-          <AdsStrategyWiki platform={currentAccount.platform} />
         </TabsContent>
 
         {can("ads.manage") && (

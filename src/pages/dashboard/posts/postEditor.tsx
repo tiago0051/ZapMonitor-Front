@@ -19,11 +19,12 @@ import {
   Film,
   ImagePlus,
   Loader2,
+  Palette,
   Plus,
   RefreshCw,
+  Rocket,
   Send,
   Sparkles,
-  Palette,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -33,8 +34,11 @@ import { creativeStudioService } from "@/services/api/creativeStudioService";
 import { CreativeStudioDialog } from "../studio/creativeStudioDialog";
 import { toast } from "sonner";
 import { PostSetupNotice } from "./postSetupNotice";
+import { PostApprovalNotice, PostApprovalRequest, PostRequestChanges } from "./postApproval";
+import { PostBoostDialog } from "./postBoostDialog";
 import {
   editableStatuses,
+  insightsSummary,
   isSocialPostBusy,
   socialFormatLabel,
   socialPlatformLabel,
@@ -42,6 +46,8 @@ import {
   socialTextareaClassName,
   toLocalInputValue,
 } from "./postsUtils";
+import { MediaQuotaMeter } from "../studio/mediaQuota";
+import { quotaReachedText, useMediaQuota } from "../studio/mediaQuotaUtils";
 
 const CAPTION_LIMIT = 2200;
 
@@ -58,6 +64,7 @@ const MediaCard: FC<{ post: SocialPost; media: SocialPostMedia; editable: boolea
   const [editingPrompt, setEditingPrompt] = useState(false);
   const [prompt, setPrompt] = useState(media.prompt ?? "");
   const running = media.status === "QUEUED" || media.status === "RUNNING";
+  const quota = useMediaQuota("posts", editable);
 
   const regenerate = useMutation({
     mutationFn: () => socialPostService.regenerateImage(client.id, post.id, media.id, prompt.trim() || undefined),
@@ -65,6 +72,7 @@ const MediaCard: FC<{ post: SocialPost; media: SocialPostMedia; editable: boolea
     onSuccess: (updated) => {
       setEditingPrompt(false);
       onChange(updated);
+      quota.refresh();
     },
   });
   const remove = useMutation({
@@ -124,7 +132,12 @@ const MediaCard: FC<{ post: SocialPost; media: SocialPostMedia; editable: boolea
             className={socialTextareaClassName}
           />
           <div className="flex gap-2">
-            <Button size="sm" disabled={regenerate.isPending} onClick={() => regenerate.mutate()}>
+            <Button
+              size="sm"
+              disabled={regenerate.isPending || quota.imagesLeft < 1}
+              title={quota.imagesLeft < 1 ? quotaReachedText("image") : undefined}
+              onClick={() => regenerate.mutate()}
+            >
               Gerar
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setEditingPrompt(false)}>
@@ -249,11 +262,14 @@ const ScriptEditor: FC<{ script: SocialScript; onChange: (script: SocialScript) 
 };
 
 const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHashtags: string[] }> = ({ post, setup, fixedHashtags }) => {
-  const { client, can } = useClientContext();
+  const { client, can, canUseAds } = useClientContext();
   const baseUrl = useBaseUrl();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { confirm, confirmDialog } = useConfirm();
+  const [boostOpen, setBoostOpen] = useState(false);
+  // Publicada (inteira ou em parte) e quem pode criar anúncios: dá para impulsionar
+  const canBoost = canUseAds && can("ads.manage") && (post.status === "PUBLISHED" || post.status === "PARTIAL") && post.media.length > 0;
   const fileRef = useRef<HTMLInputElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   // Postagem criada para usar o estúdio: abre ele direto no formulário de criativo novo
@@ -269,7 +285,11 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
   );
 
   const editable = editableStatuses.includes(post.status) && can("posts.manage");
+  const quota = useMediaQuota("posts", editable);
   const canPublish = can("posts.publish") && ["READY", "FAILED", "PARTIAL", "SCHEDULED"].includes(post.status);
+  // Quem cria sem poder publicar envia para aprovar; quem publica vê "Aprovar e ..." enquanto há pedido aberto
+  const needsApproval = editable && !can("posts.publish");
+  const approving = canPublish && post.approvalStatus === "PENDING";
   const busy = isSocialPostBusy(post);
   const dirty =
     caption !== (post.caption ?? "") ||
@@ -319,7 +339,10 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
   const addImage = useMutation({
     mutationFn: () => socialPostService.addImage(client.id, post.id),
     onError: requestErrorHandling,
-    onSuccess: apply,
+    onSuccess: (updated) => {
+      apply(updated);
+      quota.refresh();
+    },
   });
   const upload = useMutation({
     mutationFn: (file: File) => socialPostService.uploadMedia(client.id, post.id, file),
@@ -337,6 +360,7 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
     onError: requestErrorHandling,
     onSuccess: (updated) => {
       apply(updated);
+      quota.refresh();
       toast.success("A IA começou a gerar o vídeo; leva alguns minutos");
     },
   });
@@ -421,6 +445,7 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
         <span className="font-medium">Ideia:</span> {post.idea}
       </p>
       {post.error && <p className="rounded-md bg-red-50 p-2 text-sm text-red-800 dark:bg-red-950/50 dark:text-red-200">{post.error}</p>}
+      <PostApprovalNotice post={post} />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <section className="grid content-start gap-3" aria-label="Mídias">
@@ -438,7 +463,13 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
           {editable && (
             <div className="flex flex-wrap gap-2">
               {canAddImage && (
-                <Button variant="outline" size="sm" disabled={addImage.isPending} onClick={() => addImage.mutate()}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={addImage.isPending || quota.imagesLeft < 1}
+                  title={quota.imagesLeft < 1 ? quotaReachedText("image") : undefined}
+                  onClick={() => addImage.mutate()}
+                >
                   <ImagePlus className="mr-2 h-4 w-4" aria-hidden />
                   Gerar {images.length ? "outra" : "a"} imagem com IA
                 </Button>
@@ -455,6 +486,7 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
                   {upload.isPending ? "Enviando..." : post.format === "REEL" ? "Enviar meu vídeo" : "Enviar minha imagem"}
                 </Button>
               )}
+              {canAddImage && <MediaQuotaMeter scope="posts" show="image" className="basis-full" />}
               <CreativeStudioDialog
                 open={studioOpen}
                 startNew={searchParams.get("studio") === "1"}
@@ -513,14 +545,19 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
                 <Button
                   className="justify-self-start"
                   disabled={
-                    generateVideo.isPending || busy || !(script.cenas ?? []).some((scene) => scene.fala?.trim() || scene.imagem?.trim())
+                    generateVideo.isPending ||
+                    busy ||
+                    quota.videosLeft < 1 ||
+                    !(script.cenas ?? []).some((scene) => scene.fala?.trim() || scene.imagem?.trim())
                   }
+                  title={quota.videosLeft < 1 ? quotaReachedText("video") : undefined}
                   onClick={() => generateVideo.mutate()}
                 >
                   <Film className="mr-2 h-4 w-4" aria-hidden />
                   {videos.some((media) => media.status === "DONE") ? "Gerar outro vídeo" : "Gerar vídeo com IA"}
                 </Button>
               )}
+              {editable && <MediaQuotaMeter scope="posts" show="video" />}
             </div>
           )}
         </section>
@@ -609,6 +646,12 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
                       )}
                     </span>
                   )}
+                  {target?.status === "PUBLISHED" && insightsSummary(target.insights) && (
+                    <span className="text-muted-foreground basis-full text-xs tabular-nums">
+                      {insightsSummary(target.insights)}
+                      {target.insightsAt && ` · atualizado ${format(new Date(target.insightsAt), "dd/MM HH:mm")}`}
+                    </span>
+                  )}
                   {target?.status === "FAILED" && <span className="text-xs text-red-700 dark:text-red-300">{target.error}</span>}
                   {target?.status === "PUBLISHING" && <span className="text-muted-foreground text-xs">publicando...</span>}
                 </div>
@@ -625,10 +668,17 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
             {canPublish && (
               <Button disabled={publish.isPending || busy || !platforms.length} onClick={confirmPublish}>
                 <Send className="mr-2 h-4 w-4" aria-hidden />
-                {post.status === "FAILED" || post.status === "PARTIAL" ? "Tentar publicar de novo" : "Publicar agora"}
+                {approving
+                  ? "Aprovar e publicar agora"
+                  : post.status === "FAILED" || post.status === "PARTIAL"
+                    ? "Tentar publicar de novo"
+                    : "Publicar agora"}
               </Button>
             )}
+            {approving && <PostRequestChanges post={post} onChange={apply} />}
           </div>
+
+          {needsApproval && <PostApprovalRequest post={post} beforeSend={saveIfDirty} onChange={apply} />}
 
           {canPublish && post.status !== "PARTIAL" && (
             <div className="grid gap-2 rounded-lg border p-3">
@@ -650,7 +700,7 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
                   disabled={schedule.isPending || busy || !scheduledAt || !platforms.length}
                   onClick={() => schedule.mutate()}
                 >
-                  {post.status === "SCHEDULED" ? "Mudar horário" : "Agendar"}
+                  {post.status === "SCHEDULED" ? "Mudar horário" : approving ? "Aprovar e agendar" : "Agendar"}
                 </Button>
                 {post.status === "SCHEDULED" && (
                   <Button variant="ghost" disabled={unschedule.isPending} onClick={() => unschedule.mutate()}>
@@ -658,6 +708,20 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
                   </Button>
                 )}
               </div>
+            </div>
+          )}
+
+          {canBoost && (
+            <div className="grid gap-2 rounded-lg border p-3">
+              <p className="text-sm font-medium">Impulsionar no WhatsApp</p>
+              <p className="text-muted-foreground text-xs">
+                Use esta postagem num anúncio que traz conversas para o seu WhatsApp, com teto de verba por dia.
+              </p>
+              <Button className="justify-self-start" onClick={() => setBoostOpen(true)}>
+                <Rocket className="mr-2 h-4 w-4" aria-hidden />
+                Impulsionar no WhatsApp
+              </Button>
+              <PostBoostDialog post={post} open={boostOpen} onOpenChange={setBoostOpen} />
             </div>
           )}
 

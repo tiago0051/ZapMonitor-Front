@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { effectiveStatusInfo, formatCount, formatMoney, isCampaignOver, statusToneClassName } from "../adsUtils";
 import { AdStatusToggle } from "../components/adStatusToggle";
 import { SteppedProgress } from "../components/steppedProgress";
+import { ActivationConfirmDialog } from "./activationConfirmDialog";
 import { AdsAssetLibrary } from "./adsAssetLibrary";
 import { CompliancePanel } from "./compliancePanel";
 import { DeliveryFields } from "./deliveryFields";
@@ -211,11 +212,14 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
       else toast.error(updated.error ?? "A criação parou no meio");
     },
   });
+  const [isConfirmingActivation, setIsConfirmingActivation] = useState(false);
   const activate = useMutation({
     mutationFn: metaAdsService.activateDraft,
     onError: requestErrorHandling,
     onSuccess: (updated) => {
       refresh(updated);
+      setIsConfirmingActivation(false);
+      queryClient.invalidateQueries({ queryKey: ["metaAds", "spendStatus"] });
       toast.success("Campanha ativada. A Meta revisa os anúncios antes de entregar.");
     },
   });
@@ -291,6 +295,14 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
     <div className="space-y-6">
       {guardDialog}
       {confirmDialog}
+      <ActivationConfirmDialog
+        draftId={draft.id}
+        accountId={account.id}
+        open={isConfirmingActivation}
+        isActivating={activate.isPending}
+        onOpenChange={setIsConfirmingActivation}
+        onConfirm={() => activate.mutate({ params })}
+      />
       <div className="flex flex-wrap items-center gap-2">
         <Button size="sm" variant="ghost" onClick={() => guard(onBack)}>
           <ArrowLeft className="h-4 w-4" />
@@ -450,7 +462,7 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
             </Button>
           )}
           {can("ads.approve") && draft.status === "PUBLISHED" && !campaignOver && (
-            <Button disabled={isBusy} onClick={() => activate.mutate({ params })}>
+            <Button disabled={isBusy} onClick={() => setIsConfirmingActivation(true)}>
               <Play className="h-4 w-4" />
               Ativar campanha
             </Button>

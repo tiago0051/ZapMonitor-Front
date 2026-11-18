@@ -11,8 +11,9 @@ import { useState, type FC } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { StrategyLinkList } from "./strategyLinkList";
+import { StrategyMarkerHelp } from "./strategyMarkerHelp";
 import { StrategyValidationDialog } from "./strategyValidationDialog";
-import { actionInfo, copyText, savePilotPrefill, selectClassName, stepStatusInfo, verdictInfo } from "./strategyUtils";
+import { actionInfo, copyText, savePilotPrefill, selectClassName, stepDailyBudget, stepStatusInfo, verdictInfo } from "./strategyUtils";
 
 type Props = {
   strategy: MarketingStrategy;
@@ -100,6 +101,7 @@ export const StrategyStepCard: FC<Props> = ({ strategy, step, canManage, onSaved
       label: `${step.marker} ${step.title}`,
       goal: step.title.substring(0, 500),
       notes: step.briefing.substring(0, 2000),
+      maxDailyBudget: stepDailyBudget(strategy),
     });
     navigate(`${baseUrl}/ads?tab=pilot`);
   };
@@ -130,16 +132,13 @@ export const StrategyStepCard: FC<Props> = ({ strategy, step, canManage, onSaved
                 A partir de {format(startsOn, "dd/MM")} · {step.durationDays} dia(s)
               </span>
             )}
-            <code title="Marca do passo no nome do que ele cria">{step.marker}</code>
             {step.verdict && (
-              <span
-                className={cn("rounded px-1.5 py-0.5 font-medium", verdictInfo[step.verdict].className)}
-                title={step.verdictReason ?? undefined}
-              >
+              <span className={cn("rounded px-1.5 py-0.5 font-medium", verdictInfo[step.verdict].className)}>
                 {verdictInfo[step.verdict].label}
               </span>
             )}
           </div>
+          {step.verdict && step.verdictReason && <p className="text-muted-foreground text-xs">{step.verdictReason}</p>}
         </div>
         {canManage ? (
           <select
@@ -178,7 +177,6 @@ export const StrategyStepCard: FC<Props> = ({ strategy, step, canManage, onSaved
               {step.target && ` (referência: ${step.target})`}
             </p>
           )}
-          {step.verdictReason && <p className="text-muted-foreground text-xs">{step.verdictReason}</p>}
         </div>
       </div>
 
@@ -261,6 +259,8 @@ export const StrategyStepCard: FC<Props> = ({ strategy, step, canManage, onSaved
           </Button>
         </div>
       )}
+
+      {step.action === "AD_CAMPAIGN" && <StrategyMarkerHelp marker={step.marker} isStep />}
 
       {step.links.length > 0 && (
         <StrategyLinkList links={step.links} canManage={canManage} onValidate={setValidating} onUnlink={(id) => unlink.mutate(id)} />

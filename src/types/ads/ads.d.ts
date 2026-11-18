@@ -286,7 +286,7 @@ type AdSuggestion = {
   decidedAt: string | null;
   decisionNote: string | null;
   // Mudança gerada pela sugestão aceita
-  change: { id: string; status: AdChangeStatus; error: string | null } | null;
+  change: { id: string; status: AdChangeStatus; error: string | null; before: AdChangeState | null; after: AdChangeState } | null;
   createdAt: string;
 };
 
@@ -358,6 +358,47 @@ type AdGuardrails = {
   allowWeekends: boolean;
   // Regras automáticas podem aplicar sem aprovação
   allowAutoApply: boolean;
+  // Teto de gasto da conta (verba diária somada e gasto previsto do mês), na moeda dela; nulo = sem teto
+  maxAccountDailySpend: number | null;
+  maxAccountMonthlySpend: number | null;
+};
+
+// Resumo para confirmar a ativação de uma campanha criada pela tela
+type AdActivationPreview = {
+  currency: string;
+  dailyBudget: number;
+  durationDays: number | null;
+  // Verba diária vezes a duração; nulo sem prazo
+  estimatedTotal: number | null;
+  adSetsCount: number;
+  adsCount: number;
+  whatsappPhoneNumber: string | null;
+  // Por que as travas barrariam a ativação agora
+  blockedReason: string | null;
+  // Prévias da Meta (iframe); vazias quando a Meta não devolve
+  previews: { adName: string; format: string; url: string }[];
+  creatives: {
+    name: string;
+    primaryText: string;
+    headline: string;
+    description: string | null;
+    mediaUrl: string | null;
+    mediaType: string | null;
+  }[];
+};
+
+// Gasto do mês da conta contra o teto das travas
+type AdSpendStatus = {
+  currency: string;
+  // Até ontem
+  monthSpend: number;
+  // Verba diária somada dos itens ligados
+  dailyBudget: number;
+  // Dias que faltam no mês, contando hoje
+  daysLeft: number;
+  forecastMonthSpend: number;
+  maxAccountDailySpend: number | null;
+  maxAccountMonthlySpend: number | null;
 };
 
 type AdRuleMetric =
@@ -471,6 +512,7 @@ type AdDraftRouting = {
 
 type AdCampaignDraft = AdDraftRouting & {
   id: string;
+  adAccountId: string;
   name: string;
   status: AdDraftStatus;
   // Status da campanha na Meta pela última sincronização (ex.: ACTIVE, PAUSED); nulo antes de criar ou sincronizar
