@@ -148,10 +148,14 @@ type CrmField = {
   active: boolean;
 };
 
+// Tipo da tarefa: ligar, mandar mensagem, reunião, e-mail ou outro
+type DealTaskType = "CALL" | "MESSAGE" | "MEETING" | "EMAIL" | "OTHER";
+
 type DealTask = {
   id: string;
   deal: { id: string; title: string; pipelineId: string };
   title: string;
+  type: DealTaskType;
   dueAt: string;
   assignee: NamedSummary | null;
   completedAt: string | null;

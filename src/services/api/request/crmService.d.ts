@@ -172,6 +172,8 @@ type SetCrmFieldActiveRequestData = {
 type SaveDealTaskRequestBody = {
   title: string;
   dueAt: string;
+  // Sem tipo, "Outro" na criação; na edição mantém o atual
+  type?: DealTaskType;
   assigneeUserId?: string | null;
 };
 
@@ -212,6 +214,6 @@ type LogDealActivityRequestData = {
     // Quando aconteceu (ISO); sem a data, agora
     occurredAt?: string;
     // Cria uma tarefa para o próximo passo
-    nextStep?: { title: string; dueAt: string };
+    nextStep?: { title: string; dueAt: string; type?: DealTaskType };
   };
 };

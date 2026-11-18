@@ -13,6 +13,7 @@ import { useState, type FC, type FormEvent } from "react";
 import { toast } from "sonner";
 import { crmTextareaClassName } from "../crmUtils";
 import { activityTypeLabel } from "./dealEventText";
+import { TaskTypePicker } from "./dealTasks";
 
 const activityIcon: Record<DealActivityType, LucideIcon> = {
   CALL: Phone,
@@ -44,6 +45,7 @@ export const DealActivityForm: FC<{ deal: Deal }> = ({ deal }) => {
   const [occurredAt, setOccurredAt] = useState(() => toDateTimeInput(new Date()));
   const [hasNextStep, setHasNextStep] = useState(false);
   const [nextStepTitle, setNextStepTitle] = useState("");
+  const [nextStepType, setNextStepType] = useState<DealTaskType>("CALL");
   const [nextStepDueAt, setNextStepDueAt] = useState(defaultNextStepDate);
 
   const reset = () => {
@@ -53,6 +55,7 @@ export const DealActivityForm: FC<{ deal: Deal }> = ({ deal }) => {
     setOccurredAt(toDateTimeInput(new Date()));
     setHasNextStep(false);
     setNextStepTitle("");
+    setNextStepType("CALL");
     setNextStepDueAt(defaultNextStepDate());
   };
 
@@ -83,7 +86,9 @@ export const DealActivityForm: FC<{ deal: Deal }> = ({ deal }) => {
         outcome: outcome.trim() || null,
         text: text.trim() || null,
         occurredAt: new Date(occurredAt).toISOString(),
-        ...(hasNextStep && { nextStep: { title: nextStepTitle.trim(), dueAt: new Date(nextStepDueAt).toISOString() } }),
+        ...(hasNextStep && {
+          nextStep: { title: nextStepTitle.trim(), type: nextStepType, dueAt: new Date(nextStepDueAt).toISOString() },
+        }),
       },
     });
   };
@@ -164,6 +169,7 @@ export const DealActivityForm: FC<{ deal: Deal }> = ({ deal }) => {
         <CalendarClock className="text-muted-foreground h-3.5 w-3.5" />
         Agendar próximo passo
       </label>
+      {hasNextStep && <TaskTypePicker value={nextStepType} onChange={setNextStepType} label="Tipo do próximo passo" />}
       {hasNextStep && (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Input

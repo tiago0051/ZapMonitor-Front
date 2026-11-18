@@ -15,7 +15,7 @@ import { useQuery } from "@tanstack/react-query";
 import { endOfDay, startOfDay, subDays } from "date-fns";
 import { ChevronDown, Columns3, List, SlidersHorizontal, Users, X } from "lucide-react";
 import { useState, type DragEvent } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { useLocalStorage } from "usehooks-ts";
 import { DEAL_DRAG_TYPE, DealCard } from "./components/dealCard";
 import { DealSheet } from "./components/dealSheet";
@@ -62,7 +62,21 @@ export const CrmBoard = () => {
   const { ownerUserId, onlyMine, categoryId, startDate, endDate, origin } = { ...emptyFilters, ...storedFilters };
   const setFilter = <K extends keyof CrmBoardFilters>(key: K, value: CrmBoardFilters[K]) =>
     setStoredFilters((current) => ({ ...emptyFilters, ...current, [key]: value }));
-  const [openDealId, setOpenDealId] = useState<string | null>(null);
+  const [selectedDealId, setOpenDealId] = useState<string | null>(null);
+  // ?dealId= (lembrete de tarefa, link da agenda) abre a ficha do negócio direto
+  const [searchParams, setSearchParams] = useSearchParams();
+  const openDealId = selectedDealId ?? searchParams.get("dealId");
+  const closeDeal = () => {
+    setOpenDealId(null);
+    if (searchParams.has("dealId"))
+      setSearchParams(
+        (current) => {
+          current.delete("dealId");
+          return current;
+        },
+        { replace: true },
+      );
+  };
   const [dropStageId, setDropStageId] = useState<string | null>(null);
   const [view, setView] = useLocalStorage<"board" | "list">(`crm:view:${client.id}`, "board");
   const [closedWindowIndex, setClosedWindowIndex] = useState(0);
@@ -430,12 +444,7 @@ export const CrmBoard = () => {
         boardQuery.isLoading ? (
           <LoadingState />
         ) : (
-          <DealList
-            deals={deals}
-            pipeline={pipeline}
-            onOpen={(deal) => setOpenDealId(deal.id)}
-            footer={closedNotice("mt-3 text-center")}
-          />
+          <DealList deals={deals} pipeline={pipeline} onOpen={(deal) => setOpenDealId(deal.id)} footer={closedNotice("mt-3 text-center")} />
         )
       ) : (
         <div className="flex flex-1 gap-3 overflow-x-auto p-4">
@@ -494,7 +503,7 @@ export const CrmBoard = () => {
         </div>
       )}
 
-      <DealSheet dealId={openDealId} onClose={() => setOpenDealId(null)} />
+      <DealSheet dealId={openDealId} onClose={closeDeal} />
       {actions.dialogs}
     </div>
   );
