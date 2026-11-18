@@ -27,8 +27,8 @@ export const AiAgents = () => {
         <div>
           <CardTitle>Agentes de IA</CardTitle>
           <CardDescription>
-            Crie agentes que atendem seus contatos pelo WhatsApp seguindo as suas instruções. A IA já vem incluída no plano e o uso
-            entra no consumo de IA do mês.
+            Crie agentes que atendem seus contatos pelo WhatsApp seguindo as suas instruções. A IA já vem incluída no plano e o uso entra no
+            consumo de IA do mês.
           </CardDescription>
         </div>
         <DialogSaveAiAgent clientId={clientId!} />

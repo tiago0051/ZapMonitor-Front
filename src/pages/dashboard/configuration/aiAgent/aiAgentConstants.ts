@@ -5,8 +5,18 @@ export type AiAgentStyle = "precise" | "balanced" | "creative";
 
 // O dono escolhe o jeito de responder; a temperatura fica fixa por trás de cada opção
 export const AI_AGENT_STYLES: { value: AiAgentStyle; label: string; description: string; temperature: number }[] = [
-  { value: "precise", label: "Preciso", description: "Respostas diretas e sempre parecidas. Bom para regras, preços e prazos.", temperature: 0.2 },
-  { value: "balanced", label: "Equilibrado", description: "Natural sem fugir do assunto. Serve para a maioria dos casos.", temperature: 0.7 },
+  {
+    value: "precise",
+    label: "Preciso",
+    description: "Respostas diretas e sempre parecidas. Bom para regras, preços e prazos.",
+    temperature: 0.2,
+  },
+  {
+    value: "balanced",
+    label: "Equilibrado",
+    description: "Natural sem fugir do assunto. Serve para a maioria dos casos.",
+    temperature: 0.7,
+  },
   { value: "creative", label: "Criativo", description: "Mais variado e caloroso. Bom para vendas e conversa leve.", temperature: 1 },
 ];
 

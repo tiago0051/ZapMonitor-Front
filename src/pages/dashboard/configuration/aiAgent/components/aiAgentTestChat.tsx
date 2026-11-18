@@ -3,12 +3,12 @@ import { Input } from "@/components/ui/input";
 import { aiAgentService } from "@/services/api/aiAgentService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation } from "@tanstack/react-query";
-import { CheckCircle2, Info, Loader2, RotateCcw, Send, Wrench } from "lucide-react";
+import { BookOpen, CheckCircle2, Info, Loader2, RotateCcw, Send, Wrench } from "lucide-react";
 import { useEffect, useRef, useState, type FC } from "react";
 
 type ChatItem =
   | { id: number; kind: "contact" | "bot"; text: string }
-  | { id: number; kind: "tool" | "info" | "finished"; text: string; detail?: string | null };
+  | { id: number; kind: "tool" | "info" | "knowledge" | "finished"; text: string; detail?: string | null };
 
 type Props = {
   clientId: string;
@@ -39,6 +39,7 @@ export const AiAgentTestChat: FC<Props> = ({ clientId, aiAgentId, systemPrompt, 
     onError: requestErrorHandling,
     onSuccess: (result) => {
       push([
+        ...(result.usedKnowledge ? [{ kind: "knowledge" as const, text: "Consultou o que o agente sabe" }] : []),
         ...result.toolCalls.map((call) => ({ kind: "tool" as const, text: call.label, detail: call.detail })),
         ...result.simulatedActions.map((action) => ({ kind: "info" as const, text: `${action}. No teste nada é gravado na agenda.` })),
         ...(result.reply ? [{ kind: "bot" as const, text: result.reply }] : []),
@@ -127,7 +128,8 @@ export const AiAgentTestChat: FC<Props> = ({ clientId, aiAgentId, systemPrompt, 
               </div>
             );
 
-          const Icon = item.kind === "tool" ? Wrench : item.kind === "finished" ? CheckCircle2 : Info;
+          const Icon =
+            item.kind === "tool" ? Wrench : item.kind === "finished" ? CheckCircle2 : item.kind === "knowledge" ? BookOpen : Info;
           return (
             <p key={item.id} className="text-muted-foreground flex items-start gap-1.5 px-1 text-xs">
               <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0" />

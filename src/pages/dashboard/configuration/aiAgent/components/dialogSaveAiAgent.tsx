@@ -16,6 +16,7 @@ import { AI_AGENT_STYLES, styleFromTemperature, temperatureFromStyle, textareaCl
 import { PromptAssistant } from "./promptAssistant";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AiAgentTestChat } from "./aiAgentTestChat";
+import { AiAgentKnowledge } from "./aiAgentKnowledge";
 
 type DialogSaveAiAgentProps = {
   clientId: string;
@@ -144,6 +145,7 @@ export const DialogSaveAiAgent: FC<DialogSaveAiAgentProps> = ({ clientId, aiAgen
           <div className="-mx-1 overflow-x-auto px-1">
             <TabsList className="w-max">
               <TabsTrigger value="instructions">Instruções</TabsTrigger>
+              <TabsTrigger value="knowledge">O que o agente sabe</TabsTrigger>
               <TabsTrigger value="test">Testar agente</TabsTrigger>
             </TabsList>
           </div>
@@ -244,6 +246,16 @@ export const DialogSaveAiAgent: FC<DialogSaveAiAgentProps> = ({ clientId, aiAgen
                 />
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="knowledge">
+            {aiAgent ? (
+              <AiAgentKnowledge clientId={clientId} aiAgent={aiAgent} />
+            ) : (
+              <p className="text-muted-foreground rounded-lg border border-dashed p-4 text-sm">
+                Salve o agente primeiro. Depois, abra-o de novo para ensinar perguntas e respostas, arquivos e páginas do seu site.
+              </p>
+            )}
           </TabsContent>
 
           <TabsContent value="test">
