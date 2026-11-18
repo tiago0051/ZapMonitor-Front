@@ -20,6 +20,7 @@ type SavePipelineStageRequestBody = {
 
 type SavePipelineRequestBody = {
   name: string;
+  allowMultipleOpenDeals?: boolean;
   stages: SavePipelineStageRequestBody[];
 };
 
@@ -76,7 +77,9 @@ type FindDealRequestData = {
 type CreateDealRequestBody = {
   pipelineId: string;
   stageId?: string;
-  whatsappContactId: string;
+  // A conversa do WhatsApp ou a ficha do contato (contactId); pela ficha vale a conversa do telefone principal
+  whatsappContactId?: string;
+  contactId?: string;
   serviceGroupId?: string | null;
   title?: string;
   value?: number | null;

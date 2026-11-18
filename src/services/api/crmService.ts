@@ -121,6 +121,11 @@ export const crmService = {
     return response.data;
   },
 
+  findPersonDeals: async ({ params }: { params: { clientId: string; personId: string } }): Promise<Deal[]> => {
+    const response = await api.get<Deal[]>(`/client/${params.clientId}/crm/person/${params.personId}/deal`);
+    return response.data;
+  },
+
   findDeal: async ({ params }: FindDealRequestData): Promise<Deal> => {
     const response = await api.get<Deal>(`/client/${params.clientId}/crm/deal/${params.dealId}`);
     return response.data;

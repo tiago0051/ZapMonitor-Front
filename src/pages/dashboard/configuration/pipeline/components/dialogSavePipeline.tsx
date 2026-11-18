@@ -139,7 +139,10 @@ const StageRow: FC<StageRowProps> = ({ stage, flows, fields, onChange, disabled,
         </label>
       )}
       {stage.type === "OPEN" && (
-        <label className="flex cursor-pointer items-center gap-2" title="Negócio que entra nesta etapa conta como reunião agendada no custo por reunião dos anúncios">
+        <label
+          className="flex cursor-pointer items-center gap-2"
+          title="Negócio que entra nesta etapa conta como reunião agendada no custo por reunião dos anúncios"
+        >
           <Checkbox
             aria-label={`Etapa ${stage.name} conta como reunião`}
             checked={!!stage.countsAsMeeting}
@@ -177,6 +180,7 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [stages, setStages] = useState<StageDraft[]>([]);
+  const [allowMultipleOpenDeals, setAllowMultipleOpenDeals] = useState(false);
   const isEditing = !!pipeline;
 
   const queryClient = useQueryClient();
@@ -209,6 +213,7 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
   const handleOpenChange = (open: boolean) => {
     if (open) {
       setName(pipeline?.name ?? "");
+      setAllowMultipleOpenDeals(pipeline?.allowMultipleOpenDeals ?? false);
       setStages(pipeline ? pipeline.stages.map((stage) => ({ key: stage.id, ...stage })) : buildDefaultStages());
     }
 
@@ -240,18 +245,21 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
 
     const body: SavePipelineRequestBody = {
       name: name.trim(),
-      stages: stages.map(({ id, name: stageName, color, type, entryFlowId, staleAfterDays, requiredFieldIds, conversionEvent, countsAsMeeting }) => ({
-        id,
-        name: stageName.trim(),
-        color,
-        type,
-        entryFlowId: entryFlowId ?? null,
-        staleAfterDays: type === "OPEN" ? (staleAfterDays ?? null) : null,
-        // Só campos ativos; um campo desativado depois deixa de ser exigido
-        requiredFieldIds: (requiredFieldIds ?? []).filter((fieldId) => fields.some((field) => field.id === fieldId)),
-        conversionEvent: conversionEvent ?? null,
-        countsAsMeeting: type === "OPEN" && !!countsAsMeeting,
-      })),
+      allowMultipleOpenDeals,
+      stages: stages.map(
+        ({ id, name: stageName, color, type, entryFlowId, staleAfterDays, requiredFieldIds, conversionEvent, countsAsMeeting }) => ({
+          id,
+          name: stageName.trim(),
+          color,
+          type,
+          entryFlowId: entryFlowId ?? null,
+          staleAfterDays: type === "OPEN" ? (staleAfterDays ?? null) : null,
+          // Só campos ativos; um campo desativado depois deixa de ser exigido
+          requiredFieldIds: (requiredFieldIds ?? []).filter((fieldId) => fields.some((field) => field.id === fieldId)),
+          conversionEvent: conversionEvent ?? null,
+          countsAsMeeting: type === "OPEN" && !!countsAsMeeting,
+        }),
+      ),
     };
 
     if (pipeline) {
@@ -301,6 +309,21 @@ export const DialogSavePipeline: FC<DialogSavePipelineProps> = ({ clientId, pipe
               placeholder="Ex.: Vendas"
             />
           </div>
+
+          <label className="flex cursor-pointer items-start gap-2 text-sm">
+            <Checkbox
+              className="mt-0.5"
+              checked={allowMultipleOpenDeals}
+              disabled={isPending}
+              onCheckedChange={(checked) => setAllowMultipleOpenDeals(checked === true)}
+            />
+            <span>
+              Permitir mais de um negócio aberto por contato
+              <span className="text-muted-foreground block text-xs">
+                Para recompra ou vários pedidos ao mesmo tempo. Desligado, cada contato tem no máximo um negócio aberto neste funil.
+              </span>
+            </span>
+          </label>
 
           <div className="grid gap-2">
             <Label>Etapas</Label>

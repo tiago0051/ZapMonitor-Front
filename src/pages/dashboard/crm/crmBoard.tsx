@@ -20,6 +20,7 @@ import { useLocalStorage } from "usehooks-ts";
 import { DEAL_DRAG_TYPE, DealCard } from "./components/dealCard";
 import { DealSheet } from "./components/dealSheet";
 import { DealList } from "./components/dealList";
+import { NewDealDialog } from "./components/newDealDialog";
 import { useCrmRealtime } from "./useCrmRealtime";
 import { crmSelectClassName, formatCurrency, staleDays, sumDealValues } from "./crmUtils";
 import { useCrmOptions } from "./useCrmOptions";
@@ -414,6 +415,11 @@ export const CrmBoard = () => {
             </Button>
           )}
         </div>
+
+        {/* Busca a ficha (crm + contatos); quem não vê contatos cria o negócio pelo atendimento */}
+        {pipeline && can("contacts.view") && !hasNoServiceGroup && (
+          <NewDealDialog defaultPipelineId={pipeline.id} onCreated={(deal) => setOpenDealId(deal.id)} />
+        )}
 
         <div className="ml-auto flex rounded-md border p-0.5" role="group" aria-label="Visualização">
           {(["board", "list"] as const).map((option) => (

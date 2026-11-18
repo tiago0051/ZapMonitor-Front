@@ -45,6 +45,8 @@ type Pipeline = {
   id: string;
   name: string;
   active: boolean;
+  // Mais de um negócio aberto do mesmo contato no funil (recompra); por padrão, um só
+  allowMultipleOpenDeals: boolean;
   stages: PipelineStage[];
   createdAt: string;
   updatedAt: string;
