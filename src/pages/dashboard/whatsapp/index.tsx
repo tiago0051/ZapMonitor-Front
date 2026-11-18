@@ -1,6 +1,6 @@
 import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
 import { useEffect, useRef, useState } from "react";
-import { MessageSquare, Search, X, ArrowLeft, Users, WifiOff } from "lucide-react";
+import { MessageSquare, Search, X, ArrowLeft, Users, WifiOff, Keyboard } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { ContactCard } from "./components/contactCard";
 import { ContactCardSkeleton } from "./components/contactCard/skeleton";
@@ -17,6 +17,8 @@ import { useSearchParams } from "react-router";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes";
 import { useOpenContact } from "./useOpenContact";
 import { toast } from "sonner";
+import { canRunScreenShortcut, isDialogOpen, isModK, useWindowKeydown } from "./shortcuts/keyboardShortcuts";
+import { ShortcutsDialog } from "./shortcuts/shortcutsDialog";
 
 // ── Shared sub-panels ────────────────────────────────────────────────────────
 
@@ -46,13 +48,16 @@ function ContactListPanel({
   setTab,
   selectedId,
   onSelectContact,
+  onShowShortcuts,
 }: {
   tab: Tab;
   setTab: (t: Tab) => void;
   selectedId: string | null;
   onSelectContact: (contact: WhatsappContactMessage) => void;
+  onShowShortcuts: () => void;
 }) {
   const [search, setSearch] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const serviceGroupSelection = useServiceGroupSelection();
   const { serviceGroups, selectedServiceGroupId } = serviceGroupSelection;
@@ -62,6 +67,31 @@ function ContactListPanel({
     tab,
     serviceGroupId: selectedServiceGroupId,
     enabled: !serviceGroupSelection.isLoading,
+  });
+
+  useWindowKeydown((event) => {
+    // Ctrl/⌘+K vale até dentro de um campo de texto
+    if (isModK(event)) {
+      if (isDialogOpen()) return;
+      event.preventDefault();
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+      return;
+    }
+
+    const isAltArrow =
+      event.altKey && !event.shiftKey && !event.ctrlKey && !event.metaKey && (event.key === "ArrowUp" || event.key === "ArrowDown");
+    if (!isAltArrow || !canRunScreenShortcut(event) || contacts.items.length === 0) return;
+
+    event.preventDefault();
+    const currentIndex = contacts.items.findIndex((contact) => contact.id === selectedId);
+    const step = event.key === "ArrowDown" ? 1 : -1;
+    const nextIndex = currentIndex === -1 ? 0 : Math.min(Math.max(currentIndex + step, 0), contacts.items.length - 1);
+    const next = contacts.items[nextIndex];
+    if (!next || next.id === selectedId) return;
+
+    onSelectContact(next);
+    document.querySelector(`[data-contact-id="${next.id}"]`)?.scrollIntoView({ block: "nearest" });
   });
 
   function renderContactsList() {
@@ -84,7 +114,14 @@ function ContactListPanel({
     return (
       <>
         {contacts.items.map((c) => (
-          <ContactCard key={c.id} contact={c} active={selectedId === c.id} highlight={search} onClick={() => onSelectContact(c)} />
+          <ContactCard
+            key={c.id}
+            contact={c}
+            active={selectedId === c.id}
+            highlight={search}
+            showRepresentative={tab === "all"}
+            onClick={() => onSelectContact(c)}
+          />
         ))}
         {contacts.isFetchingNextPage && Array.from({ length: 3 }).map((_, index) => <ContactCardSkeleton key={`next-${index}`} />)}
         {contacts.hasNextPage && !contacts.isFetchingNextPage && <LoadMoreSentinel onVisible={() => contacts.fetchNextPage()} />}
@@ -158,8 +195,15 @@ function ContactListPanel({
         <div className="bg-muted flex min-w-0 flex-1 items-center gap-2 rounded-lg px-3 py-1.5">
           <Search className="text-muted-foreground h-3.5 w-3.5 flex-shrink-0" />
           <input
+            ref={searchInputRef}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => {
+              // Esc limpa a busca; com ela vazia, sai do campo
+              if (e.key !== "Escape") return;
+              if (search) setSearch("");
+              else e.currentTarget.blur();
+            }}
             aria-label="Buscar conversas"
             placeholder="Buscar por nome ou telefone"
             className="text-foreground placeholder:text-muted-foreground min-w-0 flex-1 bg-transparent text-base outline-none md:text-sm"
@@ -170,6 +214,15 @@ function ContactListPanel({
             </button>
           )}
         </div>
+        <button
+          type="button"
+          aria-label="Atalhos de teclado"
+          title="Atalhos de teclado (?)"
+          onClick={onShowShortcuts}
+          className="hover:bg-muted text-muted-foreground hidden h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-colors md:flex"
+        >
+          <Keyboard className="h-4 w-4" />
+        </button>
         <NotificationSettings />
         <DialogNewContactTemplate
           onSent={(contact) => {
@@ -256,6 +309,7 @@ export function Whatsapp() {
 
   // A ficha (aba "Ficha" do painel) avisa se tem edição pendente; trocar de aba/contato a desmontaria
   const [isProfileDirty, setIsProfileDirty] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const { guard, guardDialog } = useUnsavedChangesGuard(isProfileDirty);
 
   const goToMobileView = (view: MobileView) => {
@@ -359,6 +413,19 @@ export function Whatsapp() {
     return () => window.removeEventListener(OPEN_CONTACT_REQUEST_EVENT, handleOpenRequest);
   }, []);
 
+  useWindowKeydown((event) => {
+    if (event.key === "?" && canRunScreenShortcut(event)) {
+      event.preventDefault();
+      setIsShortcutsOpen(true);
+      return;
+    }
+
+    // Esc no celular volta um painel (informações → conversa → lista); janelas abertas fecham sozinhas com Esc
+    if (event.key !== "Escape" || event.defaultPrevented || isDialogOpen() || !isMobile) return;
+    if (mobileView === "info") guard(() => goToMobileView("chat"));
+    else if (mobileView === "chat") goToMobileView("list");
+  });
+
   // Enquanto a conversa do link carrega (ou se falhou), no lugar dela
   const openContactPlaceholder = openContact.isError ? (
     <ErrorState message="Não foi possível abrir esta conversa." onRetry={() => openContact.refetch()} isRetrying={openContact.isRetrying} />
@@ -369,6 +436,7 @@ export function Whatsapp() {
   return (
     <div className="flex h-full flex-col">
       {guardDialog}
+      <ShortcutsDialog open={isShortcutsOpen} onOpenChange={setIsShortcutsOpen} />
       <ConnectionNotice isConnected={isConnected} />
       <div className="flex min-h-0 flex-1 overflow-hidden" style={{ fontFamily: "Inter, sans-serif" }}>
         {/* ════ DESKTOP LAYOUT (md+) ════ */}
@@ -376,7 +444,13 @@ export function Whatsapp() {
           <div className="flex h-full w-full">
             {/* Contact list */}
             <aside className="border-border flex w-80 flex-shrink-0 flex-col border-r">
-              <ContactListPanel tab={tab} setTab={setTab} selectedId={selectedId} onSelectContact={handleSelectContact} />
+              <ContactListPanel
+                tab={tab}
+                setTab={setTab}
+                selectedId={selectedId}
+                onSelectContact={handleSelectContact}
+                onShowShortcuts={() => setIsShortcutsOpen(true)}
+              />
             </aside>
 
             {/* Conversation + right panel */}
@@ -424,7 +498,13 @@ export function Whatsapp() {
                   className="absolute inset-0 h-full w-full"
                 >
                   {mobileView === "list" && (
-                    <ContactListPanel tab={tab} setTab={setTab} selectedId={selectedId} onSelectContact={handleSelectContact} />
+                    <ContactListPanel
+                      tab={tab}
+                      setTab={setTab}
+                      selectedId={selectedId}
+                      onSelectContact={handleSelectContact}
+                      onShowShortcuts={() => setIsShortcutsOpen(true)}
+                    />
                   )}
 
                   {mobileView === "chat" && !selected && (

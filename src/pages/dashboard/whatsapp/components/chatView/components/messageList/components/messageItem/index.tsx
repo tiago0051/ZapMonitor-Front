@@ -314,7 +314,14 @@ const ChatMessageItem: FC<MessageItemProps> = ({ message, contactId, contactName
               <Reply className="size-4" />
             </button>
           )}
-          <span className="text-xs">{format(message.createdAt, "PPp")}</span>
+          {/* Só a hora na bolha (o dia está no separador); a data completa fica no tooltip */}
+          <time
+            className="text-xs tabular-nums"
+            dateTime={message.createdAt}
+            title={format(message.createdAt, "dd/MM/yyyy 'às' HH:mm")}
+          >
+            {format(message.createdAt, "HH:mm")}
+          </time>
           {message.type === WhatsappMessageType.OUTGOING && (
             <>
               {/* Sem status confirmado ainda: relógio, como "enviando" */}

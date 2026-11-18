@@ -287,6 +287,13 @@ type ForwardWhatsappServiceRequestParams = {
 //#region transferService
 type TransferWhatsappServiceRequestData = {
   params: TransferWhatsappServiceRequestParams;
+  // Nota para quem recebe; só vale ao passar para outra pessoa
+  body?: { note?: string };
+};
+
+type TransferWhatsappServiceToGroupRequestData = {
+  params: { contactId: string; serviceGroupId: string; clientId: string };
+  body?: { note?: string };
 };
 
 type TransferWhatsappServiceRequestParams = {
@@ -299,6 +306,13 @@ type TransferWhatsappServiceRequestParams = {
 //#region endService
 type EndWhatsappServiceRequestData = {
   params: EndWhatsappServiceRequestParams;
+  body?: EndWhatsappServiceRequestBody;
+};
+
+type EndWhatsappServiceRequestBody = {
+  // Resultado escolhido nos chips (resolved, sale, noReply, notInterested, forwarded, other)
+  outcome?: string;
+  annotation?: string;
 };
 
 type EndWhatsappServiceRequestParams = {

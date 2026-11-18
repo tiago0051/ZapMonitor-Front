@@ -14,6 +14,7 @@ import { IsTopScrolled } from "@/utils/scroll";
 import { format } from "date-fns";
 import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
 import { contactDisplayName } from "../../contactDisplayName";
+import { serviceOutcomeLabel } from "../../serviceOutcome";
 
 type MessageFileContent = { url: string; filename: string };
 
@@ -291,10 +292,16 @@ export function InfoPanel({
                     <div className="space-y-1.5">
                       {p.actions.map((action) => {
                         const info = serviceActionInfo[action.type];
+                        const outcomeLabel = serviceOutcomeLabel(action.outcome);
                         return (
                           <div key={action.id} className={`rounded border p-2 ${info?.className ?? ""}`}>
                             <div className="mb-1 flex items-center justify-between gap-2">
-                              <span className="text-foreground text-xs font-semibold">{info?.label ?? "Ação"}</span>
+                              <span className="text-foreground flex min-w-0 flex-wrap items-center gap-1.5 text-xs font-semibold">
+                                {info?.label ?? "Ação"}
+                                {outcomeLabel && (
+                                  <span className="bg-background rounded-full border px-1.5 py-0.5 text-[10px] font-medium">{outcomeLabel}</span>
+                                )}
+                              </span>
                               <span className="text-muted-foreground text-[11px] tabular-nums">
                                 {format(new Date(action.createdAt), "dd/MM/yyyy HH:mm")}
                               </span>

@@ -36,4 +36,6 @@ type WhatsappPerformance = {
   daily: WhatsappPerformanceDay[];
   hourly: { hour: number; received: number }[];
   attendants: WhatsappPerformanceAttendant[];
+  // Resultados escolhidos ao encerrar, do mais comum para o menos comum
+  outcomes?: { outcome: string; total: number }[];
 };
