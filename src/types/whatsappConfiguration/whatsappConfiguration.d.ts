@@ -15,10 +15,21 @@ type WhatsappConfiguration = {
   connectedAt: string | null;
   // Ligações pelo WhatsApp ligadas na Meta (só na API oficial)
   callingEnabled: boolean;
+  // Saúde do número na Meta (só na API oficial), relida de hora em hora: status, qualidade e limite de conversas
+  metaStatus: string | null;
+  qualityRating: WhatsappQualityRating | null;
+  messagingLimitTier: string | null;
+  // Conversas que o número pode iniciar com pessoas diferentes em 24h; nulo quando ilimitado ou desconhecido
+  messagingLimit: number | null;
+  healthCheckedAt: string | null;
+  // Motivo da última leitura na Meta que falhou
+  healthError: string | null;
   // Só na listagem: fluxo de atendimento (active = fluxo de atendimento ativo) e grupo padrão do número
   flow?: { id: string; name: string; active: boolean } | null;
   serviceGroup?: { id: string; name: string; memberCount: number } | null;
 };
+
+type WhatsappQualityRating = "GREEN" | "YELLOW" | "RED" | "UNKNOWN";
 
 // CLOUD_API: API oficial da Meta. WHATSAPP_WEB: número conectado por QR code (não oficial)
 type WhatsappProvider = "CLOUD_API" | "WHATSAPP_WEB";

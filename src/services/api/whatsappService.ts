@@ -24,6 +24,11 @@ export const whatsappService = {
     const response = await api.get(`/client/${params.clientId}/whatsapp/configuration/usage`);
     return response.data;
   },
+  // Relê na Meta status, qualidade e limite dos números com a última leitura vencida
+  refreshNumberHealth: async (clientId: string): Promise<{ refreshed: number }> => {
+    const response = await api.post(`/client/${clientId}/whatsapp/configuration/health/refresh`);
+    return response.data;
+  },
   createEmbeddedSignup: async ({ body, params }: CreateWhatsappEmbeddedSignupRequestData): Promise<WhatsappConfiguration> => {
     const response = await api.post(`/client/${params.clientId}/whatsapp/configuration/embedded-signup`, body);
     return response.data;

@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { whatsappService } from "@/services/api/whatsappService";
 import { requestErrorHandling } from "@/utils/request";
@@ -22,9 +23,8 @@ const schema = z.object({
   phoneNumber: z.string().refine((arg) => isPossiblePhoneNumber(arg), {
     message: "Telefone inválido",
   }),
-  phoneNumberId: z.string().min(1, "O ID do telefone é obrigatório"),
-  authorizationToken: z.string().min(1, "O token de autorização é obrigatório"),
-  webhookSecret: z.string().min(1, "O segredo do webhook é obrigatório"),
+  phoneNumberId: z.string().min(1, "Informe a identificação do número"),
+  authorizationToken: z.string().min(1, "Informe a chave de acesso"),
 });
 
 type SchemaType = z.infer<typeof schema>;
@@ -53,7 +53,6 @@ export const DialogCreateWhatsappConfiguration = ({ className, clientId, disable
       authorizationToken: "",
       phoneNumber: "",
       phoneNumberId: "",
-      webhookSecret: "",
     },
     disabled: createWhatsappConfigurationMutation.isPending,
   });
@@ -66,7 +65,8 @@ export const DialogCreateWhatsappConfiguration = ({ className, clientId, disable
 
   const handleSubmit: SubmitHandler<SchemaType> = (data) => {
     createWhatsappConfigurationMutation.mutate({
-      body: data,
+      // As mensagens recebidas são conferidas pela assinatura do aplicativo; o segredo do número é só um identificador gerado aqui
+      body: { ...data, webhookSecret: crypto.randomUUID().replaceAll("-", "") },
       params: { clientId },
     });
   };
@@ -80,16 +80,18 @@ export const DialogCreateWhatsappConfiguration = ({ className, clientId, disable
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className={className} disabled={disabled}>
-          Cadastro manual
+        <Button variant="link" size="sm" className={cn("text-muted-foreground h-auto px-0", className)} disabled={disabled}>
+          Avançado: cadastrar com os dados da Meta
         </Button>
       </DialogTrigger>
 
-      <DialogContent>
+      <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Cadastro manual de número</DialogTitle>
+          <DialogTitle>Cadastro manual (avançado)</DialogTitle>
           <DialogDescription>
-            Use apenas se o número não puder ser conectado pela Meta. Os dados ficam no painel do WhatsApp Business.
+            Prefira "Conectar com a Meta", que preenche tudo sozinho. Use este cadastro só se a conexão automática não funcionar: os dados
+            ficam no painel de desenvolvedor da Meta (developers.facebook.com), no aplicativo do WhatsApp, em "Configuração da API". Depois
+            de salvar, abra "Gerenciar número" (engrenagem na lista) para conferir se as mensagens estão chegando.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -103,6 +105,7 @@ export const DialogCreateWhatsappConfiguration = ({ className, clientId, disable
                   <FormControl>
                     <Input {...field} onChange={(e) => onChange(onChangePhoneNumber(e.target.value))} placeholder="+55 11 11111 1111" />
                   </FormControl>
+                  <FormDescription>O número do WhatsApp com o código do país (+55) e o DDD.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -112,10 +115,13 @@ export const DialogCreateWhatsappConfiguration = ({ className, clientId, disable
               name="phoneNumberId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>ID do Telefone</FormLabel>
+                  <FormLabel>Identificação do número na Meta</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="ID do telefone" />
+                    <Input {...field} placeholder="Ex.: 106540352242922" inputMode="numeric" />
                   </FormControl>
+                  <FormDescription>
+                    Só números. Na Meta aparece como "Identificação do número de telefone" (Phone number ID), logo abaixo do número.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -125,23 +131,14 @@ export const DialogCreateWhatsappConfiguration = ({ className, clientId, disable
               name="authorizationToken"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Token de Autorização</FormLabel>
+                  <FormLabel>Chave de acesso permanente</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Token de autorização" />
+                    <Input {...field} placeholder="Começa com EAA..." autoComplete="off" />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="webhookSecret"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Segredo do Webhook</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Segredo do webhook" />
-                  </FormControl>
+                  <FormDescription>
+                    Gerada para um usuário do sistema no Gerenciador de Negócios da Meta, com as permissões do WhatsApp. Não use a chave
+                    temporária da tela de testes: ela expira em 24 horas.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
