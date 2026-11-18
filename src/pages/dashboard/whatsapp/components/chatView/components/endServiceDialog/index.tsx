@@ -36,8 +36,8 @@ const EndServiceForm: FC<Omit<EndServiceDialogProps, "open" | "onOpenChange">> =
       <AlertDialogHeader>
         <AlertDialogTitle>Encerrar atendimento?</AlertDialogTitle>
         <AlertDialogDescription>
-          O atendimento de {contactName} será finalizado. O resultado e a anotação ficam no histórico do contato (aba Histórico, ao lado
-          da conversa).
+          O atendimento de {contactName} será finalizado. O resultado e a anotação ficam no histórico do contato (aba Histórico, ao lado da
+          conversa).
         </AlertDialogDescription>
       </AlertDialogHeader>
 

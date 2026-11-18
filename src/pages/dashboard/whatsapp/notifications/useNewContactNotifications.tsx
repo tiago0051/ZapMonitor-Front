@@ -22,7 +22,13 @@ const RECENT_EVENT_WINDOW_MS = 5 * 60 * 1000;
 const isRecent = (date: string | null) => !!date && Date.now() - new Date(date).getTime() < RECENT_EVENT_WINDOW_MS;
 
 // Chega pelo socket logo antes da atualização do contato, com a nota de quem transferiu
-type ServiceTransferred = { contactId: string; toUserId: string | null; toServiceGroupId: string | null; fromName: string; note: string | null };
+type ServiceTransferred = {
+  contactId: string;
+  toUserId: string | null;
+  toServiceGroupId: string | null;
+  fromName: string;
+  note: string | null;
+};
 
 // A transferência só enriquece o aviso que vem logo em seguida
 const TRANSFER_MATCH_WINDOW_MS = 30 * 1000;

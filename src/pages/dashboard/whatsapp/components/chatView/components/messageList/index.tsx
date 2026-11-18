@@ -35,13 +35,20 @@ export const MessageList = ({ contact, onReply }: MessageListProps) => {
             // Da mais nova para a mais antiga; a lista é invertida, então o separador vem depois da última mensagem do dia
             const older = messages[index + 1];
             const isFirstOfDay = !older || dayKey(older.createdAt) !== dayKey(message.createdAt);
-            const item = <MessageItem message={message} key={message.id} contactId={contact.id} contactName={contactName} onReply={onReply} />;
+            const item = (
+              <MessageItem message={message} key={message.id} contactId={contact.id} contactName={contactName} onReply={onReply} />
+            );
             if (!isFirstOfDay) return [item];
 
             const label = dayLabel(message.createdAt);
             return [
               item,
-              <div key={`day-${dayKey(message.createdAt)}`} className="flex shrink-0 justify-center py-1" role="separator" aria-label={label}>
+              <div
+                key={`day-${dayKey(message.createdAt)}`}
+                className="flex shrink-0 justify-center py-1"
+                role="separator"
+                aria-label={label}
+              >
                 <span className="bg-muted text-muted-foreground rounded-full px-3 py-0.5 text-xs font-medium first-letter:uppercase">
                   {label}
                 </span>

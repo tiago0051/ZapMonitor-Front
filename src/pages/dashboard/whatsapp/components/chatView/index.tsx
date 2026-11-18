@@ -8,6 +8,8 @@ import { ChatComposer } from "./components/chatComposer";
 import { canReplyToContact } from "./components/chatComposer/canReplyToContact";
 import { TransferNoteBanner } from "./components/transferNoteBanner";
 import { getDraftReply, saveDraftReply } from "../../conversationDrafts";
+import { canRunScreenShortcut, isAltShiftKey, useWindowKeydown } from "../../shortcuts/keyboardShortcuts";
+import { toast } from "sonner";
 
 type ChatViewProps = {
   contact: WhatsappContactMessage;
@@ -35,6 +37,25 @@ export const ChatView = ({ contact, onServiceAssumed, onBack, onShowInfo }: Chat
   };
 
   useChatSubscription(contact.id);
+
+  // Alt+Shift+A assume, Alt+Shift+E encerra e Alt+Shift+T transfere (fora de campos de texto)
+  useWindowKeydown((event) => {
+    if (!canRunScreenShortcut(event)) return;
+
+    if (isAltShiftKey(event, "A")) {
+      event.preventDefault();
+      if (serviceActions.canAssumeService && !serviceActions.isPending) serviceActions.assumeService();
+      else toast.info("Não há atendimento para assumir nesta conversa");
+    } else if (isAltShiftKey(event, "E")) {
+      event.preventDefault();
+      if (contactService?.canBeServiceEnded && !serviceActions.isPending) serviceActions.setIsEndDialogOpen(true);
+      else toast.info("Só quem está atendendo pode encerrar");
+    } else if (isAltShiftKey(event, "T")) {
+      event.preventDefault();
+      if (serviceActions.canTransferToOthers && !serviceActions.isPending) serviceActions.setIsTransferDialogOpen(true);
+      else toast.info("Este atendimento não pode ser transferido por você agora");
+    }
+  });
 
   const { canSendMessage } = canReplyToContact(contact, contactService);
 

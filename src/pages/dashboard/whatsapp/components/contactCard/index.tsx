@@ -112,6 +112,7 @@ export const ContactCard: FC<ContactCardProps> = ({ contact, active, onClick, hi
     <button
       type="button"
       aria-current={active || undefined}
+      data-contact-id={contact.id}
       onClick={onClick}
       className={`border-border w-full border-b px-4 py-3 text-left transition-colors ${
         active ? "border-l-2 border-l-green-500 bg-green-50" : "border-l-2 border-l-transparent hover:bg-gray-50"

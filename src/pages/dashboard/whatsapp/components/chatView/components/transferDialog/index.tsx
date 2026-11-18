@@ -25,11 +25,7 @@ type TransferDialogProps = {
 const textareaClassName =
   "border-input bg-background focus-visible:ring-ring w-full resize-y rounded-md border px-3 py-2 text-base focus-visible:ring-1 focus-visible:outline-none md:text-sm";
 
-const normalize = (text: string) =>
-  text
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLocaleLowerCase();
+const normalize = (text: string) => text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLocaleLowerCase();
 
 /** Conteúdo do diálogo; montado só enquanto está aberto, então cada abertura começa limpa. */
 const TransferForm: FC<TransferDialogProps & { onDone: () => void }> = ({ contact, contactName, serviceActions, onDone }) => {
@@ -89,7 +85,11 @@ const TransferForm: FC<TransferDialogProps & { onDone: () => void }> = ({ contac
     if (optionsQuery.isLoading) return <LoadingState label="Carregando equipe..." />;
     if (optionsQuery.isError)
       return (
-        <ErrorState message="Não foi possível carregar a equipe." onRetry={() => optionsQuery.refetch()} isRetrying={optionsQuery.isFetching} />
+        <ErrorState
+          message="Não foi possível carregar a equipe."
+          onRetry={() => optionsQuery.refetch()}
+          isRetrying={optionsQuery.isFetching}
+        />
       );
 
     if (target === "user") {
@@ -115,10 +115,7 @@ const TransferForm: FC<TransferDialogProps & { onDone: () => void }> = ({ contac
             selectedId === user.id ? "bg-primary/10 ring-primary ring-1" : "hover:bg-muted",
           )}
         >
-          <span
-            aria-hidden
-            className={cn("h-2 w-2 shrink-0 rounded-full", user.online ? "bg-green-500" : "bg-muted-foreground/30")}
-          />
+          <span aria-hidden className={cn("h-2 w-2 shrink-0 rounded-full", user.online ? "bg-green-500" : "bg-muted-foreground/30")} />
           <span className="min-w-0 flex-1 truncate font-medium">{user.name}</span>
           {user.isServiceGroupMember && (
             <span className="text-muted-foreground bg-muted shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium">do grupo</span>
