@@ -94,6 +94,11 @@ export const BroadcastNew = () => {
   const [reply, setReply] = useState<BroadcastReply>(emptyReply);
   const [capDays, setCapDays] = useState("");
   const [consent, setConsent] = useState(false);
+  const [abEnabled, setAbEnabled] = useState(false);
+  const [abTemplateId, setAbTemplateId] = useState("");
+  const [abPercent, setAbPercent] = useState(20);
+  const [abMetric, setAbMetric] = useState<"REPLY" | "DEAL">("REPLY");
+  const [abWaitHours, setAbWaitHours] = useState(24);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   const configurationsQuery = useQuery({
@@ -250,6 +255,10 @@ export const BroadcastNew = () => {
         frequencyCapDays: capEnabled && capDays ? Number(capDays) : undefined,
         consentConfirmed: consent,
         segment: segment ? { rules: segment.rules, mapping } : undefined,
+        abTest:
+          abEnabled && abTemplate
+            ? { templateId: abTemplate.id, testPercent: abPercent, metric: abMetric, waitHours: abWaitHours }
+            : undefined,
       };
       // O arquivo do cabeçalho muda a cada envio; fica fora da comparação
       const signature = JSON.stringify({ ...body, headerFileId: undefined, recipients });
@@ -332,17 +341,47 @@ export const BroadcastNew = () => {
       ? `O número pode chamar até ${formatCount(messagingLimit!)} pessoas em 24h; divida a campanha`
       : null;
   const capError = capEnabled && capDays && !(Number(capDays) >= 1 && Number(capDays) <= 90) ? "O limite vai de 1 a 90 dias" : null;
-  const settingsError = sendWindowError(sendWindow) ?? capError ?? (needsConsent && !consent ? "Confirme o consentimento da lista" : null);
+  // Modelo B do teste A/B: mesmas variáveis, cabeçalho e categoria do A, para valer para as mesmas pessoas
+  const parameterKeys = (item: WhatsappTemplate | null) =>
+    (item?.parameters ?? [])
+      .map((parameter) => parameter.key)
+      .sort()
+      .join("|");
+  const abCandidates = template
+    ? templates.filter(
+        (item) =>
+          item.sendable &&
+          item.id !== template.id &&
+          item.category === template.category &&
+          headerFileType(item) === headerFileType(template) &&
+          parameterKeys(item) === parameterKeys(template),
+      )
+    : [];
+  const abTemplate = abCandidates.find((item) => item.id === abTemplateId) ?? null;
+  const abSize = Math.floor(((readyCount ?? 0) * abPercent) / 100 / 2) * 2;
+  const abError = !abEnabled
+    ? null
+    : !abTemplate
+      ? "Escolha o modelo B do teste"
+      : abSize < 20
+        ? `Com ${formatCount(readyCount ?? 0)} pessoas o teste A/B fica pequeno: aumente a parte da lista ou tire o teste`
+        : null;
+  const settingsError =
+    sendWindowError(sendWindow) ?? capError ?? abError ?? (needsConsent && !consent ? "Confirme o consentimento da lista" : null);
   const reviewError = settingsError ?? scheduleError ?? phoneError;
   const reviewErrorField = sendWindowError(sendWindow)
     ? "broadcast-window-start"
     : capError
       ? "broadcast-cap-days"
-      : needsConsent && !consent
-        ? "broadcast-consent"
-        : scheduleError
-          ? "broadcast-scheduled-at"
-          : null;
+      : abError
+        ? abTemplate
+          ? "broadcast-ab-percent"
+          : "broadcast-ab-template"
+        : needsConsent && !consent
+          ? "broadcast-consent"
+          : scheduleError
+            ? "broadcast-scheduled-at"
+            : null;
 
   const previewNote = `Prévia${sample ? ` para ${sample.name}` : ""}`;
   const previewContent = template && (
@@ -615,6 +654,113 @@ export const BroadcastNew = () => {
                     </div>
                   )}
                   <SendWindowFields value={sendWindow} onChange={setSendWindow} idPrefix="broadcast-window" disabled={busy} />
+                </div>
+
+                <div className="grid gap-3 rounded-lg border p-3">
+                  <label className="flex items-start gap-2 text-sm">
+                    <Checkbox
+                      id="broadcast-ab"
+                      checked={abEnabled}
+                      disabled={busy}
+                      onCheckedChange={(checked) => setAbEnabled(checked === true)}
+                    />
+                    <span>
+                      <span className="font-medium">Teste A/B de modelo</span>
+                      <span className="text-muted-foreground block text-xs">
+                        Uma parte da lista recebe este modelo (A) ou outro (B); depois da espera, o que tiver mais respostas (ou negócios)
+                        vai para o resto.
+                      </span>
+                    </span>
+                  </label>
+                  {abEnabled && (
+                    <div className="grid gap-3 pl-6">
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="broadcast-ab-template" className="text-xs">
+                          Modelo B
+                        </Label>
+                        <select
+                          id="broadcast-ab-template"
+                          className={selectClassName}
+                          value={abTemplateId}
+                          disabled={busy}
+                          onChange={(event) => setAbTemplateId(event.target.value)}
+                        >
+                          <option value="">{abCandidates.length ? "Selecione" : "Nenhum modelo com as mesmas variáveis"}</option>
+                          {abCandidates.map((item) => (
+                            <option key={item.id} value={item.id}>
+                              {item.name} ({item.language})
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-muted-foreground text-xs">
+                          Aparecem os modelos aprovados da mesma categoria, com as mesmas variáveis e o mesmo tipo de cabeçalho.
+                        </p>
+                      </div>
+                      {abTemplate && (
+                        <div className="max-w-sm">
+                          <TemplatePreview template={abTemplate} variables={sample?.variables} headerFileName={headerFile?.name} />
+                        </div>
+                      )}
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="grid gap-1.5">
+                          <Label htmlFor="broadcast-ab-percent" className="text-xs">
+                            Parte da lista no teste
+                          </Label>
+                          <select
+                            id="broadcast-ab-percent"
+                            className={selectClassName}
+                            value={abPercent}
+                            disabled={busy}
+                            onChange={(event) => setAbPercent(Number(event.target.value))}
+                          >
+                            {[10, 20, 30, 40, 50].map((value) => (
+                              <option key={value} value={value}>
+                                {value}%
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="grid gap-1.5">
+                          <Label htmlFor="broadcast-ab-metric" className="text-xs">
+                            Vence quem tiver mais
+                          </Label>
+                          <select
+                            id="broadcast-ab-metric"
+                            className={selectClassName}
+                            value={abMetric}
+                            disabled={busy}
+                            onChange={(event) => setAbMetric(event.target.value === "DEAL" ? "DEAL" : "REPLY")}
+                          >
+                            <option value="REPLY">Respostas</option>
+                            <option value="DEAL">Negócios</option>
+                          </select>
+                        </div>
+                        <div className="grid gap-1.5">
+                          <Label htmlFor="broadcast-ab-wait" className="text-xs">
+                            Esperar o resultado
+                          </Label>
+                          <select
+                            id="broadcast-ab-wait"
+                            className={selectClassName}
+                            value={abWaitHours}
+                            disabled={busy}
+                            onChange={(event) => setAbWaitHours(Number(event.target.value))}
+                          >
+                            {[2, 4, 8, 12, 24, 48, 72].map((value) => (
+                              <option key={value} value={value}>
+                                {value} horas
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <p className="text-muted-foreground text-xs">
+                        Cerca de {formatCount(abSize / 2)} recebem o A, {formatCount(abSize / 2)} recebem o B e{" "}
+                        {formatCount(Math.max(0, (readyCount ?? 0) - abSize))} recebem o vencedor (descadastrados ficam de fora no envio).
+                        {abMetric === "DEAL" && ' Negócio só conta com um funil em "Quem responder" ou com a atribuição de vendas.'}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid gap-3 rounded-lg border p-3">

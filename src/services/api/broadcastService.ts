@@ -38,6 +38,7 @@ export const broadcastService = {
       consentConfirmed?: boolean;
       recipients: BroadcastRecipientInput[];
       segment?: BroadcastSegmentInput;
+      abTest?: BroadcastAbConfig;
       start?: boolean;
     },
   ): Promise<Broadcast> => {
@@ -89,6 +90,9 @@ export const broadcastService = {
     const response = await api.post(`${base(clientId)}/${broadcastId}/duplicate`, { audience });
     return response.data;
   },
+
+  chooseAbWinner: async (clientId: string, broadcastId: string, variant: "A" | "B"): Promise<Broadcast> =>
+    (await api.post(`${base(clientId)}/${broadcastId}/ab-winner`, { variant })).data,
 
   attributionDays: async (clientId: string): Promise<{ days: number }> => (await api.get(`${base(clientId)}/attribution`)).data,
 
