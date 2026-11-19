@@ -37,3 +37,17 @@ type ManagementAttendedService = {
   assignedAt: string;
   finishedAt: string | null;
 };
+
+// Fila agora, por grupo; serviceGroupId nulo é quem está sem grupo
+type ManagementQueueGroup = {
+  serviceGroupId: string | null;
+  name: string | null;
+  waiting: number;
+  oldestQueueEnteredAt: string | null;
+};
+
+type ManagementQueue = {
+  total: number;
+  oldestQueueEnteredAt: string | null;
+  groups: ManagementQueueGroup[];
+};

@@ -5,6 +5,10 @@ import { useClientContext } from "@/context/ClientContext/clientContext";
 import { cn } from "@/lib/utils";
 import { managementService } from "@/services/api/managementService";
 import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
+import { downloadCsv } from "@/utils/csv";
+import { format } from "date-fns";
 import { useRef, useState } from "react";
 import { AttendedServicesList } from "./attendedServicesList";
 import { thisMonthPeriod, toPeriodQuery, type Period } from "./period";
@@ -40,7 +44,31 @@ export const AttendedTab = () => {
 
   return (
     <div className="space-y-4">
-      <PeriodFilter period={period} onChange={setPeriod} idPrefix="attended-period" />
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <PeriodFilter period={period} onChange={setPeriod} idPrefix="attended-period" />
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={attendants.length === 0 || !periodQuery}
+          onClick={() =>
+            downloadCsv(
+              `atendidos-${format(new Date(periodQuery!.startDate), "yyyy-MM-dd")}-a-${format(new Date(periodQuery!.endDate), "yyyy-MM-dd")}`,
+              [
+                ["Colaborador", "E-mail", "Situação", "Atendimentos no período"],
+                ...attendants.map((attendant) => [
+                  attendant.name,
+                  attendant.email,
+                  attendant.active ? "Ativo" : "Desativado",
+                  attendant.total,
+                ]),
+              ],
+            )
+          }
+        >
+          <Download className="h-4 w-4" />
+          Exportar CSV
+        </Button>
+      </div>
 
       <div className="flex flex-col gap-4 lg:flex-row">
         <div className="bg-card rounded-xl border shadow-xs lg:w-80 lg:shrink-0">

@@ -26,6 +26,10 @@ type WhatsappPerformanceAttendant = {
   active: boolean;
   sentMessages: number;
   services: number;
+  // Média de segundos entre assumir e a primeira mensagem do atendente
+  avgFirstResponseSeconds: number | null;
+  // Média de segundos entre assumir e encerrar
+  avgHandlingSeconds: number | null;
 };
 
 type WhatsappPerformance = {

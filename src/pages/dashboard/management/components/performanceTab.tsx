@@ -14,6 +14,9 @@ import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAx
 import { thisMonthPeriod, toPeriodQuery, type Period } from "./period";
 import { PeriodFilter } from "./periodFilter";
 import { serviceOutcomeLabel } from "@/pages/dashboard/whatsapp/serviceOutcome";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
+import { downloadCsv } from "@/utils/csv";
 
 // Acima disso a série diária fica ilegível: agrupa por semana
 const MAX_DAILY_POINTS = 62;
@@ -174,7 +177,13 @@ export const PerformanceTab = () => {
 
   return (
     <div className="space-y-4">
-      <PeriodFilter period={period} onChange={setPeriod} idPrefix="performance-period" />
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <PeriodFilter period={period} onChange={setPeriod} idPrefix="performance-period" />
+        <Button variant="outline" size="sm" disabled={!data} onClick={() => data && exportPerformanceCsv(data)}>
+          <Download className="h-4 w-4" />
+          Exportar CSV
+        </Button>
+      </div>
 
       {performanceQuery.isLoading && (
         <div className="space-y-4">
@@ -380,7 +389,9 @@ const PerformanceContent = ({
           <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
             <div>
               <h2 className="text-base font-semibold">Desempenho por atendente</h2>
-              <p className="text-muted-foreground text-xs">Atendimentos assumidos e mensagens enviadas no período.</p>
+              <p className="text-muted-foreground text-xs">
+                Atendimentos assumidos, mensagens, tempo até a primeira resposta e tempo médio até encerrar.
+              </p>
             </div>
             <Badge variant="outline">{data.attendants.length} pessoa(s)</Badge>
           </div>
@@ -394,6 +405,12 @@ const PerformanceContent = ({
                   <TableHead className="text-right">Atendimentos</TableHead>
                   <TableHead className="hidden text-right sm:table-cell">Mensagens</TableHead>
                   <TableHead className="hidden text-right md:table-cell">Msg. por atendimento</TableHead>
+                  <TableHead className="text-right" title="Tempo médio entre assumir e mandar a primeira mensagem">
+                    1ª resposta
+                  </TableHead>
+                  <TableHead className="hidden text-right lg:table-cell" title="Tempo médio entre assumir e encerrar">
+                    Tempo médio
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -421,6 +438,10 @@ const PerformanceContent = ({
                           ? (attendant.sentMessages / attendant.services).toLocaleString("pt-BR", { maximumFractionDigits: 1 })
                           : "—"}
                       </TableCell>
+                      <TableCell className="text-right tabular-nums">{formatDuration(attendant.avgFirstResponseSeconds)}</TableCell>
+                      <TableCell className="hidden text-right tabular-nums lg:table-cell">
+                        {formatDuration(attendant.avgHandlingSeconds)}
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -435,6 +456,45 @@ const PerformanceContent = ({
   );
 };
 
+const secondsToMinutes = (seconds: number | null) => (seconds === null ? null : Math.round((seconds / 60) * 10) / 10);
+
+/** Planilha com o resumo do período e a tabela por atendente (tempos em minutos, para somar no Excel). */
+function exportPerformanceCsv(data: WhatsappPerformance) {
+  const { summary } = data;
+  const day = (date: string) => format(parseISO(date), "dd/MM/yyyy");
+  const start = data.daily[0]?.date;
+  const end = data.daily[data.daily.length - 1]?.date;
+
+  downloadCsv(`desempenho-whatsapp-${start ?? "periodo"}-a-${end ?? ""}`, [
+    ["Período", start && end ? `${day(start)} a ${day(end)}` : ""],
+    ["Mensagens recebidas", summary.received],
+    ["Enviadas por atendentes", summary.sentByAttendants],
+    ["Enviadas automaticamente", summary.sentAutomated],
+    ["Atendimentos iniciados", summary.services],
+    ["Passaram por atendente", summary.servicesWithAttendant],
+    ["Tempo médio até o atendente assumir (min)", secondsToMinutes(summary.avgSecondsToAttendant)],
+    [],
+    [
+      "Atendente",
+      "Situação",
+      "Atendimentos",
+      "Mensagens enviadas",
+      "Msg. por atendimento",
+      "1ª resposta média (min)",
+      "Tempo médio de atendimento (min)",
+    ],
+    ...data.attendants.map((attendant) => [
+      attendant.name,
+      attendant.active ? "Ativo" : "Desativado",
+      attendant.services,
+      attendant.sentMessages,
+      attendant.services > 0 ? Math.round((attendant.sentMessages / attendant.services) * 10) / 10 : null,
+      secondsToMinutes(attendant.avgFirstResponseSeconds),
+      secondsToMinutes(attendant.avgHandlingSeconds),
+    ]),
+  ]);
+}
+
 /** Resultados escolhidos pelos atendentes ao encerrar (chips do diálogo de encerramento). */
 function OutcomesCard({ outcomes }: { outcomes: { outcome: string; total: number }[] }) {
   const total = outcomes.reduce((sum, item) => sum + item.total, 0);
@@ -442,7 +502,9 @@ function OutcomesCard({ outcomes }: { outcomes: { outcome: string; total: number
   return (
     <div className="bg-card rounded-xl border p-4 shadow-xs">
       <h2 className="text-base font-semibold">Resultado dos atendimentos</h2>
-      <p className="text-muted-foreground mb-4 text-xs">O que os atendentes marcaram ao encerrar: venda feita, resolvido, sem resposta...</p>
+      <p className="text-muted-foreground mb-4 text-xs">
+        O que os atendentes marcaram ao encerrar: venda feita, resolvido, sem resposta...
+      </p>
       {total === 0 ? (
         <p className="text-muted-foreground py-6 text-center text-sm">Nenhum atendimento encerrado com resultado no período.</p>
       ) : (

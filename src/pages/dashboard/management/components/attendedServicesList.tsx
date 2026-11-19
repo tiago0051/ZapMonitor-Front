@@ -9,6 +9,9 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useState, type FC } from "react";
 import { getContactName, getContactPhone, serviceStatusLabel } from "../managementFormat";
+import { Link } from "react-router";
+import { useBaseUrl } from "@/hooks/use-baseUrl";
+import { conversationUrl } from "./conversationLink";
 
 const PAGE_SIZE = 20;
 
@@ -20,7 +23,9 @@ type AttendedServicesListProps = {
 const formatDateTime = (date: string | null) => (date ? format(new Date(date), "dd/MM/yyyy HH:mm") : "—");
 
 export const AttendedServicesList: FC<AttendedServicesListProps> = ({ attendant, period }) => {
-  const { client } = useClientContext();
+  const { client, can } = useClientContext();
+  const baseUrl = useBaseUrl();
+  const canChat = can("whatsapp.chat");
   const [page, setPage] = useState(1);
 
   const findServicesQuery = useQuery({
@@ -76,7 +81,19 @@ export const AttendedServicesList: FC<AttendedServicesListProps> = ({ attendant,
               <TableBody>
                 {services.items.map((service) => (
                   <TableRow key={service.serviceId}>
-                    <TableCell className="font-medium">{getContactName(service.contact)}</TableCell>
+                    <TableCell className="font-medium">
+                      {canChat ? (
+                        <Link
+                          to={conversationUrl(baseUrl, service.contact)}
+                          className="hover:text-primary hover:underline"
+                          title="Abrir a conversa"
+                        >
+                          {getContactName(service.contact)}
+                        </Link>
+                      ) : (
+                        getContactName(service.contact)
+                      )}
+                    </TableCell>
                     <TableCell className="whitespace-nowrap">{getContactPhone(service.contact)}</TableCell>
                     <TableCell className="whitespace-nowrap">{formatDateTime(service.assignedAt)}</TableCell>
                     <TableCell>
