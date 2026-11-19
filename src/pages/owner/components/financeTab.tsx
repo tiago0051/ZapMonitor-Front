@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { endOfMonth, format, parse, startOfMonth } from "date-fns";
 import { useState, type ReactNode } from "react";
 import { formatCurrency, formatNumber } from "../ownerFormat";
+import { ServiceAiCostSection } from "./serviceAiCostSection";
 
 const ProfitValue = ({ value }: { value: number }) => (
   <span className={cn("tabular-nums", value < 0 && "text-destructive")}>{formatCurrency(value)}</span>
@@ -234,6 +235,8 @@ export const FinanceTab = ({ month: controlledMonth, onMonthChange }: FinanceTab
               </TableBody>
             </Table>
           </Section>
+
+          {finance.serviceAiCost && <ServiceAiCostSection serviceAiCost={finance.serviceAiCost} />}
 
           <Section title="Tenants" description="Mensalidade, custos rateados, comissões e lucro de cada tenant com plano ativo no mês.">
             {finance.clients.length === 0 ? (

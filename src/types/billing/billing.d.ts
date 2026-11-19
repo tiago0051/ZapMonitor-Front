@@ -173,4 +173,29 @@ type MonthFinance = {
   resources: ResourceFinance[];
   clients: ClientFinance[];
   implanters: ImplanterFinance[];
+  serviceAiCost: ServiceAiCost;
+};
+
+type ServiceAiCostRow = {
+  // Atendimentos abertos no mês (fora os de teste) e os que consumiram IA
+  services: number;
+  servicesWithAi: number;
+  tokens: number;
+  inputTokens: number;
+  outputTokens: number;
+  // Respostas dos agentes; o resto são condições do fluxo, leituras de mídia e resumos
+  agentTokens: number;
+  tokensPerService: number;
+  tokensPerServiceWithAi: number;
+  cost: number;
+  // Com 4 casas: o custo de um atendimento costuma ficar abaixo de R$ 0,01
+  costPerService: number;
+  costPerServiceWithAi: number;
+};
+
+type ServiceAiCost = {
+  costPerMillionTokens: number;
+  total: ServiceAiCostRow;
+  // Do maior custo por atendimento com IA ao menor
+  clients: (ServiceAiCostRow & { id: string; name: string })[];
 };

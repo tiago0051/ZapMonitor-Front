@@ -74,3 +74,13 @@ export const calculatePlanPrice = (
     total,
   };
 };
+
+const preciseCurrencyFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 4,
+});
+
+/** Para valores unitários pequenos, como o custo de IA de um atendimento (frações de centavo). */
+export const formatCurrencyPrecise = (value: number) => preciseCurrencyFormatter.format(value);
