@@ -106,193 +106,197 @@ export const StrategyDetailPage = () => {
   };
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 p-4 md:p-6">
-      {confirmDialog}
-      <div className="flex flex-wrap items-start gap-3">
-        <Button variant="ghost" size="icon" asChild>
-          <Link to={`${baseUrl}/strategies`} aria-label="Voltar para as estratégias" title="Voltar">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div className="min-w-0 flex-1 space-y-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className={cn("rounded px-1.5 py-0.5 text-xs font-medium", status.className)}>{status.label}</span>
-            {strategy.verdict && strategy.verdict !== "NO_DATA" && (
-              <span className={cn("rounded px-1.5 py-0.5 text-xs font-medium", verdictInfo[strategy.verdict].className)}>
-                {verdictInfo[strategy.verdict].label}
-              </span>
-            )}
+    <div className="h-full overflow-auto">
+      <div className="mx-auto w-full max-w-5xl space-y-6 p-4 md:p-6">
+        {confirmDialog}
+        <div className="flex flex-wrap items-start gap-3">
+          <Button variant="ghost" size="icon" asChild>
+            <Link to={`${baseUrl}/strategies`} aria-label="Voltar para as estratégias" title="Voltar">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={cn("rounded px-1.5 py-0.5 text-xs font-medium", status.className)}>{status.label}</span>
+              {strategy.verdict && strategy.verdict !== "NO_DATA" && (
+                <span className={cn("rounded px-1.5 py-0.5 text-xs font-medium", verdictInfo[strategy.verdict].className)}>
+                  {verdictInfo[strategy.verdict].label}
+                </span>
+              )}
 
-            {strategy.steps.length > 0 && (
-              <span className="text-muted-foreground text-xs tabular-nums">
-                {doneCount}/{strategy.steps.length} passos feitos
-              </span>
+              {strategy.steps.length > 0 && (
+                <span className="text-muted-foreground text-xs tabular-nums">
+                  {doneCount}/{strategy.steps.length} passos feitos
+                </span>
+              )}
+            </div>
+            {strategy.verdict && strategy.verdict !== "NO_DATA" && strategy.verdictReason && (
+              <p className="text-muted-foreground text-xs">{strategy.verdictReason}</p>
             )}
+            <h1 className="text-2xl font-semibold text-balance">{strategy.name}</h1>
+            <p className="text-muted-foreground text-sm">
+              {strategy.brief.product} · {goalLabel[strategy.brief.goal]}
+              {strategy.startsOn && ` · começou em ${format(new Date(strategy.startsOn), "dd/MM/yyyy")}`}
+            </p>
+            <StrategyMarkerHelp marker={strategy.marker} />
           </div>
-          {strategy.verdict && strategy.verdict !== "NO_DATA" && strategy.verdictReason && (
-            <p className="text-muted-foreground text-xs">{strategy.verdictReason}</p>
+          {canManage && !isGenerating && (
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => setIsRedoOpen(true)}>
+                <Sparkles className="h-4 w-4" />
+                Refazer
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                disabled={archive.isPending}
+                aria-label={strategy.status === "ARCHIVED" ? "Desarquivar" : "Arquivar"}
+                title={strategy.status === "ARCHIVED" ? "Desarquivar" : "Arquivar"}
+                onClick={() => archive.mutate(strategy.status !== "ARCHIVED")}
+              >
+                {strategy.status === "ARCHIVED" ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                disabled={remove.isPending}
+                aria-label="Excluir estratégia"
+                title="Excluir"
+                onClick={confirmDelete}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           )}
-          <h1 className="text-2xl font-semibold text-balance">{strategy.name}</h1>
-          <p className="text-muted-foreground text-sm">
-            {strategy.brief.product} · {goalLabel[strategy.brief.goal]}
-            {strategy.startsOn && ` · começou em ${format(new Date(strategy.startsOn), "dd/MM/yyyy")}`}
-          </p>
-          <StrategyMarkerHelp marker={strategy.marker} />
         </div>
-        {canManage && !isGenerating && (
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => setIsRedoOpen(true)}>
-              <Sparkles className="h-4 w-4" />
-              Refazer
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              disabled={archive.isPending}
-              aria-label={strategy.status === "ARCHIVED" ? "Desarquivar" : "Arquivar"}
-              title={strategy.status === "ARCHIVED" ? "Desarquivar" : "Arquivar"}
-              onClick={() => archive.mutate(strategy.status !== "ARCHIVED")}
-            >
-              {strategy.status === "ARCHIVED" ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              disabled={remove.isPending}
-              aria-label="Excluir estratégia"
-              title="Excluir"
-              onClick={confirmDelete}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+
+        {isGenerating && (
+          <div role="status" className="bg-muted/40 flex items-center gap-3 rounded-lg border p-4 text-sm">
+            <Loader2 className="h-5 w-5 shrink-0 animate-spin" />A IA está lendo o produto e a base da marca, escolhendo a estratégia e
+            montando os passos. Leva cerca de um minuto.
           </div>
         )}
-      </div>
 
-      {isGenerating && (
-        <div role="status" className="bg-muted/40 flex items-center gap-3 rounded-lg border p-4 text-sm">
-          <Loader2 className="h-5 w-5 shrink-0 animate-spin" />A IA está lendo o produto e a base da marca, escolhendo a estratégia e
-          montando os passos. Leva cerca de um minuto.
-        </div>
-      )}
-
-      {strategy.status === "FAILED" && (
-        <div role="alert" className="border-destructive/40 flex flex-wrap items-center gap-3 rounded-lg border p-4 text-sm">
-          <p className="text-destructive min-w-0 flex-1">{strategy.error ?? "A IA não conseguiu montar a estratégia."}</p>
-          {canManage && (
-            <Button variant="outline" size="sm" disabled={retry.isPending} onClick={() => retry.mutate()}>
-              <RotateCw className="h-4 w-4" />
-              Tentar de novo
-            </Button>
-          )}
-        </div>
-      )}
-
-      {strategy.playbook && (
-        <section className="grid gap-4 rounded-lg border p-4 md:grid-cols-[2fr_1fr]">
-          <div className="min-w-0 space-y-3">
-            <div>
-              <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Estratégia escolhida</p>
-              <h2 className="text-lg font-semibold">{strategy.playbook.name}</h2>
-              <p className="text-muted-foreground text-xs">{strategy.playbook.origin}</p>
-            </div>
-            {strategy.rationale && <p className="text-sm">{strategy.rationale}</p>}
-            {strategy.summary && <p className="text-muted-foreground text-sm">{strategy.summary}</p>}
-            {strategy.coreMessage && (
-              <p className="bg-muted/50 rounded-md p-3 text-sm">
-                <span className="text-muted-foreground block text-xs">Mensagem central</span>
-                {strategy.coreMessage}
-              </p>
+        {strategy.status === "FAILED" && (
+          <div role="alert" className="border-destructive/40 flex flex-wrap items-center gap-3 rounded-lg border p-4 text-sm">
+            <p className="text-destructive min-w-0 flex-1">{strategy.error ?? "A IA não conseguiu montar a estratégia."}</p>
+            {canManage && (
+              <Button variant="outline" size="sm" disabled={retry.isPending} onClick={() => retry.mutate()}>
+                <RotateCw className="h-4 w-4" />
+                Tentar de novo
+              </Button>
             )}
-            {strategy.secondaryPlaybook && (
-              <div className="text-xs">
-                <p className="text-muted-foreground">
-                  Complementada por: <span className="text-foreground font-medium">{strategy.secondaryPlaybook.name}</span>
+          </div>
+        )}
+
+        {strategy.playbook && (
+          <section className="grid gap-4 rounded-lg border p-4 md:grid-cols-[2fr_1fr]">
+            <div className="min-w-0 space-y-3">
+              <div>
+                <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Estratégia escolhida</p>
+                <h2 className="text-lg font-semibold">{strategy.playbook.name}</h2>
+                <p className="text-muted-foreground text-xs">{strategy.playbook.origin}</p>
+              </div>
+              {strategy.rationale && <p className="text-sm">{strategy.rationale}</p>}
+              {strategy.summary && <p className="text-muted-foreground text-sm">{strategy.summary}</p>}
+              {strategy.coreMessage && (
+                <p className="bg-muted/50 rounded-md p-3 text-sm">
+                  <span className="text-muted-foreground block text-xs">Mensagem central</span>
+                  {strategy.coreMessage}
                 </p>
-                {strategy.secondaryPlaybook.summary && <p className="text-muted-foreground mt-1">{strategy.secondaryPlaybook.summary}</p>}
-              </div>
-            )}
-          </div>
-          <div className="min-w-0 space-y-3 text-sm">
-            <div>
-              <p className="mb-1 font-medium">Princípios</p>
-              <ul className="text-muted-foreground list-disc space-y-1 pl-4">
-                {strategy.playbook.principles.map((principle) => (
-                  <li key={principle}>{principle}</li>
-                ))}
-              </ul>
+              )}
+              {strategy.secondaryPlaybook && (
+                <div className="text-xs">
+                  <p className="text-muted-foreground">
+                    Complementada por: <span className="text-foreground font-medium">{strategy.secondaryPlaybook.name}</span>
+                  </p>
+                  {strategy.secondaryPlaybook.summary && <p className="text-muted-foreground mt-1">{strategy.secondaryPlaybook.summary}</p>}
+                </div>
+              )}
             </div>
-            <div>
-              <p className="mb-1 font-medium">Como saber se funcionou</p>
-              <ul className="text-muted-foreground list-disc space-y-1 pl-4">
-                {strategy.playbook.validation.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </div>
-            {strategy.playbook.sources.length > 0 && (
-              <div className="flex flex-wrap gap-x-3 gap-y-1">
-                {strategy.playbook.sources.map((source) => (
-                  <a
-                    key={source.url}
-                    href={source.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-muted-foreground inline-flex items-center gap-1 text-xs underline-offset-2 hover:underline"
-                  >
-                    <ExternalLink className="h-3 w-3" aria-hidden />
-                    {source.title}
-                  </a>
-                ))}
+            <div className="min-w-0 space-y-3 text-sm">
+              <div>
+                <p className="mb-1 font-medium">Princípios</p>
+                <ul className="text-muted-foreground list-disc space-y-1 pl-4">
+                  {strategy.playbook.principles.map((principle) => (
+                    <li key={principle}>{principle}</li>
+                  ))}
+                </ul>
               </div>
-            )}
+              <div>
+                <p className="mb-1 font-medium">Como saber se funcionou</p>
+                <ul className="text-muted-foreground list-disc space-y-1 pl-4">
+                  {strategy.playbook.validation.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+              {strategy.playbook.sources.length > 0 && (
+                <div className="flex flex-wrap gap-x-3 gap-y-1">
+                  {strategy.playbook.sources.map((source) => (
+                    <a
+                      key={source.url}
+                      href={source.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-muted-foreground inline-flex items-center gap-1 text-xs underline-offset-2 hover:underline"
+                    >
+                      <ExternalLink className="h-3 w-3" aria-hidden />
+                      {source.title}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        <StrategyBriefSummary brief={strategy.brief} />
+
+        {(strategy.status === "READY" || strategy.status === "ARCHIVED") && (
+          <div className="grid gap-4 lg:grid-cols-2">
+            <StrategyResultsPanel strategy={strategy} canManage={canManage} onSaved={onSaved} />
+            <StrategyReviewPanel strategy={strategy} canManage={canManage} />
           </div>
-        </section>
-      )}
+        )}
 
-      <StrategyBriefSummary brief={strategy.brief} />
+        {phases.map((phase, index) => (
+          <section key={`${index}-${phase.name}`} className="space-y-3">
+            <h2 className="text-base font-semibold">{phase.name}</h2>
+            <ol className="grid gap-3">
+              {phase.steps.map((step) => (
+                <StrategyStepCard key={step.id} strategy={strategy} step={step} canManage={canManage} onSaved={onSaved} />
+              ))}
+            </ol>
+          </section>
+        ))}
 
-      {(strategy.status === "READY" || strategy.status === "ARCHIVED") && (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <StrategyResultsPanel strategy={strategy} canManage={canManage} onSaved={onSaved} />
-          <StrategyReviewPanel strategy={strategy} canManage={canManage} />
-        </div>
-      )}
+        {strategy.unassignedLinks.length > 0 && (
+          <section className="space-y-2">
+            <h2 className="text-muted-foreground text-sm font-medium">
+              Ligados à estratégia sem passo (ou de versões anteriores do plano)
+            </h2>
+            <StrategyLinkList
+              links={strategy.unassignedLinks}
+              canManage={canManage}
+              onValidate={setValidating}
+              onUnlink={(linkId) => unlink.mutate(linkId)}
+            />
+          </section>
+        )}
 
-      {phases.map((phase, index) => (
-        <section key={`${index}-${phase.name}`} className="space-y-3">
-          <h2 className="text-base font-semibold">{phase.name}</h2>
-          <ol className="grid gap-3">
-            {phase.steps.map((step) => (
-              <StrategyStepCard key={step.id} strategy={strategy} step={step} canManage={canManage} onSaved={onSaved} />
-            ))}
-          </ol>
-        </section>
-      ))}
-
-      {strategy.unassignedLinks.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="text-muted-foreground text-sm font-medium">Ligados à estratégia sem passo (ou de versões anteriores do plano)</h2>
-          <StrategyLinkList
-            links={strategy.unassignedLinks}
+        {validating && (
+          <StrategyValidationDialog
+            strategy={strategy}
+            link={validating}
             canManage={canManage}
-            onValidate={setValidating}
-            onUnlink={(linkId) => unlink.mutate(linkId)}
+            onClose={() => setValidating(null)}
+            onSaved={onSaved}
           />
-        </section>
-      )}
+        )}
 
-      {validating && (
-        <StrategyValidationDialog
-          strategy={strategy}
-          link={validating}
-          canManage={canManage}
-          onClose={() => setValidating(null)}
-          onSaved={onSaved}
-        />
-      )}
-
-      {isRedoOpen && <StrategyBriefDialog strategy={strategy} onClose={() => setIsRedoOpen(false)} />}
+        {isRedoOpen && <StrategyBriefDialog strategy={strategy} onClose={() => setIsRedoOpen(false)} />}
+      </div>
     </div>
   );
 };

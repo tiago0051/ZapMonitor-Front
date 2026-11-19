@@ -46,80 +46,82 @@ export const StrategiesPage = () => {
   );
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 p-4 md:p-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="max-w-2xl space-y-1">
-          <h1 className="text-2xl font-semibold">Estratégias</h1>
-          <p className="text-muted-foreground text-sm">
-            Descreva o produto e a IA monta um passo a passo seguindo estratégias conhecidas no mercado. Cada passo cria o rascunho certo
-            (campanha, postagem, tarefa) e tudo o que nasce dela leva a marca da estratégia, para dar para medir o que funcionou.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {can("ads.view") && access.adsEnabled && <MarketingReportButton />}
-          {newButton}
-        </div>
-      </div>
-
-      <Tabs value={tab} onValueChange={(value) => go({ tab: value })}>
-        <TabsList>
-          <TabsTrigger value="strategies">Minhas estratégias</TabsTrigger>
-          <TabsTrigger value="library">Biblioteca</TabsTrigger>
-        </TabsList>
-        <TabsContent value="library" className="space-y-4 pt-4">
-          <div className="space-y-2">
+    <div className="h-full overflow-auto">
+      <div className="mx-auto w-full max-w-5xl space-y-6 p-4 md:p-6">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="max-w-2xl space-y-1">
+            <h1 className="text-2xl font-semibold">Estratégias</h1>
             <p className="text-muted-foreground text-sm">
-              Tudo o que a IA sabe de marketing, num lugar só: as estratégias prontas que ela segue para montar o passo a passo e os artigos
-              de boas práticas que ela lê ao criar anúncios, postagens e o plano do mês.
+              Descreva o produto e a IA monta um passo a passo seguindo estratégias conhecidas no mercado. Cada passo cria o rascunho certo
+              (campanha, postagem, tarefa) e tudo o que nasce dela leva a marca da estratégia, para dar para medir o que funcionou.
             </p>
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Parte da biblioteca">
-              {(
-                [
-                  ["playbooks", "Estratégias prontas"],
-                  ["articles", "Artigos e boas práticas"],
-                ] as const
-              ).map(([value, label]) => (
-                <Button
-                  key={value}
-                  size="sm"
-                  variant={section === value ? "secondary" : "ghost"}
-                  aria-pressed={section === value}
-                  onClick={() => go({ tab: "library", section: value })}
-                >
-                  {label}
-                </Button>
-              ))}
-            </div>
           </div>
-          {section === "articles" ? <AdsStrategyWiki /> : <StrategyLibrary />}
-        </TabsContent>
-        <TabsContent value="strategies" className="pt-4">
-          {strategiesQuery.isLoading ? (
-            <LoadingState />
-          ) : strategiesQuery.isError ? (
-            <ErrorState message="Não foi possível carregar as estratégias" onRetry={() => strategiesQuery.refetch()} />
-          ) : strategies.length === 0 ? (
-            <EmptyState
-              icon={Target}
-              title="Nenhuma estratégia ainda"
-              description="Conte qual produto quer vender, para quem e com qual objetivo. A IA escolhe a estratégia que combina e monta os passos com metas."
-              action={newButton}
-            />
-          ) : (
-            <div className="space-y-6">
-              <StrategyList strategies={active} baseUrl={baseUrl} />
-              {archived.length > 0 && (
-                <section className="space-y-2">
-                  <h2 className="text-muted-foreground text-sm font-medium">Arquivadas</h2>
-                  <StrategyList strategies={archived} baseUrl={baseUrl} />
-                </section>
-              )}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+          <div className="flex flex-wrap gap-2">
+            {can("ads.view") && access.adsEnabled && <MarketingReportButton />}
+            {newButton}
+          </div>
+        </div>
 
-      {isCreateOpen && <StrategyBriefDialog onClose={() => setIsCreateOpen(false)} />}
+        <Tabs value={tab} onValueChange={(value) => go({ tab: value })}>
+          <TabsList>
+            <TabsTrigger value="strategies">Minhas estratégias</TabsTrigger>
+            <TabsTrigger value="library">Biblioteca</TabsTrigger>
+          </TabsList>
+          <TabsContent value="library" className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <p className="text-muted-foreground text-sm">
+                Tudo o que a IA sabe de marketing, num lugar só: as estratégias prontas que ela segue para montar o passo a passo e os
+                artigos de boas práticas que ela lê ao criar anúncios, postagens e o plano do mês.
+              </p>
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Parte da biblioteca">
+                {(
+                  [
+                    ["playbooks", "Estratégias prontas"],
+                    ["articles", "Artigos e boas práticas"],
+                  ] as const
+                ).map(([value, label]) => (
+                  <Button
+                    key={value}
+                    size="sm"
+                    variant={section === value ? "secondary" : "ghost"}
+                    aria-pressed={section === value}
+                    onClick={() => go({ tab: "library", section: value })}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            {section === "articles" ? <AdsStrategyWiki /> : <StrategyLibrary />}
+          </TabsContent>
+          <TabsContent value="strategies" className="pt-4">
+            {strategiesQuery.isLoading ? (
+              <LoadingState />
+            ) : strategiesQuery.isError ? (
+              <ErrorState message="Não foi possível carregar as estratégias" onRetry={() => strategiesQuery.refetch()} />
+            ) : strategies.length === 0 ? (
+              <EmptyState
+                icon={Target}
+                title="Nenhuma estratégia ainda"
+                description="Conte qual produto quer vender, para quem e com qual objetivo. A IA escolhe a estratégia que combina e monta os passos com metas."
+                action={newButton}
+              />
+            ) : (
+              <div className="space-y-6">
+                <StrategyList strategies={active} baseUrl={baseUrl} />
+                {archived.length > 0 && (
+                  <section className="space-y-2">
+                    <h2 className="text-muted-foreground text-sm font-medium">Arquivadas</h2>
+                    <StrategyList strategies={archived} baseUrl={baseUrl} />
+                  </section>
+                )}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+
+        {isCreateOpen && <StrategyBriefDialog onClose={() => setIsCreateOpen(false)} />}
+      </div>
     </div>
   );
 };
