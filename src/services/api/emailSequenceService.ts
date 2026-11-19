@@ -19,6 +19,9 @@ export const emailSequenceService = {
     await api.delete(`${base(clientId)}/${id}`);
   },
 
+  stepMetrics: async (clientId: string, id: string): Promise<EmailSequenceStepMetrics[]> =>
+    (await api.get(`${base(clientId)}/${id}/metrics`)).data,
+
   findEnrollments: async (
     clientId: string,
     queries: { sequenceId?: string; contactId?: string; status?: string; page?: number; take?: number },

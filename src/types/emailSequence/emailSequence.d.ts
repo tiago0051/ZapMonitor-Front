@@ -10,13 +10,21 @@ type EmailSequence = {
   stopOnWhatsappReply: boolean;
   stopOnDealWon: boolean;
   sendWindow: BroadcastSendWindow | null;
+  // Entra sozinho quem tem um negócio que chega nesta etapa do funil
+  trigger: { pipelineId: string; stageId: string } | null;
   steps: EmailSequenceStep[];
   enrollments: { active: number; completed: number; stopped: number };
   createdAt: string;
   updatedAt: string;
 };
 
-type EmailSequenceInput = Pick<EmailSequence, "name" | "senderId" | "stopOnWhatsappReply" | "stopOnDealWon" | "sendWindow" | "steps">;
+type EmailSequenceInput = Pick<
+  EmailSequence,
+  "name" | "senderId" | "stopOnWhatsappReply" | "stopOnDealWon" | "sendWindow" | "trigger" | "steps"
+>;
+
+/** Resultado de um e-mail (passo) da sequência, começando em 0. */
+type EmailSequenceStepMetrics = { stepIndex: number; sent: number; opened: number; clicked: number };
 
 type EmailEnrollment = {
   id: string;
