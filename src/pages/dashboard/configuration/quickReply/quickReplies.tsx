@@ -242,7 +242,7 @@ export const QuickReplies = () => {
         <CardTitle>Respostas rápidas</CardTitle>
         <CardDescription>
           Textos prontos para o atendimento. Na caixa de mensagem, digite "/" e o atalho (por exemplo /pix) para escolher. Use {"{nome}"},{" "}
-          {"{primeiro_nome}"} e {"{atendente}"} para personalizar.
+          {"{primeiro_nome}"} e {"{atendente}"} (seu apelido em Minha conta, ou o primeiro nome) para personalizar.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">

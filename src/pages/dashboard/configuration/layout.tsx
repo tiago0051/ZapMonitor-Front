@@ -217,7 +217,7 @@ const configurationGroups: { label: string; sections: ConfigurationSection[] }[]
     label: "Conta",
     sections: [
       { id: "plan", label: "Plano e consumo", icon: Gauge, content: <PlanUsageSettings />, permission: "members.manage" },
-      { id: "account", label: "Senha e segurança", icon: KeyRound, content: <AccountSettings />, hiddenFromNav: true },
+      { id: "account", label: "Minha conta", icon: KeyRound, content: <AccountSettings />, hiddenFromNav: true },
     ],
   },
 ];

@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 export const QUICK_REPLY_VARIABLES = [
   { token: "{nome}", label: "Nome do contato" },
   { token: "{primeiro_nome}", label: "Primeiro nome do contato" },
-  { token: "{atendente}", label: "Seu nome" },
+  { token: "{atendente}", label: "Seu apelido (ou primeiro nome)" },
 ] as const;
 
 export const quickRepliesQueryKey = (clientId: string) => ["whatsapp", "quickReplies", clientId];
@@ -24,13 +24,16 @@ export const useQuickReplies = (enabled = true) => {
 
 const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? "";
 
-/** Troca as variáveis pelo nome do contato e do atendente; sem o nome, a variável some sem deixar espaço duplo. */
+/**
+ * Troca as variáveis pelo nome do contato e do atendente; sem o nome, a variável some sem deixar espaço duplo.
+ * attendantName já vem pronto para o cliente: o apelido ou o primeiro nome (attendantDisplayName).
+ */
 export function fillQuickReply(content: string, values: { contactName: string | null; attendantName: string | null }) {
   const contactName = values.contactName?.trim() ?? "";
   return content
     .replaceAll("{nome}", contactName)
     .replaceAll("{primeiro_nome}", firstName(contactName))
-    .replaceAll("{atendente}", firstName(values.attendantName ?? ""))
+    .replaceAll("{atendente}", values.attendantName?.trim() ?? "")
     .replace(/[ \t]{2,}/g, " ")
     .replace(/ ([,.!?])/g, "$1");
 }

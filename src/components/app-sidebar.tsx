@@ -21,7 +21,7 @@ import {
   FiBriefcase,
   FiCalendar,
   FiColumns,
-  FiKey,
+  FiUser,
   FiLogOut,
   FiMail,
   FiRepeat,
@@ -316,8 +316,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 )}
                 <DropdownMenuItem asChild>
                   <Link to={`${baseUrl}/configuration?tab=account`}>
-                    <FiKey />
-                    Senha e segurança
+                    <FiUser />
+                    Minha conta
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

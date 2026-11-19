@@ -18,6 +18,8 @@ export const userService = {
     const response = await api.get("/user/me");
     return response.data;
   },
+  /** Apelido que aparece para os clientes; nulo volta ao primeiro nome. */
+  updateProfile: async (body: { nickname: string | null }): Promise<User> => (await api.put("/user/profile", body)).data,
   changePassword: async ({ body }: ChangePasswordRequestData): Promise<void> => {
     await api.put("/user/change-password", body);
   },

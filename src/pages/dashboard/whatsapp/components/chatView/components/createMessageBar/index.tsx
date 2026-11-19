@@ -4,6 +4,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { EmojiPicker } from "@/components/emoji-picker";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useUserContext } from "@/context/UserContext/userContext";
+import { attendantDisplayName } from "@/utils/attendantName";
 import { WhatsappMessageContentType } from "@/enums/whatsappMessageContentType.enum";
 import { whatsappService } from "@/services/api/whatsappService";
 import { convertImageForWhatsapp, convertWavToMp3 } from "@/utils/fileConvert";
@@ -296,7 +297,7 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
   const quickReplyPicker = useQuickReplyPicker({
     text: hasAttachments || hasAudio ? "" : draft.text,
     onSelect: (reply) => {
-      const text = fillQuickReply(reply.content, { contactName: contactDisplayName(contact, ""), attendantName: user?.name ?? null });
+      const text = fillQuickReply(reply.content, { contactName: contactDisplayName(contact, ""), attendantName: attendantDisplayName(user) });
       updateDraft({ text });
       requestAnimationFrame(() => {
         const input = inputRef.current;
