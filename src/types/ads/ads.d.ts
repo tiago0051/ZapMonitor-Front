@@ -1139,3 +1139,26 @@ type AdVideoGeneration = {
   // Link temporário do vídeo pronto
   url: string | null;
 };
+
+// ---------- Edição de campanhas publicadas ----------
+
+type AdCreativeTexts = {
+  primaryText: string;
+  headline: string;
+  description: string | null;
+  // Mensagem que abre a conversa no WhatsApp; vazia mantém a do anúncio modelo
+  welcomeMessage: string | null;
+};
+
+type AdTemplate = {
+  templateAdId: string | null;
+  templateAdName: string | null;
+  texts: AdCreativeTexts & { mediaKind: "IMAGE" | "VIDEO" | null };
+  canCreate: boolean;
+  reason: string | null;
+};
+
+// NEW_AD cria outro anúncio no conjunto e pausa o antigo; SWAP troca no próprio anúncio
+type AdCreativeReplaceMode = "NEW_AD" | "SWAP";
+
+type AdCreativeEditBody = AdCreativeTexts & { assetId: string; name?: string; advantageEnhancements?: boolean };

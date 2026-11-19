@@ -433,6 +433,48 @@ export const metaAdsService = {
     return response.data;
   },
 
+  // Textos do anúncio que serve de modelo para um anúncio novo no conjunto
+  findAdTemplate: async ({
+    params,
+    metaAdSetId,
+    metaAdId,
+  }: MetaAdsAccountParams & { metaAdSetId: string; metaAdId?: string }): Promise<AdTemplate> => {
+    const response = await api.get<AdTemplate>(
+      `/client/${params.clientId}/meta-ads/account/${params.accountId}/adset/${metaAdSetId}/ad-template`,
+      { params: { metaAdId } },
+    );
+    return response.data;
+  },
+
+  addAdToAdSet: async ({
+    params,
+    metaAdSetId,
+    body,
+  }: MetaAdsAccountParams & {
+    metaAdSetId: string;
+    body: AdCreativeEditBody & { activate: boolean; templateAdId?: string };
+  }): Promise<{ metaAdId: string }> => {
+    const response = await api.post(`/client/${params.clientId}/meta-ads/account/${params.accountId}/adset/${metaAdSetId}/ad`, body, {
+      timeout: 120000,
+    });
+    return response.data;
+  },
+
+  replaceAdCreative: async ({
+    params,
+    metaAdId,
+    body,
+  }: MetaAdsAccountParams & { metaAdId: string; body: AdCreativeEditBody & { mode: AdCreativeReplaceMode } }): Promise<{
+    metaAdId: string;
+  }> => {
+    const response = await api.post(
+      `/client/${params.clientId}/meta-ads/account/${params.accountId}/ad/${metaAdId}/replace-creative`,
+      body,
+      { timeout: 120000 },
+    );
+    return response.data;
+  },
+
   findAssets: async ({ params }: MetaAdsAccountParams): Promise<AdCreativeAsset[]> => {
     const response = await api.get<AdCreativeAsset[]>(`/client/${params.clientId}/meta-ads/account/${params.accountId}/asset`);
     return response.data;

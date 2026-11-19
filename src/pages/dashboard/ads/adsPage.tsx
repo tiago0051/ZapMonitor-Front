@@ -11,7 +11,7 @@ import { metaAdsService } from "@/services/api/metaAdsService";
 import { requestErrorHandling } from "@/utils/request";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { ChevronDown, ChevronRight, Megaphone, RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronRight, Megaphone, Plus, RefreshCw, Replace } from "lucide-react";
 import { Fragment, useEffect, useRef, useState, type FC } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { useLocalStorage } from "usehooks-ts";
@@ -48,6 +48,7 @@ import { AdsPilot } from "./pilot/adsPilot";
 import { AdStatusToggle } from "./components/adStatusToggle";
 import { AdBudgetEditor } from "./components/adBudgetEditor";
 import { SpendCapBar } from "./components/spendCapBar";
+import { AdCreativeEditDialog, type AdCreativeEditTarget } from "./components/adCreativeEditDialog";
 import { AdsLearnings } from "./learnings/adsLearnings";
 import { AdsExperiments } from "./experiments/adsExperiments";
 import { StrategyIntentBanner } from "../strategies/strategyIntentBanner";
@@ -70,12 +71,13 @@ const BudgetText: FC<{ dailyBudget: number | null; lifetimeBudget: number | null
 }) => <>{budgetLabel({ dailyBudget, lifetimeBudget }, currency) ?? <span className="text-muted-foreground text-xs">{emptyLabel}</span>}</>;
 
 // Pausar, ativar e mudar verba pela tela; sem edição, só mostra o orçamento
-const AdRows: FC<{ adSet: MetaAdSet; accountId: string; editable: boolean; platform: AdPlatform }> = ({
-  adSet,
-  accountId,
-  editable,
-  platform,
-}) => (
+const AdRows: FC<{
+  adSet: MetaAdSet;
+  accountId: string;
+  editable: boolean;
+  platform: AdPlatform;
+  onEditCreative?: (target: AdCreativeEditTarget) => void;
+}> = ({ adSet, accountId, editable, platform, onEditCreative }) => (
   <>
     {adSet.ads.map((ad) => (
       <TableRow key={ad.metaId} className="bg-muted/20">
@@ -90,19 +92,28 @@ const AdRows: FC<{ adSet: MetaAdSet; accountId: string; editable: boolean; platf
           </span>
         </TableCell>
         <TableCell className="text-muted-foreground text-xs">{metaLabel(callToActionLabel, ad.creative?.callToActionType)}</TableCell>
-        <TableCell />
+        <TableCell className="text-right">
+          {onEditCreative && (
+            <Button size="sm" variant="ghost" onClick={() => onEditCreative({ kind: "replace", adSet, ad })}>
+              <Replace className="mr-1 h-3.5 w-3.5" aria-hidden />
+              Trocar criativo
+            </Button>
+          )}
+        </TableCell>
       </TableRow>
     ))}
   </>
 );
 
-const CampaignRows: FC<{ campaign: MetaCampaign; currency: string; accountId: string; editable: boolean; platform: AdPlatform }> = ({
-  campaign,
-  currency,
-  accountId,
-  editable,
-  platform,
-}) => {
+const CampaignRows: FC<{
+  campaign: MetaCampaign;
+  currency: string;
+  accountId: string;
+  editable: boolean;
+  platform: AdPlatform;
+  // Adicionar anúncio e trocar criativo (só na Meta, para quem aprova mudanças)
+  onEditCreative?: (target: AdCreativeEditTarget) => void;
+}> = ({ campaign, currency, accountId, editable, platform, onEditCreative }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [openAdSetIds, setOpenAdSetIds] = useState<string[]>([]);
   const toggleAdSet = (metaId: string) =>
@@ -124,7 +135,15 @@ const CampaignRows: FC<{ campaign: MetaCampaign; currency: string; accountId: st
         <TableCell>
           <span className="flex items-center gap-1.5">
             <StatusChip status={campaign.effectiveStatus} />
-            {editable && <AdStatusToggle accountId={accountId} level="campaign" metaId={campaign.metaId} status={campaign.status} platform={platform} />}
+            {editable && (
+              <AdStatusToggle
+                accountId={accountId}
+                level="campaign"
+                metaId={campaign.metaId}
+                status={campaign.status}
+                platform={platform}
+              />
+            )}
           </span>
         </TableCell>
         <TableCell className="text-xs">{metaLabel(bidStrategyLabel, campaign.bidStrategy)}</TableCell>
@@ -169,11 +188,27 @@ const CampaignRows: FC<{ campaign: MetaCampaign; currency: string; accountId: st
                   {adSet.destinationType && ` · ${destinationTypeLabel[adSet.destinationType] ?? adSet.destinationType}`} ·{" "}
                   {adSet.ads.length} anúncio(s)
                 </p>
+                {onEditCreative && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="ml-4 h-7"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onEditCreative({ kind: "add", adSet });
+                    }}
+                  >
+                    <Plus className="mr-1 h-3.5 w-3.5" aria-hidden />
+                    Adicionar anúncio
+                  </Button>
+                )}
               </TableCell>
               <TableCell>
                 <span className="flex items-center gap-1.5">
                   <StatusChip status={adSet.effectiveStatus} />
-                  {editable && <AdStatusToggle accountId={accountId} level="adset" metaId={adSet.metaId} status={adSet.status} platform={platform} />}
+                  {editable && (
+                    <AdStatusToggle accountId={accountId} level="adset" metaId={adSet.metaId} status={adSet.status} platform={platform} />
+                  )}
                 </span>
               </TableCell>
               <TableCell className="text-xs">{metaLabel(billingEventLabel, adSet.billingEvent)}</TableCell>
@@ -193,7 +228,9 @@ const CampaignRows: FC<{ campaign: MetaCampaign; currency: string; accountId: st
                 )}
               </TableCell>
             </TableRow>
-            {openAdSetIds.includes(adSet.metaId) && <AdRows adSet={adSet} accountId={accountId} editable={editable} platform={platform} />}
+            {openAdSetIds.includes(adSet.metaId) && (
+              <AdRows adSet={adSet} accountId={accountId} editable={editable} platform={platform} onEditCreative={onEditCreative} />
+            )}
           </Fragment>
         ))}
     </>
@@ -285,6 +322,8 @@ export const AdsPage = () => {
   const [lastTabByGroup, setLastTabByGroup] = useState<Record<string, string>>({});
   // Rascunho montado pelo piloto (ou pelo plano do mês) que a aba Criar campanha abre
   const [pilotDraftId, setPilotDraftId] = useState<string | null>(null);
+  // Anúncio novo no conjunto ou troca de criativo aberta na aba Campanhas
+  const [creativeEdit, setCreativeEdit] = useState<AdCreativeEditTarget | null>(null);
   // Rascunho criado pelo plano do mês (?draft=): abre a conta dele na aba Criar campanha
   const requestedDraftId = searchParams.get("draft");
   useEffect(() => {
@@ -630,6 +669,7 @@ export const AdsPage = () => {
                           accountId={currentAccount.id}
                           platform={currentAccount.platform}
                           editable
+                          onEditCreative={isMeta && can("ads.approve") ? setCreativeEdit : undefined}
                         />
                       ))}
                     </TableBody>
@@ -637,6 +677,8 @@ export const AdsPage = () => {
                 </div>
               )}
             </TabsContent>
+
+            <AdCreativeEditDialog account={currentAccount} target={creativeEdit} onOpenChange={(open) => !open && setCreativeEdit(null)} />
 
             <TabsContent value="audiences" className={cn(tabContentClassName, "space-y-4")}>
               {isMeta && <AdsCrmAudiences account={currentAccount} />}
