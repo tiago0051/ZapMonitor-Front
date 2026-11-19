@@ -57,6 +57,7 @@ import {
 import { AudienceStep } from "./components/audienceStep";
 import { VariablesStep } from "./components/variablesStep";
 import { formatConfigurationPhoneNumber, isWhatsappWeb, WHATSAPP_WEB_TEMPLATE_HINT } from "@/utils/whatsappConfiguration";
+import { NumberHealthCell } from "@/pages/dashboard/configuration/whatsapp/whatsappConfiguration/components/numberHealthCell";
 
 const STEPS = ["Mensagem", "Público", "Variáveis", "Revisão"] as const;
 
@@ -71,7 +72,7 @@ class DraftKeptError extends Error {
 }
 
 export const BroadcastNew = () => {
-  const { client } = useClientContext();
+  const { client, can } = useClientContext();
   const baseUrl = useBaseUrl();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -103,6 +104,20 @@ export const BroadcastNew = () => {
   // Campanha usa modelos da Meta, que só a API oficial envia
   const configurations = enabledConfigurations.filter((configuration) => !isWhatsappWeb(configuration));
   const whatsappWebConfigurations = enabledConfigurations.filter(isWhatsappWeb);
+  const selectedConfiguration = configurations.find((configuration) => configuration.id === configurationId) ?? null;
+
+  // Relê da Meta a qualidade e o limite dos números com leitura vencida (só quem gerencia os números pode pedir)
+  useQuery({
+    queryKey: ["whatsappConfigurations", client.id, "healthRefresh"],
+    queryFn: async () => {
+      const result = await whatsappService.refreshNumberHealth(client.id);
+      if (result.refreshed) await queryClient.invalidateQueries({ queryKey: ["whatsappConfigurations", client.id], exact: true });
+      return result;
+    },
+    enabled: can("channels.manage"),
+    staleTime: 10 * 60 * 1000,
+    meta: { errorHandledInline: true },
+  });
 
   const templatesQuery = useQuery({
     queryKey: ["whatsappTemplates", client.id, configurationId],
@@ -307,9 +322,18 @@ export const BroadcastNew = () => {
           : null;
   // Lista vinda de fora do sistema pede a confirmação de que as pessoas aceitaram receber
   const needsConsent = !!sources.csv || sources.pasted.trim().length > 0;
+  // Limite de conversas em 24h e qualidade do número: a Meta recusa o que passar e um número vermelho pode ser bloqueado
+  const messagingLimit = selectedConfiguration?.messagingLimit ?? null;
+  const overLimit = messagingLimit !== null && willReceive > messagingLimit;
+  const redQuality = selectedConfiguration?.qualityRating === "RED";
+  const phoneError = redQuality
+    ? "A qualidade do número está vermelha; disparar agora pode bloquear o número"
+    : overLimit
+      ? `O número pode chamar até ${formatCount(messagingLimit!)} pessoas em 24h; divida a campanha`
+      : null;
   const capError = capEnabled && capDays && !(Number(capDays) >= 1 && Number(capDays) <= 90) ? "O limite vai de 1 a 90 dias" : null;
   const settingsError = sendWindowError(sendWindow) ?? capError ?? (needsConsent && !consent ? "Confirme o consentimento da lista" : null);
-  const reviewError = settingsError ?? scheduleError;
+  const reviewError = settingsError ?? scheduleError ?? phoneError;
   const reviewErrorField = sendWindowError(sendWindow)
     ? "broadcast-window-start"
     : capError
@@ -326,7 +350,7 @@ export const BroadcastNew = () => {
   );
   const leftOut = [
     ["Descadastrados", preview?.optedOut ?? 0],
-    ["Receberam marketing há pouco", preview?.frequencyCap ?? 0],
+    ["Limite de frequência (receberam marketing há pouco)", preview?.frequencyCap ?? 0],
     [
       "Sem número válido",
       summary.invalid + (preview?.invalid ?? 0) + (preview?.segment ? preview.segment.invalid + preview.segment.noPhone : 0),
@@ -420,6 +444,7 @@ export const BroadcastNew = () => {
                     ))}
                   </select>
                   {whatsappWebConfigurations.length > 0 && <p className="text-muted-foreground text-xs">{WHATSAPP_WEB_TEMPLATE_HINT}.</p>}
+                  {selectedConfiguration && <NumberHealthCell configuration={selectedConfiguration} />}
                 </div>
                 {configurationId && (
                   <div className="grid gap-2">
@@ -499,6 +524,30 @@ export const BroadcastNew = () => {
                     </div>
                   )}
                 </div>
+                {selectedConfiguration && (
+                  <div
+                    className={cn(
+                      "grid gap-2 rounded-lg border p-3",
+                      phoneError && "border-amber-300 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30",
+                    )}
+                  >
+                    <p className="text-sm font-medium">Número {selectedConfiguration.phoneNumber}</p>
+                    <NumberHealthCell configuration={selectedConfiguration} />
+                    {overLimit && (
+                      <p className="text-sm">
+                        A campanha tem {formatCount(willReceive)} pessoas e o número pode chamar até {formatCount(messagingLimit!)} em 24
+                        horas. Divida em campanhas menores (ou agende uma para o dia seguinte); o que passar a Meta recusa.
+                      </p>
+                    )}
+                    {redQuality && (
+                      <p className="text-sm">
+                        Muitas pessoas bloquearam ou denunciaram o número. Pare os disparos por alguns dias e reveja o texto e a lista. Dá
+                        para salvar o rascunho.
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 <p className="text-muted-foreground text-sm">
                   {estimate !== null
                     ? `Custo estimado na Meta: cerca de ${formatUsd(estimate)}, pela tabela pública de ${templateCategoryLabel[template?.category ?? ""]?.toLowerCase()} para números do Brasil. A cobrança vem na fatura da conta do WhatsApp.`
