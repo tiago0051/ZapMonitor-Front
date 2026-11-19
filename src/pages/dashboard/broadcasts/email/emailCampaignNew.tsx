@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useClientContext } from "@/context/ClientContext/clientContext";
+import { useUserContext } from "@/context/UserContext/userContext";
 import { useBaseUrl } from "@/hooks/use-baseUrl";
 import { cn } from "@/lib/utils";
 import { crmService } from "@/services/api/crmService";
@@ -59,6 +60,9 @@ export const EmailCampaignNew = () => {
   const [abMetric, setAbMetric] = useState<EmailAbMetric>("OPEN");
   const [abWaitHours, setAbWaitHours] = useState(4);
   const [confirmSend, setConfirmSend] = useState(false);
+  const { user } = useUserContext();
+  // O teste vai, por padrão, para o e-mail de quem está montando a campanha
+  const [testEmail, setTestEmail] = useState(() => user?.email ?? "");
 
   const optionsQuery = useQuery({
     queryKey: ["emailCampaigns", client.id, "options"],
@@ -129,6 +133,25 @@ export const EmailCampaignNew = () => {
       );
       navigate(`${baseUrl}/broadcasts/email/${campaign.id}`);
     },
+  });
+
+  const testMutation = useMutation({
+    mutationFn: () =>
+      emailCampaignService.sendTest(client.id, {
+        senderId,
+        templateId,
+        to: testEmail.trim(),
+        subjectB: abEnabled && subjectB.trim() ? subjectB.trim() : undefined,
+        contactId: firstContactId,
+      }),
+    onError: requestErrorHandling,
+    onSuccess: ({ sent }) =>
+      toast.success(sent > 1 ? "Testes enviados" : "Teste enviado", {
+        description:
+          sent > 1
+            ? "Chegam dois e-mails, um com o assunto A e outro com o B. Confira também a caixa de spam."
+            : "Confira também a caixa de spam.",
+      }),
   });
 
   const busy = createMutation.isPending;
@@ -548,6 +571,33 @@ export const EmailCampaignNew = () => {
                       </span>
                     </span>
                   </label>
+                </div>
+
+                <div className="grid gap-2 rounded-lg border p-3">
+                  <Label htmlFor="email-campaign-test-email">Enviar um teste antes</Label>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Input
+                      id="email-campaign-test-email"
+                      type="email"
+                      value={testEmail}
+                      maxLength={191}
+                      placeholder="seu@email.com"
+                      onChange={(event) => setTestEmail(event.target.value)}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={!testEmail.trim() || testMutation.isPending || busy}
+                      onClick={() => testMutation.mutate()}
+                    >
+                      {testMutation.isPending ? "Enviando..." : abEnabled && subjectB.trim() ? "Enviar A e B" : "Enviar teste"}
+                    </Button>
+                  </div>
+                  <p className="text-muted-foreground text-xs">
+                    Sai por {sender?.fromEmail ?? "remetente escolhido"}
+                    {firstContactId ? ", com os dados da primeira ficha da lista" : ""}
+                    {abEnabled && subjectB.trim() ? ": um e-mail com o assunto A e outro com o B." : "."}
+                  </p>
                 </div>
 
                 {confirmSend ? (

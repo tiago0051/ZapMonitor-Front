@@ -26,6 +26,11 @@ export const emailCampaignService = {
     body: { templateId?: string; campaignId?: string; contactId?: string },
   ): Promise<{ subject: string; html: string }> => (await api.post(`${base(clientId)}/preview`, body)).data,
 
+  sendTest: async (
+    clientId: string,
+    body: { senderId: string; templateId: string; to: string; subjectB?: string; contactId?: string },
+  ): Promise<{ sent: number }> => (await api.post(`${base(clientId)}/test`, body)).data,
+
   findAudience: async (
     clientId: string,
     body: {
