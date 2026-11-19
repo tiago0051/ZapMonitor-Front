@@ -17,7 +17,13 @@ type BroadcastMetrics = {
   optedOut: number;
   // Mensagens que a Meta marcou como cobradas, por categoria
   billable: Record<string, number>;
+  // Negócios que nasceram ou avançaram depois da resposta ao disparo, dentro da janela de atribuição
+  deals: CampaignDealResults;
+  attributionDays: number;
 };
+
+/** Vendas de uma campanha: negócios atribuídos, quantos ganhos e o valor ganho (R$). */
+type CampaignDealResults = { deals: number; won: number; wonValue: number };
 
 type BroadcastTotals = {
   total: number;

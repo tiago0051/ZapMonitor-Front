@@ -18,6 +18,7 @@ import type { FC } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { billedCostUsd, formatCount, formatUsd, rate, recipientsToCsv } from "../broadcastUtils";
+import { CampaignSales } from "./campaignSales";
 
 const EXPORT_PAGE = 200;
 
@@ -102,6 +103,7 @@ export const BroadcastResults: FC<{ broadcast: Broadcast }> = ({ broadcast }) =>
           </div>
         </dl>
       )}
+      {metrics?.deals && <CampaignSales deals={metrics.deals} costUsd={billedCost} />}
     </div>
   );
 };

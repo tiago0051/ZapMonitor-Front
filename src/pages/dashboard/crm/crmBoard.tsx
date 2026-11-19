@@ -280,7 +280,9 @@ export const CrmBoard = () => {
           <option value="">Todas</option>
           <option value="AD_MESSAGE">Anúncio no WhatsApp</option>
           <option value="LEAD_FORM">Formulário de cadastro</option>
-          <option value="NONE">Sem anúncio</option>
+          <option value="BROADCAST">Disparo de WhatsApp</option>
+          <option value="EMAIL_CAMPAIGN">Campanha de e-mail</option>
+          <option value="NONE">Sem origem registrada</option>
           {!!originCampaignsQuery.data?.length && (
             <optgroup label="Campanha">
               {originCampaignsQuery.data.map((campaign) => (

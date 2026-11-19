@@ -17,6 +17,8 @@ export const dealStatusLabel: Record<SegmentDealStatus, string> = { OPEN: "Em ab
 export const segmentOriginLabel: Record<SegmentOrigin, string> = {
   AD_MESSAGE: "Anúncio no WhatsApp",
   LEAD_FORM: "Formulário de cadastro",
+  BROADCAST: "Disparo de WhatsApp",
+  EMAIL_CAMPAIGN: "Campanha de e-mail",
   NONE: "Sem origem registrada",
 };
 

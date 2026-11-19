@@ -1,5 +1,5 @@
 type SegmentDealStatus = "OPEN" | "WON" | "LOST";
-type SegmentOrigin = "AD_MESSAGE" | "LEAD_FORM" | "NONE";
+type SegmentOrigin = "AD_MESSAGE" | "LEAD_FORM" | "BROADCAST" | "EMAIL_CAMPAIGN" | "NONE";
 type SegmentChannel = "WHATSAPP" | "EMAIL";
 
 /** Uma regra do segmento; o servidor confere e resolve. */

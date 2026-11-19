@@ -67,7 +67,8 @@ type DealContact = {
   categories: NamedSummary[];
 };
 
-type DealOriginType = "AD_MESSAGE" | "LEAD_FORM";
+// BROADCAST e EMAIL_CAMPAIGN: respondeu a um disparo ou clicou num e-mail de campanha dentro da janela de atribuição
+type DealOriginType = "AD_MESSAGE" | "LEAD_FORM" | "BROADCAST" | "EMAIL_CAMPAIGN";
 
 // Anúncio que trouxe o contato, com os nomes como estavam quando o negócio foi criado
 type DealOrigin = {
@@ -84,6 +85,9 @@ type DealOrigin = {
     thumbnailUrl: string | null;
     pageName: string | null;
   } | null;
+  // Disparo ou campanha de e-mail de onde veio
+  broadcastId?: string | null;
+  emailCampaignId?: string | null;
 };
 
 type DealOriginCampaign = { metaCampaignId: string; name: string | null };

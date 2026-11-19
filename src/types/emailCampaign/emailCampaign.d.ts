@@ -39,6 +39,8 @@ type EmailCampaign = {
   totals: EmailCampaignTotals;
   // Só no detalhe: links mais clicados
   links?: { url: string; clicks: number; people: number }[];
+  // Só no detalhe: negócios que nasceram ou avançaram depois do clique
+  deals?: CampaignDealResults;
 };
 
 type EmailCampaignRecipient = {

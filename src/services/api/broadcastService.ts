@@ -90,6 +90,11 @@ export const broadcastService = {
     return response.data;
   },
 
+  attributionDays: async (clientId: string): Promise<{ days: number }> => (await api.get(`${base(clientId)}/attribution`)).data,
+
+  setAttributionDays: async (clientId: string, days: number): Promise<{ days: number }> =>
+    (await api.put(`${base(clientId)}/attribution`, { days })).data,
+
   metrics: async (clientId: string, broadcastId: string): Promise<BroadcastMetrics> => {
     const response = await api.get(`${base(clientId)}/${broadcastId}/metrics`);
     return response.data;
