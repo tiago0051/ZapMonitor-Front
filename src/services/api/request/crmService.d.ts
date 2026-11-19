@@ -57,6 +57,8 @@ type FindDealBoardRequestQuery = {
   originMetaCampaignId?: string;
   // Ganhos e perdidos só fechados a partir desta data (ISO); os abertos vêm sempre
   closedSince?: string;
+  // Só os perdidos por este motivo: id do motivo cadastrado, AGENT (agente de IA), FLOW (fluxo) ou OTHER (escrito à mão)
+  lostReason?: string;
 };
 
 type FindDealBoardRequestData = {

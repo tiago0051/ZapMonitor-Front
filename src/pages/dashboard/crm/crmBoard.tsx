@@ -41,13 +41,23 @@ type CrmBoardFilters = {
   endDate: string;
   // "" todas; NONE sem anúncio; AD_MESSAGE e LEAD_FORM pelo tipo; campaign:<id> uma campanha
   origin: string;
+  // "" todos; id do motivo cadastrado; AGENT (agente de IA), FLOW (fluxo) ou OTHER (escrito à mão). Só traz perdidos
+  lostReason: string;
 };
 
 // Janelas dos ganhos/perdidos no quadro; 0 = todos. Fechados antigos pesam e quase nunca são consultados
 const closedWindows = [30, 90, 365, 0] as const;
 const closedWindowLabel = (days: number) => (days === 365 ? "no último ano" : `nos últimos ${days} dias`);
 
-const emptyFilters: CrmBoardFilters = { ownerUserId: "", onlyMine: false, categoryId: "", startDate: "", endDate: "", origin: "" };
+const emptyFilters: CrmBoardFilters = {
+  ownerUserId: "",
+  onlyMine: false,
+  categoryId: "",
+  startDate: "",
+  endDate: "",
+  origin: "",
+  lostReason: "",
+};
 
 export const CrmBoard = () => {
   const { client, can } = useClientContext();
@@ -60,7 +70,7 @@ export const CrmBoard = () => {
   // Vazio = todos os grupos que o usuário pode ver
   const [storedServiceGroupIds, setStoredServiceGroupIds] = useLocalStorage<string[]>(`crm:serviceGroups:${client.id}`, []);
   const [storedFilters, setStoredFilters] = useLocalStorage<CrmBoardFilters>(`crm:filters:${client.id}`, emptyFilters);
-  const { ownerUserId, onlyMine, categoryId, startDate, endDate, origin } = { ...emptyFilters, ...storedFilters };
+  const { ownerUserId, onlyMine, categoryId, startDate, endDate, origin, lostReason } = { ...emptyFilters, ...storedFilters };
   const setFilter = <K extends keyof CrmBoardFilters>(key: K, value: CrmBoardFilters[K]) =>
     setStoredFilters((current) => ({ ...emptyFilters, ...current, [key]: value }));
   const [selectedDealId, setOpenDealId] = useState<string | null>(null);
@@ -105,10 +115,16 @@ export const CrmBoard = () => {
     categoryId: categoryId || undefined,
     startDate: startDate ? startOfDay(parseDateInput(startDate)).toISOString() : undefined,
     endDate: endDate ? endOfDay(parseDateInput(endDate)).toISOString() : undefined,
+    lostReason: lostReason || undefined,
     ...(origin.startsWith("campaign:")
       ? { originMetaCampaignId: origin.substring("campaign:".length) }
       : origin && { originType: origin as DealOriginType | "NONE" }),
   };
+
+  const lostReasonsQuery = useQuery({
+    queryKey: ["crm", "lostReasons", client.id],
+    queryFn: () => crmService.findAllLostReasons({ params: { clientId: client.id } }),
+  });
 
   const originCampaignsQuery = useQuery({
     queryKey: ["crm", "originCampaigns", client.id, pipeline?.id],
@@ -180,9 +196,9 @@ export const CrmBoard = () => {
         : `${selectedServiceGroupIds.length} grupos`;
 
   // Filtros guardados em "Mais filtros", contados no botão
-  const extraFilterCount = [categoryId, origin, startDate || endDate].filter(Boolean).length;
+  const extraFilterCount = [categoryId, origin, lostReason, startDate || endDate].filter(Boolean).length;
   const clearExtraFilters = () =>
-    setStoredFilters((current) => ({ ...emptyFilters, ...current, categoryId: "", origin: "", startDate: "", endDate: "" }));
+    setStoredFilters((current) => ({ ...emptyFilters, ...current, categoryId: "", origin: "", lostReason: "", startDate: "", endDate: "" }));
   // Tudo que não é funil nem visualização, contado no botão "Filtros" do celular
   const activeFilterCount = (selectedServiceGroupIds.length > 0 ? 1 : 0) + (onlyMine || ownerUserId ? 1 : 0) + extraFilterCount;
   const clearAllFilters = () => {
@@ -293,6 +309,33 @@ export const CrmBoard = () => {
             </optgroup>
           )}
         </select>
+      </div>
+
+      <div className="grid gap-1">
+        <Label htmlFor="crm-lost-reason" className="text-xs">
+          Motivo da perda
+        </Label>
+        <select
+          id="crm-lost-reason"
+          value={lostReason}
+          onChange={(event) => setFilter("lostReason", event.target.value)}
+          className={crmSelectClassName}
+        >
+          <option value="">Todos os negócios</option>
+          <option value="AGENT">Encerrado pela IA</option>
+          <option value="FLOW">Encerrado pelo fluxo</option>
+          {!!lostReasonsQuery.data?.length && (
+            <optgroup label="Motivos cadastrados">
+              {lostReasonsQuery.data.map((reason) => (
+                <option key={reason.id} value={reason.id}>
+                  {reason.active ? reason.name : `${reason.name} (inativo)`}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          <option value="OTHER">Outro motivo (escrito à mão)</option>
+        </select>
+        {lostReason && <p className="text-muted-foreground text-xs">Mostra só os negócios perdidos por este motivo.</p>}
       </div>
 
       <div className="grid gap-1">
