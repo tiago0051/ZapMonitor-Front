@@ -16,3 +16,18 @@ export const duplicateContactFromError = (error: unknown): DuplicateContact | nu
 
   return { id: data.existingContactId, name: data.existingContactName ?? null, message: data.message ?? "Este contato já existe" };
 };
+
+const formatCount = (value: number) => value.toLocaleString("pt-BR");
+
+/** Resumo de quem entrou na sequência e por que os outros não. */
+export const describeBulkEnroll = (result: BulkEnrollResult) => {
+  const out = [
+    result.noEmail && `${formatCount(result.noEmail)} sem e-mail`,
+    result.suppressed && `${formatCount(result.suppressed)} descadastrados`,
+    result.already && `${formatCount(result.already)} já estavam na sequência`,
+  ].filter(Boolean);
+  return {
+    title: `${formatCount(result.enrolled)} ${result.enrolled === 1 ? "pessoa inscrita" : "pessoas inscritas"}`,
+    description: out.length ? `Ficaram de fora: ${out.join(", ")}.` : undefined,
+  };
+};

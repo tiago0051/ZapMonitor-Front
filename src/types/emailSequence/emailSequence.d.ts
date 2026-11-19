@@ -30,7 +30,7 @@ type EmailEnrollment = {
   stepIndex: number;
   nextRunAt: string | null;
   stoppedReason: string | null;
-  source: "MANUAL" | "FLOW";
+  source: "MANUAL" | "FLOW" | "BULK" | "STAGE";
   lastSentAt: string | null;
   finishedAt: string | null;
   createdAt: string;
