@@ -183,6 +183,7 @@ export const useContactMessages = ({ contact }: UseContactMessagesProps) => {
     unseenCount,
     scrollToBottom,
     loadUntilMessage,
+    hasOlderMessages: !!hasNextPage,
     isLoadingOlder: findAllWhatsappMessagesByContact.isFetchingNextPage,
   };
 };

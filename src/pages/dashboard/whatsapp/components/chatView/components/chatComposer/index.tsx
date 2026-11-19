@@ -1,9 +1,12 @@
-import type { FC } from "react";
+import { cn } from "@/lib/utils";
+import { MessageSquare, StickyNote } from "lucide-react";
+import { useState, type FC, type ReactNode } from "react";
 import type { ServiceActions } from "../../hooks/useServiceActions";
 import { CreateMessageBar } from "../createMessageBar";
 import { DialogSendTemplate } from "../dialogSendTemplate";
 import { ReplyBlockedNotice } from "../replyBlockedNotice";
 import { canReplyToContact } from "./canReplyToContact";
+import { NoteComposer } from "@/pages/dashboard/whatsapp/notes/noteComposer";
 
 type ChatComposerProps = {
   contact: WhatsappContactMessage;
@@ -14,44 +17,68 @@ type ChatComposerProps = {
   className?: string;
 };
 
+type ComposerMode = "reply" | "note";
+
 /**
  * Parte de baixo da conversa: a caixa de mensagem, o envio de template quando o prazo de 24h acabou ou o aviso para
- * assumir o atendimento.
+ * assumir o atendimento. A aba "Nota interna" fica sempre disponível, mesmo sem poder responder.
  */
 export const ChatComposer: FC<ChatComposerProps> = ({ contact, contactService, serviceActions, replyingTo, onCancelReply, className }) => {
+  const [mode, setMode] = useState<ComposerMode>("reply");
   const { isReplyTimeExpired, canSendMessage } = canReplyToContact(contact, contactService);
 
-  if (canSendMessage)
-    return (
-      <div className={className ?? "px-4 pb-3"}>
-        <CreateMessageBar contact={contact} replyingTo={replyingTo} onCancelReply={onCancelReply} />
-      </div>
-    );
-
+  let replyContent: ReactNode = null;
+  if (canSendMessage) replyContent = <CreateMessageBar contact={contact} replyingTo={replyingTo} onCancelReply={onCancelReply} />;
   // Recém-encerrado: o aviso leva à próxima conversa, mesmo com o prazo de 24h vencido
-  if (contactService && serviceActions.hasJustEnded)
-    return (
-      <div className={`pt-2 ${className ?? "px-4 pb-3"}`}>
-        <ReplyBlockedNotice contact={contact} contactService={contactService} serviceActions={serviceActions} />
-      </div>
-    );
-
-  if (contactService && isReplyTimeExpired)
-    return (
-      <div className={`flex flex-col gap-2 pt-2 ${className ?? "px-4 pb-3"}`}>
+  else if (contactService && serviceActions.hasJustEnded)
+    replyContent = <ReplyBlockedNotice contact={contact} contactService={contactService} serviceActions={serviceActions} />;
+  else if (contactService && isReplyTimeExpired)
+    replyContent = (
+      <div className="flex flex-col gap-2">
         <p className="text-muted-foreground text-center text-sm">
           O prazo para responder livremente este contato acabou. Envie um template para retomar a conversa.
         </p>
         <DialogSendTemplate contactService={contactService} whatsappConfigurationId={contact.whatsappConfigurationId} />
       </div>
     );
+  else if (contactService)
+    replyContent = <ReplyBlockedNotice contact={contact} contactService={contactService} serviceActions={serviceActions} />;
 
-  if (contactService)
-    return (
-      <div className={`pt-2 ${className ?? "px-4 pb-3"}`}>
-        <ReplyBlockedNotice contact={contact} contactService={contactService} serviceActions={serviceActions} />
-      </div>
+  const tabClass = (active: boolean, note: boolean) =>
+    cn(
+      "flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors",
+      active
+        ? note
+          ? "bg-amber-100 text-amber-900 dark:bg-amber-500/20 dark:text-amber-200"
+          : "bg-primary/10 text-primary"
+        : "text-muted-foreground hover:bg-muted",
     );
 
-  return null;
+  return (
+    <div className={cn("flex flex-col gap-1.5 pt-2", className ?? "px-4 pb-3")}>
+      <div role="tablist" aria-label="Tipo de mensagem" className="flex gap-1">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "reply"}
+          onClick={() => setMode("reply")}
+          className={tabClass(mode === "reply", false)}
+        >
+          <MessageSquare className="h-3.5 w-3.5" />
+          Responder
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "note"}
+          onClick={() => setMode("note")}
+          className={tabClass(mode === "note", true)}
+        >
+          <StickyNote className="h-3.5 w-3.5" />
+          Nota interna
+        </button>
+      </div>
+      {mode === "note" ? <NoteComposer contactId={contact.id} /> : replyContent}
+    </div>
+  );
 };

@@ -417,3 +417,12 @@ type SearchContactMessagesRequestData = {
   params: { clientId: string; contactId: string };
   queries: PaginateRequestQuery & { text: string };
 };
+
+type FindInternalNotesRequestData = { params: { clientId: string; contactId: string } };
+
+type CreateInternalNoteRequestData = {
+  params: { clientId: string; contactId: string };
+  body: { content: string; mentionedUserIds: string[] };
+};
+
+type FindMentionableUsersRequestData = { params: { clientId: string } };

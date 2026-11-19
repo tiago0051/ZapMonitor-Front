@@ -320,7 +320,7 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
   const contactName = contactDisplayName(contact, "Contato");
 
   return (
-    <div className="flex flex-col gap-2 pt-2">
+    <div className="flex flex-col gap-2">
       {replyingTo && (
         <MessageReplyPreview
           replyTo={{ id: replyingTo.id, content: replyingTo.content, contentType: replyingTo.contentType, type: replyingTo.type }}

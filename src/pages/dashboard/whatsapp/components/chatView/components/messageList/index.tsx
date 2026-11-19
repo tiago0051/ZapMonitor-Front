@@ -1,7 +1,9 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, isSameYear, isToday, isYesterday } from "date-fns";
 import { ArrowDown, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useContactNotes } from "@/pages/dashboard/whatsapp/notes/useContactNotes";
+import { NoteItem } from "@/pages/dashboard/whatsapp/notes/noteItem";
 import { toast } from "sonner";
 import { AnimatePresence } from "motion/react";
 import { MessageItem } from "./components/messageItem";
@@ -25,9 +27,23 @@ const dayLabel = (date: string) => {
 };
 
 export const MessageList = ({ contact, onReply, search }: MessageListProps) => {
-  const { scrollRef, onScrollChat, isFetching, messages, unseenCount, scrollToBottom, loadUntilMessage } = useContactMessages({
-    contact,
-  });
+  const { scrollRef, onScrollChat, isFetching, messages, unseenCount, scrollToBottom, loadUntilMessage, hasOlderMessages } =
+    useContactMessages({ contact });
+  const notes = useContactNotes(contact.id);
+
+  // Notas entram na ordem do tempo, só dentro do trecho já carregado (as mais antigas aparecem ao rolar para cima)
+  const items = useMemo(() => {
+    const oldestLoaded = messages.length ? messages[messages.length - 1].createdAt : null;
+    const visibleNotes = notes.filter((note) => !hasOlderMessages || (oldestLoaded !== null && note.createdAt >= oldestLoaded));
+    const merged: ({ kind: "message"; message: WhatsappMessage } | { kind: "note"; note: WhatsappInternalNote })[] = [
+      ...messages.map((message) => ({ kind: "message" as const, message })),
+      ...visibleNotes.map((note) => ({ kind: "note" as const, note })),
+    ];
+    // Da mais nova para a mais antiga, como a lista de mensagens
+    return merged
+      .map((item) => ({ ...item, createdAt: item.kind === "message" ? item.message.createdAt : item.note.createdAt }))
+      .sort((first, second) => new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime());
+  }, [messages, notes, hasOlderMessages]);
   // Resultado escolhido na busca: carrega as páginas antigas até ele e rola até a mensagem
   const focusedId = search?.messageId ?? null;
   const focusNonce = search?.nonce ?? 0;
@@ -64,32 +80,30 @@ export const MessageList = ({ contact, onReply, search }: MessageListProps) => {
       <div ref={scrollRef} onScroll={onScrollChat} className="flex max-h-full flex-col-reverse gap-2 overflow-auto px-4">
         <AnimatePresence initial={false}>
           {/* Itens soltos (e não Fragment) para o AnimatePresence acompanhar cada mensagem pela chave */}
-          {messages.flatMap((message, index) => {
+          {items.flatMap((entry, index) => {
             // Da mais nova para a mais antiga; a lista é invertida, então o separador vem depois da última mensagem do dia
-            const older = messages[index + 1];
-            const isFirstOfDay = !older || dayKey(older.createdAt) !== dayKey(message.createdAt);
-            const item = (
-              <MessageItem
-                message={message}
-                key={message.id}
-                contactId={contact.id}
-                contactName={contactName}
-                onReply={onReply}
-                highlightTerm={search?.term || undefined}
-                isFocused={message.id === focusedId}
-              />
-            );
+            const older = items[index + 1];
+            const isFirstOfDay = !older || dayKey(older.createdAt) !== dayKey(entry.createdAt);
+            const item =
+              entry.kind === "note" ? (
+                <NoteItem key={`note-${entry.note.id}`} note={entry.note} />
+              ) : (
+                <MessageItem
+                  message={entry.message}
+                  key={entry.message.id}
+                  contactId={contact.id}
+                  contactName={contactName}
+                  onReply={onReply}
+                  highlightTerm={search?.term || undefined}
+                  isFocused={entry.message.id === focusedId}
+                />
+              );
             if (!isFirstOfDay) return [item];
 
-            const label = dayLabel(message.createdAt);
+            const label = dayLabel(entry.createdAt);
             return [
               item,
-              <div
-                key={`day-${dayKey(message.createdAt)}`}
-                className="flex shrink-0 justify-center py-1"
-                role="separator"
-                aria-label={label}
-              >
+              <div key={`day-${dayKey(entry.createdAt)}`} className="flex shrink-0 justify-center py-1" role="separator" aria-label={label}>
                 <span className="bg-muted text-muted-foreground rounded-full px-3 py-0.5 text-xs font-medium first-letter:uppercase">
                   {label}
                 </span>

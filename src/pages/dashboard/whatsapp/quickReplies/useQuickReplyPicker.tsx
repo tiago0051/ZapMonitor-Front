@@ -70,4 +70,3 @@ export const useQuickReplyPicker = ({ text, onSelect }: { text: string; onSelect
 
   return { isOpen, handleKeyDown, panel };
 };
-
