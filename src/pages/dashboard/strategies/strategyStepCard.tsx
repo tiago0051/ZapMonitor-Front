@@ -6,7 +6,7 @@ import { marketingStrategyService } from "@/services/api/marketingStrategyServic
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { CalendarPlus, ClipboardCopy, Film, Loader2, PencilRuler } from "lucide-react";
+import { CalendarPlus, ChevronDown, ClipboardCopy, Film, Loader2, PencilRuler } from "lucide-react";
 import { useState, type FC } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
@@ -127,9 +127,13 @@ export const StrategyStepCard: FC<Props> = ({ strategy, step, canManage, onSaved
               {info.label}
               {step.channel && ` · ${step.channel}`}
             </span>
-            {startsOn && (
+            {startsOn ? (
               <span>
                 A partir de {format(startsOn, "dd/MM")} · {step.durationDays} dia(s)
+              </span>
+            ) : (
+              <span>
+                Dia {step.startDay + 1} do plano · {step.durationDays} dia(s)
               </span>
             )}
             {step.verdict && (
@@ -179,6 +183,16 @@ export const StrategyStepCard: FC<Props> = ({ strategy, step, canManage, onSaved
           )}
         </div>
       </div>
+
+      {step.briefing && (
+        <details className="group rounded-md border text-sm">
+          <summary className="text-muted-foreground flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-xs font-medium [&::-webkit-details-marker]:hidden">
+            <span className="flex-1">Ver briefing completo do passo</span>
+            <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" aria-hidden />
+          </summary>
+          <p className="border-t px-3 py-2 break-words whitespace-pre-line">{step.briefing}</p>
+        </details>
+      )}
 
       {canManage && isReady && (
         <div className="flex flex-wrap gap-2">

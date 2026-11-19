@@ -8,7 +8,7 @@ import { marketingStrategyService } from "@/services/api/marketingStrategyServic
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Archive, ArchiveRestore, ArrowLeft, ExternalLink, Loader2, RotateCw, Sparkles, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowLeft, ChevronDown, ExternalLink, Loader2, RotateCw, Sparkles, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
@@ -18,7 +18,7 @@ import { StrategyMarkerHelp } from "./strategyMarkerHelp";
 import { StrategyResultsPanel } from "./strategyResultsPanel";
 import { StrategyReviewPanel } from "./strategyReviewPanel";
 import { StrategyStepCard } from "./strategyStepCard";
-import { goalLabel, strategyStatusInfo, verdictInfo } from "./strategyUtils";
+import { channelOptions, formatMoney, goalLabel, strategyStatusInfo, verdictInfo } from "./strategyUtils";
 import { StrategyValidationDialog } from "./strategyValidationDialog";
 
 /** Estratégia: o playbook escolhido e por quê, a mensagem central e os passos com atalhos. */
@@ -205,7 +205,12 @@ export const StrategyDetailPage = () => {
               </p>
             )}
             {strategy.secondaryPlaybook && (
-              <p className="text-muted-foreground text-xs">Complementada por: {strategy.secondaryPlaybook.name}</p>
+              <div className="text-xs">
+                <p className="text-muted-foreground">
+                  Complementada por: <span className="text-foreground font-medium">{strategy.secondaryPlaybook.name}</span>
+                </p>
+                {strategy.secondaryPlaybook.summary && <p className="text-muted-foreground mt-1">{strategy.secondaryPlaybook.summary}</p>}
+              </div>
             )}
           </div>
           <div className="min-w-0 space-y-3 text-sm">
@@ -244,6 +249,8 @@ export const StrategyDetailPage = () => {
           </div>
         </section>
       )}
+
+      <StrategyBriefSummary brief={strategy.brief} />
 
       {(strategy.status === "READY" || strategy.status === "ARCHIVED") && (
         <div className="grid gap-4 lg:grid-cols-2">
@@ -287,5 +294,47 @@ export const StrategyDetailPage = () => {
 
       {isRedoOpen && <StrategyBriefDialog strategy={strategy} onClose={() => setIsRedoOpen(false)} />}
     </div>
+  );
+};
+
+/** O que foi pedido para a IA: produto, público, prazo, verba e canais. */
+const StrategyBriefSummary = ({ brief }: { brief: MarketingBrief }) => {
+  const channels = brief.channels.map((channel) => channelOptions.find((option) => option.value === channel)?.label ?? channel);
+  const items: [string, string | null][] = [
+    ["Objetivo", goalLabel[brief.goal]],
+    ["Preço", brief.price],
+    ["Público", brief.audience],
+    ["Diferencial", brief.differentiator],
+    ["Prazo", brief.deadlineDays ? `${brief.deadlineDays} dia(s)` : null],
+    ["Verba por mês", brief.monthlyBudget ? formatMoney(brief.monthlyBudget) : null],
+    ["Canais", channels.length ? channels.join("; ") : null],
+  ];
+
+  return (
+    <details className="group rounded-lg border">
+      <summary className="flex cursor-pointer list-none items-center gap-2 p-4 text-sm font-medium [&::-webkit-details-marker]:hidden">
+        <span className="flex-1">O que foi pedido: {brief.product}</span>
+        <ChevronDown className="text-muted-foreground h-4 w-4 transition-transform group-open:rotate-180" aria-hidden />
+      </summary>
+      <div className="grid gap-3 border-t p-4 text-sm">
+        {brief.description && <p className="whitespace-pre-line">{brief.description}</p>}
+        <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
+          {items
+            .filter(([, value]) => value)
+            .map(([label, value]) => (
+              <div key={label} className="min-w-0">
+                <dt className="text-muted-foreground text-xs">{label}</dt>
+                <dd className="break-words">{value}</dd>
+              </div>
+            ))}
+        </dl>
+        {brief.notes && (
+          <div>
+            <p className="text-muted-foreground text-xs">Observações</p>
+            <p className="whitespace-pre-line">{brief.notes}</p>
+          </div>
+        )}
+      </div>
+    </details>
   );
 };
