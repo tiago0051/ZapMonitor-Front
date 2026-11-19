@@ -208,6 +208,8 @@ type CreateWhatsappMessageRequestBody = {
   text?: string;
   fileId?: string;
   replyToMessageId?: string;
+  // Legenda de imagem, vídeo ou documento
+  caption?: string;
 };
 //#endregion
 

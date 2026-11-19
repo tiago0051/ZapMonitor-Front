@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { MessageSquare, StickyNote } from "lucide-react";
-import { useState, type FC, type ReactNode } from "react";
+import { useState, type FC, type MutableRefObject, type ReactNode } from "react";
 import type { ServiceActions } from "../../hooks/useServiceActions";
 import { CreateMessageBar } from "../createMessageBar";
 import { DialogSendTemplate } from "../dialogSendTemplate";
@@ -15,6 +15,8 @@ type ChatComposerProps = {
   replyingTo: WhatsappMessage | null;
   onCancelReply: () => void;
   className?: string;
+  // Arquivos soltos na conversa (arrastar e soltar) vão para a caixa de mensagem por aqui
+  addFilesRef?: MutableRefObject<((files: File[]) => void) | null>;
 };
 
 type ComposerMode = "reply" | "note";
@@ -23,12 +25,28 @@ type ComposerMode = "reply" | "note";
  * Parte de baixo da conversa: a caixa de mensagem, o envio de template quando o prazo de 24h acabou ou o aviso para
  * assumir o atendimento. A aba "Nota interna" fica sempre disponível, mesmo sem poder responder.
  */
-export const ChatComposer: FC<ChatComposerProps> = ({ contact, contactService, serviceActions, replyingTo, onCancelReply, className }) => {
+export const ChatComposer: FC<ChatComposerProps> = ({
+  contact,
+  contactService,
+  serviceActions,
+  replyingTo,
+  onCancelReply,
+  className,
+  addFilesRef,
+}) => {
   const [mode, setMode] = useState<ComposerMode>("reply");
   const { isReplyTimeExpired, canSendMessage } = canReplyToContact(contact, contactService);
 
   let replyContent: ReactNode = null;
-  if (canSendMessage) replyContent = <CreateMessageBar contact={contact} replyingTo={replyingTo} onCancelReply={onCancelReply} />;
+  if (canSendMessage)
+    replyContent = (
+      <CreateMessageBar
+        contact={contact}
+        replyingTo={replyingTo}
+        onCancelReply={onCancelReply}
+        addFilesRef={mode === "reply" ? addFilesRef : undefined}
+      />
+    );
   // Recém-encerrado: o aviso leva à próxima conversa, mesmo com o prazo de 24h vencido
   else if (contactService && serviceActions.hasJustEnded)
     replyContent = <ReplyBlockedNotice contact={contact} contactService={contactService} serviceActions={serviceActions} />;

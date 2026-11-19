@@ -1,30 +1,43 @@
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { whatsappContants } from "@/contants/whatsappContants";
+import { EmojiPicker } from "@/components/emoji-picker";
 import { useClientContext } from "@/context/ClientContext/clientContext";
+import { useUserContext } from "@/context/UserContext/userContext";
 import { WhatsappMessageContentType } from "@/enums/whatsappMessageContentType.enum";
 import { whatsappService } from "@/services/api/whatsappService";
 import { convertImageForWhatsapp, convertWavToMp3 } from "@/utils/fileConvert";
 import { requestErrorHandling } from "@/utils/request";
 import { BlockBlobClient } from "@azure/storage-blob";
 import { useMutation } from "@tanstack/react-query";
-import { type ChangeEvent, type FC, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { FiFile, FiImage, FiMic, FiPaperclip, FiSend, FiStopCircle, FiX } from "react-icons/fi";
+import {
+  type ChangeEvent,
+  type ClipboardEvent,
+  type FC,
+  type MutableRefObject,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { FiFile, FiFilm, FiImage, FiMic, FiPaperclip, FiSend, FiStopCircle, FiTrash2, FiX } from "react-icons/fi";
 import { useReactMediaRecorder } from "react-media-recorder";
 import { toast } from "sonner";
 import { MessageReplyPreview } from "../messageReplyPreview";
 import { contactDisplayName } from "@/pages/dashboard/whatsapp/contactDisplayName";
-import { type DraftMessage, getDraftMessage, saveDraftMessage } from "@/pages/dashboard/whatsapp/conversationDrafts";
-import { useUserContext } from "@/context/UserContext/userContext";
+import { type DraftMessage, emptyDraftMessage, getDraftMessage, saveDraftMessage } from "@/pages/dashboard/whatsapp/conversationDrafts";
 import { useQuickReplyPicker } from "@/pages/dashboard/whatsapp/quickReplies/useQuickReplyPicker";
 import { fillQuickReply } from "@/pages/dashboard/whatsapp/quickReplies/quickReplies";
-
-const formatFileSize = (bytes: number) => {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} MB`;
-};
+import {
+  ATTACHMENT_ACCEPT,
+  attachmentKind,
+  attachmentProblem,
+  fileTypeLabel,
+  formatFileSize,
+  MAX_ATTACHMENTS,
+  nameClipboardFile,
+} from "./attachments";
 
 const formatDuration = (totalSeconds: number) => {
   const minutes = Math.floor(totalSeconds / 60);
@@ -32,41 +45,75 @@ const formatDuration = (totalSeconds: number) => {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 };
 
-/** Tipo do arquivo para mostrar ao atendente: extensão do nome ou, sem ela, o subtipo do MIME. */
-const fileTypeLabel = (file: File) => {
-  const extension = file.name.includes(".") ? file.name.split(".").pop() : "";
-  return (extension || file.type.split("/").pop() || "arquivo").toUpperCase();
-};
-
 type CreateMessageBarProps = {
   contact: WhatsappContactMessage;
   replyingTo?: WhatsappMessage | null;
   onCancelReply?: () => void;
+  // A conversa registra aqui quem recebe os arquivos soltos nela (arrastar e soltar)
+  addFilesRef?: MutableRefObject<((files: File[]) => void) | null>;
 };
 
-export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingTo, onCancelReply }) => {
+/** Miniatura do anexo: imagem com prévia; vídeo e documento com ícone, nome e tamanho. */
+const AttachmentChip: FC<{ file: File; onRemove: () => void; disabled: boolean }> = ({ file, onRemove, disabled }) => {
+  const kind = attachmentKind(file);
+  const previewUrl = useMemo(() => (kind === WhatsappMessageContentType.IMAGE ? URL.createObjectURL(file) : null), [file, kind]);
+  useEffect(() => {
+    if (!previewUrl) return;
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
+
+  return (
+    <li className="bg-secondary relative flex w-40 shrink-0 items-center gap-2 rounded-md border p-1.5 pr-7">
+      {previewUrl ? (
+        <img src={previewUrl} alt="" className="h-10 w-10 shrink-0 rounded object-cover" />
+      ) : (
+        <span className="bg-background flex h-10 w-10 shrink-0 items-center justify-center rounded">
+          {kind === WhatsappMessageContentType.VIDEO ? <FiFilm /> : <FiFile />}
+        </span>
+      )}
+      <span className="min-w-0">
+        <span className="block truncate text-xs font-medium" title={file.name}>
+          {file.name}
+        </span>
+        <span className="text-muted-foreground block text-[11px]">
+          {fileTypeLabel(file)} · {formatFileSize(file.size)}
+        </span>
+      </span>
+      <button
+        type="button"
+        onClick={onRemove}
+        disabled={disabled}
+        aria-label={`Remover ${file.name}`}
+        className="hover:bg-muted absolute top-1 right-1 rounded p-0.5"
+      >
+        <FiX className="size-3.5" />
+      </button>
+    </li>
+  );
+};
+
+export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingTo, onCancelReply, addFilesRef }) => {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const { client } = useClientContext();
   const { user } = useUserContext();
 
-  const defaultMessage = {
-    type: WhatsappMessageContentType.TEXT,
-    value: "",
-  };
-
   // Percentual enviado do arquivo; null fora de um upload
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  // Arquivo da vez quando há vários anexos ("2 de 3")
+  const [sendingStep, setSendingStep] = useState<{ current: number; total: number } | null>(null);
   // Começa pelo rascunho da conversa; cada mudança volta para o rascunho, para não se perder ao trocar de conversa
-  const [message, setMessageState] = useState<DraftMessage>(() => getDraftMessage(contact.id) ?? defaultMessage);
-  const setMessage = (next: DraftMessage) => {
-    setMessageState(next);
+  const [draft, setDraftState] = useState<DraftMessage>(() => getDraftMessage(contact.id) ?? emptyDraftMessage());
+  const draftRef = useRef(draft);
+  const setDraft = (next: DraftMessage) => {
+    draftRef.current = next;
+    setDraftState(next);
     saveDraftMessage(contact.id, next);
   };
-  const messageIsText = message.type === WhatsappMessageContentType.TEXT;
-  const messageIsAudio = message.type === WhatsappMessageContentType.AUDIO;
-  const messageIsDocument = message.type === WhatsappMessageContentType.DOCUMENT;
-  const messageIsImage = message.type === WhatsappMessageContentType.IMAGE;
+  const updateDraft = (change: Partial<DraftMessage>) => setDraft({ ...draftRef.current, ...change });
+
+  const hasAudio = !!draft.audio;
+  const hasAttachments = draft.attachments.length > 0;
 
   const createMessageMutate = useMutation({
     mutationFn: whatsappService.createWhatsappMessage,
@@ -109,6 +156,8 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
   // Duração do áudio gravado, medida no relógio enquanto grava
   const recordingStartedAt = useRef<number | null>(null);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
+  // Descartar durante a gravação: o áudio que o gravador entrega ao parar é jogado fora
+  const discardRecording = useRef(false);
 
   const { status, startRecording, stopRecording, error } = useReactMediaRecorder({
     audio: true,
@@ -116,28 +165,74 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
       mimeType: "audio/wav",
     },
     onStart: () => {
+      discardRecording.current = false;
       recordingStartedAt.current = Date.now();
       setRecordingSeconds(0);
     },
     onStop: async (_u, blob) => {
       if (recordingStartedAt.current) setRecordingSeconds((Date.now() - recordingStartedAt.current) / 1000);
       recordingStartedAt.current = null;
-      setMessage({
-        type: WhatsappMessageContentType.AUDIO,
-        value: blob,
-      });
+      if (discardRecording.current) {
+        discardRecording.current = false;
+        return;
+      }
+      updateDraft({ audio: blob, attachments: [] });
     },
   });
+
+  function cancelRecording() {
+    discardRecording.current = true;
+    stopRecording();
+  }
+
+  /** Junta arquivos (clipe, colar ou soltar) ao rascunho; recusa os que o WhatsApp não aceita, com o motivo. */
+  function addFiles(files: File[]) {
+    if (files.length === 0) return;
+    if (draftRef.current.audio) {
+      toast.info("Envie ou descarte o áudio gravado antes de anexar arquivos");
+      return;
+    }
+
+    const accepted: File[] = [];
+    for (const file of files) {
+      const problem = attachmentProblem(file);
+      if (problem) toast.error(problem);
+      else accepted.push(file);
+    }
+
+    const current = draftRef.current.attachments;
+    const room = MAX_ATTACHMENTS - current.length;
+    if (accepted.length > room) toast.info(`Dá para enviar até ${MAX_ATTACHMENTS} arquivos de uma vez`);
+    if (room <= 0 || accepted.length === 0) return;
+
+    updateDraft({ attachments: [...current, ...accepted.slice(0, room)] });
+    inputRef.current?.focus();
+  }
+
+  // A conversa (arrastar e soltar) chama sempre a versão atual
+  const addFilesLatest = useRef(addFiles);
+  useEffect(() => {
+    addFilesLatest.current = addFiles;
+  });
+  useEffect(() => {
+    if (!addFilesRef) return;
+    addFilesRef.current = (files) => addFilesLatest.current(files);
+    return () => {
+      addFilesRef.current = null;
+    };
+  }, [addFilesRef]);
 
   async function handleSendMessage() {
     try {
       await sendMessage();
     } catch {
-      // O onError já avisou; a mensagem continua na caixa para o atendente tentar de novo
+      // O onError já avisou; o que não foi enviado continua na caixa para o atendente tentar de novo
       return;
+    } finally {
+      setSendingStep(null);
     }
 
-    setMessage(defaultMessage);
+    setDraft(emptyDraftMessage());
     onCancelReply?.();
 
     if (inputRef.current) {
@@ -147,62 +242,45 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
 
   async function sendMessage() {
     const replyToMessageId = replyingTo?.id;
+    const params = { contactId: contact.id, configurationId: contact.whatsappConfigurationId, clientId: client.id };
+    const current = draftRef.current;
 
-    if (messageIsAudio) {
-      const blobMp3 = await convertWavToMp3(message.value as Blob);
+    if (current.audio) {
+      const blobMp3 = await convertWavToMp3(current.audio);
       const file = new File([blobMp3], new Date().getTime().toString(), { type: blobMp3.type });
-
-      const fileId = await uploadFileMutation.mutateAsync({
-        file,
-        fileType: "audio",
-      });
-
-      await createMessageMutate.mutateAsync({
-        params: {
-          contactId: contact.id,
-          configurationId: contact.whatsappConfigurationId,
-          clientId: client.id,
-        },
-        body: {
-          type: message.type,
-          fileId,
-          replyToMessageId,
-        },
-      });
+      const fileId = await uploadFileMutation.mutateAsync({ file, fileType: "audio" });
+      await createMessageMutate.mutateAsync({ params, body: { type: WhatsappMessageContentType.AUDIO, fileId, replyToMessageId } });
+      return;
     }
 
-    if (messageIsDocument || messageIsImage) {
-      const file = messageIsImage ? await prepareImage(message.value as File) : (message.value as File);
-      const fileId = await uploadFileMutation.mutateAsync({ file, fileType: message.type });
+    if (current.attachments.length > 0) {
+      // Um por vez, na ordem: a legenda vai no primeiro e a resposta citada também
+      const caption = current.text.trim() || undefined;
+      const total = current.attachments.length;
+      for (let index = 0; index < total; index += 1) {
+        const original = draftRef.current.attachments[0];
+        const kind = attachmentKind(original)!;
+        setSendingStep({ current: index + 1, total });
 
-      await createMessageMutate.mutateAsync({
-        params: {
-          contactId: contact.id,
-          configurationId: contact.whatsappConfigurationId,
-          clientId: client.id,
-        },
-        body: {
-          type: message.type,
-          fileId,
-          replyToMessageId,
-        },
-      });
+        const file = kind === WhatsappMessageContentType.IMAGE ? await prepareImage(original) : original;
+        const fileId = await uploadFileMutation.mutateAsync({ file, fileType: kind });
+        await createMessageMutate.mutateAsync({
+          params,
+          body: { type: kind, fileId, ...(index === 0 ? { caption, replyToMessageId } : {}) },
+        });
+
+        // Enviado sai do rascunho: numa falha no meio, só os que faltam ficam para tentar de novo
+        const remaining = draftRef.current.attachments.slice(1);
+        updateDraft({ attachments: remaining, ...(index === 0 ? { text: "" } : {}) });
+        if (index === 0) onCancelReply?.();
+      }
+      return;
     }
 
-    if (messageIsText) {
-      await createMessageMutate.mutateAsync({
-        params: {
-          contactId: contact.id,
-          configurationId: contact.whatsappConfigurationId,
-          clientId: client.id,
-        },
-        body: {
-          type: message.type,
-          text: message.value as string,
-          replyToMessageId,
-        },
-      });
-    }
+    await createMessageMutate.mutateAsync({
+      params,
+      body: { type: WhatsappMessageContentType.TEXT, text: current.text, replyToMessageId },
+    });
   }
 
   // A Meta só aceita JPEG/PNG de 8 bits em RGB; a conversão no navegador evita a falha depois do envio
@@ -216,20 +294,24 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
   }
 
   const quickReplyPicker = useQuickReplyPicker({
-    text: messageIsText ? (message.value as string) : "",
+    text: hasAttachments || hasAudio ? "" : draft.text,
     onSelect: (reply) => {
       const text = fillQuickReply(reply.content, { contactName: contactDisplayName(contact, ""), attendantName: user?.name ?? null });
-      setMessage({ type: WhatsappMessageContentType.TEXT, value: text });
+      updateDraft({ text });
       requestAnimationFrame(() => {
         const input = inputRef.current;
         if (!input) return;
         input.focus();
         input.setSelectionRange(text.length, text.length);
-        input.style.height = "auto";
-        input.style.height = `${input.scrollHeight}px`;
+        resizeInput(input);
       });
     },
   });
+
+  function resizeInput(input: HTMLTextAreaElement) {
+    input.style.height = "auto";
+    input.style.height = `${input.scrollHeight}px`;
+  }
 
   function onKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (quickReplyPicker.handleKeyDown(event)) return;
@@ -241,45 +323,49 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
   }
 
   function onInput(event: ChangeEvent<HTMLTextAreaElement>) {
-    setMessage({
-      type: WhatsappMessageContentType.TEXT,
-      value: event.target.value,
-    });
-    // Auto-resize
-    event.target.style.height = "auto";
-    event.target.style.height = `${event.target.scrollHeight}px`;
+    updateDraft({ text: event.target.value });
+    resizeInput(event.target);
   }
 
-  function selectMediaMessageClick(contentType: WhatsappMessageContentType, acceptsTypes: string) {
+  // Print ou arquivo copiado vira anexo; texto colado segue normal
+  function onPaste(event: ClipboardEvent<HTMLTextAreaElement>) {
+    const files = Array.from(event.clipboardData.files);
+    if (files.length === 0) return;
+    event.preventDefault();
+    addFiles(files.map(nameClipboardFile));
+  }
+
+  function insertEmoji(emoji: string) {
+    const input = inputRef.current;
+    const text = draftRef.current.text;
+    const start = input?.selectionStart ?? text.length;
+    const end = input?.selectionEnd ?? text.length;
+    updateDraft({ text: `${text.slice(0, start)}${emoji}${text.slice(end)}` });
+    requestAnimationFrame(() => {
+      if (!input) return;
+      input.focus();
+      input.setSelectionRange(start + emoji.length, start + emoji.length);
+      resizeInput(input);
+    });
+  }
+
+  function selectFiles(accept: string) {
     const fileInput = document.createElement("input");
     fileInput.type = "file";
-    fileInput.multiple = false;
-    fileInput.accept = acceptsTypes;
+    fileInput.multiple = true;
+    fileInput.accept = accept;
 
-    fileInput.onchange = async () => {
-      if (fileInput.files) {
-        const files = Array.from(fileInput.files);
-
-        if (files?.length === 1) {
-          const file = files[0];
-
-          setMessage({
-            type: contentType,
-            value: file,
-          });
-        }
-      }
-
+    fileInput.onchange = () => {
+      addFiles(Array.from(fileInput.files ?? []));
       fileInput.value = "";
     };
     fileInput.click();
   }
 
-  const disabledMessage = createMessageMutate.isPending || uploadFileMutation.isPending;
+  const disabledMessage = createMessageMutate.isPending || uploadFileMutation.isPending || !!sendingStep;
   const isRecording = status === "recording";
 
-  const disableButtonSendMessage = disabledMessage || (messageIsText && !(message.value as string).trim());
-  const showDocumentBar = !isRecording && (messageIsDocument || messageIsAudio || messageIsImage);
+  const disableButtonSendMessage = disabledMessage || (!hasAudio && !hasAttachments && !draft.text.trim());
 
   useEffect(() => {
     if (replyingTo) inputRef.current?.focus();
@@ -288,9 +374,7 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
   // Rascunho restaurado: a caixa já abre na altura do texto
   useLayoutEffect(() => {
     const input = inputRef.current;
-    if (!input?.value) return;
-    input.style.height = "auto";
-    input.style.height = `${input.scrollHeight}px`;
+    if (input?.value) resizeInput(input);
   }, []);
 
   useEffect(() => {
@@ -301,15 +385,12 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
     return () => window.clearInterval(interval);
   }, [isRecording]);
 
-  // Um endereço por anexo (e não um a cada render), liberado quando o anexo muda
-  const attachmentUrl = useMemo(
-    () => (message.value instanceof Blob && (messageIsAudio || messageIsImage) ? URL.createObjectURL(message.value) : null),
-    [message.value, messageIsAudio, messageIsImage],
-  );
+  // Um endereço para o áudio gravado (e não um a cada render), liberado quando ele muda
+  const audioUrl = useMemo(() => (draft.audio ? URL.createObjectURL(draft.audio) : null), [draft.audio]);
   useEffect(() => {
-    if (!attachmentUrl) return;
-    return () => URL.revokeObjectURL(attachmentUrl);
-  }, [attachmentUrl]);
+    if (!audioUrl) return;
+    return () => URL.revokeObjectURL(audioUrl);
+  }, [audioUrl]);
 
   useEffect(() => {
     if (error) {
@@ -318,6 +399,7 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
   }, [error]);
 
   const contactName = contactDisplayName(contact, "Contato");
+  const showTextInput = !isRecording && !hasAudio;
 
   return (
     <div className="flex flex-col gap-2">
@@ -338,74 +420,70 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
       {uploadProgress !== null && (
         <div className="flex items-center gap-2" role="status">
           <Progress value={uploadProgress} aria-label="Progresso do envio do arquivo" className="flex-1" />
-          <span className="text-muted-foreground w-24 shrink-0 text-right text-xs tabular-nums">Enviando {uploadProgress}%</span>
+          <span className="text-muted-foreground w-32 shrink-0 text-right text-xs tabular-nums">
+            {sendingStep && sendingStep.total > 1 ? `${sendingStep.current} de ${sendingStep.total} · ` : "Enviando "}
+            {uploadProgress}%
+          </span>
         </div>
       )}
 
+      {hasAttachments && !isRecording && (
+        <ul className="flex gap-2 overflow-x-auto pb-1" aria-label="Arquivos para enviar">
+          {draft.attachments.map((file, index) => (
+            <AttachmentChip
+              key={`${file.name}-${file.size}-${file.lastModified}-${index}`}
+              file={file}
+              disabled={disabledMessage}
+              onRemove={() => updateDraft({ attachments: draft.attachments.filter((_, position) => position !== index) })}
+            />
+          ))}
+        </ul>
+      )}
+
       <div className="flex items-center gap-2">
-        {!isRecording && messageIsText && (
+        {showTextInput && (
           <textarea
             className="focus:ring-primary max-h-40 w-full resize-none overflow-auto rounded border px-4 py-2 leading-5 transition focus:ring-2 focus:outline-none"
-            placeholder="Sua mensagem (digite / para respostas rápidas)"
+            placeholder={hasAttachments ? "Legenda (opcional)" : "Sua mensagem (digite / para respostas rápidas)"}
             onKeyDown={onKeyDown}
             onChange={onInput}
-            value={message.value as string}
+            onPaste={onPaste}
+            value={draft.text}
             ref={inputRef}
             readOnly={disabledMessage}
-            aria-label="Digite sua mensagem"
+            maxLength={hasAttachments ? 1024 : undefined}
+            aria-label={hasAttachments ? "Legenda dos arquivos" : "Digite sua mensagem"}
             rows={1}
           />
         )}
 
-        {showDocumentBar && (
-          <div className="flex w-full min-w-0 items-center">
-            {messageIsDocument && (
-              <div className={"flex w-full min-w-0 items-center gap-2"}>
-                <FiFile className="shrink-0" />
-                <div className="min-w-0">
-                  <p className="min-w-0 truncate">{(message.value as File).name}</p>
-                  <p className="text-muted-foreground text-xs">
-                    {fileTypeLabel(message.value as File)} · {formatFileSize((message.value as File).size)}
-                  </p>
-                </div>
-              </div>
+        {hasAudio && !isRecording && audioUrl && (
+          <div className="flex w-full min-w-0 items-center gap-2">
+            <audio controls src={audioUrl} className="min-w-0 flex-1" aria-label="Áudio gravado" />
+            {recordingSeconds > 0 && (
+              <span className="text-muted-foreground shrink-0 text-xs tabular-nums">{formatDuration(recordingSeconds)}</span>
             )}
-
-            {messageIsAudio && attachmentUrl && (
-              <div className="flex w-full min-w-0 items-center gap-2">
-                <audio controls src={attachmentUrl} className="min-w-0 flex-1" aria-label="Áudio gravado" />
-                {recordingSeconds > 0 && (
-                  <span className="text-muted-foreground shrink-0 text-xs tabular-nums">{formatDuration(recordingSeconds)}</span>
-                )}
-              </div>
-            )}
-
-            {messageIsImage && (
-              <div className={"w-full"}>
-                {attachmentUrl && <img src={attachmentUrl} alt={"Imagem selecionada"} className={"h-[100px] max-w-full object-contain"} />}
-                <p className="text-muted-foreground truncate text-xs">
-                  {(message.value as File).name} · {formatFileSize((message.value as File).size)}
-                </p>
-              </div>
-            )}
-
             <Button
-              variant={"ghost"}
-              size={"icon"}
-              onClick={() => setMessage(defaultMessage)}
+              variant="ghost"
+              size="icon"
+              onClick={() => updateDraft({ audio: null })}
               disabled={disabledMessage}
-              aria-label="Remover anexo"
+              aria-label="Descartar áudio"
             >
-              <FiX />
+              <FiTrash2 />
             </Button>
           </div>
         )}
 
         {isRecording && (
-          <div className="border-destructive w-full animate-pulse rounded border px-4 py-2">
-            <p className="text-destructive">
+          <div className="border-destructive flex w-full items-center justify-between gap-2 rounded border px-4 py-2">
+            <p className="text-destructive animate-pulse">
               Gravando áudio... <span className="tabular-nums">{formatDuration(recordingSeconds)}</span>
             </p>
+            <Button variant="ghost" size="sm" onClick={cancelRecording} aria-label="Descartar gravação">
+              <FiTrash2 />
+              <span className="hidden sm:inline">Descartar</span>
+            </Button>
           </div>
         )}
         <div className="flex gap-1">
@@ -421,37 +499,36 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
               <FiSend />
             </Button>
           )}
-          {messageIsText && (
+          {!hasAudio && !hasAttachments && (
             <Button
               type="button"
               onClick={() => (isRecording ? stopRecording() : startRecording())}
               disabled={disabledMessage}
               variant={isRecording ? "destructive" : "outline"}
-              aria-label="Enviar áudio"
+              aria-label={isRecording ? "Parar gravação" : "Gravar áudio"}
               size={"icon"}
             >
               {!isRecording && <FiMic />}
               {isRecording && <FiStopCircle />}
             </Button>
           )}
-          {!isRecording && messageIsText && (
+          {showTextInput && <EmojiPicker onSelect={insertEmoji} disabled={disabledMessage} className="hidden sm:inline-flex" />}
+          {showTextInput && (
             <DropdownMenu>
-              <DropdownMenuTrigger asChild disabled={isRecording}>
+              <DropdownMenuTrigger asChild>
                 <Button variant={"outline"} size={"icon"} disabled={disabledMessage} aria-label="Anexar arquivo">
                   <FiPaperclip />
                 </Button>
               </DropdownMenuTrigger>
 
               <DropdownMenuContent>
-                <DropdownMenuItem
-                  onClick={() => selectMediaMessageClick(WhatsappMessageContentType.DOCUMENT, whatsappContants.DOCUMENT_TYPES)}
-                >
+                <DropdownMenuItem onClick={() => selectFiles(ATTACHMENT_ACCEPT.media)}>
+                  <FiImage />
+                  Foto ou vídeo
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => selectFiles(ATTACHMENT_ACCEPT.document)}>
                   <FiFile />
                   Documento
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => selectMediaMessageClick(WhatsappMessageContentType.IMAGE, whatsappContants.IMAGE_TYPES)}>
-                  <FiImage />
-                  Imagem
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
