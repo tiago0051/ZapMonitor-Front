@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useClientContext } from "@/context/ClientContext/clientContext";
+import { useUserContext } from "@/context/UserContext/userContext";
 import { useBaseUrl } from "@/hooks/use-baseUrl";
 import { cn } from "@/lib/utils";
 import { crmService } from "@/services/api/crmService";
@@ -28,6 +29,8 @@ import {
 import { MobilePreviewSheet } from "../components/mobilePreviewSheet";
 import { SendWindowFields } from "../components/sendWindowFields";
 import { EmailAudienceStep } from "./emailAudienceStep";
+import { segmentRulesError } from "@/components/segment/segmentUtils";
+import { useSegmentPreview } from "@/components/segment/useSegmentPreview";
 import { emptyEmailAudience, summarizeEmailAudience, type EmailAudienceSources } from "./emailCampaignUtils";
 import { EmailPreviewFrame } from "./emailPreviewFrame";
 
@@ -59,6 +62,9 @@ export const EmailCampaignNew = () => {
   const [abMetric, setAbMetric] = useState<EmailAbMetric>("OPEN");
   const [abWaitHours, setAbWaitHours] = useState(4);
   const [confirmSend, setConfirmSend] = useState(false);
+  const { user } = useUserContext();
+  // O teste vai, por padrão, para o e-mail de quem está montando a campanha
+  const [testEmail, setTestEmail] = useState(() => user?.email ?? "");
 
   const optionsQuery = useQuery({
     queryKey: ["emailCampaigns", client.id, "options"],
@@ -77,6 +83,14 @@ export const EmailCampaignNew = () => {
 
   const summary = useMemo(() => summarizeEmailAudience(sources), [sources]);
   const firstContactId = summary.ready.find((row) => row.contactId)?.contactId ?? undefined;
+  const segment = sources.segment;
+  const segmentError = segment ? segmentRulesError(segment.rules) : null;
+  const segmentPreview = useSegmentPreview(segment && !segmentError ? segment.rules : null);
+  // Fichas do segmento com e-mail que pode receber; nulo enquanto conta
+  const segmentCount = segment ? (segmentPreview.data?.withEmail ?? null) : 0;
+  // Os repetidos entre o segmento e a planilha só saem no servidor: com segmento, o total é aproximado
+  const readyCount = segmentCount === null ? null : segmentCount + summary.ready.length;
+  const readyTotal = readyCount ?? summary.ready.length;
 
   const previewQuery = useQuery({
     queryKey: ["emailCampaigns", client.id, "preview", templateId, firstContactId],
@@ -90,7 +104,9 @@ export const EmailCampaignNew = () => {
       if (!senderId) return "Escolha o remetente";
       if (!templateId) return "Escolha o modelo";
     }
-    if (step === 1 && summary.ready.length === 0) return "Inclua pelo menos uma pessoa com e-mail válido";
+    if (step === 1 && segmentError) return segmentError;
+    if (step === 1 && readyCount === null) return segmentPreview.isError ? "Não foi possível contar o segmento" : "Contando o segmento...";
+    if (step === 1 && readyCount === 0) return "Inclua pelo menos uma pessoa com e-mail válido";
     return null;
   })();
   // Campo que resolve o bloqueio da etapa, para levar a pessoa até ele ao tocar em "Continuar"
@@ -110,6 +126,7 @@ export const EmailCampaignNew = () => {
         senderId,
         templateId,
         recipients: summary.ready,
+        segment: segment ? { rules: segment.rules } : undefined,
         sendWindow,
         frequencyCapDays: capDays ? Number(capDays) : null,
         clickPipelineId: clickPipelineId || null,
@@ -131,6 +148,25 @@ export const EmailCampaignNew = () => {
     },
   });
 
+  const testMutation = useMutation({
+    mutationFn: () =>
+      emailCampaignService.sendTest(client.id, {
+        senderId,
+        templateId,
+        to: testEmail.trim(),
+        subjectB: abEnabled && subjectB.trim() ? subjectB.trim() : undefined,
+        contactId: firstContactId,
+      }),
+    onError: requestErrorHandling,
+    onSuccess: ({ sent }) =>
+      toast.success(sent > 1 ? "Testes enviados" : "Teste enviado", {
+        description:
+          sent > 1
+            ? "Chegam dois e-mails, um com o assunto A e outro com o B. Confira também a caixa de spam."
+            : "Confira também a caixa de spam.",
+      }),
+  });
+
   const busy = createMutation.isPending;
   const scheduleDate = scheduledAt ? new Date(scheduledAt) : null;
   const scheduleError =
@@ -144,13 +180,13 @@ export const EmailCampaignNew = () => {
   const capError = capDays && !(Number(capDays) >= 1 && Number(capDays) <= 90) ? "O limite vai de 1 a 90 dias" : null;
   const clickError = clickPipelineId && !clickStageId ? "Escolha a etapa do funil para quem clicar" : null;
   // Metade do teste com cada assunto; cada versão precisa de pelo menos 10 pessoas
-  const abSize = Math.floor((summary.ready.length * abPercent) / 100 / 2) * 2;
+  const abSize = Math.floor((readyTotal * abPercent) / 100 / 2) * 2;
   const abError = !abEnabled
     ? null
     : !subjectB.trim()
       ? "Escreva o assunto B"
       : abSize < 20
-        ? `Com ${formatCount(summary.ready.length)} pessoas o teste fica pequeno: aumente a parte da lista ou tire o teste`
+        ? `Com ${formatCount(readyTotal)} pessoas o teste fica pequeno: aumente a parte da lista ou tire o teste`
         : null;
   const settingsError =
     sendWindowError(sendWindow) ??
@@ -301,7 +337,7 @@ export const EmailCampaignNew = () => {
               <div className="grid gap-4">
                 <dl className="grid grid-cols-3 gap-3">
                   {[
-                    ["Vão receber", summary.ready.length],
+                    [segment ? "Vão receber (cerca de)" : "Vão receber", readyTotal],
                     ["Repetidos", summary.duplicates],
                     ["E-mails inválidos", summary.invalid],
                   ].map(([label, count]) => (
@@ -507,8 +543,8 @@ export const EmailCampaignNew = () => {
                         </div>
                       </div>
                       <p className="text-muted-foreground text-xs">
-                        {formatCount(abSize / 2)} recebem o A, {formatCount(abSize / 2)} recebem o B e{" "}
-                        {formatCount(summary.ready.length - abSize)} recebem o vencedor.
+                        {formatCount(abSize / 2)} recebem o A, {formatCount(abSize / 2)} recebem o B e {formatCount(readyTotal - abSize)}{" "}
+                        recebem o vencedor.
                         {abMetric === "OPEN" && " Aberturas são aproximadas; com links no e-mail, cliques decidem melhor."}
                       </p>
                     </div>
@@ -550,11 +586,38 @@ export const EmailCampaignNew = () => {
                   </label>
                 </div>
 
+                <div className="grid gap-2 rounded-lg border p-3">
+                  <Label htmlFor="email-campaign-test-email">Enviar um teste antes</Label>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Input
+                      id="email-campaign-test-email"
+                      type="email"
+                      value={testEmail}
+                      maxLength={191}
+                      placeholder="seu@email.com"
+                      onChange={(event) => setTestEmail(event.target.value)}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={!testEmail.trim() || testMutation.isPending || busy}
+                      onClick={() => testMutation.mutate()}
+                    >
+                      {testMutation.isPending ? "Enviando..." : abEnabled && subjectB.trim() ? "Enviar A e B" : "Enviar teste"}
+                    </Button>
+                  </div>
+                  <p className="text-muted-foreground text-xs">
+                    Sai por {sender?.fromEmail ?? "remetente escolhido"}
+                    {firstContactId ? ", com os dados da primeira ficha da lista" : ""}
+                    {abEnabled && subjectB.trim() ? ": um e-mail com o assunto A e outro com o B." : "."}
+                  </p>
+                </div>
+
                 {confirmSend ? (
                   <div className="grid gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30">
                     <p className="text-sm">
-                      {when === "schedule" ? "Agendar" : "Enviar agora"} para {formatCount(summary.ready.length)}{" "}
-                      {summary.ready.length === 1 ? "pessoa" : "pessoas"} como {sender?.fromEmail}
+                      {when === "schedule" ? "Agendar" : "Enviar agora"} para {segment ? "cerca de " : ""}
+                      {formatCount(readyTotal)} {readyTotal === 1 ? "pessoa" : "pessoas"} como {sender?.fromEmail}
                       {when === "schedule" && scheduleDate && `, começando em ${format(scheduleDate, "dd/MM/yyyy 'às' HH:mm")}`}
                       {sendWindow && ` (${describeSendWindow(sendWindow).toLowerCase()})`}
                       {abEnabled && `, com teste A/B em ${abPercent}% da lista e o vencedor depois de ${abWaitHours}h`}? Dá para pausar
@@ -574,14 +637,14 @@ export const EmailCampaignNew = () => {
                     <div className="flex flex-wrap items-center gap-2">
                       {/* O span recebe o toque quando o botão está bloqueado e leva ao campo pendente */}
                       <span onClick={() => !busy && reviewError && focusPendingField(reviewErrorField)}>
-                        <Button disabled={busy || !summary.ready.length || !!reviewError} onClick={() => setConfirmSend(true)}>
+                        <Button disabled={busy || !readyCount || !!reviewError} onClick={() => setConfirmSend(true)}>
                           {when === "schedule" ? "Agendar" : "Enviar agora"}
                         </Button>
                       </span>
                       <span onClick={() => !busy && settingsError && focusPendingField(reviewErrorField)}>
                         <Button
                           variant="outline"
-                          disabled={busy || !summary.ready.length || !!settingsError}
+                          disabled={busy || !readyCount || !!settingsError}
                           onClick={() => createMutation.mutate("draft")}
                         >
                           Salvar rascunho
@@ -600,7 +663,7 @@ export const EmailCampaignNew = () => {
                   <DisabledReason className="text-sm">{stepError}</DisabledReason>
                 ) : (
                   <p className="text-muted-foreground text-sm">
-                    {step >= 1 ? `${formatCount(summary.ready.length)} prontas para receber` : ""}
+                    {step >= 1 && readyCount !== null ? `${formatCount(readyCount)} prontas para receber` : ""}
                   </p>
                 )}
                 <div className="flex gap-2">

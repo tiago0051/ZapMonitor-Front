@@ -36,14 +36,13 @@ export const normalizeEmail = (raw: string) => {
 export type EmailAudienceRow = { email: string; name: string | null; contactId: string | null; dealId: string | null };
 
 export type EmailAudienceSources = {
-  crm: EmailAudienceRow[];
-  tags: EmailAudienceRow[];
-  all: EmailAudienceRow[];
+  // Fichas do sistema por segmento, resolvido no servidor ao criar a campanha
+  segment: SegmentSelection | null;
   csv: { fileName: string; headers: string[]; rows: string[][]; emailColumn: string; nameColumn: string } | null;
   pasted: string;
 };
 
-export const emptyEmailAudience: EmailAudienceSources = { crm: [], tags: [], all: [], csv: null, pasted: "" };
+export const emptyEmailAudience: EmailAudienceSources = { segment: null, csv: null, pasted: "" };
 
 export const readEmailCsv = async (file: File) => parseCsv(await file.text());
 
@@ -70,9 +69,9 @@ export const parsePastedEmails = (text: string): EmailAudienceRow[] =>
       return { email: email.trim(), name: rest.join(" ").trim() || null, contactId: null, dealId: null };
     });
 
-/** Junta as fontes, tira inválidos e repetidos (as fichas do CRM vêm primeiro e ficam com o negócio). */
+/** Junta a planilha e a lista colada, tira inválidos e repetidos (as fichas do segmento o servidor junta). */
 export function summarizeEmailAudience(sources: EmailAudienceSources) {
-  const rows = [...sources.crm, ...sources.tags, ...sources.all, ...csvRows(sources.csv), ...parsePastedEmails(sources.pasted)];
+  const rows = [...csvRows(sources.csv), ...parsePastedEmails(sources.pasted)];
   const seen = new Set<string>();
   const ready: EmailAudienceRow[] = [];
   let invalid = 0;

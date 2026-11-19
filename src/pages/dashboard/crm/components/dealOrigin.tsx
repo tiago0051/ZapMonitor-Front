@@ -1,10 +1,19 @@
-import { ExternalLink, FileText, Megaphone } from "lucide-react";
+import { useBaseUrl } from "@/hooks/use-baseUrl";
+import { ExternalLink, FileText, Mail, Megaphone, Send } from "lucide-react";
+import { Link } from "react-router";
 import type { FC } from "react";
 import { dealOriginLabel } from "../crmUtils";
 
-/** Selo do card: de qual anúncio veio o negócio. */
+const originIcon: Record<DealOriginType, typeof Megaphone> = {
+  AD_MESSAGE: Megaphone,
+  LEAD_FORM: FileText,
+  BROADCAST: Send,
+  EMAIL_CAMPAIGN: Mail,
+};
+
+/** Selo do card: de qual anúncio ou campanha veio o negócio. */
 export const DealOriginBadge: FC<{ origin: DealOrigin }> = ({ origin }) => {
-  const Icon = origin.type === "LEAD_FORM" ? FileText : Megaphone;
+  const Icon = originIcon[origin.type];
   const campaign = origin.detail?.campaignName;
 
   return (
@@ -20,7 +29,14 @@ export const DealOriginBadge: FC<{ origin: DealOrigin }> = ({ origin }) => {
 
 /** Bloco do detalhe do negócio com campanha, conjunto, anúncio e o que o contato viu. */
 export const DealOriginDetails: FC<{ origin: DealOrigin }> = ({ origin }) => {
+  const baseUrl = useBaseUrl();
   const detail = origin.detail;
+  // Disparo ou e-mail: o link leva aos resultados da campanha
+  const campaignPath = origin.broadcastId
+    ? `${baseUrl}/broadcasts/${origin.broadcastId}`
+    : origin.emailCampaignId
+      ? `${baseUrl}/broadcasts/email/${origin.emailCampaignId}`
+      : null;
   const rows = [
     ["Campanha", detail?.campaignName],
     ["Conjunto", detail?.adSetName],
@@ -48,6 +64,11 @@ export const DealOriginDetails: FC<{ origin: DealOrigin }> = ({ origin }) => {
               </div>
             ))}
           </dl>
+          {campaignPath && (
+            <Link to={campaignPath} className="text-primary inline-flex items-center gap-1 text-xs hover:underline">
+              Ver a campanha
+            </Link>
+          )}
           {detail?.sourceUrl && (
             <a
               href={detail.sourceUrl}

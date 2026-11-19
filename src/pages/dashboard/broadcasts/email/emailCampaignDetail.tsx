@@ -17,6 +17,7 @@ import { formatCount, rate } from "../broadcastUtils";
 import { BroadcastScheduling, type SchedulingApi } from "../components/broadcastScheduling";
 import { downloadBlob, emailCampaignStatusInfo, emailProgressOf, emailRecipientStatusInfo } from "./emailCampaignUtils";
 import { EmailAbResults } from "./emailAbResults";
+import { CampaignSales } from "../components/campaignSales";
 import { EmailPreviewFrame } from "./emailPreviewFrame";
 
 const TAKE = 50;
@@ -270,6 +271,12 @@ export const EmailCampaignDetail = () => {
       </p>
 
       {campaign.abTest && <EmailAbResults campaign={campaign} subjectA={campaign.subject} />}
+
+      {campaign.deals && campaign.startedAt && (
+        <div className="rounded-xl border p-4 text-sm">
+          <CampaignSales deals={campaign.deals} />
+        </div>
+      )}
 
       {!!campaign.links?.length && (
         <section className="grid gap-2">

@@ -17,7 +17,28 @@ type BroadcastMetrics = {
   optedOut: number;
   // Mensagens que a Meta marcou como cobradas, por categoria
   billable: Record<string, number>;
+  // Negócios que nasceram ou avançaram depois da resposta ao disparo, dentro da janela de atribuição
+  deals: CampaignDealResults;
+  attributionDays: number;
+  // Resultado de cada modelo no teste A/B; nulo sem teste
+  ab: Record<"A" | "B", BroadcastAbTotals> | null;
 };
+
+/** Teste A/B de modelo: parte da lista recebe A (o modelo da campanha) ou B; o vencedor vai para o resto. */
+type BroadcastAbConfig = { templateId: string; testPercent: number; metric: "REPLY" | "DEAL"; waitHours: number };
+
+type BroadcastAbTest = BroadcastAbConfig & {
+  templateName: string;
+  templateLanguage: string;
+  phase: "TESTING" | "DECIDED";
+  winner: "A" | "B" | null;
+  decideAt: string | null;
+};
+
+type BroadcastAbTotals = { sent: number; replied: number; deals: number };
+
+/** Vendas de uma campanha: negócios atribuídos, quantos ganhos e o valor ganho (R$). */
+type CampaignDealResults = { deals: number; won: number; wonValue: number };
 
 type BroadcastTotals = {
   total: number;
@@ -35,7 +56,7 @@ type Broadcast = {
   id: string;
   name: string;
   status: BroadcastStatus;
-  source: "SCREEN" | "API";
+  source: "SCREEN" | "API" | "AUTOMATION";
   configurationId: string;
   configurationPhoneNumber: string | null;
   templateId: string | null;
@@ -47,6 +68,7 @@ type Broadcast = {
   reply: BroadcastReply;
   frequencyCapDays: number | null;
   audienceConsentAt: string | null;
+  abTest: BroadcastAbTest | null;
   pausedReason: string | null;
   scheduledAt: string | null;
   startedAt: string | null;
@@ -72,6 +94,7 @@ type BroadcastRecipient = {
   repliedAt: string | null;
   optedOutAt: string | null;
   failedAt: string | null;
+  variant: "A" | "B" | null;
 };
 
 type BroadcastAudienceContact = {
@@ -97,3 +120,35 @@ type BroadcastRecipientInput = {
 };
 
 type BroadcastPage<T> = { total: number; page: number; take: number; items: T[] };
+
+/** Segmento do disparo com o mapeamento das variáveis; o servidor resolve as pessoas. */
+type BroadcastSegmentInput = {
+  segmentId?: string;
+  rules?: SegmentRules;
+  // Mesmo formato do passo de variáveis: { "body.1": { source: { kind: "firstName" }, fallback: "" } }
+  mapping: Record<string, unknown>;
+};
+
+type BroadcastAudiencePreviewInput = {
+  templateId: string;
+  segment?: BroadcastSegmentInput;
+  // Telefones já conferidos da planilha e da lista colada
+  phones?: string[];
+  frequencyCapDays?: number;
+};
+
+type BroadcastAudiencePreview = {
+  segment: {
+    total: number;
+    ready: number;
+    noPhone: number;
+    invalid: number;
+    missingVariables: number;
+    sample: { phoneNumber: string; name: string | null; variables: Record<string, string> } | null;
+  } | null;
+  invalid: number;
+  duplicates: number;
+  optedOut: number;
+  frequencyCap: number;
+  willReceive: number;
+};

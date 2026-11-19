@@ -26,17 +26,10 @@ export const emailCampaignService = {
     body: { templateId?: string; campaignId?: string; contactId?: string },
   ): Promise<{ subject: string; html: string }> => (await api.post(`${base(clientId)}/preview`, body)).data,
 
-  findAudience: async (
+  sendTest: async (
     clientId: string,
-    body: {
-      categoryIds?: string[];
-      pipelineId?: string;
-      stageIds?: string[];
-      allContacts?: boolean;
-      origin?: "AD_MESSAGE" | "LEAD_FORM" | "NONE";
-      field?: { fieldId: string; scope: "DEAL" | "CONTACT"; value: string };
-    },
-  ): Promise<{ contacts: EmailAudienceContact[]; suppressed: number }> => (await api.post(`${base(clientId)}/audience`, body)).data,
+    body: { senderId: string; templateId: string; to: string; subjectB?: string; contactId?: string },
+  ): Promise<{ sent: number }> => (await api.post(`${base(clientId)}/test`, body)).data,
 
   create: async (
     clientId: string,
@@ -45,6 +38,8 @@ export const emailCampaignService = {
       senderId: string;
       templateId: string;
       recipients: EmailCampaignRecipientInput[];
+      // Fichas do segmento, somadas no servidor
+      segment?: { segmentId?: string; rules?: SegmentRules };
       sendWindow?: BroadcastSendWindow | null;
       frequencyCapDays?: number | null;
       clickPipelineId?: string | null;

@@ -91,6 +91,8 @@ export const aiScoreLabel = (score: number) => (score >= 70 ? "Quente" : score >
 export const dealOriginLabel: Record<DealOriginType, string> = {
   AD_MESSAGE: "Anúncio no WhatsApp",
   LEAD_FORM: "Formulário de cadastro",
+  BROADCAST: "Disparo de WhatsApp",
+  EMAIL_CAMPAIGN: "Campanha de e-mail",
 };
 
 // Nomes dos eventos padrão da Meta

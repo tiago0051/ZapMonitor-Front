@@ -8,6 +8,21 @@ export const contactService = {
     return response.data;
   },
 
+  // Lista com os filtros de um segmento (regras) e a busca
+  search: async (clientId: string, body: { rules?: SegmentRules; search?: string; page: number; take: number }): Promise<ContactPage> =>
+    (await api.post(`${base(clientId)}/search`, body)).data,
+
+  bulkTag: async (
+    clientId: string,
+    body: { selection: ContactBulkSelection; categoryId: string },
+  ): Promise<{ tagged: number; withoutConversation: number }> => (await api.post(`${base(clientId)}/bulk/tag`, body)).data,
+
+  bulkSequence: async (clientId: string, body: { selection: ContactBulkSelection; sequenceId: string }): Promise<BulkEnrollResult> =>
+    (await api.post(`${base(clientId)}/bulk/sequence`, body)).data,
+
+  bulkExport: async (clientId: string, body: { selection: ContactBulkSelection }): Promise<Blob> =>
+    (await api.post(`${base(clientId)}/bulk/export`, body, { responseType: "blob" })).data,
+
   importRows: async (
     clientId: string,
     body: { rows: ContactImportRow[]; mode: "skip" | "update"; firstLine: number },

@@ -11,6 +11,12 @@ import { useBaseUrl } from "@/hooks/use-baseUrl";
 import { cn } from "@/lib/utils";
 import { emailCampaignService } from "@/services/api/emailCampaignService";
 import { emailSequenceService } from "@/services/api/emailSequenceService";
+import { contactService } from "@/services/api/contactService";
+import { crmService } from "@/services/api/crmService";
+import { SegmentPicker } from "@/components/segment/segmentPicker";
+import { emptySegmentRules, segmentRulesError } from "@/components/segment/segmentUtils";
+import { useSegmentPreview } from "@/components/segment/useSegmentPreview";
+import { describeBulkEnroll } from "@/pages/dashboard/contacts/contactUtils";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -50,6 +56,7 @@ const emptySequence: EmailSequence = {
   stopOnWhatsappReply: true,
   stopOnDealWon: true,
   sendWindow: null,
+  trigger: null,
   steps: [{ delayMinutes: 0, templateId: null }],
   enrollments: { active: 0, completed: 0, stopped: 0 },
   createdAt: "",
@@ -78,7 +85,7 @@ export const EmailSequenceEditor = () => {
 };
 
 const SequenceForm: FC<{ sequence: EmailSequence; isNew: boolean }> = ({ sequence, isNew }) => {
-  const { client, can } = useClientContext();
+  const { client, can, canUseCrm } = useClientContext();
   const baseUrl = useBaseUrl();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -90,6 +97,23 @@ const SequenceForm: FC<{ sequence: EmailSequence; isNew: boolean }> = ({ sequenc
   const [stopOnDealWon, setStopOnDealWon] = useState(sequence.stopOnDealWon);
   const [sendWindow, setSendWindow] = useState<BroadcastSendWindow | null>(sequence.sendWindow);
   const [steps, setSteps] = useState<StepDraft[]>(sequence.steps.map(toDraft));
+  const [triggerPipelineId, setTriggerPipelineId] = useState(sequence.trigger?.pipelineId ?? "");
+  const [triggerStageId, setTriggerStageId] = useState(sequence.trigger?.stageId ?? "");
+
+  const pipelinesQuery = useQuery({
+    queryKey: ["crm", "pipelines", client.id],
+    queryFn: () => crmService.findAllPipelines({ params: { clientId: client.id } }),
+    enabled: canUseCrm,
+  });
+  const pipelines = (pipelinesQuery.data ?? []).filter((pipeline) => pipeline.active);
+  const triggerPipeline = pipelines.find((pipeline) => pipeline.id === triggerPipelineId);
+
+  const metricsQuery = useQuery({
+    queryKey: ["emailSequences", client.id, "metrics", sequence.id],
+    queryFn: () => emailSequenceService.stepMetrics(client.id, sequence.id),
+    enabled: !isNew,
+  });
+  const metricsOf = (index: number) => metricsQuery.data?.find((item) => item.stepIndex === index);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const optionsQuery = useQuery({
@@ -106,6 +130,7 @@ const SequenceForm: FC<{ sequence: EmailSequence; isNew: boolean }> = ({ sequenc
     stopOnWhatsappReply,
     stopOnDealWon,
     sendWindow,
+    trigger: triggerPipelineId && triggerStageId ? { pipelineId: triggerPipelineId, stageId: triggerStageId } : null,
     steps: steps.map((step) => ({ delayMinutes: draftMinutes(step), templateId: step.templateId || null })),
   });
 
@@ -151,6 +176,7 @@ const SequenceForm: FC<{ sequence: EmailSequence; isNew: boolean }> = ({ sequenc
       stopOnWhatsappReply: sequence.stopOnWhatsappReply,
       stopOnDealWon: sequence.stopOnDealWon,
       sendWindow: sequence.sendWindow,
+      trigger: sequence.trigger,
       steps: sequence.steps,
     });
 
@@ -160,7 +186,8 @@ const SequenceForm: FC<{ sequence: EmailSequence; isNew: boolean }> = ({ sequenc
   });
   const stepError = invalidStepIndex >= 0 ? `A espera do e-mail ${invalidStepIndex + 1} vai de 0 a 90 dias` : null;
   const windowError = sendWindowError(sendWindow);
-  const formError = !name.trim() ? "Dê um nome para a sequência" : (stepError ?? windowError);
+  const triggerError = triggerPipelineId && !triggerStageId ? "Escolha a etapa do gatilho ou tire o funil" : null;
+  const formError = !name.trim() ? "Dê um nome para a sequência" : (stepError ?? windowError ?? triggerError);
   const missingTemplateIndex = steps.findIndex((step) => !step.templateId);
   const activationError = !senderId
     ? "Escolha o remetente para ligar"
@@ -174,7 +201,9 @@ const SequenceForm: FC<{ sequence: EmailSequence; isNew: boolean }> = ({ sequenc
       ? `step-${invalidStepIndex}-amount`
       : windowError
         ? "sequence-window-start"
-        : null;
+        : triggerError
+          ? "sequence-trigger-stage"
+          : null;
   const activationErrorField = !senderId ? "sequence-sender" : missingTemplateIndex >= 0 ? `step-${missingTemplateIndex}-template` : null;
   const busy = save.isPending || toggle.isPending || remove.isPending;
   const disabled = !canEdit || busy;
@@ -396,6 +425,7 @@ const SequenceForm: FC<{ sequence: EmailSequence; isNew: boolean }> = ({ sequenc
                       )}
                     </select>
                   </div>
+                  {metricsOf(index) && <StepMetricsLine metrics={metricsOf(index)!} />}
                 </li>
               ))}
             </ol>
@@ -440,6 +470,61 @@ const SequenceForm: FC<{ sequence: EmailSequence; isNew: boolean }> = ({ sequenc
                 <p className="text-muted-foreground text-xs">Quem se descadastra ou tem o e-mail devolvido sai sempre.</p>
               </div>
               <SendWindowFields value={sendWindow} onChange={setSendWindow} idPrefix="sequence-window" disabled={disabled} />
+              {canUseCrm && (
+                <div className="grid gap-3">
+                  <div>
+                    <p className="text-sm font-medium">Entrar sozinho pelo funil (opcional)</p>
+                    <p className="text-muted-foreground text-xs">
+                      Quando um negócio chega na etapa (criado, movido ou reaberto nela), a ficha dele entra na sequência, se tiver e-mail.
+                    </p>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="sequence-trigger-pipeline" className="text-xs">
+                        Funil
+                      </Label>
+                      <select
+                        id="sequence-trigger-pipeline"
+                        className={selectClassName}
+                        value={triggerPipelineId}
+                        disabled={disabled}
+                        onChange={(event) => {
+                          setTriggerPipelineId(event.target.value);
+                          setTriggerStageId("");
+                        }}
+                      >
+                        <option value="">Sem gatilho</option>
+                        {pipelines.map((pipeline) => (
+                          <option key={pipeline.id} value={pipeline.id}>
+                            {pipeline.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {triggerPipeline && (
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="sequence-trigger-stage" className="text-xs">
+                          Entrou na etapa
+                        </Label>
+                        <select
+                          id="sequence-trigger-stage"
+                          className={selectClassName}
+                          value={triggerStageId}
+                          disabled={disabled}
+                          onChange={(event) => setTriggerStageId(event.target.value)}
+                        >
+                          <option value="">Selecione</option>
+                          {triggerPipeline.stages.map((stage) => (
+                            <option key={stage.id} value={stage.id}>
+                              {stage.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
               {!canEdit && (
                 <p className="text-muted-foreground text-xs">
                   {steps.map((step, index) => describeDelay(draftMinutes(step), index === 0)).join(" · ")}
@@ -448,6 +533,7 @@ const SequenceForm: FC<{ sequence: EmailSequence; isNew: boolean }> = ({ sequenc
               )}
             </CardContent>
           </Card>
+          {!isNew && canEdit && can("contacts.view") && <BulkEnrollCard sequence={sequence} />}
           {!isNew && <SequenceEnrollments sequence={sequence} />}
         </div>
       </div>
@@ -456,6 +542,87 @@ const SequenceForm: FC<{ sequence: EmailSequence; isNew: boolean }> = ({ sequenc
 };
 
 const TAKE = 30;
+
+const enrollmentSourceLabel: Partial<Record<EmailEnrollment["source"], string>> = {
+  FLOW: "pelo fluxo",
+  BULK: "em lote",
+  STAGE: "pela etapa do funil",
+  AUTOMATION: "pela automação por data",
+};
+
+const percent = (part: number, base: number) => (base > 0 ? ` (${Math.round((part / base) * 100)}%)` : "");
+
+/** Resultado de um e-mail da sequência: enviados, aberturas e cliques. */
+const StepMetricsLine: FC<{ metrics: EmailSequenceStepMetrics }> = ({ metrics }) => (
+  <p className="text-muted-foreground text-xs tabular-nums">
+    {formatCount(metrics.sent)} {metrics.sent === 1 ? "enviado" : "enviados"} · {formatCount(metrics.opened)}{" "}
+    {metrics.opened === 1 ? "abertura" : "aberturas"}
+    {percent(metrics.opened, metrics.sent)} · {formatCount(metrics.clicked)} {metrics.clicked === 1 ? "clique" : "cliques"}
+    {percent(metrics.clicked, metrics.sent)}
+  </p>
+);
+
+/** Inscreve de uma vez as fichas de um segmento (salvo ou montado aqui). */
+const BulkEnrollCard: FC<{ sequence: EmailSequence }> = ({ sequence }) => {
+  const { client } = useClientContext();
+  const queryClient = useQueryClient();
+  const [segment, setSegment] = useState<SegmentSelection | null>(null);
+  const preview = useSegmentPreview(segment && !segmentRulesError(segment.rules) ? segment.rules : null);
+
+  const enroll = useMutation({
+    mutationFn: () => contactService.bulkSequence(client.id, { selection: { rules: segment!.rules }, sequenceId: sequence.id }),
+    onError: requestErrorHandling,
+    onSuccess: (result) => {
+      const { title, description } = describeBulkEnroll(result);
+      toast.success(title, { description });
+      queryClient.invalidateQueries({ queryKey: ["emailSequences", client.id] });
+      setSegment(null);
+    },
+  });
+  const error = !sequence.active ? "Ligue a sequência antes de inscrever" : segment ? segmentRulesError(segment.rules) : null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Inscrever pessoas</CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-3">
+        {segment ? (
+          <>
+            <SegmentPicker value={segment} onChange={setSegment} channel="EMAIL" idPrefix="sequence-segment" />
+            <div className="flex flex-wrap items-center gap-2">
+              <Button disabled={!!error || enroll.isPending || !preview.data?.withEmail} onClick={() => enroll.mutate()}>
+                {enroll.isPending
+                  ? "Inscrevendo..."
+                  : preview.data
+                    ? `Inscrever ${formatCount(preview.data.withEmail)} com e-mail`
+                    : "Inscrever"}
+              </Button>
+              <Button variant="ghost" onClick={() => setSegment(null)}>
+                Cancelar
+              </Button>
+            </div>
+            {error && <DisabledReason>{error}</DisabledReason>}
+          </>
+        ) : (
+          <div className="grid gap-2">
+            <p className="text-muted-foreground text-sm">
+              Escolha um segmento (etiquetas, funil, origem, campos...) e inscreva todos de uma vez. Para escolher pessoas uma a uma, use a
+              lista de Contatos.
+            </p>
+            <Button
+              variant="outline"
+              className="justify-self-start"
+              onClick={() => setSegment({ segmentId: null, rules: emptySegmentRules() })}
+            >
+              Escolher segmento
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 
 const statusFilters: { value: string; label: string }[] = [
   { value: "", label: "Todas" },
@@ -529,7 +696,7 @@ const SequenceEnrollments: FC<{ sequence: EmailSequence }> = ({ sequence }) => {
         {query.isSuccess && items.length === 0 && (
           <EmptyState
             title="Ninguém aqui"
-            description='Coloque pessoas pela ficha do contato ou com o nó "Sequência de e-mails" de um fluxo.'
+            description='Coloque pessoas por um segmento aqui, pela lista de contatos, pela ficha, pelo gatilho do funil ou com o nó "Sequência de e-mails" de um fluxo.'
           />
         )}
         {items.length > 0 && (
@@ -546,7 +713,7 @@ const SequenceEnrollments: FC<{ sequence: EmailSequence }> = ({ sequence }) => {
                       {Math.min(item.stepIndex, total)} de {total} e-mails
                       {item.status === "ACTIVE" && item.nextRunAt && ` · próximo em ${format(new Date(item.nextRunAt), "dd/MM HH:mm")}`}
                       {item.status === "STOPPED" && item.stoppedReason && ` · ${stopReasonLabel[item.stoppedReason] ?? item.stoppedReason}`}
-                      {item.source === "FLOW" ? " · pelo fluxo" : ""}
+                      {enrollmentSourceLabel[item.source] ? ` · ${enrollmentSourceLabel[item.source]}` : ""}
                     </p>
                   </div>
                   <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-medium", info.className)}>{info.label}</span>

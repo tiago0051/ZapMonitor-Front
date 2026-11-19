@@ -21,7 +21,9 @@ import { crmService } from "@/services/api/crmService";
 import { templateService } from "@/services/api/templateService";
 import { whatsappService } from "@/services/api/whatsappService";
 import { requestErrorHandling, requestErrorMessage } from "@/utils/request";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useDebounceValue } from "usehooks-ts";
+import { segmentRulesError } from "@/components/segment/segmentUtils";
 import { format } from "date-fns";
 import { ArrowLeft } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
@@ -55,6 +57,7 @@ import {
 import { AudienceStep } from "./components/audienceStep";
 import { VariablesStep } from "./components/variablesStep";
 import { formatConfigurationPhoneNumber, isWhatsappWeb, WHATSAPP_WEB_TEMPLATE_HINT } from "@/utils/whatsappConfiguration";
+import { NumberHealthCell } from "@/pages/dashboard/configuration/whatsapp/whatsappConfiguration/components/numberHealthCell";
 
 const STEPS = ["Mensagem", "Público", "Variáveis", "Revisão"] as const;
 
@@ -69,7 +72,7 @@ class DraftKeptError extends Error {
 }
 
 export const BroadcastNew = () => {
-  const { client } = useClientContext();
+  const { client, can } = useClientContext();
   const baseUrl = useBaseUrl();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -91,6 +94,11 @@ export const BroadcastNew = () => {
   const [reply, setReply] = useState<BroadcastReply>(emptyReply);
   const [capDays, setCapDays] = useState("");
   const [consent, setConsent] = useState(false);
+  const [abEnabled, setAbEnabled] = useState(false);
+  const [abTemplateId, setAbTemplateId] = useState("");
+  const [abPercent, setAbPercent] = useState(20);
+  const [abMetric, setAbMetric] = useState<"REPLY" | "DEAL">("REPLY");
+  const [abWaitHours, setAbWaitHours] = useState(24);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   const configurationsQuery = useQuery({
@@ -101,6 +109,20 @@ export const BroadcastNew = () => {
   // Campanha usa modelos da Meta, que só a API oficial envia
   const configurations = enabledConfigurations.filter((configuration) => !isWhatsappWeb(configuration));
   const whatsappWebConfigurations = enabledConfigurations.filter(isWhatsappWeb);
+  const selectedConfiguration = configurations.find((configuration) => configuration.id === configurationId) ?? null;
+
+  // Relê da Meta a qualidade e o limite dos números com leitura vencida (só quem gerencia os números pode pedir)
+  useQuery({
+    queryKey: ["whatsappConfigurations", client.id, "healthRefresh"],
+    queryFn: async () => {
+      const result = await whatsappService.refreshNumberHealth(client.id);
+      if (result.refreshed) await queryClient.invalidateQueries({ queryKey: ["whatsappConfigurations", client.id], exact: true });
+      return result;
+    },
+    enabled: can("channels.manage"),
+    staleTime: 10 * 60 * 1000,
+    meta: { errorHandledInline: true },
+  });
 
   const templatesQuery = useQuery({
     queryKey: ["whatsappTemplates", client.id, configurationId],
@@ -112,14 +134,53 @@ export const BroadcastNew = () => {
   const crmFieldsQuery = useQuery({
     queryKey: ["crm", "fields", client.id],
     queryFn: () => crmService.findAllCrmFields({ params: { clientId: client.id } }),
-    enabled: sources.crm.length > 0,
+    enabled: !!sources.segment,
   });
 
   const parameters = useMemo(() => template?.parameters ?? [], [template]);
   const rows = useMemo(() => allAudienceRows(sources), [sources]);
   const summary = useMemo(() => summarizeAudience(rows, parameters, mapping), [rows, parameters, mapping]);
   const fileType = headerFileType(template);
-  const firstReady = summary.ready[0];
+  const capEnabled = template?.category === "MARKETING";
+  const segment = sources.segment;
+  const segmentError = segment ? segmentRulesError(segment.rules) : null;
+
+  // Revisão no servidor: quem do segmento entra, repetidos com a planilha e quem fica de fora (descadastro, frequência)
+  const localPhones = useMemo(() => summary.ready.map(({ row }) => row.phoneNumber), [summary]);
+  const phonesKey = useMemo(() => {
+    let hash = 0;
+    for (const phone of localPhones) for (let index = 0; index < phone.length; index++) hash = (hash * 31 + phone.charCodeAt(index)) | 0;
+    return `${localPhones.length}:${hash}`;
+  }, [localPhones]);
+  const [previewInput] = useDebounceValue(
+    { segmentRules: segment && !segmentError ? segment.rules : null, mapping, capDays: capEnabled && capDays ? Number(capDays) : null },
+    500,
+    // Objeto novo a cada render: compara pelo conteúdo para não reagendar sem fim
+    { equalityFn: (a, b) => JSON.stringify(a) === JSON.stringify(b) },
+  );
+  const previewQuery = useQuery({
+    queryKey: ["broadcasts", client.id, "audiencePreview", template?.id, previewInput, phonesKey],
+    queryFn: () =>
+      broadcastService.previewAudience(client.id, {
+        templateId: template!.id,
+        segment: previewInput.segmentRules ? { rules: previewInput.segmentRules, mapping: previewInput.mapping } : undefined,
+        phones: localPhones,
+        frequencyCapDays:
+          previewInput.capDays && previewInput.capDays >= 1 && previewInput.capDays <= 90 ? previewInput.capDays : undefined,
+      }),
+    enabled: step >= 2 && !!template && (!!previewInput.segmentRules || localPhones.length > 0),
+    placeholderData: keepPreviousData,
+  });
+  const preview = previewQuery.data;
+  const segmentReady = segment ? (preview?.segment?.ready ?? null) : 0;
+  // Prontas para receber antes das regras do envio (descadastro e frequência); nulo enquanto o segmento é contado
+  const readyCount = segmentReady === null ? null : segmentReady + summary.ready.length;
+  const willReceive = preview?.willReceive ?? summary.ready.length;
+  const sample = preview?.segment?.sample
+    ? { name: preview.segment.sample.name || preview.segment.sample.phoneNumber, variables: preview.segment.sample.variables }
+    : summary.ready[0]
+      ? { name: summary.ready[0].row.name || summary.ready[0].row.phoneNumber, variables: summary.ready[0].variables }
+      : null;
 
   const selectTemplate = (templateId: string) => {
     const selected = templates.find((item) => item.id === templateId) ?? null;
@@ -136,8 +197,11 @@ export const BroadcastNew = () => {
       if (!template.sendable) return template.unavailableReason ?? "Este modelo não pode ser enviado";
       if (fileType && !headerFile) return `Escolha o arquivo: ${headerFileLabel[fileType].toLowerCase()}`;
     }
-    if (step === 1 && rows.length === 0) return "Inclua pelo menos uma pessoa";
-    if (step === 2 && summary.ready.length === 0) return "Nenhuma pessoa com todas as variáveis preenchidas";
+    if (step === 1 && segmentError) return segmentError;
+    if (step === 1 && rows.length === 0 && !segment) return "Inclua pelo menos uma pessoa";
+    if (step === 2 && readyCount === null)
+      return previewQuery.isError ? "Não foi possível contar o segmento" : "Contando as pessoas do segmento...";
+    if (step === 2 && readyCount === 0) return "Nenhuma pessoa com telefone e todas as variáveis preenchidas";
     return null;
   })();
   // Campo que resolve o bloqueio da etapa, para levar a pessoa até ele ao tocar em "Continuar"
@@ -158,7 +222,7 @@ export const BroadcastNew = () => {
         configurationId,
         templateId: template!.id,
         phoneNumber: testPhone,
-        variables: firstReady?.variables,
+        variables: sample?.variables,
         headerFileId: await headerFileId(),
       }),
     onError: requestErrorHandling,
@@ -190,6 +254,11 @@ export const BroadcastNew = () => {
         reply: Object.values(reply).some(Boolean) ? reply : undefined,
         frequencyCapDays: capEnabled && capDays ? Number(capDays) : undefined,
         consentConfirmed: consent,
+        segment: segment ? { rules: segment.rules, mapping } : undefined,
+        abTest:
+          abEnabled && abTemplate
+            ? { templateId: abTemplate.id, testPercent: abPercent, metric: abMetric, waitHours: abWaitHours }
+            : undefined,
       };
       // O arquivo do cabeçalho muda a cada envio; fica fora da comparação
       const signature = JSON.stringify({ ...body, headerFileId: undefined, recipients });
@@ -201,7 +270,7 @@ export const BroadcastNew = () => {
       let broadcastId = resumable?.id;
       let uploadedChunks = resumable?.uploadedChunks ?? 0;
       if (!broadcastId) {
-        broadcast = await broadcastService.create(client.id, { ...body, recipients: chunks[0] });
+        broadcast = await broadcastService.create(client.id, { ...body, recipients: chunks[0] ?? [] });
         broadcastId = broadcast.id;
         uploadedChunks = 1;
       }
@@ -249,7 +318,7 @@ export const BroadcastNew = () => {
     },
   });
 
-  const estimate = estimateCostUsd(template?.category ?? null, summary.ready.length);
+  const estimate = estimateCostUsd(template?.category ?? null, willReceive);
   const busy = createMutation.isPending;
   const scheduleDate = scheduledAt ? new Date(scheduledAt) : null;
   const scheduleError =
@@ -260,26 +329,75 @@ export const BroadcastNew = () => {
         : !isFutureSchedule(scheduledAt)
           ? "Escolha um horário no futuro"
           : null;
-  const capEnabled = template?.category === "MARKETING";
   // Lista vinda de fora do sistema pede a confirmação de que as pessoas aceitaram receber
   const needsConsent = !!sources.csv || sources.pasted.trim().length > 0;
+  // Limite de conversas em 24h e qualidade do número: a Meta recusa o que passar e um número vermelho pode ser bloqueado
+  const messagingLimit = selectedConfiguration?.messagingLimit ?? null;
+  const overLimit = messagingLimit !== null && willReceive > messagingLimit;
+  const redQuality = selectedConfiguration?.qualityRating === "RED";
+  const phoneError = redQuality
+    ? "A qualidade do número está vermelha; disparar agora pode bloquear o número"
+    : overLimit
+      ? `O número pode chamar até ${formatCount(messagingLimit!)} pessoas em 24h; divida a campanha`
+      : null;
   const capError = capEnabled && capDays && !(Number(capDays) >= 1 && Number(capDays) <= 90) ? "O limite vai de 1 a 90 dias" : null;
-  const settingsError = sendWindowError(sendWindow) ?? capError ?? (needsConsent && !consent ? "Confirme o consentimento da lista" : null);
-  const reviewError = settingsError ?? scheduleError;
+  // Modelo B do teste A/B: mesmas variáveis, cabeçalho e categoria do A, para valer para as mesmas pessoas
+  const parameterKeys = (item: WhatsappTemplate | null) =>
+    (item?.parameters ?? [])
+      .map((parameter) => parameter.key)
+      .sort()
+      .join("|");
+  const abCandidates = template
+    ? templates.filter(
+        (item) =>
+          item.sendable &&
+          item.id !== template.id &&
+          item.category === template.category &&
+          headerFileType(item) === headerFileType(template) &&
+          parameterKeys(item) === parameterKeys(template),
+      )
+    : [];
+  const abTemplate = abCandidates.find((item) => item.id === abTemplateId) ?? null;
+  const abSize = Math.floor(((readyCount ?? 0) * abPercent) / 100 / 2) * 2;
+  const abError = !abEnabled
+    ? null
+    : !abTemplate
+      ? "Escolha o modelo B do teste"
+      : abSize < 20
+        ? `Com ${formatCount(readyCount ?? 0)} pessoas o teste A/B fica pequeno: aumente a parte da lista ou tire o teste`
+        : null;
+  const settingsError =
+    sendWindowError(sendWindow) ?? capError ?? abError ?? (needsConsent && !consent ? "Confirme o consentimento da lista" : null);
+  const reviewError = settingsError ?? scheduleError ?? phoneError;
   const reviewErrorField = sendWindowError(sendWindow)
     ? "broadcast-window-start"
     : capError
       ? "broadcast-cap-days"
-      : needsConsent && !consent
-        ? "broadcast-consent"
-        : scheduleError
-          ? "broadcast-scheduled-at"
-          : null;
+      : abError
+        ? abTemplate
+          ? "broadcast-ab-percent"
+          : "broadcast-ab-template"
+        : needsConsent && !consent
+          ? "broadcast-consent"
+          : scheduleError
+            ? "broadcast-scheduled-at"
+            : null;
 
-  const previewNote = `Prévia${firstReady ? ` para ${firstReady.row.name || firstReady.row.phoneNumber}` : ""}`;
+  const previewNote = `Prévia${sample ? ` para ${sample.name}` : ""}`;
   const previewContent = template && (
-    <TemplatePreview template={template} variables={firstReady?.variables} headerFileName={headerFile?.name} />
+    <TemplatePreview template={template} variables={sample?.variables} headerFileName={headerFile?.name} />
   );
+  const leftOut = [
+    ["Descadastrados", preview?.optedOut ?? 0],
+    ["Limite de frequência (receberam marketing há pouco)", preview?.frequencyCap ?? 0],
+    [
+      "Sem número válido",
+      summary.invalid + (preview?.invalid ?? 0) + (preview?.segment ? preview.segment.invalid + preview.segment.noPhone : 0),
+    ],
+    ["Sem variável preenchida", summary.missingVariables + (preview?.segment?.missingVariables ?? 0)],
+    ["Repetidos", summary.duplicates + (preview?.duplicates ?? 0)],
+  ] as const;
+  const leftOutTotal = leftOut.reduce((sum, [, value]) => sum + value, 0);
 
   return (
     <div className="flex h-full flex-col gap-4 overflow-auto p-4 md:p-6">
@@ -322,7 +440,11 @@ export const BroadcastNew = () => {
               <CardTitle>{STEPS[step]}</CardTitle>
               {previewContent && <MobilePreviewSheet description={previewNote}>{previewContent}</MobilePreviewSheet>}
             </div>
-            {step === 1 && <CardDescription>Some quantas fontes quiser. Números repetidos entram uma vez só.</CardDescription>}
+            {step === 1 && (
+              <CardDescription>
+                Use um segmento dos contatos e, se quiser, some uma planilha ou lista. Números repetidos entram uma vez só.
+              </CardDescription>
+            )}
           </CardHeader>
           <CardContent className="grid gap-4">
             {step === 0 && (
@@ -361,6 +483,7 @@ export const BroadcastNew = () => {
                     ))}
                   </select>
                   {whatsappWebConfigurations.length > 0 && <p className="text-muted-foreground text-xs">{WHATSAPP_WEB_TEMPLATE_HINT}.</p>}
+                  {selectedConfiguration && <NumberHealthCell configuration={selectedConfiguration} />}
                 </div>
                 {configurationId && (
                   <div className="grid gap-2">
@@ -410,25 +533,60 @@ export const BroadcastNew = () => {
                 onChange={setMapping}
                 csvHeaders={sources.csv?.headers ?? []}
                 crmFields={crmFieldsQuery.data ?? []}
-                hasCrmRows={sources.crm.length > 0}
+                hasCrmRows={!!segment}
               />
             )}
 
             {step === 3 && (
               <div className="grid gap-4">
-                <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  {[
-                    ["Vão receber", summary.ready.length],
-                    ["Repetidos", summary.duplicates],
-                    ["Números inválidos", summary.invalid],
-                    ["Sem variável", summary.missingVariables],
-                  ].map(([label, count]) => (
-                    <div key={label} className="rounded-lg border p-3">
-                      <dt className="text-muted-foreground text-xs">{label}</dt>
-                      <dd className="text-xl font-semibold tabular-nums">{formatCount(Number(count))}</dd>
+                <div className="grid gap-2">
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <p className="text-2xl font-semibold tabular-nums">{formatCount(willReceive)}</p>
+                    <p className="text-muted-foreground text-sm">
+                      {willReceive === 1 ? "pessoa vai receber" : "pessoas vão receber"}
+                      {previewQuery.isFetching && " · atualizando..."}
+                    </p>
+                  </div>
+                  {leftOutTotal > 0 && (
+                    <div className="grid gap-1 rounded-lg border p-3">
+                      <p className="text-sm font-medium">{formatCount(leftOutTotal)} ficam de fora</p>
+                      <dl className="grid grid-cols-1 gap-x-4 gap-y-1 text-sm sm:grid-cols-2">
+                        {leftOut
+                          .filter(([, value]) => value > 0)
+                          .map(([label, value]) => (
+                            <div key={label} className="flex justify-between gap-2">
+                              <dt className="text-muted-foreground">{label}</dt>
+                              <dd className="tabular-nums">{formatCount(value)}</dd>
+                            </div>
+                          ))}
+                      </dl>
                     </div>
-                  ))}
-                </dl>
+                  )}
+                </div>
+                {selectedConfiguration && (
+                  <div
+                    className={cn(
+                      "grid gap-2 rounded-lg border p-3",
+                      phoneError && "border-amber-300 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30",
+                    )}
+                  >
+                    <p className="text-sm font-medium">Número {selectedConfiguration.phoneNumber}</p>
+                    <NumberHealthCell configuration={selectedConfiguration} />
+                    {overLimit && (
+                      <p className="text-sm">
+                        A campanha tem {formatCount(willReceive)} pessoas e o número pode chamar até {formatCount(messagingLimit!)} em 24
+                        horas. Divida em campanhas menores (ou agende uma para o dia seguinte); o que passar a Meta recusa.
+                      </p>
+                    )}
+                    {redQuality && (
+                      <p className="text-sm">
+                        Muitas pessoas bloquearam ou denunciaram o número. Pare os disparos por alguns dias e reveja o texto e a lista. Dá
+                        para salvar o rascunho.
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 <p className="text-muted-foreground text-sm">
                   {estimate !== null
                     ? `Custo estimado na Meta: cerca de ${formatUsd(estimate)}, pela tabela pública de ${templateCategoryLabel[template?.category ?? ""]?.toLowerCase()} para números do Brasil. A cobrança vem na fatura da conta do WhatsApp.`
@@ -449,7 +607,7 @@ export const BroadcastNew = () => {
                     <Button
                       type="button"
                       variant="outline"
-                      disabled={!testPhone.trim() || !firstReady || testMutation.isPending}
+                      disabled={!testPhone.trim() || !sample || testMutation.isPending}
                       onClick={() => testMutation.mutate()}
                     >
                       {testMutation.isPending ? "Enviando..." : "Enviar teste"}
@@ -496,6 +654,113 @@ export const BroadcastNew = () => {
                     </div>
                   )}
                   <SendWindowFields value={sendWindow} onChange={setSendWindow} idPrefix="broadcast-window" disabled={busy} />
+                </div>
+
+                <div className="grid gap-3 rounded-lg border p-3">
+                  <label className="flex items-start gap-2 text-sm">
+                    <Checkbox
+                      id="broadcast-ab"
+                      checked={abEnabled}
+                      disabled={busy}
+                      onCheckedChange={(checked) => setAbEnabled(checked === true)}
+                    />
+                    <span>
+                      <span className="font-medium">Teste A/B de modelo</span>
+                      <span className="text-muted-foreground block text-xs">
+                        Uma parte da lista recebe este modelo (A) ou outro (B); depois da espera, o que tiver mais respostas (ou negócios)
+                        vai para o resto.
+                      </span>
+                    </span>
+                  </label>
+                  {abEnabled && (
+                    <div className="grid gap-3 pl-6">
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="broadcast-ab-template" className="text-xs">
+                          Modelo B
+                        </Label>
+                        <select
+                          id="broadcast-ab-template"
+                          className={selectClassName}
+                          value={abTemplateId}
+                          disabled={busy}
+                          onChange={(event) => setAbTemplateId(event.target.value)}
+                        >
+                          <option value="">{abCandidates.length ? "Selecione" : "Nenhum modelo com as mesmas variáveis"}</option>
+                          {abCandidates.map((item) => (
+                            <option key={item.id} value={item.id}>
+                              {item.name} ({item.language})
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-muted-foreground text-xs">
+                          Aparecem os modelos aprovados da mesma categoria, com as mesmas variáveis e o mesmo tipo de cabeçalho.
+                        </p>
+                      </div>
+                      {abTemplate && (
+                        <div className="max-w-sm">
+                          <TemplatePreview template={abTemplate} variables={sample?.variables} headerFileName={headerFile?.name} />
+                        </div>
+                      )}
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="grid gap-1.5">
+                          <Label htmlFor="broadcast-ab-percent" className="text-xs">
+                            Parte da lista no teste
+                          </Label>
+                          <select
+                            id="broadcast-ab-percent"
+                            className={selectClassName}
+                            value={abPercent}
+                            disabled={busy}
+                            onChange={(event) => setAbPercent(Number(event.target.value))}
+                          >
+                            {[10, 20, 30, 40, 50].map((value) => (
+                              <option key={value} value={value}>
+                                {value}%
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="grid gap-1.5">
+                          <Label htmlFor="broadcast-ab-metric" className="text-xs">
+                            Vence quem tiver mais
+                          </Label>
+                          <select
+                            id="broadcast-ab-metric"
+                            className={selectClassName}
+                            value={abMetric}
+                            disabled={busy}
+                            onChange={(event) => setAbMetric(event.target.value === "DEAL" ? "DEAL" : "REPLY")}
+                          >
+                            <option value="REPLY">Respostas</option>
+                            <option value="DEAL">Negócios</option>
+                          </select>
+                        </div>
+                        <div className="grid gap-1.5">
+                          <Label htmlFor="broadcast-ab-wait" className="text-xs">
+                            Esperar o resultado
+                          </Label>
+                          <select
+                            id="broadcast-ab-wait"
+                            className={selectClassName}
+                            value={abWaitHours}
+                            disabled={busy}
+                            onChange={(event) => setAbWaitHours(Number(event.target.value))}
+                          >
+                            {[2, 4, 8, 12, 24, 48, 72].map((value) => (
+                              <option key={value} value={value}>
+                                {value} horas
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <p className="text-muted-foreground text-xs">
+                        Cerca de {formatCount(abSize / 2)} recebem o A, {formatCount(abSize / 2)} recebem o B e{" "}
+                        {formatCount(Math.max(0, (readyCount ?? 0) - abSize))} recebem o vencedor (descadastrados ficam de fora no envio).
+                        {abMetric === "DEAL" && ' Negócio só conta com um funil em "Quem responder" ou com a atribuição de vendas.'}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid gap-3 rounded-lg border p-3">
@@ -553,8 +818,8 @@ export const BroadcastNew = () => {
                 {confirmSend ? (
                   <div className="grid gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30">
                     <p className="text-sm">
-                      {when === "schedule" ? "Agendar" : "Enviar agora"} para {formatCount(summary.ready.length)}{" "}
-                      {summary.ready.length === 1 ? "pessoa" : "pessoas"} pelo número{" "}
+                      {when === "schedule" ? "Agendar" : "Enviar agora"} para {formatCount(willReceive)}{" "}
+                      {willReceive === 1 ? "pessoa" : "pessoas"} pelo número{" "}
                       {configurations.find((item) => item.id === configurationId)?.phoneNumber}
                       {when === "schedule" && scheduleDate && `, começando em ${format(scheduleDate, "dd/MM/yyyy 'às' HH:mm")}`}
                       {sendWindow && ` (${describeSendWindow(sendWindow).toLowerCase()})`}? Dá para pausar depois, mas o que já saiu não
@@ -574,14 +839,14 @@ export const BroadcastNew = () => {
                     <div className="flex flex-wrap items-center gap-2">
                       {/* O span recebe o toque quando o botão está bloqueado e leva ao campo pendente */}
                       <span onClick={() => !busy && reviewError && focusPendingField(reviewErrorField)}>
-                        <Button disabled={busy || !summary.ready.length || !!reviewError} onClick={() => setConfirmSend(true)}>
+                        <Button disabled={busy || !readyCount || !!reviewError} onClick={() => setConfirmSend(true)}>
                           {when === "schedule" ? "Agendar" : "Enviar agora"}
                         </Button>
                       </span>
                       <span onClick={() => !busy && settingsError && focusPendingField(reviewErrorField)}>
                         <Button
                           variant="outline"
-                          disabled={busy || !summary.ready.length || !!settingsError}
+                          disabled={busy || !readyCount || !!settingsError}
                           onClick={() => createMutation.mutate("draft")}
                         >
                           Salvar rascunho
@@ -600,7 +865,7 @@ export const BroadcastNew = () => {
                   <DisabledReason className="text-sm">{stepError}</DisabledReason>
                 ) : (
                   <p className="text-muted-foreground text-sm">
-                    {step >= 1 ? `${formatCount(summary.ready.length)} prontas para receber` : ""}
+                    {step >= 2 && readyCount !== null ? `${formatCount(readyCount)} prontas para receber` : ""}
                   </p>
                 )}
                 <div className="flex gap-2">

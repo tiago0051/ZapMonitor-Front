@@ -116,3 +116,8 @@ type ContactConsent = {
     }[];
   };
 };
+
+/** Fichas da ação em massa: as marcadas ou, sem elas, todas as do filtro. */
+type ContactBulkSelection = { contactIds?: string[]; rules?: SegmentRules; search?: string };
+
+type BulkEnrollResult = { enrolled: number; noEmail: number; suppressed: number; already: number };
