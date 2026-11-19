@@ -2,7 +2,7 @@ import { ContactAvatar } from "@/components/contact-avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { formatPhoneNumber } from "@/utils/formatString";
-import { ArrowLeft, ArrowRightLeft, Briefcase, Forward, Info, MoreHorizontal, XCircle, UserCheck } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft, Briefcase, Forward, Info, MoreHorizontal, Search, XCircle, UserCheck } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { ContactDeals } from "@/pages/dashboard/crm/components/contactDeals";
@@ -29,9 +29,10 @@ interface HeaderProps {
   serviceActions: ServiceActions;
   onBack?: () => void;
   onShowInfo?: () => void;
+  onSearch?: () => void;
 }
 
-export const Header: FC<HeaderProps> = ({ contact, contactService, serviceActions, onBack, onShowInfo }) => {
+export const Header: FC<HeaderProps> = ({ contact, contactService, serviceActions, onBack, onShowInfo, onSearch }) => {
   const contactName = contactDisplayName(contact, "este contato");
   const { canUseCrm } = useClientContext();
   // O diálogo de encerrar fica nas ações do atendimento: o atalho de teclado também o abre
@@ -66,6 +67,17 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, serviceAction
         <p className="text-muted-foreground truncate text-xs">{formatPhoneNumber(contact.phoneNumber)}</p>
       </div>
       <div className="flex flex-shrink-0 items-center gap-1">
+        {onSearch && (
+          <button
+            type="button"
+            aria-label="Buscar nesta conversa"
+            title="Buscar nesta conversa"
+            onClick={onSearch}
+            className="hover:bg-muted text-muted-foreground flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg transition-colors"
+          >
+            <Search className="h-4 w-4" />
+          </button>
+        )}
         <CallButton contact={contact} contactService={contactService} />
         {canUseCrm && (
           <Popover>

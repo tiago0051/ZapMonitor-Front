@@ -412,3 +412,8 @@ type CreateWhatsappEmbeddedSignupRequestBody = {
 type DescribeWhatsappMessageMediaRequestData = {
   params: { clientId: string; contactId: string; messageId: string };
 };
+
+type SearchContactMessagesRequestData = {
+  params: { clientId: string; contactId: string };
+  queries: PaginateRequestQuery & { text: string };
+};

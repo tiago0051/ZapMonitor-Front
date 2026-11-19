@@ -16,11 +16,15 @@ import { useClientContext } from "@/context/ClientContext/clientContext";
 import { whatsappService } from "@/services/api/whatsappService";
 import { requestErrorHandling } from "@/utils/request";
 import { CallMessage } from "@/pages/dashboard/whatsapp/calls/callMessage";
+import { HighlightText } from "../../../conversationSearch/highlightText";
 
 type MessageFileContent = { url: string; filename: string };
 
-const MessageText = ({ message }: { message: WhatsappMessage<string> }) => (
-  <p className="whitespace-pre-wrap">{formatWhatsappText(message.content)}</p>
+// Com busca ativa, o texto sai sem a formatação do WhatsApp para o termo poder ser marcado
+const MessageText = ({ message, highlightTerm }: { message: WhatsappMessage<string>; highlightTerm?: string }) => (
+  <p className="whitespace-pre-wrap">
+    {highlightTerm ? <HighlightText text={message.content} term={highlightTerm} /> : formatWhatsappText(message.content)}
+  </p>
 );
 type MediaProps = { content: MessageFileContent | null; status: number; createdAt: string };
 
@@ -197,12 +201,16 @@ type MessageItemProps = {
   contactId: string;
   contactName: string;
   onReply?: (message: WhatsappMessage) => void;
+  // Termo da busca na conversa, marcado no texto
+  highlightTerm?: string;
+  // Resultado da busca escolhido agora
+  isFocused?: boolean;
 };
 
 export const MessageItem: FC<MessageItemProps> = (props) =>
   props.message.contentType === WhatsappMessageContentType.CALL ? <CallMessage message={props.message} /> : <ChatMessageItem {...props} />;
 
-const ChatMessageItem: FC<MessageItemProps> = ({ message, contactId, contactName, onReply }) => {
+const ChatMessageItem: FC<MessageItemProps> = ({ message, contactId, contactName, onReply, highlightTerm, isFocused }) => {
   const [isTranscriptionOpen, setIsTranscriptionOpen] = useState(false);
 
   const status = message.status;
@@ -223,7 +231,9 @@ const ChatMessageItem: FC<MessageItemProps> = ({ message, contactId, contactName
       transition={{ duration: 0.22, ease: "easeOut" }}
       data-type={message.type}
       data-reacted={!!message.contactReaction}
-      className="group bg-secondary text-secondary-foreground relative max-w-[85%] min-w-[min(300px,100%)] rounded p-2 pt-2 pb-6 [overflow-wrap:anywhere] data-[reacted=true]:mb-3 data-[type=1]:self-end data-[type=1]:bg-green-100/50"
+      data-message-id={message.id}
+      data-focused={!!isFocused}
+      className="group bg-secondary text-secondary-foreground relative max-w-[85%] min-w-[min(300px,100%)] rounded p-2 pt-2 pb-6 [overflow-wrap:anywhere] data-[focused=true]:ring-2 data-[focused=true]:ring-yellow-400 data-[reacted=true]:mb-3 data-[type=1]:self-end data-[type=1]:bg-green-100/50"
     >
       {onReply && (
         <Button
@@ -241,7 +251,7 @@ const ChatMessageItem: FC<MessageItemProps> = ({ message, contactId, contactName
       {message.replyTo && <MessageReplyPreview replyTo={message.replyTo} contactName={contactName} className="mb-2" />}
 
       {(message.contentType === WhatsappMessageContentType.TEXT || message.contentType === WhatsappMessageContentType.INTERACTIVE) && (
-        <MessageText message={message as WhatsappMessage<string>} />
+        <MessageText message={message as WhatsappMessage<string>} highlightTerm={highlightTerm} />
       )}
       {(message.contentType === WhatsappMessageContentType.CALL_PERMISSION_REQUEST ||
         message.contentType === WhatsappMessageContentType.CALL_PERMISSION_REPLY) && (
@@ -253,7 +263,11 @@ const ChatMessageItem: FC<MessageItemProps> = ({ message, contactId, contactName
       {message.contentType === WhatsappMessageContentType.DOCUMENT && <MessageDocument {...mediaProps} />}
       {message.contentType === WhatsappMessageContentType.STICKER && <MessageSticker {...mediaProps} />}
 
-      {message.caption && <p className="mt-1 text-sm break-words whitespace-pre-wrap">{message.caption}</p>}
+      {message.caption && (
+        <p className="mt-1 text-sm break-words whitespace-pre-wrap">
+          {highlightTerm ? <HighlightText text={message.caption} term={highlightTerm} /> : message.caption}
+        </p>
+      )}
 
       {message.contentType === WhatsappMessageContentType.CONTACTS && <MessageContact message={message as WhatsappMessage<string>} />}
 

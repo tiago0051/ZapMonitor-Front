@@ -1,14 +1,19 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, isSameYear, isToday, isYesterday } from "date-fns";
-import { ArrowDown } from "lucide-react";
+import { ArrowDown, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { AnimatePresence } from "motion/react";
 import { MessageItem } from "./components/messageItem";
 import { useContactMessages } from "./hooks/useContactMessages";
 import { contactDisplayName } from "@/pages/dashboard/whatsapp/contactDisplayName";
 
+export type ConversationSearchState = { term: string; messageId: string | null; nonce: number };
+
 type MessageListProps = {
   contact: WhatsappContactMessage;
   onReply?: (message: WhatsappMessage) => void;
+  search?: ConversationSearchState | null;
 };
 
 const dayKey = (date: string) => format(date, "yyyy-MM-dd");
@@ -19,10 +24,38 @@ const dayLabel = (date: string) => {
   return format(date, isSameYear(date, new Date()) ? "d 'de' MMMM" : "d 'de' MMMM 'de' yyyy");
 };
 
-export const MessageList = ({ contact, onReply }: MessageListProps) => {
-  const { scrollRef, onScrollChat, isFetching, messages, unseenCount, scrollToBottom } = useContactMessages({
+export const MessageList = ({ contact, onReply, search }: MessageListProps) => {
+  const { scrollRef, onScrollChat, isFetching, messages, unseenCount, scrollToBottom, loadUntilMessage } = useContactMessages({
     contact,
   });
+  // Resultado escolhido na busca: carrega as páginas antigas até ele e rola até a mensagem
+  const focusedId = search?.messageId ?? null;
+  const focusNonce = search?.nonce ?? 0;
+  const focusKey = focusedId ? `${focusedId}:${focusNonce}` : null;
+  const [settledFocusKey, setSettledFocusKey] = useState<string | null>(null);
+  const isJumping = !!focusKey && settledFocusKey !== focusKey;
+  useEffect(() => {
+    if (!focusedId) return;
+    let cancelled = false;
+    loadUntilMessage(focusedId).then((found) => {
+      if (cancelled) return;
+      setSettledFocusKey(`${focusedId}:${focusNonce}`);
+      if (!found) {
+        toast.info("Não foi possível mostrar esta mensagem na conversa");
+        return;
+      }
+      // Espera a página nova aparecer na tela
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          const element = scrollRef.current?.querySelector(`[data-message-id="${focusedId}"]`);
+          element?.scrollIntoView({ block: "center", behavior: "smooth" });
+        }),
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [focusedId, focusNonce, loadUntilMessage, scrollRef]);
 
   const contactName = contactDisplayName(contact, "Contato");
 
@@ -36,7 +69,15 @@ export const MessageList = ({ contact, onReply }: MessageListProps) => {
             const older = messages[index + 1];
             const isFirstOfDay = !older || dayKey(older.createdAt) !== dayKey(message.createdAt);
             const item = (
-              <MessageItem message={message} key={message.id} contactId={contact.id} contactName={contactName} onReply={onReply} />
+              <MessageItem
+                message={message}
+                key={message.id}
+                contactId={contact.id}
+                contactName={contactName}
+                onReply={onReply}
+                highlightTerm={search?.term || undefined}
+                isFocused={message.id === focusedId}
+              />
             );
             if (!isFirstOfDay) return [item];
 
@@ -64,6 +105,16 @@ export const MessageList = ({ contact, onReply }: MessageListProps) => {
             </div>
           ))}
       </div>
+
+      {isJumping && (
+        <div
+          role="status"
+          className="bg-background/95 absolute top-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border px-3 py-1 text-xs shadow-sm"
+        >
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          Carregando mensagens antigas...
+        </div>
+      )}
 
       {unseenCount > 0 && (
         <button

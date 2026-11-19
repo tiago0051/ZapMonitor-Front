@@ -121,6 +121,10 @@ export const whatsappService = {
     });
     return response.data;
   },
+  searchContactMessages: async ({ params, queries }: SearchContactMessagesRequestData): Promise<PaginatedResponse<WhatsappMessageSearchResult>> => {
+    const response = await api.get(`/client/${params.clientId}/whatsapp/contact/${params.contactId}/message/search`, { params: queries });
+    return response.data;
+  },
   getFileDocumentUploadUrl: async ({
     body,
     params,

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Header } from "./components/header";
-import { MessageList } from "./components/messageList";
+import { MessageList, type ConversationSearchState } from "./components/messageList";
+import { ConversationSearch } from "./components/conversationSearch";
 import { useContactService } from "./hooks/useContactService";
 import { useServiceActions } from "./hooks/useServiceActions";
 import { useChatSubscription } from "./hooks/useChatSubscription";
@@ -38,6 +39,10 @@ export const ChatView = ({ contact, onServiceAssumed, onBack, onShowInfo }: Chat
 
   useChatSubscription(contact.id);
 
+  // Busca dentro da conversa (lupa do cabeçalho); fecha ao trocar de contato porque o ChatView é recriado
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [search, setSearch] = useState<ConversationSearchState | null>(null);
+
   // Alt+Shift+A assume, Alt+Shift+E encerra e Alt+Shift+T transfere (fora de campos de texto)
   useWindowKeydown((event) => {
     if (!canRunScreenShortcut(event)) return;
@@ -61,9 +66,17 @@ export const ChatView = ({ contact, onServiceAssumed, onBack, onShowInfo }: Chat
 
   return (
     <div className={"flex h-full flex-col overflow-hidden"}>
-      <Header contact={contact} contactService={contactService} serviceActions={serviceActions} onBack={onBack} onShowInfo={onShowInfo} />
+      <Header
+        contact={contact}
+        contactService={contactService}
+        serviceActions={serviceActions}
+        onBack={onBack}
+        onShowInfo={onShowInfo}
+        onSearch={() => setIsSearchOpen((open) => !open)}
+      />
+      {isSearchOpen && <ConversationSearch contactId={contact.id} onChange={setSearch} onClose={() => setIsSearchOpen(false)} />}
       {contactService?.transferNote && <TransferNoteBanner transferNote={contactService.transferNote} />}
-      <MessageList contact={contact} onReply={canSendMessage ? setReplyingTo : undefined} />
+      <MessageList contact={contact} onReply={canSendMessage ? setReplyingTo : undefined} search={isSearchOpen ? search : null} />
       <ChatComposer
         contact={contact}
         contactService={contactService}
