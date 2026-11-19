@@ -1,25 +1,16 @@
 import { parsePastedList, type AudienceRow, type VariableMapping } from "./broadcastUtils";
 
 export type AudienceSources = {
-  tags: AudienceRow[];
-  crm: AudienceRow[];
+  // Pessoas do CRM vêm por segmento, resolvido no servidor; planilha e lista colada ficam no navegador
+  segment: SegmentSelection | null;
   csv: { fileName: string; headers: string[]; rows: string[][]; phoneColumn: string; nameColumn: string } | null;
   pasted: string;
 };
 
-export const emptyAudienceSources: AudienceSources = { tags: [], crm: [], csv: null, pasted: "" };
+export const emptyAudienceSources: AudienceSources = { segment: null, csv: null, pasted: "" };
 
 export const selectClassName =
   "border-input dark:bg-input/30 focus-visible:border-ring focus-visible:ring-ring/50 flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-base shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm";
-
-export const fromContact = (contact: BroadcastAudienceContact): AudienceRow => ({
-  phoneNumber: contact.phoneNumber,
-  name: contact.name,
-  surname: contact.surname,
-  dealTitle: contact.dealTitle,
-  fields: contact.fields,
-  columns: {},
-});
 
 export const guessColumn = (headers: string[], pattern: RegExp) => headers.find((header) => pattern.test(header.toLowerCase())) ?? "";
 
@@ -39,12 +30,8 @@ export const csvRows = (csv: AudienceSources["csv"]): AudienceRow[] => {
   }));
 };
 
-export const allAudienceRows = (sources: AudienceSources) => [
-  ...sources.crm,
-  ...sources.tags,
-  ...csvRows(sources.csv),
-  ...parsePastedList(sources.pasted),
-];
+/** Pessoas da planilha e da lista colada (as do segmento o servidor resolve). */
+export const allAudienceRows = (sources: AudienceSources) => [...csvRows(sources.csv), ...parsePastedList(sources.pasted)];
 
 export const defaultMapping = (parameters: WhatsappTemplateParameter[]): Record<string, VariableMapping> =>
   Object.fromEntries(

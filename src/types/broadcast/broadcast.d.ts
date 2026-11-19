@@ -97,3 +97,35 @@ type BroadcastRecipientInput = {
 };
 
 type BroadcastPage<T> = { total: number; page: number; take: number; items: T[] };
+
+/** Segmento do disparo com o mapeamento das variáveis; o servidor resolve as pessoas. */
+type BroadcastSegmentInput = {
+  segmentId?: string;
+  rules?: SegmentRules;
+  // Mesmo formato do passo de variáveis: { "body.1": { source: { kind: "firstName" }, fallback: "" } }
+  mapping: Record<string, unknown>;
+};
+
+type BroadcastAudiencePreviewInput = {
+  templateId: string;
+  segment?: BroadcastSegmentInput;
+  // Telefones já conferidos da planilha e da lista colada
+  phones?: string[];
+  frequencyCapDays?: number;
+};
+
+type BroadcastAudiencePreview = {
+  segment: {
+    total: number;
+    ready: number;
+    noPhone: number;
+    invalid: number;
+    missingVariables: number;
+    sample: { phoneNumber: string; name: string | null; variables: Record<string, string> } | null;
+  } | null;
+  invalid: number;
+  duplicates: number;
+  optedOut: number;
+  frequencyCap: number;
+  willReceive: number;
+};

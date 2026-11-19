@@ -37,6 +37,7 @@ export const broadcastService = {
       frequencyCapDays?: number;
       consentConfirmed?: boolean;
       recipients: BroadcastRecipientInput[];
+      segment?: BroadcastSegmentInput;
       start?: boolean;
     },
   ): Promise<Broadcast> => {
@@ -53,13 +54,8 @@ export const broadcastService = {
     return response.data;
   },
 
-  findAudience: async (
-    clientId: string,
-    body: { categoryIds?: string[]; pipelineId?: string; stageIds?: string[] },
-  ): Promise<BroadcastAudienceContact[]> => {
-    const response = await api.post(`${base(clientId)}/audience`, body);
-    return response.data;
-  },
+  previewAudience: async (clientId: string, body: BroadcastAudiencePreviewInput): Promise<BroadcastAudiencePreview> =>
+    (await api.post(`${base(clientId)}/audience/preview`, body)).data,
 
   sendTest: async (
     clientId: string,
