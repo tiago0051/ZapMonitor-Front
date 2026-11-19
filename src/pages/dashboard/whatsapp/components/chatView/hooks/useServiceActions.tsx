@@ -8,15 +8,18 @@ import { toast } from "sonner";
 import { markSelfAssigned } from "../../../notifications/selfAssignedContacts";
 
 interface UseServiceActionsProps {
-  contact: WhatsappContactMessage;
+  // Só o id é usado: a Gestão transfere sem ter a conversa carregada
+  contact: Pick<WhatsappContactMessage, "id">;
   contactService?: WhatsappContactService;
   onServiceAssumed?: () => void;
+  // Depois de passar o atendimento para outra pessoa ou grupo
+  onTransferred?: () => void;
 }
 
 type OptimisticContext = { previousContactService?: WhatsappContactService };
 
 /** Ações sobre o atendimento do contato, compartilhadas pelo cabeçalho e pela barra de mensagem do chat. */
-export const useServiceActions = ({ contact, contactService, onServiceAssumed }: UseServiceActionsProps) => {
+export const useServiceActions = ({ contact, contactService, onServiceAssumed, onTransferred }: UseServiceActionsProps) => {
   const { client } = useClientContext();
   const { user } = useUserContext();
   const queryClient = useQueryClient();
@@ -124,6 +127,7 @@ export const useServiceActions = ({ contact, contactService, onServiceAssumed }:
     onSuccess: (_data, variables) => {
       toast.success(`Atendimento transferido para ${variables.userName}`);
       invalidateContactService();
+      onTransferred?.();
     },
     onError: rollbackContactService,
   });
@@ -135,6 +139,7 @@ export const useServiceActions = ({ contact, contactService, onServiceAssumed }:
     onSuccess: (_data, variables) => {
       toast.success(`Contato enviado para a fila do grupo ${variables.groupName}`);
       invalidateContactService();
+      onTransferred?.();
     },
     onError: rollbackContactService,
   });

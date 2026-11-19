@@ -5,8 +5,10 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
@@ -15,6 +17,7 @@ import { useUserContext } from "@/context/UserContext/userContext";
 import {
   FiActivity,
   FiBook,
+  FiHome,
   FiBriefcase,
   FiCalendar,
   FiColumns,
@@ -47,10 +50,11 @@ import { useQuery } from "@tanstack/react-query";
 import { clientService } from "@/services/api/clientService";
 import { useBaseUrl } from "@/hooks/use-baseUrl";
 import { useClientContext } from "@/context/ClientContext/clientContext";
+import { useMenuBadges } from "@/hooks/use-menu-badges";
 
-// Itens sem permissão ficam visíveis para qualquer membro do cliente
-// Itens do CRM também dependem de o plano incluir o módulo
-const navMain: {
+type BadgeKey = keyof MenuBadges;
+
+type NavItem = {
   title: string;
   icon: React.ComponentType;
   url: string;
@@ -59,94 +63,91 @@ const navMain: {
   anyPermission?: Permission[];
   requiresCrm?: boolean;
   requiresAds?: boolean;
-}[] = [
+  // Contadores somados no selo do item
+  badges?: BadgeKey[];
+  // Texto do selo para quem usa leitor de tela e no balão do menu encolhido
+  badgeLabel?: string;
+};
+
+// Itens sem permissão ficam visíveis para qualquer membro do cliente; os do CRM e de anúncios também dependem do plano.
+// Seções sem nenhum item visível somem
+const navSections: { label: string | null; items: NavItem[] }[] = [
   {
-    title: "Assistente",
-    icon: FiZap,
-    url: "assistant",
+    label: null,
+    items: [
+      { title: "Início", icon: FiHome, url: "" },
+      { title: "Assistente", icon: FiZap, url: "assistant" },
+    ],
   },
   {
-    title: "E-mails",
-    icon: FiMail,
-    url: "email",
-    permission: "email.view",
+    label: "Atendimento",
+    items: [
+      {
+        title: "WhatsApp",
+        icon: FaWhatsapp,
+        url: "whatsapp",
+        permission: "whatsapp.chat",
+        badges: ["queueWaiting"],
+        badgeLabel: "esperando na fila",
+      },
+      { title: "Contatos", icon: FiBook, url: "contacts", permission: "contacts.view" },
+      {
+        title: "CRM",
+        icon: FiColumns,
+        url: "crm",
+        permission: "crm.view",
+        requiresCrm: true,
+        badges: ["crmTasksDue"],
+        badgeLabel: "tarefas vencidas ou para hoje",
+      },
+      { title: "E-mails", icon: FiMail, url: "email", permission: "email.view" },
+    ],
   },
   {
-    title: "WhatsApp",
-    icon: FaWhatsapp,
-    url: "whatsapp",
-    permission: "whatsapp.chat",
+    label: "Marketing",
+    items: [
+      {
+        title: "Planejamento",
+        icon: FiCalendar,
+        url: "planner",
+        permission: "planner.view",
+        badges: ["plannerTasksDue"],
+        badgeLabel: "tarefas vencidas ou para hoje",
+      },
+      { title: "Estratégias", icon: FiTarget, url: "strategies", permission: "strategies.view" },
+      { title: "Disparos", icon: FiSend, url: "broadcasts", permission: "broadcasts.view" },
+      {
+        title: "Anúncios",
+        icon: FiSpeaker,
+        url: "ads",
+        permission: "ads.view",
+        requiresAds: true,
+        badges: ["adsApprovals"],
+        badgeLabel: "mudanças esperando aprovação",
+      },
+      {
+        title: "Postagens",
+        icon: FiInstagram,
+        url: "posts",
+        permission: "posts.view",
+        requiresAds: true,
+        badges: ["postsApprovals"],
+        badgeLabel: "postagens esperando aprovação",
+      },
+      { title: "Estúdio", icon: FiImage, url: "studio", anyPermission: ["ads.manage", "posts.manage"], requiresAds: true },
+    ],
   },
   {
-    title: "Contatos",
-    icon: FiBook,
-    url: "contacts",
-    permission: "contacts.view",
-  },
-  {
-    title: "Planejamento",
-    icon: FiCalendar,
-    url: "planner",
-    permission: "planner.view",
-  },
-  {
-    title: "Estratégias",
-    icon: FiTarget,
-    url: "strategies",
-    permission: "strategies.view",
-  },
-  {
-    title: "Campanhas",
-    icon: FiSend,
-    url: "broadcasts",
-    permission: "broadcasts.view",
-  },
-  {
-    title: "CRM",
-    icon: FiColumns,
-    url: "crm",
-    permission: "crm.view",
-    requiresCrm: true,
-  },
-  {
-    title: "Anúncios",
-    icon: FiSpeaker,
-    url: "ads",
-    permission: "ads.view",
-    requiresAds: true,
-  },
-  {
-    title: "Postagens",
-    icon: FiInstagram,
-    url: "posts",
-    permission: "posts.view",
-    requiresAds: true,
-  },
-  {
-    title: "Estúdio",
-    icon: FiImage,
-    url: "studio",
-    anyPermission: ["ads.manage", "posts.manage"],
-    requiresAds: true,
-  },
-  {
-    title: "Gestão",
-    icon: FiActivity,
-    url: "management",
-    anyPermission: ["management.view", "reports.view"],
-  },
-  {
-    title: "Usuários",
-    icon: FiUsers,
-    url: "members",
-    permission: "members.manage",
-  },
-  {
-    title: "Configurações",
-    icon: FiSettings,
-    url: "configuration",
+    label: "Gestão",
+    items: [
+      { title: "Gestão", icon: FiActivity, url: "management", anyPermission: ["management.view", "reports.view"] },
+      { title: "Usuários", icon: FiUsers, url: "members", permission: "members.manage" },
+      { title: "Configurações", icon: FiSettings, url: "configuration" },
+    ],
   },
 ];
+
+const formatBadge = (count: number) => (count > 99 ? "99+" : String(count));
 
 // Até duas iniciais do nome, para o avatar do menu da conta
 const initialsOf = (name: string | undefined) =>
@@ -177,7 +178,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   });
   const canSwitchClient = (findAllClientQuery.data?.length ?? 0) > 1;
 
-  const isActive = (url: string) => pathname === url || pathname.startsWith(`${url}/`);
+  const badges = useMenuBadges();
+
+  // Início só fica marcado na própria tela de início, não nas telas dentro dela
+  const isActive = (url: string) => (url === baseUrl ? pathname === url : pathname === url || pathname.startsWith(`${url}/`));
+  const isVisible = (item: NavItem) =>
+    (!item.permission || can(item.permission)) &&
+    (!item.anyPermission || item.anyPermission.some((permission) => can(permission))) &&
+    (!item.requiresCrm || canUseCrm) &&
+    (!item.requiresAds || canUseAds);
+  const badgeCount = (item: NavItem) => (item.badges ?? []).reduce((total, key) => total + (badges?.[key] ?? 0), 0);
 
   return (
     <Sidebar variant="floating" collapsible="icon" {...props}>
@@ -211,29 +221,47 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           )}
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarMenu className="gap-1">
-            {navMain
-              .filter(
-                (item) =>
-                  (!item.permission || can(item.permission)) &&
-                  (!item.anyPermission || item.anyPermission.some((permission) => can(permission))) &&
-                  (!item.requiresCrm || canUseCrm) &&
-                  (!item.requiresAds || canUseAds),
-              )
-              .map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild tooltip={item.title} isActive={isActive(`${baseUrl}/${item.url}`)}>
-                    <Link to={`${baseUrl}/${item.url}`} className="font-medium">
-                      <item.icon />
-                      {item.title}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-          </SidebarMenu>
-        </SidebarGroup>
+      <SidebarContent className="gap-0">
+        {navSections.map((section) => {
+          const items = section.items.filter(isVisible);
+          if (items.length === 0) return null;
+
+          return (
+            <SidebarGroup key={section.label ?? "main"} className="py-1">
+              {section.label && <SidebarGroupLabel>{section.label}</SidebarGroupLabel>}
+              <SidebarMenu className="gap-1">
+                {items.map((item) => {
+                  const url = item.url ? `${baseUrl}/${item.url}` : baseUrl;
+                  const count = badgeCount(item);
+                  const badgeText = count > 0 ? `${formatBadge(count)} ${item.badgeLabel ?? ""}`.trim() : null;
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild tooltip={badgeText ? `${item.title} · ${badgeText}` : item.title} isActive={isActive(url)}>
+                        <Link to={url} className="font-medium">
+                          <item.icon />
+                          <span>{item.title}</span>
+                          {badgeText && <span className="sr-only">, {badgeText}</span>}
+                        </Link>
+                      </SidebarMenuButton>
+                      {count > 0 && (
+                        <>
+                          <SidebarMenuBadge className="bg-primary text-primary-foreground rounded-full px-1.5" aria-hidden>
+                            {formatBadge(count)}
+                          </SidebarMenuBadge>
+                          {/* Menu encolhido: só um ponto no ícone; o número fica no balão */}
+                          <span
+                            aria-hidden
+                            className="bg-primary pointer-events-none absolute top-1 right-1 hidden size-2 rounded-full group-data-[collapsible=icon]:block"
+                          />
+                        </>
+                      )}
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroup>
+          );
+        })}
       </SidebarContent>
       {/* Conta, troca de cliente e painéis num menu só: o rodapé ocupa uma linha e sobra espaço para o menu principal */}
       <SidebarFooter>

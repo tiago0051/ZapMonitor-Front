@@ -14,6 +14,7 @@ type Permission =
   | "aiAgents.manage"
   | "templates.manage"
   | "categories.manage"
+  | "quickReplies.manage"
   | "channels.manage"
   | "googleCalendar.manage"
   | "api.manage"

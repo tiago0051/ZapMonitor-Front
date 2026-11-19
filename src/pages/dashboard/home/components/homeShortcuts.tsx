@@ -58,14 +58,14 @@ const shortcutGroups: { label: string; shortcuts: Shortcut[] }[] = [
     shortcuts: [
       { title: "CRM", description: "Funil de vendas e negócios", icon: Columns3, url: "crm", permission: "crm.view", requiresCrm: true },
       {
-        title: "Nova campanha",
-        description: "Disparo em massa por WhatsApp",
+        title: "Novo disparo",
+        description: "Mensagem em massa pelo WhatsApp",
         icon: Send,
         url: "broadcasts/new",
         permission: "broadcasts.send",
       },
       {
-        title: "Campanhas",
+        title: "Disparos",
         description: "Disparos agendados e enviados",
         icon: Megaphone,
         url: "broadcasts",

@@ -121,6 +121,25 @@ export const whatsappService = {
     });
     return response.data;
   },
+  findInternalNotes: async ({ params }: FindInternalNotesRequestData): Promise<WhatsappInternalNote[]> => {
+    const response = await api.get(`/client/${params.clientId}/whatsapp/contact/${params.contactId}/notes`);
+    return response.data;
+  },
+  createInternalNote: async ({ params, body }: CreateInternalNoteRequestData): Promise<WhatsappInternalNote> => {
+    const response = await api.post(`/client/${params.clientId}/whatsapp/contact/${params.contactId}/notes`, body);
+    return response.data;
+  },
+  findMentionableUsers: async ({ params }: FindMentionableUsersRequestData): Promise<WhatsappNoteUser[]> => {
+    const response = await api.get(`/client/${params.clientId}/whatsapp/notes/mentionable`);
+    return response.data;
+  },
+  searchContactMessages: async ({
+    params,
+    queries,
+  }: SearchContactMessagesRequestData): Promise<PaginatedResponse<WhatsappMessageSearchResult>> => {
+    const response = await api.get(`/client/${params.clientId}/whatsapp/contact/${params.contactId}/message/search`, { params: queries });
+    return response.data;
+  },
   getFileDocumentUploadUrl: async ({
     body,
     params,

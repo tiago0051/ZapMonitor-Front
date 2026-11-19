@@ -208,6 +208,8 @@ type CreateWhatsappMessageRequestBody = {
   text?: string;
   fileId?: string;
   replyToMessageId?: string;
+  // Legenda de imagem, vídeo ou documento
+  caption?: string;
 };
 //#endregion
 
@@ -412,3 +414,17 @@ type CreateWhatsappEmbeddedSignupRequestBody = {
 type DescribeWhatsappMessageMediaRequestData = {
   params: { clientId: string; contactId: string; messageId: string };
 };
+
+type SearchContactMessagesRequestData = {
+  params: { clientId: string; contactId: string };
+  queries: PaginateRequestQuery & { text: string };
+};
+
+type FindInternalNotesRequestData = { params: { clientId: string; contactId: string } };
+
+type CreateInternalNoteRequestData = {
+  params: { clientId: string; contactId: string };
+  body: { content: string; mentionedUserIds: string[] };
+};
+
+type FindMentionableUsersRequestData = { params: { clientId: string } };

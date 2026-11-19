@@ -17,7 +17,7 @@ const TRANSFER_NOTE_MAX_LENGTH = 500;
 type TransferTarget = "user" | "group";
 
 type TransferDialogProps = {
-  contact: WhatsappContactMessage;
+  contact: Pick<WhatsappContactMessage, "id">;
   contactName: string;
   serviceActions: ServiceActions;
 };

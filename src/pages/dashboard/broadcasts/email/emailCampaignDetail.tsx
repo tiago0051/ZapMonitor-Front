@@ -162,7 +162,7 @@ export const EmailCampaignDetail = () => {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-2">
           <Button variant="ghost" size="icon" asChild>
-            <Link to={`${baseUrl}/broadcasts?canal=email`} aria-label="Voltar para as campanhas">
+            <Link to={`${baseUrl}/broadcasts?canal=email`} aria-label="Voltar para os disparos">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>

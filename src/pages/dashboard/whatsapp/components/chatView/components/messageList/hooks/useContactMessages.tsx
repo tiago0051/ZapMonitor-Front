@@ -137,6 +137,30 @@ export const useContactMessages = ({ contact }: UseContactMessagesProps) => {
     };
   }, [contact.id, isConnected, socket, queryClient]);
 
+  const messagesQueryKey = useMemo(() => [`contact-${contact.id}`, "findAllWhatsappMessagesByContact", contact.id], [contact.id]);
+
+  /**
+   * Carrega as páginas mais antigas até a mensagem aparecer (resultado da busca). Devolve false se ela não existir mais
+   * ou passar do limite de páginas.
+   */
+  const loadUntilMessage = useCallback(
+    async (messageId: string) => {
+      const MAX_PAGES = 200;
+      for (let attempt = 0; attempt < MAX_PAGES; attempt += 1) {
+        const data = queryClient.getQueryData<InfiniteData<PaginatedResponse<WhatsappMessage>>>(messagesQueryKey);
+        if (data?.pages.some((page) => page.items.some((message) => message.id === messageId))) return true;
+
+        const lastPage = data?.pages[data.pages.length - 1];
+        if (data && !lastPage?.canNextPage) return false;
+
+        const result = await fetchNextPage({ cancelRefetch: false });
+        if (result.isError) return false;
+      }
+      return false;
+    },
+    [queryClient, messagesQueryKey, fetchNextPage],
+  );
+
   const messages = useMemo(() => {
     const fetchedMessages = findAllWhatsappMessagesByContact.data?.pages.flatMap((page) => page.items) ?? [];
     const combined = [...newMessagesList, ...fetchedMessages];
@@ -158,5 +182,8 @@ export const useContactMessages = ({ contact }: UseContactMessagesProps) => {
     messages,
     unseenCount,
     scrollToBottom,
+    loadUntilMessage,
+    hasOlderMessages: !!hasNextPage,
+    isLoadingOlder: findAllWhatsappMessagesByContact.isFetchingNextPage,
   };
 };

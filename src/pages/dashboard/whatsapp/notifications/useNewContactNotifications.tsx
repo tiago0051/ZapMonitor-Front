@@ -30,6 +30,16 @@ type ServiceTransferred = {
   note: string | null;
 };
 
+// Colega mencionou alguém numa nota interna; cada tela confere se é o usuário logado
+type NoteMention = {
+  noteId: string;
+  contactId: string;
+  contact: WhatsappContactMessage;
+  mentionedUserIds: string[];
+  fromName: string;
+  content: string;
+};
+
 // A transferência só enriquece o aviso que vem logo em seguida
 const TRANSFER_MATCH_WINDOW_MS = 30 * 1000;
 
@@ -195,11 +205,23 @@ export const useNewContactNotifications = ({ serviceGroupIds, selectedContactId,
       if (isNewIncomingMessage) notify(contact, "mine", `Mensagem de ${name}`, contact.messageContent);
     };
 
+    // Menção vale mesmo sem preferência marcada: alguém chamou a pessoa pelo nome
+    const handleNoteMention = (mention: NoteMention) => {
+      const { selectedContactId, userId } = latest.current;
+      if (!userId || !mention.mentionedUserIds.includes(userId)) return;
+      if (document.visibilityState === "visible" && selectedContactId === mention.contactId) return;
+
+      const name = contactDisplayName(mention.contact, mention.contact.phoneNumber);
+      notify(mention.contact, "all", `${mention.fromName} mencionou você`, `${name}: ${mention.content}`);
+    };
+
     socket.on("service:transferred", handleServiceTransferred);
     socket.on("contacts:update", handleContactUpdate);
+    socket.on("note:mention", handleNoteMention);
     return () => {
       socket.off("service:transferred", handleServiceTransferred);
       socket.off("contacts:update", handleContactUpdate);
+      socket.off("note:mention", handleNoteMention);
     };
   }, [socket]);
 };

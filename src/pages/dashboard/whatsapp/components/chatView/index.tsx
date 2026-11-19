@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useRef, useState, type DragEvent } from "react";
+import { Upload } from "lucide-react";
 import { Header } from "./components/header";
-import { MessageList } from "./components/messageList";
+import { MessageList, type ConversationSearchState } from "./components/messageList";
+import { ConversationSearch } from "./components/conversationSearch";
 import { useContactService } from "./hooks/useContactService";
 import { useServiceActions } from "./hooks/useServiceActions";
 import { useChatSubscription } from "./hooks/useChatSubscription";
@@ -38,6 +40,10 @@ export const ChatView = ({ contact, onServiceAssumed, onBack, onShowInfo }: Chat
 
   useChatSubscription(contact.id);
 
+  // Busca dentro da conversa (lupa do cabeçalho); fecha ao trocar de contato porque o ChatView é recriado
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [search, setSearch] = useState<ConversationSearchState | null>(null);
+
   // Alt+Shift+A assume, Alt+Shift+E encerra e Alt+Shift+T transfere (fora de campos de texto)
   useWindowKeydown((event) => {
     if (!canRunScreenShortcut(event)) return;
@@ -59,17 +65,68 @@ export const ChatView = ({ contact, onServiceAssumed, onBack, onShowInfo }: Chat
 
   const { canSendMessage } = canReplyToContact(contact, contactService);
 
+  // Arrastar arquivos para a conversa: a caixa de mensagem registra em addFilesRef quem recebe
+  const addFilesRef = useRef<((files: File[]) => void) | null>(null);
+  const [isDraggingFiles, setIsDraggingFiles] = useState(false);
+  const dragDepth = useRef(0);
+  const hasFiles = (event: DragEvent) => Array.from(event.dataTransfer.types).includes("Files");
+
+  const onDragEnter = (event: DragEvent) => {
+    if (!hasFiles(event)) return;
+    event.preventDefault();
+    dragDepth.current += 1;
+    setIsDraggingFiles(true);
+  };
+  const onDragLeave = (event: DragEvent) => {
+    if (!hasFiles(event)) return;
+    dragDepth.current = Math.max(0, dragDepth.current - 1);
+    if (dragDepth.current === 0) setIsDraggingFiles(false);
+  };
+  const onDragOver = (event: DragEvent) => {
+    if (hasFiles(event)) event.preventDefault();
+  };
+  const onDrop = (event: DragEvent) => {
+    if (!hasFiles(event)) return;
+    event.preventDefault();
+    dragDepth.current = 0;
+    setIsDraggingFiles(false);
+    const files = Array.from(event.dataTransfer.files);
+    if (addFilesRef.current) addFilesRef.current(files);
+    else toast.info("Assuma o atendimento para enviar arquivos");
+  };
+
   return (
-    <div className={"flex h-full flex-col overflow-hidden"}>
-      <Header contact={contact} contactService={contactService} serviceActions={serviceActions} onBack={onBack} onShowInfo={onShowInfo} />
+    <div
+      className={"relative flex h-full flex-col overflow-hidden"}
+      onDragEnter={onDragEnter}
+      onDragLeave={onDragLeave}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+    >
+      {isDraggingFiles && (
+        <div className="bg-background/85 border-primary pointer-events-none absolute inset-2 z-20 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed text-sm font-medium">
+          <Upload className="text-primary h-6 w-6" />
+          {canSendMessage ? "Solte para anexar à mensagem" : "Assuma o atendimento para enviar arquivos"}
+        </div>
+      )}
+      <Header
+        contact={contact}
+        contactService={contactService}
+        serviceActions={serviceActions}
+        onBack={onBack}
+        onShowInfo={onShowInfo}
+        onSearch={() => setIsSearchOpen((open) => !open)}
+      />
+      {isSearchOpen && <ConversationSearch contactId={contact.id} onChange={setSearch} onClose={() => setIsSearchOpen(false)} />}
       {contactService?.transferNote && <TransferNoteBanner transferNote={contactService.transferNote} />}
-      <MessageList contact={contact} onReply={canSendMessage ? setReplyingTo : undefined} />
+      <MessageList contact={contact} onReply={canSendMessage ? setReplyingTo : undefined} search={isSearchOpen ? search : null} />
       <ChatComposer
         contact={contact}
         contactService={contactService}
         serviceActions={serviceActions}
         replyingTo={replyingTo}
         onCancelReply={() => setReplyingTo(null)}
+        addFilesRef={addFilesRef}
       />
     </div>
   );

@@ -6,6 +6,11 @@ export const managementService = {
     return response.data;
   },
 
+  findQueue: async ({ params }: FindManagementInProgressRequestData): Promise<ManagementQueue> => {
+    const response = await api.get(`/client/${params.clientId}/management/queue`);
+    return response.data;
+  },
+
   findAttendedSummary: async ({ params, queries }: FindManagementAttendedSummaryRequestData): Promise<ManagementAttendantSummary[]> => {
     const response = await api.get(`/client/${params.clientId}/management/attended`, { params: queries });
     return response.data;

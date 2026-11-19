@@ -34,3 +34,12 @@ type WhatsappTemplateMessageView = {
   // QUICK_REPLY, URL, PHONE_NUMBER, COPY_CODE...
   buttons: { type: string; text: string }[];
 };
+
+// Resultado da busca dentro da conversa
+type WhatsappMessageSearchResult = {
+  id: string;
+  type: number;
+  createdAt: string;
+  // Trecho em volta do texto procurado
+  snippet: string;
+};
