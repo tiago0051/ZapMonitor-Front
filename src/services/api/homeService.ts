@@ -5,4 +5,8 @@ export const homeService = {
     const response = await api.get<HomeOverview>(`/client/${params.clientId}/home/overview`, { params: queries });
     return response.data;
   },
+  findMenuBadges: async ({ params, queries }: FindHomeOverviewRequestData): Promise<MenuBadges> => {
+    const response = await api.get<MenuBadges>(`/client/${params.clientId}/home/badges`, { params: queries });
+    return response.data;
+  },
 };

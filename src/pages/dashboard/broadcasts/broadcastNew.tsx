@@ -285,12 +285,12 @@ export const BroadcastNew = () => {
     <div className="flex h-full flex-col gap-4 overflow-auto p-4 md:p-6">
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" asChild>
-          <Link to={`${baseUrl}/broadcasts`} aria-label="Voltar para as campanhas">
+          <Link to={`${baseUrl}/broadcasts`} aria-label="Voltar para os disparos">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold">Nova campanha</h1>
+          <h1 className="text-2xl font-semibold">Novo disparo pelo WhatsApp</h1>
           <p className="text-muted-foreground text-sm">Disparo de um modelo aprovado pela Meta para uma lista de pessoas.</p>
         </div>
       </div>

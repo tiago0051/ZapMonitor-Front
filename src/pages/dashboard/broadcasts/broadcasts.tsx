@@ -214,7 +214,7 @@ export const Broadcasts = () => {
   return (
     <div className="flex h-full flex-col gap-4 overflow-auto p-4 md:p-6">
       <div>
-        <h1 className="text-2xl font-semibold">Campanhas</h1>
+        <h1 className="text-2xl font-semibold">Disparos</h1>
         <p className="text-muted-foreground text-sm">
           Disparos em massa pelo WhatsApp ou por e-mail, com entrega, leitura, cliques e respostas de cada pessoa.
         </p>

@@ -76,7 +76,7 @@ const buildMetrics = (metrics: HomeMetrics): Metric[] => {
       ? null
       : {
           id: "broadcasts",
-          label: "Campanhas ativas",
+          label: "Disparos ativos",
           value: formatNumber(metrics.activeBroadcasts),
           detail: "Agendadas, enviando ou pausadas",
           icon: Megaphone,
