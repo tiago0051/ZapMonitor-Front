@@ -18,6 +18,7 @@ import { OptOutList } from "./components/optOutList";
 import { EmailSuppressions } from "@/pages/dashboard/configuration/emailSending/emailSenders";
 import { EmailCampaignList } from "./email/emailCampaignList";
 import { EmailSequenceList } from "./sequences/emailSequenceList";
+import { DateAutomationList } from "./automations/dateAutomationList";
 
 const TAKE = 20;
 
@@ -134,6 +135,9 @@ const BroadcastList = () => {
                     {broadcast.source === "API" && (
                       <span className="bg-muted text-muted-foreground rounded px-1.5 py-0.5 text-[11px]">API</span>
                     )}
+                    {broadcast.source === "AUTOMATION" && (
+                      <span className="bg-muted text-muted-foreground rounded px-1.5 py-0.5 text-[11px]">Automação por data</span>
+                    )}
                   </div>
                   <p className="text-muted-foreground truncate text-xs">
                     {broadcast.templateName} · {broadcast.configurationPhoneNumber ?? "número removido"} ·{" "}
@@ -227,6 +231,7 @@ export const Broadcasts = () => {
           <TabsTrigger value="sequencias">
             Sequências<span className="hidden sm:inline"> de e-mail</span>
           </TabsTrigger>
+          <TabsTrigger value="datas">Por data</TabsTrigger>
           <TabsTrigger value="optOut">Descadastrados</TabsTrigger>
         </TabsList>
         <TabsContent value="whatsapp" className="pt-2">
@@ -237,6 +242,9 @@ export const Broadcasts = () => {
         </TabsContent>
         <TabsContent value="sequencias" className="pt-2">
           <EmailSequenceList />
+        </TabsContent>
+        <TabsContent value="datas" className="pt-2">
+          <DateAutomationList />
         </TabsContent>
         <TabsContent value="optOut" className="pt-2">
           <OptOutsByChannel />

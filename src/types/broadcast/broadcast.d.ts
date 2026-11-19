@@ -56,7 +56,7 @@ type Broadcast = {
   id: string;
   name: string;
   status: BroadcastStatus;
-  source: "SCREEN" | "API";
+  source: "SCREEN" | "API" | "AUTOMATION";
   configurationId: string;
   configurationPhoneNumber: string | null;
   templateId: string | null;

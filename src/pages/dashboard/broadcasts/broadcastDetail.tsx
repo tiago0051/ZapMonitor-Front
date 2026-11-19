@@ -159,6 +159,7 @@ export const BroadcastDetail = () => {
               {broadcast.templateName} ({broadcast.templateLanguage}) · {broadcast.configurationPhoneNumber ?? "número removido"}
               {broadcast.createdByName && ` · criada por ${broadcast.createdByName}`}
               {broadcast.source === "API" && " · pela API"}
+              {broadcast.source === "AUTOMATION" && " · pela automação por data"}
               {broadcast.startedAt && ` · início ${formatDate(broadcast.startedAt)}`}
               {broadcast.finishedAt && ` · fim ${formatDate(broadcast.finishedAt)}`}
             </p>

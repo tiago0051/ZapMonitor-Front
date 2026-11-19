@@ -38,7 +38,7 @@ type EmailEnrollment = {
   stepIndex: number;
   nextRunAt: string | null;
   stoppedReason: string | null;
-  source: "MANUAL" | "FLOW" | "BULK" | "STAGE";
+  source: "MANUAL" | "FLOW" | "BULK" | "STAGE" | "AUTOMATION";
   lastSentAt: string | null;
   finishedAt: string | null;
   createdAt: string;

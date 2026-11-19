@@ -547,6 +547,7 @@ const enrollmentSourceLabel: Partial<Record<EmailEnrollment["source"], string>> 
   FLOW: "pelo fluxo",
   BULK: "em lote",
   STAGE: "pela etapa do funil",
+  AUTOMATION: "pela automação por data",
 };
 
 const percent = (part: number, base: number) => (base > 0 ? ` (${Math.round((part / base) * 100)}%)` : "");
