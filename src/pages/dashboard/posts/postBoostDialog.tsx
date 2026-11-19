@@ -71,8 +71,8 @@ export const PostBoostDialog: FC<{ post: SocialPost; open: boolean; onOpenChange
         <DialogHeader>
           <DialogTitle>Impulsionar no WhatsApp</DialogTitle>
           <DialogDescription>
-            A {post.format === "REEL" ? "mídia do reel" : "imagem"} e a legenda viram um anúncio que leva as pessoas a conversar com você no
-            WhatsApp. Nasce como rascunho: nada é gasto até você revisar e ativar.
+            A {post.format === "REEL" ? "mídia do reel" : post.format === "STORY" ? "mídia do story" : "imagem"} e a legenda viram um
+            anúncio que leva as pessoas a conversar com você no WhatsApp. Nasce como rascunho: nada é gasto até você revisar e ativar.
           </DialogDescription>
         </DialogHeader>
         {accountsQuery.isLoading ? (

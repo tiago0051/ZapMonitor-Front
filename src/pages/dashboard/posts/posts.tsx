@@ -10,7 +10,7 @@ import { socialPostService } from "@/services/api/socialPostService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Film, GalleryHorizontal, Image as ImageIcon, Plus, Sparkles } from "lucide-react";
+import { CircleDashed, Film, GalleryHorizontal, Image as ImageIcon, Plus, Sparkles } from "lucide-react";
 import { useState, type FC, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { PostsResults } from "./postsResults";
@@ -20,6 +20,7 @@ import {
   isSocialPostBusy,
   socialApprovalInfo,
   socialFormatLabel,
+  socialFormatPlacement,
   socialPlatformLabel,
   socialStatusInfo,
   socialTextareaClassName,
@@ -42,6 +43,12 @@ const formatOptions: { value: SocialPostFormat; icon: typeof ImageIcon; hint: st
   { value: "IMAGE", icon: ImageIcon, hint: "Uma imagem com legenda" },
   { value: "CAROUSEL", icon: GalleryHorizontal, hint: "De 2 a 5 imagens em sequência" },
   { value: "REEL", icon: Film, hint: "Roteiro e vídeo vertical com IA" },
+  { value: "STORY", icon: CircleDashed, hint: "Arte ou vídeo vertical que some em 24 horas" },
+];
+
+const storyMediaOptions: { value: SocialStoryMedia; label: string; hint: string }[] = [
+  { value: "IMAGE", label: "Imagem", hint: "A IA cria a arte vertical com o texto" },
+  { value: "VIDEO", label: "Vídeo", hint: "A IA escreve o roteiro e grava o vídeo (até 15 s)" },
 ];
 
 const ideaExamples = [
@@ -62,6 +69,7 @@ const NewPostDialog: FC<{ open: boolean; onOpenChange: (open: boolean) => void; 
   const [idea, setIdea] = useState("");
   const [postFormat, setPostFormat] = useState<SocialPostFormat>("IMAGE");
   const [imageCount, setImageCount] = useState(3);
+  const [storyMedia, setStoryMedia] = useState<SocialStoryMedia>("IMAGE");
   const [platforms, setPlatforms] = useState<SocialPlatform[]>(["INSTAGRAM", "FACEBOOK"]);
   // Imagens ou vídeo feitos no estúdio a partir das fotos do produto: a IA só escreve a legenda agora
   const [useStudio, setUseStudio] = useState(false);
@@ -74,6 +82,7 @@ const NewPostDialog: FC<{ open: boolean; onOpenChange: (open: boolean) => void; 
         platforms,
         imageCount: postFormat === "CAROUSEL" && !useStudio ? imageCount : undefined,
         skipMedia: useStudio || undefined,
+        storyMedia: postFormat === "STORY" ? storyMedia : undefined,
       }),
     onError: requestErrorHandling,
     onSuccess: (post) => {
@@ -93,6 +102,8 @@ const NewPostDialog: FC<{ open: boolean; onOpenChange: (open: boolean) => void; 
   };
 
   const instagramUnavailable = !!setup?.metaPageId && !setup.instagramAccountId;
+  const isVideo = postFormat === "REEL" || (postFormat === "STORY" && storyMedia === "VIDEO");
+  const mediaWord = isVideo ? "o vídeo" : postFormat === "CAROUSEL" ? "as imagens" : "a imagem";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -100,8 +111,8 @@ const NewPostDialog: FC<{ open: boolean; onOpenChange: (open: boolean) => void; 
         <DialogHeader>
           <DialogTitle>Nova postagem</DialogTitle>
           <DialogDescription>
-            Conte a ideia: a IA escreve a legenda e as hashtags e cria as imagens (ou o roteiro do reel) no visual da sua marca. Você revisa
-            tudo antes de publicar.
+            Conte a ideia e escolha onde ela vai aparecer: no feed, nos reels ou nos stories. A IA escreve o texto e cria as imagens (ou o
+            roteiro do vídeo) no visual da sua marca. Você revisa tudo antes de publicar.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="grid gap-4">
@@ -132,7 +143,7 @@ const NewPostDialog: FC<{ open: boolean; onOpenChange: (open: boolean) => void; 
 
           <fieldset className="grid gap-1.5">
             <legend className="mb-1.5 text-sm font-medium">Formato</legend>
-            <div className="grid gap-2 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {formatOptions.map((option) => (
                 <button
                   key={option.value}
@@ -146,19 +157,51 @@ const NewPostDialog: FC<{ open: boolean; onOpenChange: (open: boolean) => void; 
                 >
                   <option.icon className="h-4 w-4" aria-hidden />
                   <span className="font-medium">{socialFormatLabel[option.value]}</span>
+                  <span className="text-primary text-[11px] font-medium">{socialFormatPlacement[option.value]}</span>
                   <span className="text-muted-foreground text-xs">{option.hint}</span>
                 </button>
               ))}
             </div>
           </fieldset>
 
+          {postFormat === "STORY" && (
+            <fieldset className="grid gap-1.5">
+              <legend className="mb-1.5 text-sm font-medium">O story é de</legend>
+              <div className="grid grid-cols-2 gap-2">
+                {storyMediaOptions.map((option) => (
+                  <label
+                    key={option.value}
+                    className={cn(
+                      "grid cursor-pointer gap-0.5 rounded-lg border p-3 text-sm",
+                      storyMedia === option.value ? "border-primary bg-primary/5" : "hover:bg-accent/40",
+                    )}
+                  >
+                    <span className="flex items-center gap-2 font-medium">
+                      <input
+                        type="radio"
+                        name="story-media"
+                        checked={storyMedia === option.value}
+                        onChange={() => setStoryMedia(option.value)}
+                      />
+                      {option.label}
+                    </span>
+                    <span className="text-muted-foreground text-xs">{option.hint}</span>
+                  </label>
+                ))}
+              </div>
+              <span className="text-muted-foreground text-xs">
+                Stories não têm legenda nem hashtags: o texto vai na própria arte. Ficam no ar por 24 horas.
+              </span>
+            </fieldset>
+          )}
+
           <label className="flex items-start gap-2 rounded-lg border p-3 text-sm">
             <Checkbox className="mt-0.5" checked={useStudio} onCheckedChange={(checked) => setUseStudio(checked === true)} />
             <span className="grid gap-0.5">
-              <span className="font-medium">Criar {postFormat === "REEL" ? "o vídeo" : "as imagens"} no estúdio, a partir de fotos</span>
+              <span className="font-medium">Criar {mediaWord} no estúdio, a partir de fotos</span>
               <span className="text-muted-foreground text-xs">
-                Envie fotos do produto e a IA cria a arte com base nelas. A legenda é escrita agora;{" "}
-                {postFormat === "REEL" ? "o vídeo" : "as imagens"} você faz no estúdio, que abre em seguida.
+                Envie fotos do produto e a IA cria a arte com base nelas. {postFormat === "STORY" ? "O texto" : "A legenda"} é escrito
+                agora; {mediaWord} você faz no estúdio, que abre em seguida.
               </span>
             </span>
           </label>
@@ -213,13 +256,21 @@ const NewPostDialog: FC<{ open: boolean; onOpenChange: (open: boolean) => void; 
 
 const PostThumb: FC<{ post: SocialPost }> = ({ post }) => {
   const media = post.media.find((item) => item.status === "DONE" && item.url);
-  if (!media) return <div className="bg-muted aspect-[4/5] w-20 shrink-0 rounded-md" aria-hidden />;
+  const story = post.format === "STORY";
+  if (!media) return <div className={cn("bg-muted w-20 shrink-0 rounded-md", story ? "aspect-[9/16]" : "aspect-[4/5]")} aria-hidden />;
   if (media.kind === "VIDEO")
     return (
       <video src={media.url ?? undefined} muted playsInline className="aspect-[9/16] w-20 shrink-0 rounded-md bg-black object-cover" />
     );
 
-  return <img src={media.url ?? undefined} alt="" loading="lazy" className="aspect-[4/5] w-20 shrink-0 rounded-md object-cover" />;
+  return (
+    <img
+      src={media.url ?? undefined}
+      alt=""
+      loading="lazy"
+      className={cn("w-20 shrink-0 rounded-md object-cover", story ? "aspect-[9/16]" : "aspect-[4/5]")}
+    />
+  );
 };
 
 export const Posts = () => {
@@ -261,7 +312,8 @@ export const Posts = () => {
         <div>
           <h1 className="text-2xl font-semibold">Postagens</h1>
           <p className="text-muted-foreground text-sm">
-            Da ideia à publicação no Instagram e no Facebook: a IA cria imagens, legendas, hashtags e reels no visual da sua marca.
+            Da ideia à publicação no Instagram e no Facebook: posts no feed, carrosséis, reels e stories criados pela IA no visual da sua
+            marca.
           </p>
         </div>
         {can("posts.manage") && (

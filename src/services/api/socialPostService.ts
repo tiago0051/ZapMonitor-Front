@@ -67,6 +67,8 @@ export const socialPostService = {
       plannedFor?: string;
       // A mídia vem do estúdio de criativos: a IA só escreve a legenda
       skipMedia?: boolean;
+      // Só no story: imagem (padrão) ou vídeo com roteiro
+      storyMedia?: SocialStoryMedia;
     },
   ): Promise<SocialPost> => (await api.post(postBase(clientId), body)).data,
 

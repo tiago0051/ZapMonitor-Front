@@ -96,7 +96,7 @@ export const taskCategoryLabel: Record<PlannerTaskCategory, string> = {
   OTHER: "Outra",
 };
 
-export const postFormatLabel: Record<SocialPostFormat, string> = { IMAGE: "Imagem", CAROUSEL: "Carrossel", REEL: "Reel" };
+export const postFormatLabel: Record<SocialPostFormat, string> = { IMAGE: "Imagem", CAROUSEL: "Carrossel", REEL: "Reel", STORY: "Story" };
 
 const statusLabel: Record<string, string> = {
   DRAFT: "Rascunho",

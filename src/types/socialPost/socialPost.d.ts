@@ -1,6 +1,9 @@
 type SocialPostApproval = "PENDING" | "CHANGES";
 
-type SocialPostFormat = "IMAGE" | "CAROUSEL" | "REEL";
+type SocialPostFormat = "IMAGE" | "CAROUSEL" | "REEL" | "STORY";
+
+// Mídia do story: imagem gerada pela IA ou vídeo com roteiro
+type SocialStoryMedia = "IMAGE" | "VIDEO";
 type SocialPlatform = "FACEBOOK" | "INSTAGRAM";
 type SocialPostStatus = "GENERATING" | "READY" | "SCHEDULED" | "PUBLISHING" | "PUBLISHED" | "PARTIAL" | "FAILED";
 type SocialMediaStatus = "QUEUED" | "RUNNING" | "DONE" | "FAILED";

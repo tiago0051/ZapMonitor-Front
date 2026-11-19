@@ -71,6 +71,6 @@ type MediaDailyUsage = {
     images: MediaQuotaCount;
     videos: MediaQuotaCount;
     // Imagens que a IA gera ao criar uma postagem sem pedir quantidade
-    defaultImagesByFormat: Record<"IMAGE" | "CAROUSEL" | "REEL", number>;
+    defaultImagesByFormat: Record<SocialPostFormat, number>;
   };
 };

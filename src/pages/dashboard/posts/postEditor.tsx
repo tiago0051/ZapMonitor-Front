@@ -41,6 +41,7 @@ import {
   insightsSummary,
   isSocialPostBusy,
   socialFormatLabel,
+  socialFormatPlacement,
   socialPlatformLabel,
   socialStatusInfo,
   socialTextareaClassName,
@@ -96,12 +97,16 @@ const MediaCard: FC<{ post: SocialPost; media: SocialPostMedia; editable: boolea
         {media.kind === "VIDEO" && media.url ? (
           <video src={media.url} controls playsInline className="aspect-[9/16] w-full rounded-lg bg-black object-contain" />
         ) : media.url ? (
-          <img src={media.url} alt={`Imagem ${index + 1}`} className="aspect-[4/5] w-full rounded-lg object-cover" />
+          <img
+            src={media.url}
+            alt={`Imagem ${index + 1}`}
+            className={cn("w-full rounded-lg object-cover", post.format === "STORY" ? "aspect-[9/16]" : "aspect-[4/5]")}
+          />
         ) : (
           <div
             className={cn(
               "bg-muted text-muted-foreground grid w-full place-items-center rounded-lg p-4 text-center text-xs",
-              media.kind === "VIDEO" ? "aspect-[9/16]" : "aspect-[4/5]",
+              media.kind === "VIDEO" || post.format === "STORY" ? "aspect-[9/16]" : "aspect-[4/5]",
             )}
           >
             {running ? (
@@ -279,6 +284,8 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
   const [hashtags, setHashtags] = useState(post.hashtags.join(" "));
   const [platforms, setPlatforms] = useState<SocialPlatform[]>(post.platforms);
   const [script, setScript] = useState<SocialScript>(post.script ?? { cenas: [] });
+  // Reel sempre tem roteiro; o story só quando é de vídeo (a IA escreveu o roteiro)
+  const hasScript = post.format === "REEL" || (post.format === "STORY" && !!post.script?.cenas?.length);
   const [instruction, setInstruction] = useState("");
   const [scheduledAt, setScheduledAt] = useState(
     toLocalInputValue(post.scheduledAt ? new Date(post.scheduledAt) : addHours(new Date(), 2)),
@@ -309,7 +316,7 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
         caption,
         hashtags: parseTags(),
         platforms,
-        script: post.format === "REEL" ? script : undefined,
+        script: hasScript ? script : undefined,
       }),
     onError: requestErrorHandling,
     onSuccess: (updated) => {
@@ -406,8 +413,11 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
 
   const confirmPublish = async () => {
     const where = platforms.map((platform) => socialPlatformLabel[platform]).join(" e ");
-    if (await confirm({ title: `Publicar agora no ${where}?`, description: "A postagem fica visível para todos os seguidores." }))
-      publish.mutate();
+    const description =
+      post.format === "STORY"
+        ? "O story fica visível para os seguidores por 24 horas."
+        : "A postagem fica visível para todos os seguidores.";
+    if (await confirm({ title: `Publicar agora no ${where}?`, description })) publish.mutate();
   };
   const confirmDelete = async () => {
     const published = post.targets.some((target) => target.status === "PUBLISHED");
@@ -425,17 +435,31 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
 
   const images = post.media.filter((media) => media.kind === "IMAGE");
   const videos = post.media.filter((media) => media.kind === "VIDEO");
+  const isStory = post.format === "STORY";
+  const isReel = post.format === "REEL";
+  // Story leva uma imagem ou um vídeo; o story de vídeo vem com roteiro para gerar com a IA
+  const storyHasVideo = isStory && videos.some((media) => media.status !== "FAILED");
+  const usesVideo = isReel || storyHasVideo;
+  const shownMedia = isStory ? post.media : isReel ? videos : images;
+  const mediaWord = usesVideo ? "vídeo" : "imagem";
   const allTags = [...new Set([...fixedHashtags, ...parseTags().map((tag) => (tag.startsWith("#") ? tag : `#${tag}`))])];
   const finalLength = caption.trim().length + (allTags.length ? allTags.join(" ").length + 2 : 0);
   const info = socialStatusInfo[post.status];
-  const canAddImage = editable && post.format !== "REEL" && images.length < (post.format === "CAROUSEL" ? 10 : 1);
+  const canAddImage =
+    editable &&
+    !isReel &&
+    (isStory ? !post.media.some((media) => media.status !== "FAILED") : images.length < (post.format === "CAROUSEL" ? 10 : 1));
+  // Story aceita trocar a mídia pelo estúdio ou por um arquivo: o novo substitui o atual
+  const canReplaceMedia = canAddImage || isReel || isStory;
 
   return (
     <div className="grid gap-4">
       {confirmDialog}
       <div className="flex flex-wrap items-center gap-2">
         <span className={cn("rounded px-1.5 py-0.5 text-xs font-medium", info.className)}>{info.label}</span>
-        <span className="text-muted-foreground text-sm">{socialFormatLabel[post.format]}</span>
+        <span className="text-muted-foreground text-sm">
+          {socialFormatLabel[post.format]} · {socialFormatPlacement[post.format]}
+        </span>
         {post.status === "SCHEDULED" && post.scheduledAt && (
           <span className="text-sm">para {format(new Date(post.scheduledAt), "dd/MM/yyyy 'às' HH:mm")}</span>
         )}
@@ -450,13 +474,18 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <section className="grid content-start gap-3" aria-label="Mídias">
           <h2 className="font-semibold">
-            {post.format === "REEL" ? "Vídeo" : post.format === "CAROUSEL" ? "Imagens do carrossel" : "Imagem"}
+            {isReel ? "Vídeo" : isStory ? "Story" : post.format === "CAROUSEL" ? "Imagens do carrossel" : "Imagem"}
           </h2>
-          {post.status === "GENERATING" && !post.media.length && post.format !== "REEL" && (
-            <LoadingState label="A IA está escrevendo a postagem e criando as imagens..." />
+          {isStory && (
+            <p className="text-muted-foreground text-xs">
+              Vertical 9:16, uma imagem ou um vídeo de até 60 segundos. Enviar ou criar outra mídia substitui a atual.
+            </p>
           )}
-          <div className={cn("grid gap-3", post.format === "REEL" ? "max-w-xs" : "grid-cols-2 xl:grid-cols-3")}>
-            {(post.format === "REEL" ? videos : images).map((media, index) => (
+          {post.status === "GENERATING" && !post.media.length && !isReel && !hasScript && (
+            <LoadingState label={isStory ? "A IA está montando o story..." : "A IA está escrevendo a postagem e criando as imagens..."} />
+          )}
+          <div className={cn("grid gap-3", isReel || isStory ? "max-w-xs" : "grid-cols-2 xl:grid-cols-3")}>
+            {shownMedia.map((media, index) => (
               <MediaCard key={media.id} post={post} media={media} index={index} editable={editable} onChange={apply} />
             ))}
           </div>
@@ -474,16 +503,22 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
                   Gerar {images.length ? "outra" : "a"} imagem com IA
                 </Button>
               )}
-              {(canAddImage || post.format === "REEL") && (
+              {canReplaceMedia && (
                 <Button variant="outline" size="sm" onClick={() => setStudioOpen(true)}>
                   <Palette className="mr-2 h-4 w-4" aria-hidden />
                   Criar no estúdio
                 </Button>
               )}
-              {(canAddImage || post.format === "REEL") && (
+              {canReplaceMedia && (
                 <Button variant="outline" size="sm" disabled={upload.isPending} onClick={() => fileRef.current?.click()}>
                   <Upload className="mr-2 h-4 w-4" aria-hidden />
-                  {upload.isPending ? "Enviando..." : post.format === "REEL" ? "Enviar meu vídeo" : "Enviar minha imagem"}
+                  {upload.isPending
+                    ? "Enviando..."
+                    : isStory
+                      ? "Enviar minha imagem ou vídeo"
+                      : isReel
+                        ? "Enviar meu vídeo"
+                        : "Enviar minha imagem"}
                 </Button>
               )}
               {canAddImage && <MediaQuotaMeter scope="posts" show="image" className="basis-full" />}
@@ -496,17 +531,18 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
                 }}
                 description="Envie as fotos do produto e as instruções: a IA cria a imagem ou o vídeo, você pede alterações e usa a versão que ficar melhor nesta postagem."
                 defaults={{
-                  kind: post.format === "REEL" ? "VIDEO" : "IMAGE",
-                  lockKind: true,
+                  kind: usesVideo ? "VIDEO" : "IMAGE",
+                  // No story vale imagem ou vídeo
+                  lockKind: !isStory,
                   purpose: "POST",
-                  aspectRatio: post.format === "REEL" ? "9:16" : "4:5",
+                  aspectRatio: isReel || isStory ? "9:16" : "4:5",
                   brief: post.idea,
                 }}
-                pickLabel={post.format === "REEL" ? "Usar como vídeo do reel" : "Usar na postagem"}
+                pickLabel={isReel ? "Usar como vídeo do reel" : isStory ? "Usar no story" : "Usar na postagem"}
                 onPick={async (generation) => {
                   try {
                     apply(await creativeStudioService.attachToPost(client.id, generation.id, post.id));
-                    toast.success(post.format === "REEL" ? "Vídeo do reel atualizado" : "Imagem adicionada à postagem");
+                    toast.success(isReel ? "Vídeo do reel atualizado" : isStory ? "Story atualizado" : "Imagem adicionada à postagem");
                   } catch (error) {
                     requestErrorHandling(error);
                     throw error;
@@ -517,7 +553,13 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
                 ref={fileRef}
                 type="file"
                 hidden
-                accept={post.format === "REEL" ? "video/mp4,video/quicktime" : "image/png,image/jpeg,image/webp"}
+                accept={
+                  isStory
+                    ? "image/png,image/jpeg,image/webp,video/mp4,video/quicktime"
+                    : isReel
+                      ? "video/mp4,video/quicktime"
+                      : "image/png,image/jpeg,image/webp"
+                }
                 onChange={(event) => {
                   const file = event.target.files?.[0];
                   if (file) upload.mutate(file);
@@ -527,10 +569,10 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
             </div>
           )}
 
-          {post.format === "REEL" && (
+          {hasScript && (
             <div className="grid gap-3 rounded-xl border p-3">
               <div>
-                <h3 className="font-medium">Roteiro do reel</h3>
+                <h3 className="font-medium">Roteiro do {isStory ? "story" : "reel"}</h3>
                 <p className="text-muted-foreground text-xs">
                   Revise o roteiro e gere o vídeo com IA (até 15 segundos, vertical). Também dá para gravar seguindo o roteiro e enviar o
                   seu vídeo.
@@ -563,8 +605,14 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
         </section>
 
         <section className="grid content-start gap-4" aria-label="Texto e publicação">
+          {isStory && (
+            <p className="bg-muted/40 rounded-lg border p-3 text-xs">
+              Stories não têm legenda nem hashtags no Facebook e no Instagram. O texto abaixo é o que a IA colocou na arte; para mudar o que
+              aparece, gere a {mediaWord} de novo com o texto novo.
+            </p>
+          )}
           <div className="grid gap-1.5">
-            <Label htmlFor="post-caption">Legenda</Label>
+            <Label htmlFor="post-caption">{isStory ? "Texto da arte" : "Legenda"}</Label>
             <textarea
               id="post-caption"
               value={caption}
@@ -572,10 +620,10 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
               disabled={!editable || post.status === "GENERATING"}
               placeholder={post.status === "GENERATING" ? "A IA está escrevendo..." : "Escreva a legenda"}
               onChange={(event) => setCaption(event.target.value)}
-              className={cn(socialTextareaClassName, "min-h-48")}
+              className={cn(socialTextareaClassName, isStory ? "min-h-20" : "min-h-48")}
             />
           </div>
-          <div className="grid gap-1.5">
+          <div className={cn("grid gap-1.5", isStory && "hidden")}>
             <Label htmlFor="post-hashtags">Hashtags</Label>
             <Input
               id="post-hashtags"

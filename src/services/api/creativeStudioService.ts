@@ -70,6 +70,6 @@ export const creativeStudioService = {
 
   createPost: async (
     clientId: string,
-    body: { generationIds: string[]; platforms: SocialPlatform[]; idea?: string },
+    body: { generationIds: string[]; platforms: SocialPlatform[]; idea?: string; asStory?: boolean },
   ): Promise<{ id: string }> => (await api.post(`${base(clientId)}/post`, body, { timeout: 180000 })).data,
 };

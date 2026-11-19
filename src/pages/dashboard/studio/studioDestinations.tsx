@@ -95,11 +95,19 @@ const CreatePostDialog: FC<{
   const [platforms, setPlatforms] = useState<SocialPlatform[]>(["INSTAGRAM", "FACEBOOK"]);
   const [idea, setIdea] = useState(project.brief);
   const [picked, setPicked] = useState<string[]>([generation.id]);
+  // Criativo vertical sugere story; story leva só a versão escolhida
+  const [asStory, setAsStory] = useState(project.aspectRatio === "9:16" && generation.kind === "IMAGE");
   const images = project.generations.filter((item) => item.kind === "IMAGE" && item.status === "DONE" && item.url);
-  const ids = generation.kind === "VIDEO" ? [generation.id] : picked;
+  const ids = generation.kind === "VIDEO" || asStory ? [generation.id] : picked;
 
   const create = useMutation({
-    mutationFn: () => creativeStudioService.createPost(client.id, { generationIds: ids, platforms, idea: idea.trim() || undefined }),
+    mutationFn: () =>
+      creativeStudioService.createPost(client.id, {
+        generationIds: ids,
+        platforms,
+        idea: idea.trim() || undefined,
+        asStory: asStory || undefined,
+      }),
     onError: requestErrorHandling,
     onSuccess: (post) => {
       toast.success("Postagem criada; a IA está escrevendo a legenda");
@@ -116,13 +124,29 @@ const CreatePostDialog: FC<{
         <DialogHeader>
           <DialogTitle>Criar postagem</DialogTitle>
           <DialogDescription>
-            {generation.kind === "VIDEO"
-              ? "O vídeo vira um reel. A IA escreve a legenda e as hashtags e você revisa antes de publicar."
-              : "Uma imagem vira postagem simples; duas ou mais viram carrossel, na ordem marcada. A IA escreve a legenda."}
+            {asStory
+              ? "A versão escolhida vira um story, que fica no ar por 24 horas (story não tem legenda nem hashtags)."
+              : generation.kind === "VIDEO"
+                ? "O vídeo vira um reel. A IA escreve a legenda e as hashtags e você revisa antes de publicar."
+                : "Uma imagem vira postagem simples; duas ou mais viram carrossel, na ordem marcada. A IA escreve a legenda."}
           </DialogDescription>
         </DialogHeader>
 
-        {generation.kind === "IMAGE" && images.length > 1 && (
+        <fieldset className="grid gap-1.5">
+          <legend className="mb-1 text-sm font-medium">Publicar como</legend>
+          <div className="flex flex-wrap gap-4 text-sm">
+            <label className="flex items-center gap-2">
+              <input type="radio" name="studio-post-format" checked={!asStory} onChange={() => setAsStory(false)} />
+              {generation.kind === "VIDEO" ? "Reel" : "Post no feed"}
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="radio" name="studio-post-format" checked={asStory} onChange={() => setAsStory(true)} />
+              Story
+            </label>
+          </div>
+        </fieldset>
+
+        {generation.kind === "IMAGE" && images.length > 1 && !asStory && (
           <div className="grid gap-1.5">
             <span className="text-sm font-medium">Imagens ({picked.length})</span>
             <div className="grid grid-cols-4 gap-2">

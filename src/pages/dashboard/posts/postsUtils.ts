@@ -2,6 +2,15 @@ export const socialFormatLabel: Record<SocialPostFormat, string> = {
   IMAGE: "Imagem",
   CAROUSEL: "Carrossel",
   REEL: "Reel",
+  STORY: "Story",
+};
+
+// Onde cada formato aparece, para o usuário entender o que está criando
+export const socialFormatPlacement: Record<SocialPostFormat, string> = {
+  IMAGE: "Feed",
+  CAROUSEL: "Feed",
+  REEL: "Reels e feed",
+  STORY: "Stories · 24 horas",
 };
 
 export const socialPlatformLabel: Record<SocialPlatform, string> = {
