@@ -56,7 +56,7 @@ export const ChatComposer: FC<ChatComposerProps> = ({
         <p className="text-muted-foreground text-center text-sm">
           O prazo para responder livremente este contato acabou. Envie um template para retomar a conversa.
         </p>
-        <DialogSendTemplate contactService={contactService} whatsappConfigurationId={contact.whatsappConfigurationId} />
+        <DialogSendTemplate contactId={contact.id} whatsappConfigurationId={contact.whatsappConfigurationId} />
       </div>
     );
   else if (contactService)

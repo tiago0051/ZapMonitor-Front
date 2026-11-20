@@ -16,12 +16,26 @@ import {
 } from "@/components/whatsappTemplate/templateUtils";
 
 type DialogSendTemplateProps = {
-  contactService: WhatsappContactService;
+  contactId: string;
   whatsappConfigurationId: string;
+  // false: o atendimento está com a janela de 24h aberta e o modelo vai junto das mensagens normais
+  windowExpired?: boolean;
+  // Controle de fora (ex.: item do menu de anexos); sem isso o diálogo usa o próprio botão
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
-export const DialogSendTemplate = ({ contactService, whatsappConfigurationId }: DialogSendTemplateProps) => {
-  const [open, setOpen] = useState(false);
+export const DialogSendTemplate = ({
+  contactId,
+  whatsappConfigurationId,
+  windowExpired = true,
+  open: controlledOpen,
+  onOpenChange,
+}: DialogSendTemplateProps) => {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = (value: boolean) => (isControlled ? onOpenChange?.(value) : setInternalOpen(value));
   const [draft, setDraft] = useState<TemplateDraft>(emptyTemplateDraft);
   const { client } = useClientContext();
   const queryClient = useQueryClient();
@@ -31,7 +45,7 @@ export const DialogSendTemplate = ({ contactService, whatsappConfigurationId }: 
       whatsappService.sendTemplate({
         params: {
           clientId: client.id,
-          contactId: contactService.id,
+          contactId,
           configurationId: whatsappConfigurationId,
         },
         body: await buildTemplateSendBody(client.id, whatsappConfigurationId, value),
@@ -39,11 +53,11 @@ export const DialogSendTemplate = ({ contactService, whatsappConfigurationId }: 
     onSuccess: () => {
       toast.success("Modelo enviado");
 
-      queryClient.invalidateQueries({ queryKey: [`contact-${contactService.id}`] });
+      queryClient.invalidateQueries({ queryKey: [`contact-${contactId}`] });
       queryClient.invalidateQueries({ queryKey: ["whatsapp", "contacts"] });
       queryClient.invalidateQueries({ queryKey: ["whatsapp", "contactsStats"] });
 
-      setOpen(false);
+      changeOpen(false);
     },
     onError: requestErrorHandling,
   });
@@ -57,17 +71,23 @@ export const DialogSendTemplate = ({ contactService, whatsappConfigurationId }: 
 
   return (
     <Dialog open={open} onOpenChange={changeOpen}>
-      <DialogTrigger asChild>
-        <Button className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-green-600 py-5 text-base font-medium text-white shadow-sm transition-colors hover:bg-green-700 active:bg-green-800">
-          <SendHorizontal className="h-5 w-5" />
-          <span>Enviar template</span>
-        </Button>
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-green-600 py-5 text-base font-medium text-white shadow-sm transition-colors hover:bg-green-700 active:bg-green-800">
+            <SendHorizontal className="h-5 w-5" />
+            <span>Enviar template</span>
+          </Button>
+        </DialogTrigger>
+      )}
 
       <DialogContent className="max-h-[90dvh] max-w-md overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Enviar modelo</DialogTitle>
-          <DialogDescription>A janela de 24 horas fechou: só um modelo aprovado pela Meta pode retomar a conversa.</DialogDescription>
+          <DialogDescription>
+            {windowExpired
+              ? "A janela de 24 horas fechou: só um modelo aprovado pela Meta pode retomar a conversa."
+              : "Envie um modelo aprovado pela Meta nesta conversa. Ele é cobrado pela Meta conforme a categoria."}
+          </DialogDescription>
         </DialogHeader>
 
         {open && (

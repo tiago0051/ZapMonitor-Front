@@ -10,7 +10,7 @@ import { whatsappService } from "@/services/api/whatsappService";
 import { convertImageForWhatsapp, convertWavToMp3 } from "@/utils/fileConvert";
 import { requestErrorHandling } from "@/utils/request";
 import { BlockBlobClient } from "@azure/storage-blob";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   type ChangeEvent,
   type ClipboardEvent,
@@ -22,10 +22,12 @@ import {
   useRef,
   useState,
 } from "react";
-import { FiFile, FiFilm, FiImage, FiMic, FiPaperclip, FiSend, FiStopCircle, FiTrash2, FiX } from "react-icons/fi";
+import { FiFile, FiFilm, FiImage, FiLayout, FiMic, FiPaperclip, FiSend, FiStopCircle, FiTrash2, FiX } from "react-icons/fi";
 import { useReactMediaRecorder } from "react-media-recorder";
 import { toast } from "sonner";
 import { MessageReplyPreview } from "../messageReplyPreview";
+import { DialogSendTemplate } from "../dialogSendTemplate";
+import { isWhatsappWeb } from "@/utils/whatsappConfiguration";
 import { contactDisplayName } from "@/pages/dashboard/whatsapp/contactDisplayName";
 import { type DraftMessage, emptyDraftMessage, getDraftMessage, saveDraftMessage } from "@/pages/dashboard/whatsapp/conversationDrafts";
 import { useQuickReplyPicker } from "@/pages/dashboard/whatsapp/quickReplies/useQuickReplyPicker";
@@ -402,6 +404,15 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
   const contactName = contactDisplayName(contact, "Contato");
   const showTextInput = !isRecording && !hasAudio;
 
+  // Modelos da Meta só saem pela API oficial: números por QR code não mostram a opção
+  const [isTemplateOpen, setIsTemplateOpen] = useState(false);
+  const configurationsQuery = useQuery({
+    queryKey: ["whatsappConfigurations", client.id],
+    queryFn: () => whatsappService.findAllConfigurations({ params: { clientId: client.id }, queries: { page: 1, take: 100 } }),
+  });
+  const contactConfiguration = configurationsQuery.data?.items.find((item) => item.id === contact.whatsappConfigurationId);
+  const canSendTemplate = !!contactConfiguration && !isWhatsappWeb(contactConfiguration);
+
   return (
     <div className="flex flex-col gap-2">
       {replyingTo && (
@@ -531,8 +542,23 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
                   <FiFile />
                   Documento
                 </DropdownMenuItem>
+                {canSendTemplate && (
+                  <DropdownMenuItem onClick={() => setIsTemplateOpen(true)}>
+                    <FiLayout />
+                    Modelo (template)
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
+          )}
+          {canSendTemplate && (
+            <DialogSendTemplate
+              contactId={contact.id}
+              whatsappConfigurationId={contact.whatsappConfigurationId}
+              windowExpired={false}
+              open={isTemplateOpen}
+              onOpenChange={setIsTemplateOpen}
+            />
           )}
         </div>
       </div>
