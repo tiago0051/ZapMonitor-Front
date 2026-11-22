@@ -29,7 +29,13 @@ import { MessageReplyPreview } from "../messageReplyPreview";
 import { DialogSendTemplate } from "../dialogSendTemplate";
 import { isWhatsappWeb } from "@/utils/whatsappConfiguration";
 import { contactDisplayName } from "@/pages/dashboard/whatsapp/contactDisplayName";
-import { type DraftMessage, emptyDraftMessage, getDraftMessage, saveDraftMessage } from "@/pages/dashboard/whatsapp/conversationDrafts";
+import {
+  type DraftMessage,
+  emptyDraftMessage,
+  getDraftMessage,
+  onInsertIntoDraft,
+  saveDraftMessage,
+} from "@/pages/dashboard/whatsapp/conversationDrafts";
 import { useQuickReplyPicker } from "@/pages/dashboard/whatsapp/quickReplies/useQuickReplyPicker";
 import { fillQuickReply } from "@/pages/dashboard/whatsapp/quickReplies/quickReplies";
 import {
@@ -114,6 +120,21 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
     saveDraftMessage(contact.id, next);
   };
   const updateDraft = (change: Partial<DraftMessage>) => setDraft({ ...draftRef.current, ...change });
+
+  // Fala do roteiro ou sugestão da IA vinda do painel lateral: entra no fim do texto, sem enviar
+  useEffect(
+    () =>
+      onInsertIntoDraft((contactId, text) => {
+        if (contactId !== contact.id) return;
+        const current = draftRef.current.text;
+        const next = { ...draftRef.current, text: current.trim() ? `${current.trimEnd()}\n${text}` : text };
+        draftRef.current = next;
+        setDraftState(next);
+        saveDraftMessage(contactId, next);
+        inputRef.current?.focus();
+      }),
+    [contact.id],
+  );
 
   const hasAudio = !!draft.audio;
   const hasAttachments = draft.attachments.length > 0;
@@ -299,7 +320,10 @@ export const CreateMessageBar: FC<CreateMessageBarProps> = ({ contact, replyingT
   const quickReplyPicker = useQuickReplyPicker({
     text: hasAttachments || hasAudio ? "" : draft.text,
     onSelect: (reply) => {
-      const text = fillQuickReply(reply.content, { contactName: contactDisplayName(contact, ""), attendantName: attendantDisplayName(user) });
+      const text = fillQuickReply(reply.content, {
+        contactName: contactDisplayName(contact, ""),
+        attendantName: attendantDisplayName(user),
+      });
       updateDraft({ text });
       requestAnimationFrame(() => {
         const input = inputRef.current;

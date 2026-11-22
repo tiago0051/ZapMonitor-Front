@@ -10,6 +10,7 @@ import { useState, type FC } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 import { formatOfferPrice } from "@/pages/dashboard/offers/offerUtils";
+import { AiAgentScript } from "./aiAgentScript";
 
 /**
  * Ofertas que o agente vende. Entram inteiras em cada resposta (preço, condições, provas e objeções), então o agente
@@ -52,7 +53,7 @@ export const AiAgentOffers: FC<{ clientId: string; aiAgentId: string }> = ({ cli
   return (
     <section className="mb-6 grid gap-3 rounded-lg border p-4">
       <div>
-        <h3 className="text-sm font-medium">O que este agente vende</h3>
+        <h3 className="text-sm font-medium">O que este agente vende e como vende</h3>
         <p className="text-muted-foreground text-xs">
           As ofertas marcadas entram inteiras em cada resposta: preço, condições, provas e respostas às objeções. O agente não oferece
           desconto acima do máximo da oferta.
@@ -99,6 +100,7 @@ export const AiAgentOffers: FC<{ clientId: string; aiAgentId: string }> = ({ cli
           {current.length > 10 && <p className="text-destructive text-xs">Escolha até 10 ofertas por agente.</p>}
         </>
       )}
+      <AiAgentScript clientId={clientId} aiAgentId={aiAgentId} />
     </section>
   );
 };

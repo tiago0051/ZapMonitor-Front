@@ -88,3 +88,24 @@ export const useDraftPreview = (contactId: string) =>
     () => getDraftPreview(contactId),
     () => "",
   );
+
+// Texto pedido de fora da caixa de mensagem (roteiro, sugestão da IA): a caixa aberta da conversa acrescenta ao rascunho
+type InsertListener = (contactId: string, text: string) => void;
+const insertListeners = new Set<InsertListener>();
+
+/** Coloca o texto na caixa de mensagem da conversa (no fim do que já foi digitado); o atendente revisa antes de enviar. */
+export function insertIntoDraft(contactId: string, text: string) {
+  if (insertListeners.size === 0) {
+    const current = getDraftMessage(contactId) ?? emptyDraftMessage();
+    saveDraftMessage(contactId, { ...current, text: current.text.trim() ? `${current.text.trimEnd()}\n${text}` : text });
+    return;
+  }
+  insertListeners.forEach((listener) => listener(contactId, text));
+}
+
+export function onInsertIntoDraft(listener: InsertListener) {
+  insertListeners.add(listener);
+  return () => {
+    insertListeners.delete(listener);
+  };
+}

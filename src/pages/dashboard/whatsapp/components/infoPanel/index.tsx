@@ -1,7 +1,8 @@
 import { ContactAvatar } from "@/components/contact-avatar";
-import { Bot, Briefcase, FileAudio, FileText, Film, Image as ImageIcon, Paperclip, Tag, UserRound } from "lucide-react";
+import { Bot, Briefcase, FileAudio, FileText, Film, Image as ImageIcon, Paperclip, Tag, UserRound, ListChecks } from "lucide-react";
 import { ContactProfile } from "@/pages/dashboard/contacts/components/contactProfile";
 import { ContactDeals } from "@/pages/dashboard/crm/components/contactDeals";
+import { ConversationScript } from "./conversationScript";
 import { formatWhatsappText, formatPhoneNumber, formatShortId } from "@/utils/formatString";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { whatsappService } from "@/services/api/whatsappService";
@@ -66,7 +67,7 @@ const serviceActionInfo: Record<number, { label: string; className: string }> = 
   5: { label: "Etapa do fluxo", className: "bg-muted/60" },
 };
 
-export type InfoPanelTab = "summary" | "contact" | "history" | "files" | "deals";
+export type InfoPanelTab = "summary" | "contact" | "history" | "files" | "deals" | "script";
 
 export function InfoPanel({
   selected,
@@ -205,6 +206,20 @@ export function InfoPanel({
             {rightPanel === "deals" && <span className="absolute right-0 bottom-0 left-0 h-0.5 rounded-full bg-green-500" />}
           </button>
         )}
+        {can("offers.view") && (
+          <button
+            type="button"
+            aria-pressed={rightPanel === "script"}
+            onClick={() => setRightPanel("script")}
+            className={`relative flex flex-1 shrink-0 items-center justify-center gap-1.5 px-2 py-3 text-xs font-medium whitespace-nowrap transition-colors ${
+              rightPanel === "script" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <ListChecks className="h-3.5 w-3.5" />
+            Roteiro
+            {rightPanel === "script" && <span className="absolute right-0 bottom-0 left-0 h-0.5 rounded-full bg-green-500" />}
+          </button>
+        )}
       </div>
 
       <div className="border-border bg-muted/40 flex-shrink-0 border-b px-4 py-3">
@@ -254,6 +269,11 @@ export function InfoPanel({
           </div>
         ) : rightPanel === "contact" && can("contacts.view") ? (
           <ContactProfile key={selected.id} conversationId={selected.id} compact onDirtyChange={onProfileDirtyChange} />
+        ) : rightPanel === "script" && can("offers.view") ? (
+          <div>
+            <p className="text-muted-foreground mb-3 text-[11px] font-semibold tracking-wider uppercase">Roteiro de vendas</p>
+            <ConversationScript contact={selected} />
+          </div>
         ) : rightPanel === "deals" && canUseCrm ? (
           <div>
             <p className="text-muted-foreground mb-3 text-[11px] font-semibold tracking-wider uppercase">Negócios do contato</p>
@@ -299,7 +319,9 @@ export function InfoPanel({
                               <span className="text-foreground flex min-w-0 flex-wrap items-center gap-1.5 text-xs font-semibold">
                                 {info?.label ?? "Ação"}
                                 {outcomeLabel && (
-                                  <span className="bg-background rounded-full border px-1.5 py-0.5 text-[10px] font-medium">{outcomeLabel}</span>
+                                  <span className="bg-background rounded-full border px-1.5 py-0.5 text-[10px] font-medium">
+                                    {outcomeLabel}
+                                  </span>
                                 )}
                               </span>
                               <span className="text-muted-foreground text-[11px] tabular-nums">

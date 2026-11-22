@@ -12,6 +12,9 @@ import { Archive, ArchiveRestore, CheckCircle2, Loader2, Package, Plus, ScanSear
 import { useEffect, useRef, useState, type FC } from "react";
 import { toast } from "sonner";
 import { OfferEditorDialog } from "./offerEditorDialog";
+import { SalesScriptsTab } from "./salesScriptsTab";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSearchParams } from "react-router";
 import { coherencePlaceLabel, formatOfferPrice, offerKindLabel, severityInfo } from "./offerUtils";
 
 /** Catálogo de ofertas: a fonte única de preço, provas e objeções que anúncios, postagens, agentes e estratégias usam. */
@@ -23,6 +26,8 @@ export const OffersPage = () => {
   const [editing, setEditing] = useState<Offer | "new" | null>(null);
   const [checking, setChecking] = useState<Offer | null>(null);
   const { confirm, confirmDialog } = useConfirm();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get("tab") === "scripts" ? "scripts" : "offers";
 
   const offersQuery = useQuery({
     queryKey: ["offers", client.id, showArchived],
@@ -69,88 +74,99 @@ export const OffersPage = () => {
       <div className="mx-auto w-full max-w-5xl space-y-6 p-4 md:p-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="max-w-2xl space-y-1">
-            <h1 className="text-2xl font-semibold">Ofertas</h1>
+            <h1 className="text-2xl font-semibold">Ofertas e roteiros</h1>
             <p className="text-muted-foreground text-sm">
               Produtos, serviços e planos com preço, condições, provas e respostas às objeções. Anúncios, postagens, agentes de IA,
               estratégias e os itens dos negócios usam este cadastro, então todo canal fala a mesma coisa.
             </p>
           </div>
-          {newButton}
+          {tab === "offers" && newButton}
         </div>
 
-        <label className="flex w-fit cursor-pointer items-center gap-2 text-sm">
-          <Switch id="offers-archived" checked={showArchived} onCheckedChange={setShowArchived} />
-          Mostrar arquivadas
-        </label>
+        <Tabs value={tab} onValueChange={(value) => setSearchParams(value === "scripts" ? { tab: "scripts" } : {}, { replace: true })}>
+          <TabsList>
+            <TabsTrigger value="offers">Ofertas</TabsTrigger>
+            <TabsTrigger value="scripts">Roteiros de vendas</TabsTrigger>
+          </TabsList>
+          <TabsContent value="scripts" className="pt-4">
+            <SalesScriptsTab />
+          </TabsContent>
+          <TabsContent value="offers" className="space-y-4 pt-4">
+            <label className="flex w-fit cursor-pointer items-center gap-2 text-sm">
+              <Switch id="offers-archived" checked={showArchived} onCheckedChange={setShowArchived} />
+              Mostrar arquivadas
+            </label>
 
-        {offersQuery.isLoading ? (
-          <LoadingState />
-        ) : offersQuery.isError ? (
-          <ErrorState message="Não foi possível carregar as ofertas" onRetry={() => offersQuery.refetch()} />
-        ) : offers.length === 0 ? (
-          <EmptyState
-            icon={Package}
-            title="Nenhuma oferta cadastrada"
-            description="Cadastre o que você vende. A IA pode preencher a partir de um texto, da página do produto ou de um PDF."
-            action={newButton}
-          />
-        ) : (
-          <ul className="grid gap-3 md:grid-cols-2">
-            {offers.map((offer) => (
-              <li key={offer.id} className={cn("grid gap-2 rounded-lg border p-4", offer.status === "ARCHIVED" && "opacity-70")}>
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <span className="bg-muted rounded px-1.5 py-0.5 font-medium">{offerKindLabel[offer.kind]}</span>
-                  {offer.status === "ARCHIVED" && <span className="bg-muted rounded px-1.5 py-0.5 font-medium">Arquivada</span>}
-                  <span className="text-muted-foreground ml-auto tabular-nums">versão {offer.version}</span>
-                </div>
-                <button
-                  type="button"
-                  className="focus-visible:ring-ring/50 grid gap-1 rounded text-left outline-none focus-visible:ring-[3px]"
-                  onClick={() => setEditing(offer)}
-                >
-                  <span className="font-medium">{offer.name}</span>
-                  <span className="text-sm tabular-nums">{formatOfferPrice(offer)}</span>
-                  {offer.summary && <span className="text-muted-foreground text-sm">{offer.summary}</span>}
-                </button>
-                <p className="text-muted-foreground text-xs">
-                  {[
-                    offer.objections.length && `${offer.objections.length} objeção(ões)`,
-                    offer.proofs.length && `${offer.proofs.length} prova(s)`,
-                    offer.maxDiscountPercent !== null && `desconto até ${offer.maxDiscountPercent}%`,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ") || "Sem objeções e provas ainda"}
-                </p>
-                {canManage && (
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {offer.status === "ACTIVE" && (
-                      <Button size="sm" variant="outline" onClick={() => setChecking(offer)}>
-                        <ScanSearch className="h-4 w-4" />
-                        Checar coerência
-                      </Button>
+            {offersQuery.isLoading ? (
+              <LoadingState />
+            ) : offersQuery.isError ? (
+              <ErrorState message="Não foi possível carregar as ofertas" onRetry={() => offersQuery.refetch()} />
+            ) : offers.length === 0 ? (
+              <EmptyState
+                icon={Package}
+                title="Nenhuma oferta cadastrada"
+                description="Cadastre o que você vende. A IA pode preencher a partir de um texto, da página do produto ou de um PDF."
+                action={newButton}
+              />
+            ) : (
+              <ul className="grid gap-3 md:grid-cols-2">
+                {offers.map((offer) => (
+                  <li key={offer.id} className={cn("grid gap-2 rounded-lg border p-4", offer.status === "ARCHIVED" && "opacity-70")}>
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="bg-muted rounded px-1.5 py-0.5 font-medium">{offerKindLabel[offer.kind]}</span>
+                      {offer.status === "ARCHIVED" && <span className="bg-muted rounded px-1.5 py-0.5 font-medium">Arquivada</span>}
+                      <span className="text-muted-foreground ml-auto tabular-nums">versão {offer.version}</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="focus-visible:ring-ring/50 grid gap-1 rounded text-left outline-none focus-visible:ring-[3px]"
+                      onClick={() => setEditing(offer)}
+                    >
+                      <span className="font-medium">{offer.name}</span>
+                      <span className="text-sm tabular-nums">{formatOfferPrice(offer)}</span>
+                      {offer.summary && <span className="text-muted-foreground text-sm">{offer.summary}</span>}
+                    </button>
+                    <p className="text-muted-foreground text-xs">
+                      {[
+                        offer.objections.length && `${offer.objections.length} objeção(ões)`,
+                        offer.proofs.length && `${offer.proofs.length} prova(s)`,
+                        offer.maxDiscountPercent !== null && `desconto até ${offer.maxDiscountPercent}%`,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || "Sem objeções e provas ainda"}
+                    </p>
+                    {canManage && (
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {offer.status === "ACTIVE" && (
+                          <Button size="sm" variant="outline" onClick={() => setChecking(offer)}>
+                            <ScanSearch className="h-4 w-4" />
+                            Checar coerência
+                          </Button>
+                        )}
+                        {offer.status === "ACTIVE" ? (
+                          <Button size="sm" variant="ghost" disabled={archive.isPending} onClick={() => askArchive(offer)}>
+                            <Archive className="h-4 w-4" />
+                            Arquivar
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={archive.isPending}
+                            onClick={() => archive.mutate({ offer, archived: false })}
+                          >
+                            <ArchiveRestore className="h-4 w-4" />
+                            Reativar
+                          </Button>
+                        )}
+                      </div>
                     )}
-                    {offer.status === "ACTIVE" ? (
-                      <Button size="sm" variant="ghost" disabled={archive.isPending} onClick={() => askArchive(offer)}>
-                        <Archive className="h-4 w-4" />
-                        Arquivar
-                      </Button>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={archive.isPending}
-                        onClick={() => archive.mutate({ offer, archived: false })}
-                      >
-                        <ArchiveRestore className="h-4 w-4" />
-                        Reativar
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </TabsContent>
+        </Tabs>
 
         {editing && <OfferEditorDialog offer={editing === "new" ? undefined : editing} onClose={() => setEditing(null)} />}
         {checking && <OfferCoherenceDialog offer={checking} onClose={() => setChecking(null)} />}

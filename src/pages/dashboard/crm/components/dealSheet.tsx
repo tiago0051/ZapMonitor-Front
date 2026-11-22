@@ -36,6 +36,7 @@ import { AiFieldUpdates } from "@/components/aiFieldUpdates/aiFieldUpdates";
 import { OpenChatButton } from "../chatDock/openChatButton";
 import { DealAiInsight } from "./dealAiInsight";
 import { DealItems } from "./dealItems";
+import { DealScript } from "./dealScript";
 import { DealOriginDetails } from "./dealOrigin";
 import { useDealActions } from "../useDealActions";
 
@@ -419,6 +420,8 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
               <TabsContent value="details" forceMount className="space-y-6 data-[state=inactive]:hidden">
                 {deal.origin && <DealOriginDetails origin={deal.origin} />}
 
+                {can("offers.view") && <DealScript deal={deal} />}
+
                 <DealAiInsight deal={deal} pipeline={pipeline} onMove={(stage) => actions.requestMove(deal, stage)} />
 
                 <AiFieldUpdates
@@ -428,7 +431,13 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
 
                 <DealDetailsForm key={deal.id} deal={deal} onDirtyChange={setIsFormDirty} />
 
-                {can("offers.view") && <DealItems key={deal.id} deal={deal} />}
+                {can("offers.view") && (
+                  <DealItems
+                    key={deal.id}
+                    deal={deal}
+                    onSaved={() => queryClient.invalidateQueries({ queryKey: ["dealScript", client.id, deal.id] })}
+                  />
+                )}
               </TabsContent>
 
               <TabsContent value="tasks" forceMount className="data-[state=inactive]:hidden">

@@ -35,7 +35,7 @@ const rowTotal = (row: Row) => {
  * O que está sendo vendido no negócio: ofertas do cadastro (preço vem dele) ou itens digitados. Com itens, o valor do
  * negócio passa a ser a soma. Desconto acima do máximo da oferta só para quem cadastra ofertas.
  */
-export const DealItems: FC<{ deal: Deal }> = ({ deal }) => {
+export const DealItems: FC<{ deal: Deal; onSaved?: () => void }> = ({ deal, onSaved }) => {
   const { client, can } = useClientContext();
   const queryClient = useQueryClient();
   const canExceedDiscount = can("offers.manage");
@@ -69,6 +69,7 @@ export const DealItems: FC<{ deal: Deal }> = ({ deal }) => {
       queryClient.setQueryData(["dealItems", client.id, deal.id], result);
       queryClient.invalidateQueries({ queryKey: ["crm", "deals"] });
       setRows(null);
+      onSaved?.();
       toast.success(result.total !== null ? `Itens salvos. Valor do negócio: ${formatMoney(result.total)}` : "Itens salvos");
     },
   });
