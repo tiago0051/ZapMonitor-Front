@@ -29,6 +29,14 @@ export const marketingStrategyService = {
   setStepStatus: async (clientId: string, id: string, stepId: string, status: MarketingStepStatus): Promise<MarketingStrategy> =>
     (await api.put(`${base(clientId)}/${id}/step/${stepId}/status`, { status })).data,
 
+  /** Funis, grupos, agentes e roteiros para o "Montar a venda", e o que já está ligado. */
+  findSalesSetupOptions: async (clientId: string, id: string): Promise<SalesSetupOptions> =>
+    (await api.get(`${base(clientId)}/${id}/sales-setup`)).data,
+
+  /** Roteiro, agente e fluxo SDR (inativo, em rascunho) da oferta, ligados à estratégia. */
+  setupSales: async (clientId: string, id: string, body: SalesSetupInput): Promise<SalesSetupResult> =>
+    (await api.post(`${base(clientId)}/${id}/sales-setup`, body)).data,
+
   /** Tarefa no Planejamento ou rascunho de postagem do passo, já ligado à estratégia. */
   executeStep: async (
     clientId: string,

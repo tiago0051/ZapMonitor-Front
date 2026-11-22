@@ -10,6 +10,7 @@ import { CalendarPlus, ChevronDown, ClipboardCopy, Film, Loader2, PencilRuler } 
 import { useState, type FC } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
+import { SalesSetupDialog } from "./salesSetupDialog";
 import { StrategyLinkList } from "./strategyLinkList";
 import { StrategyMarkerHelp } from "./strategyMarkerHelp";
 import { StrategyValidationDialog } from "./strategyValidationDialog";
@@ -52,6 +53,7 @@ export const StrategyStepCard: FC<Props> = ({ strategy, step, canManage, onSaved
   const Icon = info.icon;
   const isReady = strategy.status === "READY";
   const [validating, setValidating] = useState<MarketingStrategyLink | null>(null);
+  const [isSettingUpSales, setIsSettingUpSales] = useState(false);
 
   const setStatus = useMutation({
     mutationFn: (status: MarketingStepStatus) => marketingStrategyService.setStepStatus(client.id, strategy.id, step.id, status),
@@ -234,6 +236,17 @@ export const StrategyStepCard: FC<Props> = ({ strategy, step, canManage, onSaved
               )}
             </>
           )}
+          {step.action === "SALES_SETUP" && (
+            <Button
+              size="sm"
+              disabled={busy}
+              title="Monta roteiro, agente de IA e o fluxo SDR (desligado, em rascunho) a partir da oferta"
+              onClick={() => setIsSettingUpSales(true)}
+            >
+              <Icon className="h-4 w-4" />
+              Montar a venda
+            </Button>
+          )}
           {step.action === "SOCIAL_POST" && canUseAds && can("posts.manage") && (
             <Button size="sm" disabled={busy} onClick={() => execute.mutate("SOCIAL_POST")}>
               {execute.isPending && execute.variables === "SOCIAL_POST" ? (
@@ -278,6 +291,20 @@ export const StrategyStepCard: FC<Props> = ({ strategy, step, canManage, onSaved
 
       {step.links.length > 0 && (
         <StrategyLinkList links={step.links} canManage={canManage} onValidate={setValidating} onUnlink={(id) => unlink.mutate(id)} />
+      )}
+
+      {isSettingUpSales && (
+        <SalesSetupDialog
+          strategy={strategy}
+          stepId={step.id}
+          onClose={() => setIsSettingUpSales(false)}
+          onDone={() => {
+            marketingStrategyService
+              .find(client.id, strategy.id)
+              .then(onSaved)
+              .catch(() => undefined);
+          }}
+        />
       )}
 
       {validating && (
