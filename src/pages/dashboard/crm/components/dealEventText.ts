@@ -55,6 +55,7 @@ export const describeEvent = (event: Pick<DealEvent, "type" | "payload">) => {
       const number = `proposta nº ${payload.number}`;
       if (payload.action === "SENT")
         return `Enviou a ${number}${payload.via ? ` (${proposalViaLabel[payload.via as string] ?? payload.via})` : ""}`;
+      if (payload.action === "DRAFTED") return `O agente de IA preparou o rascunho da ${number} para a equipe revisar e enviar`;
       if (payload.action === "VIEWED") return `O cliente abriu a ${number}`;
       if (payload.action === "ACCEPTED") return `O cliente aceitou a ${number}`;
       if (payload.action === "DECLINED") return `O cliente recusou a ${number}`;
