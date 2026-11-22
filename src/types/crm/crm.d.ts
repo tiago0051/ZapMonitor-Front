@@ -13,7 +13,9 @@ type DealEventType =
   | "TASK_COMPLETED"
   | "EMAIL_CLICKED"
   // Atividade registrada à mão; o payload traz activityType, outcome e text
-  | "ACTIVITY_LOGGED";
+  | "ACTIVITY_LOGGED"
+  // Proposta enviada, vista, aceita ou recusada; o payload traz action, number, total e via
+  | "PROPOSAL";
 
 type DealActivityType = "CALL" | "MEETING" | "NOTE" | "EMAIL" | "WHATSAPP";
 

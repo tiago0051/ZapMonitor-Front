@@ -8,6 +8,8 @@ const fieldLabel: Record<string, string> = {
   contact: "telefone do contato",
 };
 
+const proposalViaLabel: Record<string, string> = { WHATSAPP: "WhatsApp", EMAIL: "e-mail", LINK: "link" };
+
 export const activityTypeLabel: Record<DealActivityType, string> = {
   CALL: "Ligação",
   MEETING: "Reunião",
@@ -49,5 +51,14 @@ export const describeEvent = (event: Pick<DealEvent, "type" | "payload">) => {
     }
     case "EMAIL_CLICKED":
       return `Clicou no e-mail da campanha "${payload.campaignName}"`;
+    case "PROPOSAL": {
+      const number = `proposta nº ${payload.number}`;
+      if (payload.action === "SENT")
+        return `Enviou a ${number}${payload.via ? ` (${proposalViaLabel[payload.via as string] ?? payload.via})` : ""}`;
+      if (payload.action === "VIEWED") return `O cliente abriu a ${number}`;
+      if (payload.action === "ACCEPTED") return `O cliente aceitou a ${number}`;
+      if (payload.action === "DECLINED") return `O cliente recusou a ${number}`;
+      return `Atualizou a ${number}`;
+    }
   }
 };

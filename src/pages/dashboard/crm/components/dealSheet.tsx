@@ -37,6 +37,7 @@ import { OpenChatButton } from "../chatDock/openChatButton";
 import { DealAiInsight } from "./dealAiInsight";
 import { DealItems } from "./dealItems";
 import { DealScript } from "./dealScript";
+import { DealProposals } from "@/pages/dashboard/proposals/dealProposals";
 import { DealOriginDetails } from "./dealOrigin";
 import { useDealActions } from "../useDealActions";
 
@@ -410,6 +411,7 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
                   Tarefas
                   {deal.openTaskCount > 0 && <span className="text-muted-foreground tabular-nums">({deal.openTaskCount})</span>}
                 </TabsTrigger>
+                <TabsTrigger value="proposals">Propostas</TabsTrigger>
                 <TabsTrigger value="history">
                   Atividades
                   {!!eventsQuery.data?.length && <span className="text-muted-foreground tabular-nums">({eventsQuery.data.length})</span>}
@@ -442,6 +444,10 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
 
               <TabsContent value="tasks" forceMount className="data-[state=inactive]:hidden">
                 <DealTasks deal={deal} />
+              </TabsContent>
+
+              <TabsContent value="proposals" className="data-[state=inactive]:hidden">
+                <DealProposals deal={deal} />
               </TabsContent>
 
               <TabsContent value="history" forceMount className="data-[state=inactive]:hidden">
