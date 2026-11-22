@@ -15,6 +15,7 @@ import { useForm, useWatch, type SubmitHandler } from "react-hook-form";
 import { useSearchParams } from "react-router";
 import { toast } from "sonner";
 import z from "zod";
+import { AiAgentZenviaTool } from "./aiAgentZenviaTool";
 
 const selectClassName =
   "border-input dark:bg-input/30 flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:opacity-50";
@@ -82,7 +83,7 @@ type DialogAiAgentToolsProps = {
   aiAgent: AiAgent;
 };
 
-/** Ferramentas do agente; por enquanto, o Google Agenda com as regras de agendamento. */
+/** Ferramentas do agente: Google Agenda com as regras de agendamento e venda de ingressos pelo Zenvia. */
 export const DialogAiAgentTools: FC<DialogAiAgentToolsProps> = ({ clientId, aiAgent }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [, setSearchParams] = useSearchParams();
@@ -319,6 +320,8 @@ export const DialogAiAgentTools: FC<DialogAiAgentToolsProps> = ({ clientId, aiAg
             </form>
           </Form>
         )}
+
+        {isOpen && <AiAgentZenviaTool clientId={clientId} aiAgent={aiAgent} />}
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setIsOpen(false)}>
