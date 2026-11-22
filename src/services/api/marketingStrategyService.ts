@@ -21,8 +21,11 @@ export const marketingStrategyService = {
     body: { brief?: MarketingBrief; playbookSlug?: string | null; offerId?: string | null },
   ): Promise<MarketingStrategy> => (await api.post(`${base(clientId)}/${id}/regenerate`, body)).data,
 
-  update: async (clientId: string, id: string, body: { name?: string; archived?: boolean }): Promise<MarketingStrategy> =>
-    (await api.put(`${base(clientId)}/${id}`, body)).data,
+  update: async (
+    clientId: string,
+    id: string,
+    body: { name?: string; archived?: boolean; salesGoal?: StrategySalesGoal | null; pipelineId?: string | null },
+  ): Promise<MarketingStrategy> => (await api.put(`${base(clientId)}/${id}`, body)).data,
 
   delete: async (clientId: string, id: string) => (await api.delete(`${base(clientId)}/${id}`)).data,
 

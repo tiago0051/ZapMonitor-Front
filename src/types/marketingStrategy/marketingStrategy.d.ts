@@ -49,6 +49,36 @@ type MarketingBrief = {
   monthlyBudget: number | null;
   channels: MarketingChannel[];
   notes: string | null;
+  // Meta de vendas no prazo: número de vendas ou valor vendido
+  salesGoal?: StrategySalesGoal | null;
+};
+
+type StrategySalesGoal = { kind: "SALES" | "REVENUE"; value: number };
+
+/** Camada de venda: dos atendimentos dos fluxos da estratégia até a venda. */
+type StrategySalesFunnel = {
+  conversations: number;
+  deals: number;
+  qualified: number;
+  meetings: number;
+  proposalsSent: number;
+  proposalsAccepted: number;
+  handoffs: number;
+  won: number;
+  wonValue: number;
+  avgHoursToQualify: number | null;
+  topObjections: { text: string; count: number }[];
+  topMissingCriteria: { text: string; count: number }[];
+};
+
+type SalesGoalProgress = {
+  goal: StrategySalesGoal;
+  achieved: number;
+  percent: number;
+  // Quanto do prazo passou; nulo sem prazo
+  elapsedPercent: number | null;
+  onTrack: boolean | null;
+  deadline: string | null;
 };
 
 type MarketingPlaybookSummary = {
@@ -127,6 +157,9 @@ type StrategyResults = {
   baseline: StrategyMetrics | null;
   steps: { stepId: string; metrics: StrategyMetrics; verdict: MarketingVerdict; reason: string }[];
   campaigns: { id: string; name: string; stepId: string | null; metrics: StrategyMetrics }[];
+  // Ausentes nas avaliações antigas
+  sales?: StrategySalesFunnel | null;
+  goal?: SalesGoalProgress | null;
 };
 
 type StrategyResultsResponse = {
@@ -220,6 +253,8 @@ type MarketingStrategy = {
   brief: MarketingBrief;
   // Oferta do cadastro que a estratégia vende
   offerId: string | null;
+  // Funil da camada de venda (o "Montar a venda" grava)
+  pipelineId: string | null;
   requestedPlaybookSlug: string | null;
   playbook: MarketingPlaybookSummary | null;
   secondaryPlaybook: MarketingPlaybookSummary | null;
