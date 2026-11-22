@@ -60,5 +60,10 @@ export const describeEvent = (event: Pick<DealEvent, "type" | "payload">) => {
       if (payload.action === "DECLINED") return `O cliente recusou a ${number}`;
       return `Atualizou a ${number}`;
     }
+    case "HANDOFF": {
+      const flag = (payload as Record<string, unknown>).qualified;
+      const qualified = flag === true ? " — lead qualificado" : flag === false ? " — ainda não qualificado" : "";
+      return `O agente de IA passou a conversa para um atendente (${payload.outputLabel})${qualified}`;
+    }
   }
 };

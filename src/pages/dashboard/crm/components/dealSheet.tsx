@@ -35,6 +35,7 @@ import { DealTasks } from "./dealTasks";
 import { AiFieldUpdates } from "@/components/aiFieldUpdates/aiFieldUpdates";
 import { OpenChatButton } from "../chatDock/openChatButton";
 import { DealAiInsight } from "./dealAiInsight";
+import { DealHandoffCard } from "./dealQualification";
 import { DealItems } from "./dealItems";
 import { DealScript } from "./dealScript";
 import { DealProposals } from "@/pages/dashboard/proposals/dealProposals";
@@ -424,6 +425,7 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
 
                 {can("offers.view") && <DealScript deal={deal} />}
 
+                {deal.handoffSummary && <DealHandoffCard summary={deal.handoffSummary} />}
                 <DealAiInsight deal={deal} pipeline={pipeline} onMove={(stage) => actions.requestMove(deal, stage)} />
 
                 <AiFieldUpdates

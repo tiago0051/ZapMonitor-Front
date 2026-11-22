@@ -231,7 +231,10 @@ const AgentCrmSettings: FC<{
             </select>
           </Field>
 
-          <Field label="Etapas que o agente pode usar">
+          <Field
+            label="Etapas que o agente pode usar"
+            hint="Da etapa de lead qualificado em diante, o agente só move quando os critérios de qualificação das ofertas dele estão atendidos."
+          >
             <div className="space-y-1.5">
               {pipeline?.stages.map((stage) => (
                 <label key={stage.id} className="flex cursor-pointer items-center gap-2 text-sm">

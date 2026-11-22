@@ -15,7 +15,9 @@ type DealEventType =
   // Atividade registrada à mão; o payload traz activityType, outcome e text
   | "ACTIVITY_LOGGED"
   // Proposta enviada, vista, aceita ou recusada; o payload traz action, number, total e via
-  | "PROPOSAL";
+  | "PROPOSAL"
+  // Agente de IA passou a conversa para um humano; o payload traz outputLabel, recommendation e qualified
+  | "HANDOFF";
 
 type DealActivityType = "CALL" | "MEETING" | "NOTE" | "EMAIL" | "WHATSAPP";
 
@@ -120,6 +122,8 @@ type Deal = {
   // Nota de 0 a 100 da última análise de IA
   aiScore: number | null;
   aiInsight: DealAiInsight | null;
+  // Último resumo de passagem do agente de IA para um humano
+  handoffSummary: DealHandoffSummary | null;
   origin: DealOrigin | null;
   stageEnteredAt: string;
   closedAt: string | null;
@@ -208,4 +212,30 @@ type DealAiInsight = {
   suggestedStageId: string | null;
   nextStep: string;
   analyzedAt: string;
+  // Critérios da oferta do negócio, quando ela tem
+  qualification?: QualificationResult | null;
+};
+
+type QualificationStatus = "MET" | "NOT_MET" | "UNKNOWN";
+
+type QualificationResult = {
+  offerId: string;
+  offerName: string;
+  checks: { id: string; label: string; status: QualificationStatus; evidence: string | null }[];
+  // Peso atendido, 0 a 100
+  score: number;
+  minScore: number;
+  qualified: boolean;
+  // O que ainda falta descobrir
+  missing: string[];
+};
+
+type DealHandoffSummary = {
+  outputLabel: string;
+  summary: string;
+  discovered: string[];
+  objections: string[];
+  recommendation: string;
+  qualification: QualificationResult | null;
+  createdAt: string;
 };

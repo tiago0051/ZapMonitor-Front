@@ -9,6 +9,7 @@ import { ArrowRight, ListPlus, RefreshCw, Sparkles } from "lucide-react";
 import type { FC } from "react";
 import { toast } from "sonner";
 import { aiScoreLabel, findPipelineStage } from "../crmUtils";
+import { QualificationChecklist } from "./dealQualification";
 
 type DealAiInsightProps = {
   deal: Deal;
@@ -80,6 +81,8 @@ export const DealAiInsight: FC<DealAiInsightProps> = ({ deal, pipeline, onMove }
             <span className="text-muted-foreground text-sm">/ 100 · {aiScoreLabel(deal.aiScore)}</span>
           </div>
           {insight.scoreReason && <p className="text-sm">{insight.scoreReason}</p>}
+
+          {insight.qualification && <QualificationChecklist qualification={insight.qualification} />}
 
           {insight.nextStep && (
             <div className="bg-muted/50 space-y-2 rounded-md p-2">

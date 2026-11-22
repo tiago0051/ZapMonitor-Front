@@ -4,6 +4,9 @@ type OfferBilling = "ONE_TIME" | "MONTHLY" | "YEARLY";
 
 type OfferObjection = { objection: string; answer: string };
 
+/** O que descobrir na conversa para o lead contar como qualificado; id vazio em critério novo (o back gera). */
+type OfferQualificationCriterion = { id?: string; label: string; question: string | null; weight: number; required: boolean };
+
 /** Campos do cadastro; também é o rascunho que a IA devolve. */
 type OfferData = {
   name: string;
@@ -23,6 +26,9 @@ type OfferData = {
   objections: OfferObjection[];
   guarantee: string | null;
   url: string | null;
+  qualificationCriteria: OfferQualificationCriterion[];
+  // 0 a 100; nulo = 70
+  qualificationMinScore: number | null;
 };
 
 type Offer = OfferData & {

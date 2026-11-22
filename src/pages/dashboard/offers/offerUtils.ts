@@ -37,7 +37,13 @@ export const emptyOffer = (): OfferData => ({
   objections: [],
   guarantee: null,
   url: null,
+  qualificationCriteria: [],
+  qualificationMinScore: null,
 });
+
+// Sem nota mínima cadastrada, o back usa 70
+export const DEFAULT_QUALIFICATION_MIN_SCORE = 70;
+export const MAX_QUALIFICATION_CRITERIA = 10;
 
 export const toOfferData = (offer: OfferData): OfferData => ({
   name: offer.name,
@@ -57,6 +63,14 @@ export const toOfferData = (offer: OfferData): OfferData => ({
   objections: offer.objections,
   guarantee: offer.guarantee,
   url: offer.url,
+  qualificationCriteria: (offer.qualificationCriteria ?? []).map((criterion) => ({
+    ...(criterion.id ? { id: criterion.id } : {}),
+    label: criterion.label,
+    question: criterion.question,
+    weight: criterion.weight,
+    required: criterion.required,
+  })),
+  qualificationMinScore: offer.qualificationMinScore ?? null,
 });
 
 /** "1.234,56", "1234.56" ou vazio → número ou nulo; NaN quando não dá para ler. */

@@ -10,6 +10,7 @@ import { useCrmOptions } from "../useCrmOptions";
 import { useDealActions } from "../useDealActions";
 import { useCrmRealtime } from "../useCrmRealtime";
 import { DealSheet } from "./dealSheet";
+import { DealHandoffCard, QualificationBadge } from "./dealQualification";
 import { NewDealForm } from "./newDealForm";
 
 // A conversa aberta no atendimento ou a ficha do contato (que junta os negócios de todas as conversas dela)
@@ -63,6 +64,13 @@ export const ContactDeals: FC<ContactDealsProps> = ({ contact, person }) => {
               </button>
               {deal.value !== null && <span className="shrink-0 text-xs font-semibold text-green-700">{formatCurrency(deal.value)}</span>}
             </div>
+
+            {/* Na conversa, quem assume do agente vê primeiro como seguir; sem passagem, o selo da qualificação */}
+            {contact && deal.status === "OPEN" && deal.handoffSummary ? (
+              <DealHandoffCard summary={deal.handoffSummary} compact />
+            ) : (
+              deal.aiInsight?.qualification && <QualificationBadge qualification={deal.aiInsight.qualification} />
+            )}
 
             {deal.status === "OPEN" ? (
               <select

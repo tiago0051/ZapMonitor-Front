@@ -9,6 +9,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
 import { useState, type FC, type FormEvent } from "react";
 import { toast } from "sonner";
+import { OfferQualificationEditor } from "./offerQualificationEditor";
 import { emptyOffer, offerBillingLabel, offerKindLabel, parseDecimal, selectClassName, textareaClassName, toOfferData } from "./offerUtils";
 
 type Props = {
@@ -97,6 +98,9 @@ export const OfferEditorDialog: FC<Props> = ({ onClose, offer }) => {
         maxDiscountPercent: discount,
         ...(Object.fromEntries(LISTS.map(({ key }) => [key, fromLines(lists[key])])) as Record<ListKey, string[]>),
         objections: data.objections.filter((item) => item.objection.trim() && item.answer.trim()),
+        qualificationCriteria: data.qualificationCriteria
+          .map((item) => ({ ...item, label: item.label.trim(), question: item.question?.trim() || null }))
+          .filter((item) => item.label),
       };
       return offer ? offerService.update(client.id, offer.id, body) : offerService.create(client.id, body);
     },
@@ -384,6 +388,13 @@ export const OfferEditorDialog: FC<Props> = ({ onClose, offer }) => {
                 ))}
               </ol>
             </section>
+
+            <OfferQualificationEditor
+              criteria={data.qualificationCriteria}
+              minScore={data.qualificationMinScore}
+              canManage={canManage}
+              onChange={update}
+            />
 
             <div className="grid gap-1">
               <Label htmlFor="offer-url">Página do produto</Label>
