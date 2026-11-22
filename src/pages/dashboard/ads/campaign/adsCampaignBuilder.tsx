@@ -173,7 +173,13 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
   const isDirty =
     JSON.stringify({ name, brief, routing, plan }) !==
     JSON.stringify({ name: draft.name, brief: draft.brief, routing: savedRouting, plan: draft.plan });
-  const { guard, guardDialog } = useUnsavedChangesGuard(isDirty && !isDraftLocked(draft, can("ads.manage")));
+  // Com a campanha criada na Meta, só o destino da conversa (fluxo, funil, etapa e grupo) continua editável
+  const canEditConversation = can("ads.manage") && draft.status !== "PUBLISHING";
+  const conversationKeys = ["flowId", "pipelineId", "stageId", "serviceGroupId"] as const;
+  const isConversationDirty = conversationKeys.some((key) => routing[key] !== savedRouting[key]);
+  const { guard, guardDialog } = useUnsavedChangesGuard(
+    isDraftLocked(draft, can("ads.manage")) ? canEditConversation && isConversationDirty : isDirty,
+  );
   const { confirm, confirmDialog } = useConfirm();
   const params = { clientId: client.id, draftId: draft.id };
   const isLocked = isDraftLocked(draft, can("ads.manage"));
@@ -190,6 +196,18 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
     onSuccess: (updated) => {
       refresh(updated);
       toast.success("Campanha salva");
+    },
+  });
+  const saveConversation = useMutation({
+    mutationFn: () =>
+      metaAdsService.updateDraftConversation({
+        params,
+        body: { flowId: routing.flowId, pipelineId: routing.pipelineId, stageId: routing.stageId, serviceGroupId: routing.serviceGroupId },
+      }),
+    onError: requestErrorHandling,
+    onSuccess: (updated) => {
+      refresh(updated);
+      toast.success("Destino da conversa salvo. Vale para as próximas conversas dos anúncios.");
     },
   });
   const generate = useMutation({
@@ -367,7 +385,32 @@ const DraftEditor: FC<DraftEditorProps> = ({ account, draft, onBack }) => {
         {options.isLoading ? (
           <LoadingState className="justify-start py-2" />
         ) : (
-          <RoutingFields routing={routing} options={options} disabled={isLocked} onChange={setRouting} />
+          <RoutingFields
+            routing={routing}
+            options={options}
+            disabled={isLocked && !canEditConversation}
+            destinationLocked={isLocked}
+            onChange={setRouting}
+          />
+        )}
+        {isLocked && canEditConversation && (
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-muted-foreground text-xs">
+              Com a campanha criada, o número e a página não mudam (fazem parte do anúncio na Meta). Fluxo, funil, etapa e grupo mudam a
+              qualquer momento e valem para as próximas conversas.
+            </p>
+            {isConversationDirty && (
+              <div className="flex gap-2">
+                <Button size="sm" variant="ghost" disabled={saveConversation.isPending} onClick={() => setRouting(savedRouting)}>
+                  Descartar
+                </Button>
+                <Button size="sm" disabled={saveConversation.isPending} onClick={() => saveConversation.mutate()}>
+                  {saveConversation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Salvar destino da conversa
+                </Button>
+              </div>
+            )}
+          </div>
         )}
       </section>
 

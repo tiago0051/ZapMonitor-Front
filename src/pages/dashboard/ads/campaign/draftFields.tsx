@@ -10,11 +10,13 @@ type RoutingFieldsProps = {
   routing: AdDraftRouting;
   options: Options;
   disabled: boolean;
+  // Campanha criada na Meta: número e página fazem parte do anúncio e não mudam; o resto é do ZapMonitor e muda
+  destinationLocked?: boolean;
   onChange: (routing: AdDraftRouting) => void;
 };
 
 /** Número e página do clique para WhatsApp, e o fluxo, o funil e o grupo da conversa que chegar. */
-export const RoutingFields: FC<RoutingFieldsProps> = ({ routing, options, disabled, onChange }) => {
+export const RoutingFields: FC<RoutingFieldsProps> = ({ routing, options, disabled, destinationLocked = false, onChange }) => {
   const pipeline = options.pipelines.find((item) => item.id === routing.pipelineId);
   const set = (changes: Partial<AdDraftRouting>) => onChange({ ...routing, ...changes });
 
@@ -27,7 +29,7 @@ export const RoutingFields: FC<RoutingFieldsProps> = ({ routing, options, disabl
         <select
           id="draft-number"
           className={fieldSelectClassName}
-          disabled={disabled}
+          disabled={disabled || destinationLocked}
           value={routing.whatsappConfigurationId ?? ""}
           onChange={(event) => set({ whatsappConfigurationId: event.target.value || null })}
         >
@@ -46,7 +48,7 @@ export const RoutingFields: FC<RoutingFieldsProps> = ({ routing, options, disabl
         <select
           id="draft-page"
           className={fieldSelectClassName}
-          disabled={disabled}
+          disabled={disabled || destinationLocked}
           value={routing.metaPageId ?? ""}
           onChange={(event) => set({ metaPageId: event.target.value || null })}
         >
