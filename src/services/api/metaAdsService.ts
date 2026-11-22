@@ -380,6 +380,18 @@ export const metaAdsService = {
     return response.data;
   },
 
+  /** Fluxo, funil, etapa e grupo das conversas; vale também com a campanha no ar. */
+  updateDraftConversation: async ({
+    params,
+    body,
+  }: {
+    params: { clientId: string; draftId: string };
+    body: Pick<AdDraftRouting, "flowId" | "pipelineId" | "stageId" | "serviceGroupId">;
+  }): Promise<AdCampaignDraft> => {
+    const response = await api.put(`/client/${params.clientId}/meta-ads/draft/${params.draftId}/conversation`, body);
+    return response.data;
+  },
+
   deleteDraft: async ({ params }: { params: { clientId: string; draftId: string } }): Promise<void> => {
     await api.delete(`/client/${params.clientId}/meta-ads/draft/${params.draftId}`);
   },
