@@ -10,13 +10,15 @@ export const marketingStrategyService = {
   find: async (clientId: string, id: string): Promise<MarketingStrategy> => (await api.get(`${base(clientId)}/${id}`)).data,
 
   /** A IA monta a estratégia na fila; acompanhe pelo status. */
-  create: async (clientId: string, body: { brief: MarketingBrief; playbookSlug?: string | null }): Promise<MarketingStrategy> =>
-    (await api.post(base(clientId), body)).data,
+  create: async (
+    clientId: string,
+    body: { brief: MarketingBrief; playbookSlug?: string | null; offerId?: string | null },
+  ): Promise<MarketingStrategy> => (await api.post(base(clientId), body)).data,
 
   regenerate: async (
     clientId: string,
     id: string,
-    body: { brief?: MarketingBrief; playbookSlug?: string | null },
+    body: { brief?: MarketingBrief; playbookSlug?: string | null; offerId?: string | null },
   ): Promise<MarketingStrategy> => (await api.post(`${base(clientId)}/${id}/regenerate`, body)).data,
 
   update: async (clientId: string, id: string, body: { name?: string; archived?: boolean }): Promise<MarketingStrategy> =>

@@ -206,6 +206,8 @@ type MarketingStrategy = {
   name: string;
   status: MarketingStrategyStatus;
   brief: MarketingBrief;
+  // Oferta do cadastro que a estratégia vende
+  offerId: string | null;
   requestedPlaybookSlug: string | null;
   playbook: MarketingPlaybookSummary | null;
   secondaryPlaybook: MarketingPlaybookSummary | null;

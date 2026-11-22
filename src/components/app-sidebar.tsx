@@ -34,6 +34,7 @@ import {
   FiTrendingUp,
   FiUsers,
   FiZap,
+  FiPackage,
 } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
 import { ChevronsUpDown, PanelLeftIcon } from "lucide-react";
@@ -114,6 +115,7 @@ const navSections: { label: string | null; items: NavItem[] }[] = [
         badges: ["plannerTasksDue"],
         badgeLabel: "tarefas vencidas ou para hoje",
       },
+      { title: "Ofertas", icon: FiPackage, url: "offers", permission: "offers.view" },
       { title: "Estratégias", icon: FiTarget, url: "strategies", permission: "strategies.view" },
       { title: "Disparos", icon: FiSend, url: "broadcasts", permission: "broadcasts.view" },
       {

@@ -35,6 +35,7 @@ import { DealTasks } from "./dealTasks";
 import { AiFieldUpdates } from "@/components/aiFieldUpdates/aiFieldUpdates";
 import { OpenChatButton } from "../chatDock/openChatButton";
 import { DealAiInsight } from "./dealAiInsight";
+import { DealItems } from "./dealItems";
 import { DealOriginDetails } from "./dealOrigin";
 import { useDealActions } from "../useDealActions";
 
@@ -426,6 +427,8 @@ export const DealSheet: FC<DealSheetProps> = ({ dealId, onClose }) => {
                 />
 
                 <DealDetailsForm key={deal.id} deal={deal} onDirtyChange={setIsFormDirty} />
+
+                {can("offers.view") && <DealItems key={deal.id} deal={deal} />}
               </TabsContent>
 
               <TabsContent value="tasks" forceMount className="data-[state=inactive]:hidden">

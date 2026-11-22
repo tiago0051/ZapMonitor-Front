@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useBaseUrl } from "@/hooks/use-baseUrl";
 import { marketingStrategyService } from "@/services/api/marketingStrategyService";
+import { offerService } from "@/services/api/offerService";
+import { formatOfferPrice } from "@/pages/dashboard/offers/offerUtils";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Sparkles } from "lucide-react";
@@ -35,12 +37,35 @@ const emptyBrief = (): MarketingBrief => ({
 
 /** Briefing do produto: o que a IA precisa para escolher a estratégia e montar os passos. */
 export const StrategyBriefDialog: FC<Props> = ({ onClose, strategy }) => {
-  const { client, canUseAds } = useClientContext();
+  const { client, canUseAds, can } = useClientContext();
   const baseUrl = useBaseUrl();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [brief, setBrief] = useState<MarketingBrief>(() => strategy?.brief ?? emptyBrief());
   const [playbookSlug, setPlaybookSlug] = useState(strategy?.requestedPlaybookSlug ?? "");
+  const [offerId, setOfferId] = useState(strategy?.offerId ?? "");
+  const canSeeOffers = can("offers.view");
+  const offersQuery = useQuery({
+    queryKey: ["offers", client.id, false],
+    queryFn: () => offerService.findAll(client.id),
+    enabled: canSeeOffers,
+  });
+  const offers = offersQuery.data ?? [];
+
+  /** Escolher a oferta preenche o briefing com o cadastro; o que a pessoa já escreveu continua. */
+  const chooseOffer = (id: string) => {
+    setOfferId(id);
+    const offer = offers.find((item) => item.id === id);
+    if (!offer) return;
+    setBrief((current) => ({
+      ...current,
+      product: current.product.trim() ? current.product : offer.name,
+      description: current.description.trim() ? current.description : offer.description || offer.summary || "",
+      price: current.price || formatOfferPrice(offer),
+      audience: current.audience || offer.audience,
+      differentiator: current.differentiator || offer.differentiators.slice(0, 3).join("; ") || null,
+    }));
+  };
   const update = (changes: Partial<MarketingBrief>) => setBrief((current) => ({ ...current, ...changes }));
 
   const playbooksQuery = useQuery({
@@ -54,7 +79,7 @@ export const StrategyBriefDialog: FC<Props> = ({ onClose, strategy }) => {
 
   const save = useMutation({
     mutationFn: () => {
-      const body = { brief, playbookSlug: playbookSlug || null };
+      const body = { brief, playbookSlug: playbookSlug || null, offerId: offerId || null };
       return strategy
         ? marketingStrategyService.regenerate(client.id, strategy.id, body)
         : marketingStrategyService.create(client.id, body);
@@ -87,6 +112,23 @@ export const StrategyBriefDialog: FC<Props> = ({ onClose, strategy }) => {
               {strategy && " O que já foi criado pelos passos continua ligado à estratégia."}
             </DialogDescription>
           </DialogHeader>
+
+          {canSeeOffers && offers.length > 0 && (
+            <div className="grid gap-1">
+              <Label htmlFor="brief-offer">Oferta do cadastro</Label>
+              <select id="brief-offer" className={selectClassName} value={offerId} onChange={(event) => chooseOffer(event.target.value)}>
+                <option value="">Nenhuma (descrever abaixo)</option>
+                {offers.map((offer) => (
+                  <option key={offer.id} value={offer.id}>
+                    {offer.name} · {formatOfferPrice(offer)}
+                  </option>
+                ))}
+              </select>
+              <p className="text-muted-foreground text-xs">
+                A IA usa o cadastro inteiro (preço, condições, provas e objeções), e anúncios e postagens da estratégia falam a mesma coisa.
+              </p>
+            </div>
+          )}
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid gap-1 sm:col-span-2">

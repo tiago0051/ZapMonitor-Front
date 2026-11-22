@@ -24,6 +24,7 @@ const BroadcastsRouter = lazy(() => import("./broadcastsRouter"));
 const ContactsRouter = lazy(() => import("./contactsRouter"));
 const PlannerRouter = lazy(() => import("./plannerRouter"));
 const StrategiesRouter = lazy(() => import("./strategiesRouter"));
+const OffersPage = lazy(() => import("@/pages/dashboard/offers/offersPage").then((module) => ({ default: module.OffersPage })));
 
 export const DashboardRouter: FC = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -113,6 +114,14 @@ export const DashboardRouter: FC = () => {
             element={
               <PermissionRoute permission="planner.view">
                 <PlannerRouter />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="offers"
+            element={
+              <PermissionRoute permission="offers.view">
+                <OffersPage />
               </PermissionRoute>
             }
           />
