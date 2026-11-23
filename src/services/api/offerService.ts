@@ -8,6 +8,9 @@ export const offerService = {
 
   find: async (clientId: string, id: string): Promise<OfferDetail> => (await api.get(`${base(clientId)}/${id}`)).data,
 
+  /** O que os negócios fechados ensinam sobre a oferta (sem IA). */
+  learning: async (clientId: string, id: string): Promise<OfferLearning> => (await api.get(`${base(clientId)}/${id}/learning`)).data,
+
   create: async (clientId: string, body: OfferData): Promise<Offer> => (await api.post(base(clientId), body)).data,
 
   update: async (clientId: string, id: string, body: OfferData): Promise<Offer> => (await api.put(`${base(clientId)}/${id}`, body)).data,

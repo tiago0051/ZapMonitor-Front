@@ -10,6 +10,7 @@ import { Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
 import { useState, type FC, type FormEvent } from "react";
 import { toast } from "sonner";
 import { OfferQualificationEditor } from "./offerQualificationEditor";
+import { OfferLearningPanel } from "./offerLearningPanel";
 import { emptyOffer, offerBillingLabel, offerKindLabel, parseDecimal, selectClassName, textareaClassName, toOfferData } from "./offerUtils";
 
 type Props = {
@@ -388,6 +389,8 @@ export const OfferEditorDialog: FC<Props> = ({ onClose, offer }) => {
                 ))}
               </ol>
             </section>
+
+            {offer && <OfferLearningPanel offerId={offer.id} data={data} canManage={canManage} onChange={update} />}
 
             <OfferQualificationEditor
               criteria={data.qualificationCriteria}

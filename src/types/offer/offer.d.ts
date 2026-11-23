@@ -75,3 +75,32 @@ type DealItemInput = {
 };
 
 type DealItems = { items: DealItem[]; total: number | null };
+
+/** O que os negócios fechados dos últimos 180 dias ensinam sobre a oferta. */
+type OfferLearning = {
+  closed: number;
+  won: number;
+  lost: number;
+  winRate: number | null;
+  // Com poucos negócios fechados ainda é cedo para concluir
+  enough: boolean;
+  criteria: {
+    id: string;
+    label: string;
+    currentWeight: number;
+    met: number;
+    metWinRate: number | null;
+    notMetWinRate: number | null;
+    lift: number | null;
+    suggestedWeight: number | null;
+  }[];
+  uncoveredObjections: { text: string; lost: number }[];
+  proposals: {
+    sent: number;
+    accepted: number;
+    declined: number;
+    acceptanceRate: number | null;
+    avgDiscountAccepted: number | null;
+    avgDiscountDeclined: number | null;
+  };
+};
