@@ -7,7 +7,10 @@ import { attendantDisplayName } from "@/utils/attendantName";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AlertTriangle, CornerDownLeft, GraduationCap, Info, Loader2, Sparkles } from "lucide-react";
-import { useState, type FC } from "react";
+import { useEffect, useState, type FC } from "react";
+import { useSocketContext } from "@/context/SocketContext/socketContext";
+import { useBaseUrl } from "@/hooks/use-baseUrl";
+import { Link } from "react-router";
 import { contactDisplayName } from "../../contactDisplayName";
 import { insertIntoDraft } from "../../conversationDrafts";
 import { fillQuickReply } from "../../quickReplies/quickReplies";
@@ -33,6 +36,23 @@ export const ConversationCoach: FC<Props> = ({ contact }) => {
     queryKey: ["salesCoach", client.id, "coachings", contact.id],
     queryFn: () => salesCoachService.coachings(client.id, contact.id),
   });
+  const { socket } = useSocketContext();
+  const baseUrl = useBaseUrl();
+  const { refetch: refetchCoachings } = coachingsQuery;
+  const { refetch: refetchAlerts } = alertsQuery;
+
+  // A análise chega depois do resumo do atendimento: o mesmo aviso do histórico recarrega o feedback e os alertas
+  useEffect(() => {
+    const event = `contact:${contact.id}:service:update`;
+    const reload = () => {
+      refetchCoachings();
+      refetchAlerts();
+    };
+    socket.on(event, reload);
+    return () => {
+      socket.off(event, reload);
+    };
+  }, [contact.id, socket, refetchCoachings, refetchAlerts]);
   const tip = useMutation({
     mutationFn: () => salesCoachService.tip(client.id, contact.id),
     onError: requestErrorHandling,
@@ -134,6 +154,9 @@ export const ConversationCoach: FC<Props> = ({ contact }) => {
                 </p>
               )}
               {lastFeedback.suggestedMessage && <p className="text-muted-foreground italic">"{lastFeedback.suggestedMessage}"</p>}
+              <Link className="text-primary underline-offset-4 hover:underline" to={`${baseUrl}/management?tab=coaching`}>
+                Ver o coach completo
+              </Link>
             </div>
           )}
         </div>

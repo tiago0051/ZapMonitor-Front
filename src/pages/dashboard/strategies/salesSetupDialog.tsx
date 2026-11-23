@@ -117,7 +117,8 @@ export const SalesSetupDialog: FC<Props> = ({ strategy, stepId, onClose, onDone 
             )}
             <p className="text-muted-foreground">
               Próximos passos: revise o agente, teste o fluxo no simulador, publique e ligue o fluxo ao número ou às campanhas da
-              estratégia.
+              estratégia. Para prospectar, use "Prospectar quem autorizou" no passo: o disparo vai só para quem aceitou receber mensagens e
+              as respostas caem no fluxo SDR.
             </p>
             <DialogFooter>
               <Button variant="outline" onClick={onClose}>

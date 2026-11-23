@@ -25,7 +25,14 @@ type SalesScriptData = {
   notes: string | null;
 };
 
-type SalesScript = SalesScriptData & { id: string; status: SalesScriptStatus; version: number; updatedAt: string };
+type SalesScript = SalesScriptData & {
+  id: string;
+  status: SalesScriptStatus;
+  version: number;
+  updatedAt: string;
+  // Vendas fechadas desde a última mudança (só na lista, nos ativos)
+  learning?: { wonSinceUpdate: number; lostSinceUpdate: number; reviewSuggested: boolean } | null;
+};
 
 type SalesScriptImprovement = {
   stages: SalesScriptStage[];

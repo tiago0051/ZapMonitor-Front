@@ -7,9 +7,10 @@ import { offerService } from "@/services/api/offerService";
 import { salesScriptService } from "@/services/api/salesScriptService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Archive, ArchiveRestore, MessagesSquare, Plus } from "lucide-react";
+import { Archive, ArchiveRestore, MessagesSquare, Plus, Printer } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { printSalesScript } from "./printSalesScript";
 import { SalesScriptEditorDialog } from "./salesScriptEditorDialog";
 import { scriptChannelLabel, scriptMethodLabel } from "./salesScriptUtils";
 
@@ -92,19 +93,38 @@ export const SalesScriptsTab = () => {
                 </span>
                 <span className="text-muted-foreground text-xs">{script.stages.map((stage) => stage.name).join(" → ")}</span>
               </button>
-              {canManage && (
-                <div className="flex gap-2 pt-1">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    disabled={archive.isPending}
-                    onClick={() => archive.mutate({ script, archived: script.status === "ACTIVE" })}
-                  >
-                    {script.status === "ACTIVE" ? <Archive className="h-4 w-4" /> : <ArchiveRestore className="h-4 w-4" />}
-                    {script.status === "ACTIVE" ? "Arquivar" : "Reativar"}
-                  </Button>
-                </div>
+              {script.learning?.reviewSuggested && (
+                <p className="rounded-md bg-amber-50 p-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                  {script.learning.wonSinceUpdate} venda(s) e {script.learning.lostSinceUpdate} perda(s) desde a última mudança. Abra o
+                  roteiro e use "Melhorar com conversas reais" para a IA aprender com essas conversas.
+                </p>
               )}
+              <div className="flex gap-2 pt-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    if (!printSalesScript(script, script.offerId ? (offerName.get(script.offerId) ?? null) : null))
+                      toast.error("O navegador bloqueou a nova aba. Libere pop-ups para baixar o PDF.");
+                  }}
+                >
+                  <Printer className="h-4 w-4" />
+                  PDF
+                </Button>
+                {canManage && (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={archive.isPending}
+                      onClick={() => archive.mutate({ script, archived: script.status === "ACTIVE" })}
+                    >
+                      {script.status === "ACTIVE" ? <Archive className="h-4 w-4" /> : <ArchiveRestore className="h-4 w-4" />}
+                      {script.status === "ACTIVE" ? "Arquivar" : "Reativar"}
+                    </Button>
+                  </>
+                )}
+              </div>
             </li>
           ))}
         </ul>

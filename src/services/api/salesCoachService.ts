@@ -13,6 +13,10 @@ export const salesCoachService = {
   coachings: async (clientId: string, whatsappContactId: string): Promise<ServiceCoaching[]> =>
     (await api.get(`${base(clientId)}/contact/${whatsappContactId}/coaching`)).data,
 
+  /** Resumo da semana de uma pessoa pela IA (sob demanda). */
+  summarizeUser: async (clientId: string, userId: string, days: number): Promise<CoachingSummary> =>
+    (await api.post(`${base(clientId)}/team/${userId}/summary`, null, { params: { days } })).data,
+
   team: async (clientId: string, days: number): Promise<TeamCoachingReport> =>
     (await api.get(`${base(clientId)}/team`, { params: { days } })).data,
 };

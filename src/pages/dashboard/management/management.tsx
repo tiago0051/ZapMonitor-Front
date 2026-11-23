@@ -13,7 +13,8 @@ const tabs: ManagementTab[] = [
   { id: "inProgress", label: "Em andamento", permission: "management.view", content: <InProgressTab /> },
   { id: "attended", label: "Atendidos no período", permission: "management.view", content: <AttendedTab /> },
   { id: "performance", label: "Desempenho do WhatsApp", permission: "reports.view", content: <PerformanceTab /> },
-  { id: "coaching", label: "Coach da equipe", permission: "management.view", content: <TeamCoachingTab /> },
+  // Quem vê a gestão vê a equipe; quem atende vê o próprio coach (o back filtra)
+  { id: "coaching", label: "Coach", permission: "whatsapp.chat", content: <TeamCoachingTab /> },
 ];
 
 export const Management = () => {

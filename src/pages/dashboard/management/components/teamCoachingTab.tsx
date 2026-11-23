@@ -3,7 +3,10 @@ import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useBaseUrl } from "@/hooks/use-baseUrl";
 import { cn } from "@/lib/utils";
 import { salesCoachService } from "@/services/api/salesCoachService";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { requestErrorHandling } from "@/utils/request";
+import { Loader2, Sparkles } from "lucide-react";
 import { format } from "date-fns";
 import { GraduationCap, TrendingDown, TrendingUp } from "lucide-react";
 import { useState, type FC } from "react";
@@ -11,6 +14,43 @@ import { Link } from "react-router";
 import { selectClassName } from "@/pages/dashboard/offers/offerUtils";
 
 const PERIODS = [7, 30, 90];
+
+/** Resumo da semana pela IA para uma pessoa: foco, plano de 3 ações e o que manter. Sob demanda. */
+const CoachingSummaryBlock: FC<{ userId: string; days: number; services: number }> = ({ userId, days, services }) => {
+  const { client } = useClientContext();
+  const summary = useMutation({
+    mutationFn: () => salesCoachService.summarizeUser(client.id, userId, days),
+    onError: requestErrorHandling,
+  });
+  if (services < 2) return null;
+  if (!summary.data)
+    return (
+      <Button size="sm" variant="outline" disabled={summary.isPending} onClick={() => summary.mutate()}>
+        {summary.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+        Resumo do período pela IA
+      </Button>
+    );
+  const data = summary.data;
+  return (
+    <div className="bg-muted/50 space-y-1.5 rounded-md p-2 text-sm">
+      <p>{data.summary}</p>
+      {data.focus && (
+        <p>
+          <span className="font-medium">Foco: </span>
+          {data.focus}
+        </p>
+      )}
+      {data.plan.length > 0 && (
+        <ol className="list-decimal pl-5">
+          {data.plan.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ol>
+      )}
+      {data.keep.length > 0 && <p className="text-muted-foreground text-xs">Manter: {data.keep.join("; ")}</p>}
+    </div>
+  );
+};
 
 const scoreClass = (score: number) =>
   score >= 75
@@ -108,6 +148,7 @@ export const TeamCoachingTab: FC = () => {
                     </ul>
                   </div>
                 )}
+                <CoachingSummaryBlock userId={entry.userId} days={report.days} services={entry.services} />
                 {entry.topStrengths.length > 0 && (
                   <div>
                     <p className="text-xs font-medium">Pontos fortes</p>

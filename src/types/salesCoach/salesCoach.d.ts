@@ -49,3 +49,6 @@ type TeamCoachingReport = {
     createdAt: string;
   }[];
 };
+
+/** Resumo da semana de uma pessoa pela IA. */
+type CoachingSummary = { services: number; summary: string; focus: string; plan: string[]; keep: string[] };

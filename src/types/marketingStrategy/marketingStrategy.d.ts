@@ -69,6 +69,8 @@ type StrategySalesFunnel = {
   avgHoursToQualify: number | null;
   topObjections: { text: string; count: number }[];
   topMissingCriteria: { text: string; count: number }[];
+  // Saídas que o agente de IA escolheu nos fluxos da estratégia (ausente nas avaliações antigas)
+  agentOutcomes?: { label: string; count: number }[];
 };
 
 type SalesGoalProgress = {

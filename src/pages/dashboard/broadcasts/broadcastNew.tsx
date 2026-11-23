@@ -91,7 +91,8 @@ export const BroadcastNew = () => {
   const [when, setWhen] = useState<"now" | "schedule">("now");
   const [scheduledAt, setScheduledAt] = useState("");
   const [sendWindow, setSendWindow] = useState<BroadcastSendWindow | null>(null);
-  const [reply, setReply] = useState<BroadcastReply>(emptyReply);
+  // A prospecção do fluxo SDR abre já com a resposta indo para o fluxo (?replyFlowId=)
+  const [reply, setReply] = useState<BroadcastReply>(() => ({ ...emptyReply, flowId: searchParams.get("replyFlowId") || null }));
   const [capDays, setCapDays] = useState("");
   const [consent, setConsent] = useState(false);
   const [abEnabled, setAbEnabled] = useState(false);

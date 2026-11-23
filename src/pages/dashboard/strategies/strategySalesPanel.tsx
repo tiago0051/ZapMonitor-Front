@@ -4,7 +4,8 @@ import { useClientContext } from "@/context/ClientContext/clientContext";
 import { cn } from "@/lib/utils";
 import { marketingStrategyService } from "@/services/api/marketingStrategyService";
 import { requestErrorHandling } from "@/utils/request";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { crmService } from "@/services/api/crmService";
 import { format } from "date-fns";
 import { Loader2, Pencil, Target } from "lucide-react";
 import { useState, type FC, type FormEvent } from "react";
@@ -191,6 +192,12 @@ const SalesFunnel: FC<{ funnel: StrategySalesFunnel; currency: string | null }> 
         equipe {funnel.handoffs}
         {funnel.avgHoursToQualify !== null && ` · tempo médio até qualificar ${funnel.avgHoursToQualify.toString().replace(".", ",")} h`}
       </p>
+      {!!funnel.agentOutcomes?.length && (
+        <p className="text-sm">
+          <span className="font-medium">Como o agente de IA encerrou as conversas: </span>
+          {funnel.agentOutcomes.map((item) => `${item.label} ${item.count}`).join(" · ")}
+        </p>
+      )}
       {(funnel.topObjections.length > 0 || funnel.topMissingCriteria.length > 0) && (
         <div className="grid gap-3 sm:grid-cols-2">
           {funnel.topObjections.length > 0 && (
@@ -224,6 +231,51 @@ const SalesFunnel: FC<{ funnel: StrategySalesFunnel; currency: string | null }> 
 };
 
 /** Meta e camada de venda dentro dos resultados da estratégia. */
+/** Funil do CRM onde a venda da estratégia é medida (o "Montar a venda" escolhe; aqui dá para trocar). */
+const PipelinePicker: FC<Pick<Props, "strategy" | "canManage" | "onSaved" | "onGoalChanged">> = ({
+  strategy,
+  canManage,
+  onSaved,
+  onGoalChanged,
+}) => {
+  const { client, canUseCrm } = useClientContext();
+  const pipelinesQuery = useQuery({
+    queryKey: ["crm", "pipelines", client.id],
+    queryFn: () => crmService.findAllPipelines({ params: { clientId: client.id } }),
+    enabled: canUseCrm,
+  });
+  const save = useMutation({
+    mutationFn: (pipelineId: string | null) => marketingStrategyService.update(client.id, strategy.id, { pipelineId }),
+    onError: requestErrorHandling,
+    onSuccess: (saved) => {
+      onSaved(saved);
+      onGoalChanged();
+      toast.success("Funil da venda atualizado");
+    },
+  });
+  const pipelines = (pipelinesQuery.data ?? []).filter((pipeline) => pipeline.active || pipeline.id === strategy.pipelineId);
+  if (!canUseCrm || !pipelines.length) return null;
+
+  return (
+    <label className="flex flex-wrap items-center gap-2 text-xs">
+      Funil da venda
+      <select
+        className={cn(selectClassName, "w-56")}
+        value={strategy.pipelineId ?? ""}
+        disabled={!canManage || save.isPending}
+        onChange={(event) => save.mutate(event.target.value || null)}
+      >
+        <option value="">Todos os funis</option>
+        {pipelines.map((pipeline) => (
+          <option key={pipeline.id} value={pipeline.id}>
+            {pipeline.name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+};
+
 export const StrategySalesPanel: FC<Props> = (props) => {
   const { results } = props;
   const currency = results?.currency ?? null;
@@ -231,7 +283,10 @@ export const StrategySalesPanel: FC<Props> = (props) => {
 
   return (
     <div className="space-y-3 border-t pt-3">
-      <h3 className="text-sm font-semibold">Vendas</h3>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold">Vendas</h3>
+        <PipelinePicker {...props} />
+      </div>
       <SalesGoalCard {...props} currency={currency} />
       {funnel ? (
         <SalesFunnel funnel={funnel} currency={currency} />
