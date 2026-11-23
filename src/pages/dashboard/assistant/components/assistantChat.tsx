@@ -33,6 +33,8 @@ export type AssistantChatProps = {
   variant?: "page" | "panel";
   highlightedPlanId?: string | null;
   starters?: string[];
+  /** Texto já escrito na caixa (ex.: "Conduzir com o assistente" da estratégia); a pessoa revisa e envia */
+  initialMessage?: string;
   emptyTitle?: string;
   emptyDescription?: string;
   className?: string;
@@ -46,13 +48,14 @@ export const AssistantChat: FC<AssistantChatProps> = ({
   variant = "page",
   highlightedPlanId,
   starters = DEFAULT_STARTERS,
+  initialMessage,
   emptyTitle = "Peça o que precisar",
   emptyDescription = "O assistente consulta o sistema com as suas permissões. Quando propõe mudanças, monta um plano que só roda depois de aprovado.",
   className,
 }) => {
   const { client } = useClientContext();
   const queryClient = useQueryClient();
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(initialMessage ?? "");
   // Pergunta mostrada enquanto o assistente responde
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   // Conversas escondidas enquanto o "Desfazer" está na tela

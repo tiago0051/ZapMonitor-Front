@@ -132,6 +132,8 @@ type AssistantProject = {
   nextReviewAt: string | null;
   reviewSummary: string | null;
   conversationId: string | null;
+  // Missão: o projeto conduz esta estratégia até a meta de vendas
+  strategyId: string | null;
 };
 
 type AssistantRoutine = {

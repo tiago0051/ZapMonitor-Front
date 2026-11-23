@@ -17,6 +17,7 @@ import { StrategyLinkList } from "./strategyLinkList";
 import { StrategyMarkerHelp } from "./strategyMarkerHelp";
 import { StrategyResultsPanel } from "./strategyResultsPanel";
 import { StrategyReviewPanel } from "./strategyReviewPanel";
+import { StrategyMissionCard } from "./strategyMissionCard";
 import { StrategyStepCard } from "./strategyStepCard";
 import { channelOptions, formatMoney, goalLabel, strategyStatusInfo, verdictInfo } from "./strategyUtils";
 import { StrategyValidationDialog } from "./strategyValidationDialog";
@@ -257,6 +258,7 @@ export const StrategyDetailPage = () => {
           <div className="grid gap-4 lg:grid-cols-2">
             <StrategyResultsPanel strategy={strategy} canManage={canManage} onSaved={onSaved} />
             <StrategyReviewPanel strategy={strategy} canManage={canManage} />
+            <StrategyMissionCard strategy={strategy} canManage={canManage} />
           </div>
         )}
 
