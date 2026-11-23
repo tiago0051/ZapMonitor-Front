@@ -14,6 +14,7 @@ import { requestErrorHandling } from "@/utils/request";
 import { useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
+  Bot,
   CalendarPlus,
   Check,
   ChevronDown,
@@ -244,6 +245,19 @@ export const StrategyStepCard: FC<Props> = ({ strategy, step, canManage, isCurre
       onClick: () => openModule.mutate({ kind: shortcut.kind, path }),
     });
   }
+  if (!isClosed && !coveredBy)
+    actions.push({
+      key: "assistant",
+      label: "Aplicar com o assistente",
+      icon: <Bot className="h-4 w-4" />,
+      title: "O assistente monta o item do passo com o briefing e liga à estratégia; nada muda sem a sua aprovação",
+      onClick: () =>
+        navigate(
+          `${baseUrl}/assistant?mensagem=${encodeURIComponent(
+            `Aplique o passo ${step.order} "${step.title}" da estratégia "${strategy.name}" (estrategiaId ${strategy.id}, passoId ${step.id}).`,
+          )}`,
+        ),
+    });
   if (can("planner.manage"))
     actions.push({
       key: "task",
