@@ -3,6 +3,7 @@ import { Bot, Briefcase, FileAudio, FileText, Film, Image as ImageIcon, Papercli
 import { ContactProfile } from "@/pages/dashboard/contacts/components/contactProfile";
 import { ContactDeals } from "@/pages/dashboard/crm/components/contactDeals";
 import { ConversationScript } from "./conversationScript";
+import { ConversationCoach } from "./conversationCoach";
 import { formatWhatsappText, formatPhoneNumber, formatShortId } from "@/utils/formatString";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { whatsappService } from "@/services/api/whatsappService";
@@ -237,6 +238,7 @@ export function InfoPanel({
       <div className="scrollbar-hide flex-1 overflow-y-auto px-4 py-4" onScroll={rightPanel === "files" ? onScrollFiles : undefined}>
         {rightPanel === "summary" ? (
           <div>
+            {can("whatsapp.chat") && <ConversationCoach contact={selected} />}
             <div className="mb-3 flex items-center gap-2">
               <div className="flex h-6 w-6 items-center justify-center rounded-md bg-green-100">
                 <Bot className="h-3.5 w-3.5 text-green-600" />

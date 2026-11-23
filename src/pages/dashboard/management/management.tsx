@@ -5,6 +5,7 @@ import { useSearchParams } from "react-router";
 import { AttendedTab } from "./components/attendedTab";
 import { InProgressTab } from "./components/inProgressTab";
 import { PerformanceTab } from "./components/performanceTab";
+import { TeamCoachingTab } from "./components/teamCoachingTab";
 
 type ManagementTab = { id: string; label: string; permission: Permission; content: React.ReactNode };
 
@@ -12,6 +13,7 @@ const tabs: ManagementTab[] = [
   { id: "inProgress", label: "Em andamento", permission: "management.view", content: <InProgressTab /> },
   { id: "attended", label: "Atendidos no período", permission: "management.view", content: <AttendedTab /> },
   { id: "performance", label: "Desempenho do WhatsApp", permission: "reports.view", content: <PerformanceTab /> },
+  { id: "coaching", label: "Coach da equipe", permission: "management.view", content: <TeamCoachingTab /> },
 ];
 
 export const Management = () => {
