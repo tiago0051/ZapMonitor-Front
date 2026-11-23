@@ -6,6 +6,7 @@ import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useTaskReminders } from "./crm/useTaskReminders";
 import { PlanDueBanner } from "@/components/plan/planDueBanner";
 import { AiPausedBanner } from "@/components/plan/aiPausedBanner";
+import { WhatsappPaymentBanner } from "@/components/plan/whatsappPaymentBanner";
 import { Button } from "@/components/ui/button";
 import { useBaseUrl } from "@/hooks/use-baseUrl";
 import { Sparkles } from "lucide-react";
@@ -59,6 +60,7 @@ export const DashboardLayout = () => {
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
               <PlanDueBanner />
               <AiPausedBanner />
+              <WhatsappPaymentBanner />
               <div className="min-h-0 flex-1">
                 <Outlet />
               </div>

@@ -3,7 +3,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { formatMessagingLimit, isWhatsappWeb, whatsappQualityInfo } from "@/utils/whatsappConfiguration";
 import { format } from "date-fns";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, CreditCard } from "lucide-react";
 import type { FC } from "react";
 
 /**
@@ -42,6 +42,17 @@ export const NumberHealthCell: FC<{ configuration: WhatsappConfiguration }> = ({
         </PopoverContent>
       </Popover>
       {limit && <span className="text-muted-foreground text-xs">{limit}</span>}
+      {configuration.paymentIssueAt && (
+        <a
+          href={configuration.paymentIssueUrl ?? "https://business.facebook.com/billing_hub/accounts"}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={configuration.paymentIssueMessage ?? undefined}
+          className="text-destructive flex items-center gap-1 text-xs font-medium underline underline-offset-2"
+        >
+          <CreditCard className="h-3 w-3" /> Pagamento pendente na Meta: modelos recusados
+        </a>
+      )}
       {healthError && (
         <span className="text-destructive flex items-center gap-1 text-xs">
           <AlertCircle className="h-3 w-3" /> Não foi possível consultar a Meta

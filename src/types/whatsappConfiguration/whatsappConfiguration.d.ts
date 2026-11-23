@@ -24,6 +24,10 @@ type WhatsappConfiguration = {
   healthCheckedAt: string | null;
   // Motivo da última leitura na Meta que falhou
   healthError: string | null;
+  // Problema de pagamento da conta do WhatsApp Business: a Meta recusa os modelos até regularizar
+  paymentIssueAt?: string | null;
+  paymentIssueMessage?: string | null;
+  paymentIssueUrl?: string | null;
   // Só na listagem: fluxo de atendimento (active = fluxo de atendimento ativo) e grupo padrão do número
   flow?: { id: string; name: string; active: boolean } | null;
   serviceGroup?: { id: string; name: string; memberCount: number } | null;
@@ -64,4 +68,13 @@ type WhatsappNumberLimit = {
 // used/limit contam só os números da API oficial; os por QR code têm limite próprio
 type WhatsappNumberUsage = WhatsappNumberLimit & {
   whatsappWeb: WhatsappNumberLimit;
+};
+
+/** Número com problema de pagamento da conta do WhatsApp Business: os modelos são recusados até regularizar na Meta. */
+type WhatsappPaymentIssue = {
+  id: string;
+  phoneNumber: string;
+  since: string;
+  message: string;
+  billingUrl: string;
 };

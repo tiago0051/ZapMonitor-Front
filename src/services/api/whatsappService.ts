@@ -25,6 +25,11 @@ export const whatsappService = {
     return response.data;
   },
   // Relê na Meta status, qualidade e limite dos números com a última leitura vencida
+  // Números com problema de pagamento da conta do WhatsApp Business (faixa do topo do painel)
+  findPaymentIssues: async (clientId: string): Promise<WhatsappPaymentIssue[]> => {
+    const response = await api.get(`/client/${clientId}/whatsapp/configuration/payment-issues`);
+    return response.data;
+  },
   refreshNumberHealth: async (clientId: string): Promise<{ refreshed: number }> => {
     const response = await api.post(`/client/${clientId}/whatsapp/configuration/health/refresh`);
     return response.data;
