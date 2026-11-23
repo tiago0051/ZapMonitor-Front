@@ -1,4 +1,4 @@
-import { CalendarCheck, Image, Mail, Megaphone, MessageSquareText, Send, Workflow, type LucideIcon } from "lucide-react";
+import { CalendarCheck, Handshake, Image, Mail, Megaphone, MessageSquareText, Send, Workflow, type LucideIcon } from "lucide-react";
 
 export const selectClassName =
   "border-input dark:bg-input/30 focus-visible:border-ring focus-visible:ring-ring/50 flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:opacity-50";
@@ -32,6 +32,7 @@ export const actionInfo: Record<MarketingStepAction, { label: string; icon: Luci
   EMAIL_SEQUENCE: { label: "Sequência de e-mails", icon: Mail },
   WHATSAPP_TEMPLATE: { label: "Modelo de WhatsApp", icon: MessageSquareText },
   TASK: { label: "Tarefa", icon: CalendarCheck },
+  SALES_SETUP: { label: "Camada de venda", icon: Handshake },
 };
 
 export const stepStatusInfo: Record<MarketingStepStatus, { label: string; className: string }> = {
@@ -59,6 +60,8 @@ export const linkKindLabel: Record<MarketingLinkKind, string> = {
   EMAIL_CAMPAIGN: "Campanha de e-mail",
   EMAIL_SEQUENCE: "Sequência de e-mails",
   WHATSAPP_TEMPLATE: "Modelo de WhatsApp",
+  SALES_SCRIPT: "Roteiro de vendas",
+  AI_AGENT: "Agente de IA",
 };
 
 export const linkSourceLabel: Record<MarketingLinkSource, string> = {
@@ -107,6 +110,10 @@ export function linkTarget(baseUrl: string, link: Pick<MarketingStrategyLink, "k
       return `${baseUrl}/configuration?tab=template`;
     case "AD_CAMPAIGN":
       return `${baseUrl}/ads?tab=campaigns`;
+    case "SALES_SCRIPT":
+      return `${baseUrl}/offers?tab=scripts`;
+    case "AI_AGENT":
+      return `${baseUrl}/configuration?tab=aiAgent`;
     default:
       return `${baseUrl}/ads?tab=create`;
   }

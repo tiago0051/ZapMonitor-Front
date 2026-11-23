@@ -12,12 +12,15 @@ import type { FC } from "react";
 import { toast } from "sonner";
 import { assistantKeys, formatNumber, metricLabel, projectStatusInfo } from "./assistantUtils";
 import { StatusChip } from "./components/assistantDialogs";
+import { useBaseUrl } from "@/hooks/use-baseUrl";
+import { Link } from "react-router";
 
 type ProjectsTabProps = { onOpenConversation: (conversationId: string) => void };
 
 /** Objetivos de negócio que o assistente acompanha; são criados pedindo na conversa. */
 export const ProjectsTab: FC<ProjectsTabProps> = ({ onOpenConversation }) => {
   const { client } = useClientContext();
+  const baseUrl = useBaseUrl();
   const queryClient = useQueryClient();
   const { confirm, confirmDialog } = useConfirm();
 
@@ -77,6 +80,14 @@ export const ProjectsTab: FC<ProjectsTabProps> = ({ onOpenConversation }) => {
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="min-w-0 font-semibold break-words">{project.title}</h3>
                 <StatusChip label={status.label} className={status.className} />
+                {project.strategyId && (
+                  <Link
+                    to={`${baseUrl}/strategies/${project.strategyId}`}
+                    className="bg-primary/10 text-primary rounded px-2 py-0.5 text-xs font-medium hover:underline"
+                  >
+                    Missão · ver estratégia
+                  </Link>
+                )}
               </div>
               <p className="text-muted-foreground text-sm">{project.goal}</p>
             </header>

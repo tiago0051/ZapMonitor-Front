@@ -4,7 +4,16 @@ type MarketingStrategyStatus = "GENERATING" | "READY" | "FAILED" | "ARCHIVED";
 type MarketingStepStatus = "TODO" | "DOING" | "DONE" | "SKIPPED";
 // O módulo do ZapMonitor que executa o passo
 type MarketingStepAction =
-  "AD_CAMPAIGN" | "SOCIAL_POST" | "FLOW" | "BROADCAST" | "EMAIL_CAMPAIGN" | "EMAIL_SEQUENCE" | "WHATSAPP_TEMPLATE" | "TASK";
+  | "AD_CAMPAIGN"
+  | "SOCIAL_POST"
+  | "FLOW"
+  | "BROADCAST"
+  | "EMAIL_CAMPAIGN"
+  | "EMAIL_SEQUENCE"
+  | "WHATSAPP_TEMPLATE"
+  | "TASK"
+  // Camada de venda: roteiro, agente e fluxo SDR montados a partir da oferta
+  | "SALES_SETUP";
 // O que nasceu da estratégia e ficou ligado a ela
 type MarketingLinkKind =
   | "AD_DRAFT"
@@ -17,7 +26,10 @@ type MarketingLinkKind =
   | "BROADCAST"
   | "EMAIL_CAMPAIGN"
   | "EMAIL_SEQUENCE"
-  | "WHATSAPP_TEMPLATE";
+  | "WHATSAPP_TEMPLATE"
+  // Montados pelo "Montar a venda"
+  | "SALES_SCRIPT"
+  | "AI_AGENT";
 // Itens que o atalho do passo liga quando o usuário cria no módulo
 type MarketingIntentKind =
   "AD_DRAFT" | "AD_VIDEO_CAMPAIGN" | "FLOW" | "BROADCAST" | "EMAIL_CAMPAIGN" | "EMAIL_SEQUENCE" | "WHATSAPP_TEMPLATE";
@@ -37,6 +49,38 @@ type MarketingBrief = {
   monthlyBudget: number | null;
   channels: MarketingChannel[];
   notes: string | null;
+  // Meta de vendas no prazo: número de vendas ou valor vendido
+  salesGoal?: StrategySalesGoal | null;
+};
+
+type StrategySalesGoal = { kind: "SALES" | "REVENUE"; value: number };
+
+/** Camada de venda: dos atendimentos dos fluxos da estratégia até a venda. */
+type StrategySalesFunnel = {
+  conversations: number;
+  deals: number;
+  qualified: number;
+  meetings: number;
+  proposalsSent: number;
+  proposalsAccepted: number;
+  handoffs: number;
+  won: number;
+  wonValue: number;
+  avgHoursToQualify: number | null;
+  topObjections: { text: string; count: number }[];
+  topMissingCriteria: { text: string; count: number }[];
+  // Saídas que o agente de IA escolheu nos fluxos da estratégia (ausente nas avaliações antigas)
+  agentOutcomes?: { label: string; count: number }[];
+};
+
+type SalesGoalProgress = {
+  goal: StrategySalesGoal;
+  achieved: number;
+  percent: number;
+  // Quanto do prazo passou; nulo sem prazo
+  elapsedPercent: number | null;
+  onTrack: boolean | null;
+  deadline: string | null;
 };
 
 type MarketingPlaybookSummary = {
@@ -115,6 +159,9 @@ type StrategyResults = {
   baseline: StrategyMetrics | null;
   steps: { stepId: string; metrics: StrategyMetrics; verdict: MarketingVerdict; reason: string }[];
   campaigns: { id: string; name: string; stepId: string | null; metrics: StrategyMetrics }[];
+  // Ausentes nas avaliações antigas
+  sales?: StrategySalesFunnel | null;
+  goal?: SalesGoalProgress | null;
 };
 
 type StrategyResultsResponse = {
@@ -206,6 +253,10 @@ type MarketingStrategy = {
   name: string;
   status: MarketingStrategyStatus;
   brief: MarketingBrief;
+  // Oferta do cadastro que a estratégia vende
+  offerId: string | null;
+  // Funil da camada de venda (o "Montar a venda" grava)
+  pipelineId: string | null;
   requestedPlaybookSlug: string | null;
   playbook: MarketingPlaybookSummary | null;
   secondaryPlaybook: MarketingPlaybookSummary | null;
@@ -233,4 +284,33 @@ type MarketingActiveIntent = {
   stepOrder: number;
   stepTitle: string;
   expiresAt: string;
+};
+
+/** Opções do "Montar a venda". */
+type SalesSetupOptions = {
+  offer: { id: string; name: string; hasCriteria: boolean } | null;
+  stepId: string | null;
+  pipelines: { id: string; name: string }[];
+  serviceGroups: { id: string; name: string }[];
+  aiAgents: { id: string; name: string; sellsOffer: boolean }[];
+  salesScripts: { id: string; name: string }[];
+  linked: { salesScriptId: string | null; aiAgentId: string | null; flowId: string | null };
+  // Por que não dá para montar (sem oferta, sem CRM, sem permissão)
+  blockers: string[];
+};
+
+type SalesSetupInput = {
+  stepId?: string | null;
+  pipelineId: string;
+  serviceGroupId: string;
+  aiAgentId?: string | null;
+  salesScriptId?: string | null;
+};
+
+type SalesSetupResult = {
+  flow: { id: string; name: string };
+  aiAgent: { id: string; name: string; created: boolean };
+  salesScript: { id: string; name: string; created: boolean };
+  offerHasCriteria: boolean;
+  issues: string[];
 };

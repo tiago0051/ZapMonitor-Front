@@ -68,7 +68,14 @@ type FlowNodeData = {
   pipelineId?: string;
   stageId?: string;
   // Nó de agente: etapas e campos do CRM que o agente pode mudar no negócio do contato
-  crm?: { pipelineId: string; stageIds: string[]; fieldIds: string[] } | null;
+  // canCreateTasks: cria tarefa para a equipe; canDraftProposals: prepara rascunho de proposta (a equipe envia)
+  crm?: {
+    pipelineId: string;
+    stageIds: string[];
+    fieldIds: string[];
+    canCreateTasks?: boolean;
+    canDraftProposals?: boolean;
+  } | null;
   // Nó Grupo: fluxo de fila desta etapa; sem ele vale o do grupo
   queueFlowId?: string | null;
   // "A cada período": intervalo e limite de repetições

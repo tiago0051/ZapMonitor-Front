@@ -10,22 +10,35 @@ export const marketingStrategyService = {
   find: async (clientId: string, id: string): Promise<MarketingStrategy> => (await api.get(`${base(clientId)}/${id}`)).data,
 
   /** A IA monta a estratégia na fila; acompanhe pelo status. */
-  create: async (clientId: string, body: { brief: MarketingBrief; playbookSlug?: string | null }): Promise<MarketingStrategy> =>
-    (await api.post(base(clientId), body)).data,
+  create: async (
+    clientId: string,
+    body: { brief: MarketingBrief; playbookSlug?: string | null; offerId?: string | null },
+  ): Promise<MarketingStrategy> => (await api.post(base(clientId), body)).data,
 
   regenerate: async (
     clientId: string,
     id: string,
-    body: { brief?: MarketingBrief; playbookSlug?: string | null },
+    body: { brief?: MarketingBrief; playbookSlug?: string | null; offerId?: string | null },
   ): Promise<MarketingStrategy> => (await api.post(`${base(clientId)}/${id}/regenerate`, body)).data,
 
-  update: async (clientId: string, id: string, body: { name?: string; archived?: boolean }): Promise<MarketingStrategy> =>
-    (await api.put(`${base(clientId)}/${id}`, body)).data,
+  update: async (
+    clientId: string,
+    id: string,
+    body: { name?: string; archived?: boolean; salesGoal?: StrategySalesGoal | null; pipelineId?: string | null },
+  ): Promise<MarketingStrategy> => (await api.put(`${base(clientId)}/${id}`, body)).data,
 
   delete: async (clientId: string, id: string) => (await api.delete(`${base(clientId)}/${id}`)).data,
 
   setStepStatus: async (clientId: string, id: string, stepId: string, status: MarketingStepStatus): Promise<MarketingStrategy> =>
     (await api.put(`${base(clientId)}/${id}/step/${stepId}/status`, { status })).data,
+
+  /** Funis, grupos, agentes e roteiros para o "Montar a venda", e o que já está ligado. */
+  findSalesSetupOptions: async (clientId: string, id: string): Promise<SalesSetupOptions> =>
+    (await api.get(`${base(clientId)}/${id}/sales-setup`)).data,
+
+  /** Roteiro, agente e fluxo SDR (inativo, em rascunho) da oferta, ligados à estratégia. */
+  setupSales: async (clientId: string, id: string, body: SalesSetupInput): Promise<SalesSetupResult> =>
+    (await api.post(`${base(clientId)}/${id}/sales-setup`, body)).data,
 
   /** Tarefa no Planejamento ou rascunho de postagem do passo, já ligado à estratégia. */
   executeStep: async (

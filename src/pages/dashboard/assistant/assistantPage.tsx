@@ -22,6 +22,8 @@ export const AssistantPage: FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const planId = searchParams.get("plan");
   const conversationId = searchParams.get("conversa");
+  // Pedido já escrito vindo de outra tela (ex.: a estratégia): abre numa conversa nova
+  const initialMessage = searchParams.get("mensagem") ?? undefined;
   const requestedTab = searchParams.get("tab") as Tab | null;
   // O link da notificação (?plan=) abre direto em "Para aprovar"
   const tab: Tab = requestedTab && TABS.includes(requestedTab) ? requestedTab : planId ? "aprovar" : "conversa";
@@ -74,7 +76,13 @@ export const AssistantPage: FC = () => {
         </div>
 
         <TabsContent value="conversa" className="flex min-h-0 flex-col pt-3">
-          <AssistantChat conversationId={conversationId} onConversationChange={openConversation} className="flex-1" />
+          <AssistantChat
+            key={initialMessage ?? "chat"}
+            conversationId={conversationId}
+            onConversationChange={openConversation}
+            initialMessage={initialMessage}
+            className="flex-1"
+          />
         </TabsContent>
         <TabsContent value="aprovar" className={scrollTab}>
           <PlansToApprove highlightedPlanId={planId} />

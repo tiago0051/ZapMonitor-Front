@@ -8,6 +8,7 @@ import { differenceInCalendarDays, format } from "date-fns";
 import { Link2, Loader2, RotateCw } from "lucide-react";
 import { useState, type FC } from "react";
 import { StrategyLinkCampaignDialog } from "./strategyLinkCampaignDialog";
+import { StrategySalesPanel } from "./strategySalesPanel";
 import { formatMoney, verdictInfo } from "./strategyUtils";
 
 type Props = { strategy: MarketingStrategy; canManage: boolean; onSaved: (strategy: MarketingStrategy) => void };
@@ -151,6 +152,16 @@ export const StrategyResultsPanel: FC<Props> = ({ strategy, canManage, onSaved }
             Campanhas ligadas: {linkedCampaigns.map((campaign) => campaign.name).join(" · ")}
           </p>
         </div>
+      )}
+
+      {(strategy.status === "READY" || strategy.status === "ARCHIVED") && !resultsQuery.isLoading && (
+        <StrategySalesPanel
+          strategy={strategy}
+          results={results}
+          canManage={canManage}
+          onSaved={onSaved}
+          onGoalChanged={() => refresh.mutate()}
+        />
       )}
 
       {isLinkOpen && (

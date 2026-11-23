@@ -14,7 +14,7 @@ type Member = {
 };
 
 type AuditEntityType =
-  "FLOW" | "AI_AGENT" | "SERVICE_GROUP" | "WHATSAPP_NUMBER" | "PERMISSION_GROUP" | "MEMBER" | "INVITATION" | "SETTINGS";
+  "FLOW" | "AI_AGENT" | "SERVICE_GROUP" | "WHATSAPP_NUMBER" | "PERMISSION_GROUP" | "MEMBER" | "INVITATION" | "SETTINGS" | "OFFER";
 
 // Uma linha do histórico de alterações do tenant
 type AuditLog = {

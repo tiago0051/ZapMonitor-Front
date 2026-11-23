@@ -17,6 +17,7 @@ import { PromptAssistant } from "./promptAssistant";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AiAgentTestChat } from "./aiAgentTestChat";
 import { AiAgentKnowledge } from "./aiAgentKnowledge";
+import { AiAgentOffers } from "./aiAgentOffers";
 
 type DialogSaveAiAgentProps = {
   clientId: string;
@@ -250,7 +251,10 @@ export const DialogSaveAiAgent: FC<DialogSaveAiAgentProps> = ({ clientId, aiAgen
 
           <TabsContent value="knowledge">
             {aiAgent ? (
-              <AiAgentKnowledge clientId={clientId} aiAgent={aiAgent} />
+              <>
+                <AiAgentOffers clientId={clientId} aiAgentId={aiAgent.id} />
+                <AiAgentKnowledge clientId={clientId} aiAgent={aiAgent} />
+              </>
             ) : (
               <p className="text-muted-foreground rounded-lg border border-dashed p-4 text-sm">
                 Salve o agente primeiro. Depois, abra-o de novo para ensinar perguntas e respostas, arquivos e páginas do seu site.

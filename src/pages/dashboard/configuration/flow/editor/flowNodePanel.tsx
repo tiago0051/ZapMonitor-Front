@@ -231,7 +231,10 @@ const AgentCrmSettings: FC<{
             </select>
           </Field>
 
-          <Field label="Etapas que o agente pode usar">
+          <Field
+            label="Etapas que o agente pode usar"
+            hint="Da etapa de lead qualificado em diante, o agente só move quando os critérios de qualificação das ofertas dele estão atendidos."
+          >
             <div className="space-y-1.5">
               {pipeline?.stages.map((stage) => (
                 <label key={stage.id} className="flex cursor-pointer items-center gap-2 text-sm">
@@ -259,6 +262,38 @@ const AgentCrmSettings: FC<{
                   {field.name}
                 </label>
               ))}
+            </div>
+          </Field>
+
+          <Field label="O que mais o agente pode fazer no negócio">
+            <div className="space-y-2">
+              <label className="flex cursor-pointer items-start gap-2 text-sm">
+                <Checkbox
+                  className="mt-0.5"
+                  checked={!!crm.canCreateTasks}
+                  onCheckedChange={(checked) => update({ crm: { ...crm, canCreateTasks: checked === true } })}
+                />
+                <span>
+                  Criar tarefas para a equipe
+                  <span className="text-muted-foreground block text-xs">
+                    Quando o contato combina um retorno ("me liga quinta"), a tarefa vai para o dono do negócio.
+                  </span>
+                </span>
+              </label>
+              <label className="flex cursor-pointer items-start gap-2 text-sm">
+                <Checkbox
+                  className="mt-0.5"
+                  checked={!!crm.canDraftProposals}
+                  onCheckedChange={(checked) => update({ crm: { ...crm, canDraftProposals: checked === true } })}
+                />
+                <span>
+                  Preparar rascunho de proposta
+                  <span className="text-muted-foreground block text-xs">
+                    Quando o contato pede proposta, a IA monta o rascunho com as ofertas do agente e deixa a tarefa de revisar e enviar. Só
+                    a equipe envia.
+                  </span>
+                </span>
+              </label>
             </div>
           </Field>
         </>

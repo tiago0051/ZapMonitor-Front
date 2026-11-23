@@ -35,7 +35,9 @@ type Permission =
   | "planner.view"
   | "planner.manage"
   | "strategies.view"
-  | "strategies.manage";
+  | "strategies.manage"
+  | "offers.view"
+  | "offers.manage";
 
 type PermissionDefinition = {
   key: Permission;
