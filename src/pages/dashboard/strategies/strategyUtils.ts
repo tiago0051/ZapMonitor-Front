@@ -176,3 +176,27 @@ export async function copyText(text: string) {
     return false;
   }
 }
+
+// Mesmo critério do back: passo que repete o atendimento que "Montar a camada de venda" já monta
+const OWN_PURPOSE_FLOW = /lista|isca|material|inscri|p[óo]s-venda|depoimento|indica[çc]|vip|lan[çc]amento|recompra/i;
+const SALES_LAYER_WORK = /atendiment|qualifica|\bsdr\b|agente|roteiro|obje[çc]|boas-vindas|follow-?up|respostas? (?:ao|do|dos) disparo/i;
+
+/** Passo de estratégia antiga que monta de novo o fluxo de atendimento já coberto pela camada de venda. */
+export function salesSetupCovering(strategy: Pick<MarketingStrategy, "steps">, step: MarketingStrategyStep) {
+  if (step.action !== "FLOW" && step.action !== "TASK") return null;
+  if (!SALES_LAYER_WORK.test(step.title) || OWN_PURPOSE_FLOW.test(step.title)) return null;
+  return strategy.steps.find((item) => item.action === "SALES_SETUP") ?? null;
+}
+
+const isOpenStep = (step: MarketingStrategyStep) => step.status === "TODO" || step.status === "DOING";
+
+/** O passo da vez: o primeiro em andamento ou, sem nenhum, o primeiro a fazer. */
+export function currentStep(steps: MarketingStrategyStep[]) {
+  return steps.find((step) => step.status === "DOING") ?? steps.find(isOpenStep) ?? null;
+}
+
+/** Fluxo SDR montado pela camada de venda: os disparos de prospecção mandam as respostas para ele. */
+export function salesFlowId(strategy: Pick<MarketingStrategy, "steps">) {
+  const setup = strategy.steps.find((step) => step.action === "SALES_SETUP");
+  return setup?.links.find((link) => link.kind === "FLOW")?.objectId ?? null;
+}

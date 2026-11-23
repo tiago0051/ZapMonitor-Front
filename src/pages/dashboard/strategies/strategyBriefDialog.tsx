@@ -10,7 +10,7 @@ import { offerService } from "@/services/api/offerService";
 import { formatOfferPrice } from "@/pages/dashboard/offers/offerUtils";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Sparkles } from "lucide-react";
+import { ChevronDown, Loader2, Sparkles } from "lucide-react";
 import { useState, type FC, type FormEvent } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
@@ -45,6 +45,20 @@ export const StrategyBriefDialog: FC<Props> = ({ onClose, strategy }) => {
   const [playbookSlug, setPlaybookSlug] = useState(strategy?.requestedPlaybookSlug ?? "");
   const [offerId, setOfferId] = useState(strategy?.offerId ?? "");
   const canSeeOffers = can("offers.view");
+  // Ao refazer com detalhes já preenchidos, eles aparecem abertos
+  const [hasDetails] = useState(
+    () =>
+      !!strategy &&
+      !!(
+        strategy.brief.price ||
+        strategy.brief.audience ||
+        strategy.brief.differentiator ||
+        strategy.brief.monthlyBudget ||
+        strategy.brief.deadlineDays ||
+        strategy.brief.notes ||
+        strategy.requestedPlaybookSlug
+      ),
+  );
   const offersQuery = useQuery({
     queryKey: ["offers", client.id, false],
     queryFn: () => offerService.findAll(client.id),
@@ -108,7 +122,7 @@ export const StrategyBriefDialog: FC<Props> = ({ onClose, strategy }) => {
           <DialogHeader>
             <DialogTitle>{strategy ? "Refazer a estratégia" : "Nova estratégia"}</DialogTitle>
             <DialogDescription>
-              Quanto mais concreto, melhor o plano. A IA também lê a base da marca (Configurações › Identidade da marca).
+              Conte o que quer vender e o objetivo; a IA escolhe a estratégia e monta os passos. Ela também lê a identidade da marca.
               {strategy && " O que já foi criado pelos passos continua ligado à estratégia."}
             </DialogDescription>
           </DialogHeader>
@@ -153,17 +167,7 @@ export const StrategyBriefDialog: FC<Props> = ({ onClose, strategy }) => {
                 onChange={(event) => update({ description: event.target.value })}
               />
             </div>
-            <div className="grid gap-1">
-              <Label htmlFor="brief-price">Preço</Label>
-              <Input
-                id="brief-price"
-                maxLength={200}
-                placeholder="Ex.: R$ 900 ou 3x de R$ 300"
-                value={brief.price ?? ""}
-                onChange={(event) => update({ price: event.target.value || null })}
-              />
-            </div>
-            <div className="grid gap-1">
+            <div className="grid gap-1 sm:col-span-2">
               <Label htmlFor="brief-goal">Objetivo</Label>
               <select
                 id="brief-goal"
@@ -177,49 +181,6 @@ export const StrategyBriefDialog: FC<Props> = ({ onClose, strategy }) => {
                   </option>
                 ))}
               </select>
-            </div>
-            <div className="grid gap-1">
-              <Label htmlFor="brief-audience">Para quem</Label>
-              <Input
-                id="brief-audience"
-                maxLength={1000}
-                placeholder="Ex.: mulheres de 25 a 45 anos em Curitiba"
-                value={brief.audience ?? ""}
-                onChange={(event) => update({ audience: event.target.value || null })}
-              />
-            </div>
-            <div className="grid gap-1">
-              <Label htmlFor="brief-differentiator">Diferencial</Label>
-              <Input
-                id="brief-differentiator"
-                maxLength={1000}
-                placeholder="Ex.: resultado em 3 sessões, sem sensibilidade"
-                value={brief.differentiator ?? ""}
-                onChange={(event) => update({ differentiator: event.target.value || null })}
-              />
-            </div>
-            <div className="grid gap-1">
-              <Label htmlFor="brief-budget">Verba de anúncio por mês (R$)</Label>
-              <Input
-                id="brief-budget"
-                type="number"
-                min={0}
-                placeholder="Ex.: 1500"
-                value={brief.monthlyBudget ?? ""}
-                onChange={(event) => update({ monthlyBudget: numberOrNull(event.target.value) })}
-              />
-            </div>
-            <div className="grid gap-1">
-              <Label htmlFor="brief-deadline">Prazo para o resultado (dias)</Label>
-              <Input
-                id="brief-deadline"
-                type="number"
-                min={7}
-                max={365}
-                placeholder="Ex.: 60"
-                value={brief.deadlineDays ?? ""}
-                onChange={(event) => update({ deadlineDays: numberOrNull(event.target.value) })}
-              />
             </div>
           </div>
 
@@ -245,47 +206,112 @@ export const StrategyBriefDialog: FC<Props> = ({ onClose, strategy }) => {
             <p className="text-muted-foreground text-xs">O atendimento pelo WhatsApp (fluxos e IA) sempre entra.</p>
           </fieldset>
 
-          <div className="grid gap-1">
-            <Label htmlFor="brief-notes">Observações</Label>
-            <textarea
-              id="brief-notes"
-              rows={2}
-              maxLength={2000}
-              className={textareaClassName}
-              placeholder="Ex.: temos 40 depoimentos em vídeo; não podemos dar desconto; foco em dezembro"
-              value={brief.notes ?? ""}
-              onChange={(event) => update({ notes: event.target.value || null })}
-            />
-          </div>
-
-          <div className="grid gap-1">
-            <Label htmlFor="brief-playbook">Estratégia</Label>
-            <select
-              id="brief-playbook"
-              className={selectClassName}
-              value={playbookSlug}
-              disabled={playbooksQuery.isLoading}
-              onChange={(event) => setPlaybookSlug(event.target.value)}
-            >
-              <option value="">A IA escolhe a que mais combina</option>
-              {playbooks.map((item) => (
-                <option key={item.slug} value={item.slug}>
-                  {item.name}
-                  {item.segmentStat ? ` · validada em ${item.segmentStat.rate}% das empresas do seu segmento` : ""}
-                </option>
-              ))}
-            </select>
-            {selectedPlaybook && (
-              <p className="text-muted-foreground text-xs">
-                {selectedPlaybook.origin}. {selectedPlaybook.summary}
-                {selectedPlaybook.segmentStat &&
-                  ` Validada em ${selectedPlaybook.segmentStat.validated} de ${selectedPlaybook.segmentStat.clients} empresas do seu segmento.`}
-              </p>
-            )}
-            {!playbookSlug && playbooks.some((item) => item.segmentStat) && (
-              <p className="text-muted-foreground text-xs">A IA leva em conta o que já se validou em empresas do seu segmento.</p>
-            )}
-          </div>
+          <details className="group rounded-lg border" open={hasDetails}>
+            <summary className="flex cursor-pointer list-none items-center gap-2 p-3 text-sm font-medium [&::-webkit-details-marker]:hidden">
+              <span className="flex-1">
+                Mais detalhes{" "}
+                <span className="text-muted-foreground font-normal">(opcional: preço, público, verba, prazo, estratégia)</span>
+              </span>
+              <ChevronDown className="text-muted-foreground h-4 w-4 transition-transform group-open:rotate-180" aria-hidden />
+            </summary>
+            <div className="grid gap-4 border-t p-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-1">
+                  <Label htmlFor="brief-price">Preço</Label>
+                  <Input
+                    id="brief-price"
+                    maxLength={200}
+                    placeholder="Ex.: R$ 900 ou 3x de R$ 300"
+                    value={brief.price ?? ""}
+                    onChange={(event) => update({ price: event.target.value || null })}
+                  />
+                </div>
+                <div className="grid gap-1">
+                  <Label htmlFor="brief-audience">Para quem</Label>
+                  <Input
+                    id="brief-audience"
+                    maxLength={1000}
+                    placeholder="Ex.: mulheres de 25 a 45 anos em Curitiba"
+                    value={brief.audience ?? ""}
+                    onChange={(event) => update({ audience: event.target.value || null })}
+                  />
+                </div>
+                <div className="grid gap-1">
+                  <Label htmlFor="brief-differentiator">Diferencial</Label>
+                  <Input
+                    id="brief-differentiator"
+                    maxLength={1000}
+                    placeholder="Ex.: resultado em 3 sessões, sem sensibilidade"
+                    value={brief.differentiator ?? ""}
+                    onChange={(event) => update({ differentiator: event.target.value || null })}
+                  />
+                </div>
+                <div className="grid gap-1">
+                  <Label htmlFor="brief-budget">Verba de anúncio por mês (R$)</Label>
+                  <Input
+                    id="brief-budget"
+                    type="number"
+                    min={0}
+                    placeholder="Ex.: 1500"
+                    value={brief.monthlyBudget ?? ""}
+                    onChange={(event) => update({ monthlyBudget: numberOrNull(event.target.value) })}
+                  />
+                </div>
+                <div className="grid gap-1">
+                  <Label htmlFor="brief-deadline">Prazo para o resultado (dias)</Label>
+                  <Input
+                    id="brief-deadline"
+                    type="number"
+                    min={7}
+                    max={365}
+                    placeholder="Ex.: 60"
+                    value={brief.deadlineDays ?? ""}
+                    onChange={(event) => update({ deadlineDays: numberOrNull(event.target.value) })}
+                  />
+                </div>
+              </div>
+              <div className="grid gap-1">
+                <Label htmlFor="brief-notes">Observações</Label>
+                <textarea
+                  id="brief-notes"
+                  rows={2}
+                  maxLength={2000}
+                  className={textareaClassName}
+                  placeholder="Ex.: temos 40 depoimentos em vídeo; não podemos dar desconto; foco em dezembro"
+                  value={brief.notes ?? ""}
+                  onChange={(event) => update({ notes: event.target.value || null })}
+                />
+              </div>
+              <div className="grid gap-1">
+                <Label htmlFor="brief-playbook">Estratégia</Label>
+                <select
+                  id="brief-playbook"
+                  className={selectClassName}
+                  value={playbookSlug}
+                  disabled={playbooksQuery.isLoading}
+                  onChange={(event) => setPlaybookSlug(event.target.value)}
+                >
+                  <option value="">A IA escolhe a que mais combina</option>
+                  {playbooks.map((item) => (
+                    <option key={item.slug} value={item.slug}>
+                      {item.name}
+                      {item.segmentStat ? ` · validada em ${item.segmentStat.rate}% das empresas do seu segmento` : ""}
+                    </option>
+                  ))}
+                </select>
+                {selectedPlaybook && (
+                  <p className="text-muted-foreground text-xs">
+                    {selectedPlaybook.origin}. {selectedPlaybook.summary}
+                    {selectedPlaybook.segmentStat &&
+                      ` Validada em ${selectedPlaybook.segmentStat.validated} de ${selectedPlaybook.segmentStat.clients} empresas do seu segmento.`}
+                  </p>
+                )}
+                {!playbookSlug && playbooks.some((item) => item.segmentStat) && (
+                  <p className="text-muted-foreground text-xs">A IA leva em conta o que já se validou em empresas do seu segmento.</p>
+                )}
+              </div>
+            </div>
+          </details>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
