@@ -39,6 +39,8 @@ export const describeEvent = (event: Pick<DealEvent, "type" | "payload">) => {
       return `Fluxo da etapa ${payload.flowName ? `"${payload.flowName}" ` : ""}${stageFlowResultLabel[payload.result as StageFlowResult] ?? ""}`;
     case "UPDATED":
       if (payload.fieldNames) return `Alterou os campos ${(payload.fieldNames as string[]).join(", ")}`;
+      if ((payload.fields as string[] | undefined)?.includes("origin"))
+        return payload.originAdName ? `Veio do anúncio "${payload.originAdName}"` : "Veio de um anúncio";
 
       return `Alterou ${((payload.fields as string[]) ?? []).map((field) => fieldLabel[field] ?? field).join(", ")}`;
     case "TASK_CREATED":
