@@ -59,4 +59,19 @@ export const googleCalendarService = {
     const response = await api.post<WhatsappTemplate>(`/client/${params.clientId}/google-calendar/reminders/template`, body);
     return response.data;
   },
+
+  // ---------- Agendamento manual na conversa ----------
+
+  appointmentOptions: async (clientId: string): Promise<ContactAppointmentOptions> =>
+    (await api.get(`/client/${clientId}/whatsapp/appointment-options`)).data,
+
+  findContactAppointments: async (clientId: string, contactId: string): Promise<ContactAppointment[]> =>
+    (await api.get(`/client/${clientId}/whatsapp/contact/${contactId}/appointments`)).data,
+
+  createContactAppointment: async (clientId: string, contactId: string, body: CreateContactAppointmentBody): Promise<ContactAppointment> =>
+    (await api.post(`/client/${clientId}/whatsapp/contact/${contactId}/appointments`, body)).data,
+
+  cancelContactAppointment: async (clientId: string, contactId: string, appointmentId: string): Promise<void> => {
+    await api.delete(`/client/${clientId}/whatsapp/contact/${contactId}/appointments/${appointmentId}`);
+  },
 };

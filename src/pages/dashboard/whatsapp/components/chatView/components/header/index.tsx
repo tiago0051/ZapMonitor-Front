@@ -2,7 +2,18 @@ import { ContactAvatar } from "@/components/contact-avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { formatPhoneNumber } from "@/utils/formatString";
-import { ArrowLeft, ArrowRightLeft, Briefcase, Forward, Info, MoreHorizontal, Search, XCircle, UserCheck } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRightLeft,
+  Briefcase,
+  CalendarPlus,
+  Forward,
+  Info,
+  MoreHorizontal,
+  Search,
+  XCircle,
+  UserCheck,
+} from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useClientContext } from "@/context/ClientContext/clientContext";
 import { ContactDeals } from "@/pages/dashboard/crm/components/contactDeals";
@@ -17,6 +28,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useState, type FC } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { googleCalendarService } from "@/services/api/googleCalendarService";
+import { appointmentOptionsQueryKey } from "@/pages/dashboard/whatsapp/appointments/appointmentKeys";
+import { ScheduleMeetingDialog } from "@/pages/dashboard/whatsapp/appointments/scheduleMeetingDialog";
 import type { ServiceActions } from "../../hooks/useServiceActions";
 import { CallButton } from "@/pages/dashboard/whatsapp/calls/callButton";
 import { contactDisplayName } from "@/pages/dashboard/whatsapp/contactDisplayName";
@@ -34,10 +49,20 @@ interface HeaderProps {
 
 export const Header: FC<HeaderProps> = ({ contact, contactService, serviceActions, onBack, onShowInfo, onSearch }) => {
   const contactName = contactDisplayName(contact, "este contato");
-  const { canUseCrm } = useClientContext();
+  const { canUseCrm, client } = useClientContext();
   // O diálogo de encerrar fica nas ações do atendimento: o atalho de teclado também o abre
   const { isEndDialogOpen, setIsEndDialogOpen } = serviceActions;
   const [isDealsDialogOpen, setIsDealsDialogOpen] = useState(false);
+  const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+  // Agendar só aparece com o Google Agenda conectado (ou caído, para o diálogo avisar); uma consulta por cliente
+  const appointmentOptions = useQuery({
+    meta: { errorHandledInline: true },
+    queryKey: appointmentOptionsQueryKey(client.id),
+    queryFn: () => googleCalendarService.appointmentOptions(client.id),
+    staleTime: 10 * 60 * 1000,
+    retry: false,
+  });
+  const canSchedule = !!appointmentOptions.data && appointmentOptions.data.status !== "NOT_CONNECTED";
 
   // No celular só a ação principal fica à vista; o resto vai para o menu "⋯"
   const canEnd = !!contactService?.canBeServiceEnded;
@@ -46,7 +71,7 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, serviceAction
   const showEndInMenu = canEnd && primaryAction !== "end";
   // Transferir só existe no menu "⋯", que então aparece também no computador
   const canTransfer = serviceActions.canTransferToOthers;
-  const hasMenu = canUseCrm || canForward || showEndInMenu || canTransfer;
+  const hasMenu = canUseCrm || canSchedule || canForward || showEndInMenu || canTransfer;
 
   return (
     <header className="bg-card border-border flex flex-shrink-0 items-center gap-1.5 border-b px-2 py-2.5 sm:gap-2 sm:px-3 sm:py-3 md:px-5">
@@ -79,6 +104,16 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, serviceAction
           </button>
         )}
         <CallButton contact={contact} contactService={contactService} />
+        {canSchedule && (
+          <button
+            type="button"
+            onClick={() => setIsScheduleOpen(true)}
+            className="bg-muted hover:bg-muted/70 text-foreground hidden items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium whitespace-nowrap transition-colors sm:flex sm:px-3"
+          >
+            <CalendarPlus className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Agendar</span>
+          </button>
+        )}
         {canUseCrm && (
           <Popover>
             <PopoverTrigger asChild>
@@ -164,6 +199,12 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, serviceAction
                   Transferir
                 </DropdownMenuItem>
               )}
+              {canSchedule && (
+                <DropdownMenuItem className="sm:hidden" onSelect={() => setIsScheduleOpen(true)}>
+                  <CalendarPlus className="h-4 w-4" />
+                  Agendar reunião
+                </DropdownMenuItem>
+              )}
               {canUseCrm && (
                 <DropdownMenuItem className="sm:hidden" onSelect={() => setIsDealsDialogOpen(true)}>
                   <Briefcase className="h-4 w-4" />
@@ -224,6 +265,15 @@ export const Header: FC<HeaderProps> = ({ contact, contactService, serviceAction
               <ContactDeals contact={contact} />
             </DialogContent>
           </Dialog>
+        )}
+        {canSchedule && appointmentOptions.data && (
+          <ScheduleMeetingDialog
+            open={isScheduleOpen}
+            onOpenChange={setIsScheduleOpen}
+            contactId={contact.id}
+            contactName={contactName}
+            options={appointmentOptions.data}
+          />
         )}
         {/* Info button — mobile only */}
         <button

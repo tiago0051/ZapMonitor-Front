@@ -83,3 +83,32 @@ type AppointmentReminder = {
   response: "CONFIRMED" | "RESCHEDULE" | null;
   respondedAt: string | null;
 };
+
+// Agendamento manual pelo atendente na conversa
+type ContactAppointmentOptions = {
+  status: "CONNECTED" | "NOT_CONNECTED" | "REVOKED";
+  calendars: { id: string; name: string; primary: boolean; timeZone: string }[];
+  defaults: { calendarId: string; durationMinutes: number; title: string } | null;
+};
+
+type ContactAppointment = {
+  id: string;
+  calendarId: string;
+  startAt: string;
+  endAt: string;
+  // "terça-feira, 02/12 às 14:30", no fuso da agenda
+  description: string;
+  timeZone: string;
+  // MANUAL: marcado por um atendente; AI: pelo agente de IA
+  source: "MANUAL" | "AI";
+};
+
+type CreateContactAppointmentBody = {
+  calendarId: string;
+  date: string;
+  time: string;
+  durationMinutes: number;
+  title?: string;
+  notes?: string;
+  force?: boolean;
+};
