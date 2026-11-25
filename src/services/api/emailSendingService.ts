@@ -1,6 +1,10 @@
+import axios from "axios";
 import api from "./api";
 
 const base = (clientId: string) => `/client/${clientId}/email`;
+
+// Página de descadastro: pública, sem cookies e sem os interceptadores de sessão
+const publicApi = axios.create({ baseURL: import.meta.env.VITE_API_URL });
 
 export const emailSendingService = {
   findSenders: async (clientId: string): Promise<EmailSender[]> => {
@@ -48,4 +52,8 @@ export const emailSendingService = {
   removeSuppression: async (clientId: string, id: string): Promise<void> => {
     await api.delete(`${base(clientId)}/suppression/${id}`);
   },
+
+  /** Descadastro pelo link do e-mail (sem login). */
+  unsubscribe: async (token: string): Promise<{ email: string }> =>
+    (await publicApi.post(`/email/unsubscribe/${encodeURIComponent(token)}`)).data,
 };

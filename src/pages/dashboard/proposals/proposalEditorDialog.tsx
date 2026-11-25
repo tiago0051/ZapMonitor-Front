@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { AlertTriangle, Copy, Download, FileText, Loader2, Mail, MessageCircle, Sparkles, Trash2 } from "lucide-react";
 import { useState, type FC } from "react";
 import { toast } from "sonner";
+import { ProposalDocument } from "@/pages/proposal/proposalDocument";
 import { isProposalLocked, proposalStatusInfo, viewSummary } from "./proposalUtils";
 
 type ItemRow = Omit<ProposalItem, "quantity" | "unitPrice" | "discountPercent" | "total"> & {
@@ -447,12 +448,9 @@ export const ProposalEditorDialog: FC<{ proposalId: string; onClose: () => void 
                 {proposal.pdfStatus === "FAILED" && <p className="text-destructive text-xs">O PDF não foi gerado: {proposal.pdfError}</p>}
                 {isDirty && <p className="text-muted-foreground text-xs">Salve as alterações para atualizar a prévia e enviar.</p>}
                 {previewQuery.data ? (
-                  <iframe
-                    title="Prévia da proposta"
-                    sandbox=""
-                    className="h-[70dvh] w-full rounded-lg border bg-white"
-                    srcDoc={previewQuery.data.html}
-                  />
+                  <div className="bg-muted/40 max-h-[70dvh] overflow-y-auto rounded-lg border p-2 sm:p-4">
+                    <ProposalDocument proposal={previewQuery.data} />
+                  </div>
                 ) : (
                   <LoadingState label="Montando a prévia..." />
                 )}

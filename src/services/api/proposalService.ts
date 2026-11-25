@@ -1,6 +1,11 @@
+import axios from "axios";
 import api from "./api";
 
 const base = (clientId: string) => `/client/${clientId}/proposal`;
+
+// Link público da proposta: sem login, sem cookies e sem os interceptadores de sessão
+const publicApi = axios.create({ baseURL: import.meta.env.VITE_API_URL });
+const publicBase = (token: string) => `/public/proposal/${encodeURIComponent(token)}`;
 
 export const proposalService = {
   findAll: async (clientId: string, query: { status?: ProposalStatus; days?: number } = {}): Promise<Proposal[]> =>
@@ -36,7 +41,7 @@ export const proposalService = {
 
   pdfUrl: async (clientId: string, id: string): Promise<{ url: string }> => (await api.get(`${base(clientId)}/${id}/pdf`)).data,
 
-  preview: async (clientId: string, id: string): Promise<{ html: string }> => (await api.get(`${base(clientId)}/${id}/preview`)).data,
+  preview: async (clientId: string, id: string): Promise<ProposalView> => (await api.get(`${base(clientId)}/${id}/preview`)).data,
 
   /** Copiar o link conta como envio: o rastreio de abertura começa. */
   shareLink: async (clientId: string, id: string): Promise<{ url: string; proposal: Proposal }> =>
@@ -47,4 +52,14 @@ export const proposalService = {
 
   sendEmail: async (clientId: string, id: string, to?: string): Promise<Proposal> =>
     (await api.post(`${base(clientId)}/${id}/send/email`, { to })).data,
+
+  findPublic: async (token: string): Promise<ProposalView> => (await publicApi.get(publicBase(token))).data,
+
+  publicPdfUrl: async (token: string): Promise<{ url: string }> => (await publicApi.get(`${publicBase(token)}/pdf`)).data,
+
+  acceptPublic: async (token: string, name: string): Promise<{ result: PublicProposalAcceptResult }> =>
+    (await publicApi.post(`${publicBase(token)}/accept`, { name })).data,
+
+  declinePublic: async (token: string, reason?: string): Promise<{ declined: boolean }> =>
+    (await publicApi.post(`${publicBase(token)}/decline`, { reason })).data,
 };
