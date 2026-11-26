@@ -2,6 +2,7 @@ import { useClientContext } from "@/context/ClientContext/clientContext";
 import { useBaseUrl } from "@/hooks/use-baseUrl";
 import { cn } from "@/lib/utils";
 import {
+  Compass,
   BarChart3,
   Bot,
   BookUser,
@@ -34,6 +35,8 @@ type Shortcut = {
   anyPermission?: Permission[];
   requiresCrm?: boolean;
   requiresAds?: boolean;
+  requiresOrganic?: boolean;
+  requiresAgency?: boolean;
 };
 
 // Agrupados pelo que a pessoa quer fazer; o primeiro de cada grupo é o mais usado
@@ -85,13 +88,21 @@ const shortcutGroups: { label: string; shortcuts: Shortcut[] }[] = [
         icon: FiInstagram,
         url: "posts",
         permission: "posts.view",
-        requiresAds: true,
+        requiresOrganic: true,
       },
     ],
   },
   {
     label: "Acompanhar",
     shortcuts: [
+      {
+        title: "Agência",
+        description: "Objetivo da empresa e relatório das frentes",
+        icon: Compass,
+        url: "agency",
+        permission: "agency.view",
+        requiresAgency: true,
+      },
       {
         title: "Equipe agora",
         description: "Quem está atendendo quem",
@@ -168,7 +179,9 @@ export const HomeShortcuts = () => {
     (!shortcut.permission || can(shortcut.permission)) &&
     (!shortcut.anyPermission || shortcut.anyPermission.some((permission) => can(permission))) &&
     (!shortcut.requiresCrm || access.crmEnabled) &&
-    (!shortcut.requiresAds || access.adsEnabled);
+    (!shortcut.requiresAds || access.adsEnabled) &&
+    (!shortcut.requiresOrganic || access.organicEnabled) &&
+    (!shortcut.requiresAgency || access.agencyEnabled);
 
   const groups = shortcutGroups
     .map((group) => ({ ...group, shortcuts: group.shortcuts.filter(isAllowed) }))

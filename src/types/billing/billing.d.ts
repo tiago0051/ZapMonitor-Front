@@ -12,7 +12,13 @@ type BillingResource =
   | "ADS_ACCESS"
   | "ADS_ACCOUNTS"
   // Milhares de e-mails por mês
-  | "EMAIL_SENDS";
+  | "EMAIL_SENDS"
+  // Redes sociais: postagens, estúdio e identidade da marca
+  | "ORGANIC_ACCESS"
+  // Maestro e área Agência
+  | "AGENCY_ACCESS"
+  // Artes criadas pela IA por semana
+  | "WEEKLY_ARTS";
 
 type PriceTableStatus = "IN_FORCE" | "SCHEDULED" | "PAST";
 

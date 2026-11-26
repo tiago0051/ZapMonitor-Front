@@ -37,7 +37,7 @@ const emptyBrief = (): MarketingBrief => ({
 
 /** Briefing do produto: o que a IA precisa para escolher a estratégia e montar os passos. */
 export const StrategyBriefDialog: FC<Props> = ({ onClose, strategy }) => {
-  const { client, canUseAds, can } = useClientContext();
+  const { client, canUseAds, canUseOrganic, can } = useClientContext();
   const baseUrl = useBaseUrl();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -89,7 +89,7 @@ export const StrategyBriefDialog: FC<Props> = ({ onClose, strategy }) => {
   });
   const playbooks = playbooksQuery.data ?? [];
   const selectedPlaybook = playbooks.find((item) => item.slug === playbookSlug);
-  const channels = channelOptions.filter((option) => !option.requiresAds || canUseAds);
+  const channels = channelOptions.filter((option) => (!option.requiresAds || canUseAds) && (!option.requiresOrganic || canUseOrganic));
 
   const save = useMutation({
     mutationFn: () => {

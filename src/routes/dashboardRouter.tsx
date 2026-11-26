@@ -25,6 +25,7 @@ const ContactsRouter = lazy(() => import("./contactsRouter"));
 const PlannerRouter = lazy(() => import("./plannerRouter"));
 const StrategiesRouter = lazy(() => import("./strategiesRouter"));
 const ProposalsPage = lazy(() => import("@/pages/dashboard/proposals/proposalsPage").then((module) => ({ default: module.ProposalsPage })));
+const AgencyPage = lazy(() => import("@/pages/dashboard/agency/agencyPage").then((module) => ({ default: module.AgencyPage })));
 const OffersPage = lazy(() => import("@/pages/dashboard/offers/offersPage").then((module) => ({ default: module.OffersPage })));
 
 export const DashboardRouter: FC = () => {
@@ -97,7 +98,7 @@ export const DashboardRouter: FC = () => {
           <Route
             path="posts/*"
             element={
-              <PermissionRoute permission="posts.view" requiresAds>
+              <PermissionRoute permission="posts.view" requiresOrganic>
                 <PostsRouter />
               </PermissionRoute>
             }
@@ -105,7 +106,7 @@ export const DashboardRouter: FC = () => {
           <Route
             path="studio/*"
             element={
-              <PermissionRoute anyPermission={["ads.manage", "posts.manage"]} requiresAds>
+              <PermissionRoute anyPermission={["ads.manage", "posts.manage"]} requiresAdsOrOrganic>
                 <StudioRouter />
               </PermissionRoute>
             }
@@ -139,6 +140,14 @@ export const DashboardRouter: FC = () => {
             element={
               <PermissionRoute permission="strategies.view">
                 <StrategiesRouter />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="agency"
+            element={
+              <PermissionRoute permission="agency.view" requiresAgency>
+                <AgencyPage />
               </PermissionRoute>
             }
           />

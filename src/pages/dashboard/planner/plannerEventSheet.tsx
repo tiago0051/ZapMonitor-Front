@@ -96,7 +96,7 @@ export const PlannerEventSheet: FC<PlannerEventSheetProps> = ({ event, onClose, 
   const canComplete =
     event.type === "CRM_TASK" || (event.type === "PLANNER_TASK" && (can("planner.manage") || event.assignee?.id === user?.id));
   const kind = event.ref.kind as PlannerItemKind | undefined;
-  const createsPost = event.type === "PLAN_ITEM" && kind === "SOCIAL_POST" && can("posts.manage") && access.adsEnabled;
+  const createsPost = event.type === "PLAN_ITEM" && kind === "SOCIAL_POST" && can("posts.manage") && access.organicEnabled;
   const busy = move.isPending || complete.isPending || removeTask.isPending || accept.isPending || discard.isPending;
 
   return (

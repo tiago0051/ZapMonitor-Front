@@ -85,7 +85,7 @@ type StepAction = { key: string; label: string; icon: ReactNode; title?: string;
  * botão principal para executar e o que já nasceu dele. As ações menos usadas ficam no menu "Mais".
  */
 export const StrategyStepCard: FC<Props> = ({ strategy, step, canManage, isCurrent, expanded, onToggle, onSaved }) => {
-  const { client, can, canUseAds } = useClientContext();
+  const { client, can, canUseAds, canUseOrganic } = useClientContext();
   const baseUrl = useBaseUrl();
   const navigate = useNavigate();
   const info = actionInfo[step.action];
@@ -218,7 +218,7 @@ export const StrategyStepCard: FC<Props> = ({ strategy, step, canManage, isCurre
         });
     }
   }
-  if (step.action === "SOCIAL_POST" && canUseAds && can("posts.manage")) {
+  if (step.action === "SOCIAL_POST" && canUseOrganic && can("posts.manage")) {
     actions.push({
       key: "post",
       label: "Criar rascunho de postagem",

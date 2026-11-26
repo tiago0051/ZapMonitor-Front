@@ -37,7 +37,9 @@ type Permission =
   | "strategies.view"
   | "strategies.manage"
   | "offers.view"
-  | "offers.manage";
+  | "offers.manage"
+  | "agency.view"
+  | "agency.manage";
 
 type PermissionDefinition = {
   key: Permission;
@@ -66,6 +68,10 @@ type TenantAccess = {
   crmEnabled: boolean;
   // O plano do tenant inclui o módulo de anúncios
   adsEnabled: boolean;
+  // O plano do tenant inclui o módulo de redes sociais (postagens, estúdio)
+  organicEnabled: boolean;
+  // O plano do tenant inclui o maestro e a área Agência
+  agencyEnabled: boolean;
   // Vencimento do plano, para o aviso dos últimos dias
   plan?: PlanStatus;
   // O tenant exige verificação em duas etapas e o usuário ainda não ativou

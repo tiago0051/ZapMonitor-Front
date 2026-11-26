@@ -64,6 +64,10 @@ type ConfigurationSection = {
   requiresCrm?: boolean;
   // Só aparece quando o plano inclui o módulo de anúncios
   requiresAds?: boolean;
+  // Basta o plano incluir anúncios ou redes sociais
+  requiresAdsOrOrganic?: boolean;
+  // Basta uma destas permissões
+  anyPermission?: Permission[];
   // Abre por link (?tab=), mas fica fora do menu; a troca de senha mora no menu do usuário, na sidebar
   hiddenFromNav?: boolean;
 };
@@ -155,11 +159,12 @@ const configurationGroups: { label: string; sections: ConfigurationSection[] }[]
     sections: [
       {
         id: "metaAds",
-        label: "Anúncios da Meta",
+        label: "Conexão com a Meta",
         icon: Megaphone,
         content: <MetaAdsSettings />,
-        permission: "ads.manage",
-        requiresAds: true,
+        // Anúncios e postagens usam a mesma conexão
+        anyPermission: ["ads.manage", "brand.manage"],
+        requiresAdsOrOrganic: true,
       },
       {
         id: "youtubeAds",
@@ -244,8 +249,10 @@ export const EditClientLayout = () => {
       sections: group.sections.filter(
         (section) =>
           (!section.permission || can(section.permission)) &&
+          (!section.anyPermission || section.anyPermission.some((permission) => can(permission))) &&
           (!section.requiresCrm || access.crmEnabled) &&
-          (!section.requiresAds || access.adsEnabled),
+          (!section.requiresAds || access.adsEnabled) &&
+          (!section.requiresAdsOrOrganic || access.adsEnabled || access.organicEnabled),
       ),
     }))
     .filter((group) => group.sections.length > 0);

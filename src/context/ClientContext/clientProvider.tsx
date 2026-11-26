@@ -40,6 +40,8 @@ export const ClientProvider = () => {
   const can = (permission: Permission) => access.permissions.includes(permission);
   const canUseCrm = access.crmEnabled && can("crm.view");
   const canUseAds = access.adsEnabled && can("ads.view");
+  const canUseOrganic = access.organicEnabled && can("posts.view");
+  const canUseAgency = access.agencyEnabled && can("agency.view");
 
   // O cliente exige verificação em duas etapas e a pessoa ainda não ativou: só a tela de segurança fica liberada
   const accountPath = `/dashboard/client/${clientId}/configuration`;
@@ -47,7 +49,7 @@ export const ClientProvider = () => {
   if (access.twoFactorSetupRequired && !isOnAccountPage) return <Navigate to={`${accountPath}?tab=account`} replace />;
 
   return (
-    <ClientContext.Provider value={{ client, access, can, canUseCrm, canUseAds }}>
+    <ClientContext.Provider value={{ client, access, can, canUseCrm, canUseAds, canUseOrganic, canUseAgency }}>
       <Outlet />
     </ClientContext.Provider>
   );

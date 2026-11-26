@@ -10,6 +10,9 @@ export const billingResources: BillingResource[] = [
   "CRM_PIPELINES",
   "ADS_ACCESS",
   "ADS_ACCOUNTS",
+  "ORGANIC_ACCESS",
+  "WEEKLY_ARTS",
+  "AGENCY_ACCESS",
   "EMAIL_SENDS",
 ];
 
@@ -26,6 +29,9 @@ export const billingResourceLabel: Record<BillingResource, string> = {
   ADS_ACCESS: "Módulo de anúncios",
   ADS_ACCOUNTS: "Contas de anúncio",
   EMAIL_SENDS: "E-mails por mês",
+  ORGANIC_ACCESS: "Módulo de redes sociais",
+  AGENCY_ACCESS: "Maestro e Agência",
+  WEEKLY_ARTS: "Artes por semana",
 };
 
 // Como uma unidade aparece na tabela de preços
@@ -42,10 +48,13 @@ export const billingResourceUnit: Record<BillingResource, string> = {
   ADS_ACCESS: "por acesso",
   ADS_ACCOUNTS: "por conta",
   EMAIL_SENDS: "por mil e-mails",
+  ORGANIC_ACCESS: "por acesso",
+  AGENCY_ACCESS: "por acesso",
+  WEEKLY_ARTS: "por arte por semana",
 };
 
 // Recursos liga/desliga: quantidade 0 ou 1
-export const billingFeatureResources: BillingResource[] = ["API_ACCESS", "CRM_ACCESS", "ADS_ACCESS"];
+export const billingFeatureResources: BillingResource[] = ["API_ACCESS", "CRM_ACCESS", "ADS_ACCESS", "ORGANIC_ACCESS", "AGENCY_ACCESS"];
 
 export const priceTableStatusLabel: Record<PriceTableStatus, string> = {
   IN_FORCE: "Em vigor",

@@ -59,7 +59,7 @@ export const PlannerCreateDialog: FC<PlannerCreateDialogProps> = ({ day, onClose
       action: () => onCreateTask(day),
     },
     can("posts.manage") &&
-      access.adsEnabled && {
+      access.organicEnabled && {
         type: "SOCIAL_POST" as const,
         label: "Postagem",
         hint: "A IA escreve e cria as imagens",

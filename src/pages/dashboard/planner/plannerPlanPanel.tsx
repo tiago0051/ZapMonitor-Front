@@ -28,8 +28,8 @@ import {
   postFormatLabel,
 } from "./plannerUtils";
 
-const channelOptions: { value: PlannerItemKind; label: string; requiresAds?: boolean }[] = [
-  { value: "SOCIAL_POST", label: "Postagens no Instagram e Facebook", requiresAds: true },
+const channelOptions: { value: PlannerItemKind; label: string; requiresAds?: boolean; requiresOrganic?: boolean }[] = [
+  { value: "SOCIAL_POST", label: "Postagens no Instagram e Facebook", requiresOrganic: true },
   { value: "WHATSAPP_BROADCAST", label: "Disparos de WhatsApp" },
   { value: "EMAIL_CAMPAIGN", label: "Campanhas de e-mail" },
   { value: "AD_CAMPAIGN", label: "Anúncios na Meta", requiresAds: true },
@@ -193,14 +193,16 @@ export const PlannerPlanPanel: FC = () => {
   const queryClient = useQueryClient();
   const { confirm, confirmDialog } = useConfirm();
   const canManage = can("planner.manage");
-  const createsPosts = can("posts.manage") && access.adsEnabled;
+  const createsPosts = can("posts.manage") && access.organicEnabled;
   const createsAds = can("ads.manage") && access.adsEnabled;
   const adAccountId = useReadLocalStorage<string | null>(`ads:account:${client.id}`);
 
   const monthOptions = [0, 1, 2, 3].map((offset) => format(addMonths(new Date(), offset), "yyyy-MM"));
   const [month, setMonth] = useState(monthOptions[0]);
   const [goal, setGoal] = useState("");
-  const availableChannels = channelOptions.filter((option) => !option.requiresAds || access.adsEnabled);
+  const availableChannels = channelOptions.filter(
+    (option) => (!option.requiresAds || access.adsEnabled) && (!option.requiresOrganic || access.organicEnabled),
+  );
   const [channels, setChannels] = useState<PlannerItemKind[]>(availableChannels.map((option) => option.value));
   const [postsPerWeek, setPostsPerWeek] = useState(3);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);

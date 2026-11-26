@@ -10,6 +10,12 @@ type PermissionRouteProps = {
   requiresCrm?: boolean;
   // Exige também que o plano inclua o módulo de anúncios
   requiresAds?: boolean;
+  // Exige também que o plano inclua o módulo de redes sociais
+  requiresOrganic?: boolean;
+  // Basta o plano incluir anúncios ou redes sociais (estúdio)
+  requiresAdsOrOrganic?: boolean;
+  // Exige também que o plano inclua o maestro
+  requiresAgency?: boolean;
   children: ReactNode;
 };
 
@@ -25,14 +31,26 @@ export const NoPermission = () => (
   </div>
 );
 
-export const PermissionRoute: FC<PermissionRouteProps> = ({ permission, anyPermission, requiresCrm, requiresAds, children }) => {
+export const PermissionRoute: FC<PermissionRouteProps> = ({
+  permission,
+  anyPermission,
+  requiresCrm,
+  requiresAds,
+  requiresOrganic,
+  requiresAdsOrOrganic,
+  requiresAgency,
+  children,
+}) => {
   const { can, access } = useClientContext();
 
   if (
     (permission && !can(permission)) ||
     (anyPermission && !anyPermission.some((item) => can(item))) ||
     (requiresCrm && !access.crmEnabled) ||
-    (requiresAds && !access.adsEnabled)
+    (requiresAds && !access.adsEnabled) ||
+    (requiresOrganic && !access.organicEnabled) ||
+    (requiresAdsOrOrganic && !access.adsEnabled && !access.organicEnabled) ||
+    (requiresAgency && !access.agencyEnabled)
   )
     return <NoPermission />;
 

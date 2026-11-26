@@ -14,11 +14,11 @@ export const goalLabel: Record<MarketingGoal, string> = {
   RECURRENCE: "Fazer clientes comprarem de novo",
 };
 
-export const channelOptions: { value: MarketingChannel; label: string; requiresAds?: boolean }[] = [
+export const channelOptions: { value: MarketingChannel; label: string; requiresAds?: boolean; requiresOrganic?: boolean }[] = [
   { value: "META_ADS", label: "Anúncios na Meta (Facebook e Instagram)", requiresAds: true },
   { value: "GOOGLE_ADS", label: "Anúncios no YouTube", requiresAds: true },
   { value: "TIKTOK_ADS", label: "Anúncios no TikTok", requiresAds: true },
-  { value: "SOCIAL", label: "Postagens no Instagram e Facebook", requiresAds: true },
+  { value: "SOCIAL", label: "Postagens no Instagram e Facebook", requiresOrganic: true },
   { value: "WHATSAPP_BASE", label: "Disparos para a base no WhatsApp" },
   { value: "EMAIL", label: "E-mail marketing" },
 ];

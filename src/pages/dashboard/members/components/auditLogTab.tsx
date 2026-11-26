@@ -22,6 +22,7 @@ const auditEntityTypeLabel: Record<AuditEntityType, string> = {
   INVITATION: "Convites",
   SETTINGS: "Configurações",
   OFFER: "Ofertas",
+  BUSINESS_OBJECTIVE: "Objetivos da empresa",
 };
 
 const selectClassName =

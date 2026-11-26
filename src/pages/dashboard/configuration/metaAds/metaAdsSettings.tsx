@@ -28,7 +28,9 @@ const scopeLabel: Record<string, string> = {
 };
 
 export const MetaAdsSettings = () => {
-  const { client } = useClientContext();
+  const { client, access } = useClientContext();
+  // Só com redes sociais no plano, a conexão serve às postagens: as partes de anúncio ficam de fora
+  const adsEnabled = access.adsEnabled;
   const queryClient = useQueryClient();
   const [isConfirmingDisconnect, setIsConfirmingDisconnect] = useState(false);
   const [isTokenDialogOpen, setIsTokenDialogOpen] = useState(false);
@@ -43,7 +45,7 @@ export const MetaAdsSettings = () => {
   const availableQuery = useQuery({
     queryKey: ["metaAds", "available", client.id],
     queryFn: () => metaAdsService.findAvailableAccounts({ params: { clientId: client.id } }),
-    enabled: connection.connected,
+    enabled: connection.connected && adsEnabled,
   });
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["metaAds"] });
@@ -121,10 +123,11 @@ export const MetaAdsSettings = () => {
     <Card>
       <CardHeader className="flex flex-col items-start justify-between gap-4 space-y-0 sm:flex-row">
         <div>
-          <CardTitle>Anúncios da Meta</CardTitle>
+          <CardTitle>{adsEnabled ? "Anúncios da Meta" : "Conexão com a Meta"}</CardTitle>
           <CardDescription>
-            Conecte a Meta e vincule as contas de anúncio que o ZapMonitor vai acompanhar. Nada muda na Meta por aqui: as contas são só
-            lidas e copiadas a cada 6 horas.
+            {adsEnabled
+              ? "Conecte a Meta e vincule as contas de anúncio que o ZapMonitor vai acompanhar. Nada muda na Meta por aqui: as contas são só lidas e copiadas a cada 6 horas."
+              : "Conecte a Meta para publicar no Facebook e no Instagram pelas Postagens e ler a identidade da marca. A página e o Instagram são escolhidos em Identidade da marca."}
           </CardDescription>
         </div>
         <div className="flex flex-wrap gap-2 sm:justify-end">
@@ -173,99 +176,101 @@ export const MetaAdsSettings = () => {
               )}
             </div>
 
-            <section className="space-y-2">
-              <h3 className="text-sm font-semibold">Contas de anúncio</h3>
-              {availableQuery.isLoading && <LoadingState className="justify-start py-2" />}
-              {availableQuery.isSuccess && accountRows.length === 0 && (
-                <p className="text-muted-foreground text-sm">Esta conexão não enxerga nenhuma conta de anúncio.</p>
-              )}
-              <ul className="divide-y rounded-lg border">
-                {accountRows.map((available) => {
-                  const linked = linkedByMetaId.get(available.metaAccountId);
+            {adsEnabled && (
+              <section className="space-y-2">
+                <h3 className="text-sm font-semibold">Contas de anúncio</h3>
+                {availableQuery.isLoading && <LoadingState className="justify-start py-2" />}
+                {availableQuery.isSuccess && accountRows.length === 0 && (
+                  <p className="text-muted-foreground text-sm">Esta conexão não enxerga nenhuma conta de anúncio.</p>
+                )}
+                <ul className="divide-y rounded-lg border">
+                  {accountRows.map((available) => {
+                    const linked = linkedByMetaId.get(available.metaAccountId);
 
-                  return (
-                    <li key={available.metaAccountId} className="flex flex-wrap items-center gap-3 px-3 py-2">
-                      <div className="min-w-0 flex-1 break-words">
-                        <p className="truncate text-sm font-medium">{available.name}</p>
-                        <p className="text-muted-foreground text-xs">
-                          {available.metaAccountId} · {available.currency} ·{" "}
-                          {accountStatusLabel[available.accountStatus] ?? "Status desconhecido"}
-                          {available.businessName && ` · ${available.businessName}`}
-                        </p>
-                        {linked && (
+                    return (
+                      <li key={available.metaAccountId} className="flex flex-wrap items-center gap-3 px-3 py-2">
+                        <div className="min-w-0 flex-1 break-words">
+                          <p className="truncate text-sm font-medium">{available.name}</p>
                           <p className="text-muted-foreground text-xs">
-                            {syncStatusLabel[linked.syncStatus]}
-                            {linked.lastSyncedAt && ` em ${format(new Date(linked.lastSyncedAt), "dd/MM HH:mm")}`}
-                            {linked.syncError && <span className="text-destructive"> · {linked.syncError}</span>}
+                            {available.metaAccountId} · {available.currency} ·{" "}
+                            {accountStatusLabel[available.accountStatus] ?? "Status desconhecido"}
+                            {available.businessName && ` · ${available.businessName}`}
                           </p>
-                        )}
-                        {linked?.hasOwnToken && (
-                          <p className="text-muted-foreground text-xs">
-                            Usa token próprio
-                            {linked.tokenExpiresAt
-                              ? ` · válido até ${format(new Date(linked.tokenExpiresAt), "dd/MM/yyyy")}`
-                              : " · sem prazo de expiração"}
-                          </p>
-                        )}
-                        {!available.granted && !linked?.hasOwnToken && (
-                          <p className="text-destructive text-xs">
-                            Não liberada para o app. Reconecte e marque esta conta em editar acesso na Meta, ou vincule com token (em Opções
-                            avançadas).
-                          </p>
-                        )}
-                      </div>
-                      {linked ? (
-                        <>
-                          <Badge variant="secondary">Vinculada</Badge>
-                          {/* Só quando a conexão também alcança a conta; senão a sincronização voltaria a falhar */}
-                          {linked.hasOwnToken && available.granted && (
+                          {linked && (
+                            <p className="text-muted-foreground text-xs">
+                              {syncStatusLabel[linked.syncStatus]}
+                              {linked.lastSyncedAt && ` em ${format(new Date(linked.lastSyncedAt), "dd/MM HH:mm")}`}
+                              {linked.syncError && <span className="text-destructive"> · {linked.syncError}</span>}
+                            </p>
+                          )}
+                          {linked?.hasOwnToken && (
+                            <p className="text-muted-foreground text-xs">
+                              Usa token próprio
+                              {linked.tokenExpiresAt
+                                ? ` · válido até ${format(new Date(linked.tokenExpiresAt), "dd/MM/yyyy")}`
+                                : " · sem prazo de expiração"}
+                            </p>
+                          )}
+                          {!available.granted && !linked?.hasOwnToken && (
+                            <p className="text-destructive text-xs">
+                              Não liberada para o app. Reconecte e marque esta conta em editar acesso na Meta, ou vincule com token (em
+                              Opções avançadas).
+                            </p>
+                          )}
+                        </div>
+                        {linked ? (
+                          <>
+                            <Badge variant="secondary">Vinculada</Badge>
+                            {/* Só quando a conexão também alcança a conta; senão a sincronização voltaria a falhar */}
+                            {linked.hasOwnToken && available.granted && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                disabled={isPending}
+                                onClick={() => removeAccountToken.mutate({ params: { clientId: client.id, accountId: linked.id } })}
+                              >
+                                Usar token da conexão
+                              </Button>
+                            )}
                             <Button
                               size="sm"
                               variant="ghost"
-                              disabled={isPending}
-                              onClick={() => removeAccountToken.mutate({ params: { clientId: client.id, accountId: linked.id } })}
+                              aria-label={`Sincronizar ${available.name}`}
+                              disabled={syncAccount.isPending}
+                              onClick={() => syncAccount.mutate({ params: { clientId: client.id, accountId: linked.id } })}
                             >
-                              Usar token da conexão
+                              <RefreshCw className="h-4 w-4" />
                             </Button>
-                          )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={isPending}
+                              onClick={() => unlinkAccount.mutate({ params: { clientId: client.id, accountId: linked.id } })}
+                            >
+                              Desvincular
+                            </Button>
+                          </>
+                        ) : (
                           <Button
                             size="sm"
-                            variant="ghost"
-                            aria-label={`Sincronizar ${available.name}`}
-                            disabled={syncAccount.isPending}
-                            onClick={() => syncAccount.mutate({ params: { clientId: client.id, accountId: linked.id } })}
+                            disabled={isPending || !available.granted}
+                            onClick={() =>
+                              linkAccount.mutate({ params: { clientId: client.id }, body: { metaAccountId: available.metaAccountId } })
+                            }
                           >
-                            <RefreshCw className="h-4 w-4" />
+                            Vincular
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={isPending}
-                            onClick={() => unlinkAccount.mutate({ params: { clientId: client.id, accountId: linked.id } })}
-                          >
-                            Desvincular
-                          </Button>
-                        </>
-                      ) : (
-                        <Button
-                          size="sm"
-                          disabled={isPending || !available.granted}
-                          onClick={() =>
-                            linkAccount.mutate({ params: { clientId: client.id }, body: { metaAccountId: available.metaAccountId } })
-                          }
-                        >
-                          Vincular
-                        </Button>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            )}
 
-            <MetaAdsLeadPages />
+            {adsEnabled && <MetaAdsLeadPages />}
 
-            <MetaAdsConversions />
+            {adsEnabled && <MetaAdsConversions />}
 
             <div className="flex flex-wrap items-center gap-2 border-t pt-4">
               {isConfirmingDisconnect ? (
@@ -293,21 +298,23 @@ export const MetaAdsSettings = () => {
         )}
 
         {/* Token de usuário do sistema: caminho técnico, fica recolhido para não competir com o "Conectar com a Meta" */}
-        <details className="group border-t pt-4">
-          <summary className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 flex w-fit cursor-pointer list-none items-center gap-1 rounded text-sm font-medium outline-none focus-visible:ring-[3px] [&::-webkit-details-marker]:hidden">
-            <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
-            Opções avançadas
-          </summary>
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <p className="text-muted-foreground max-w-xl text-xs">
-              Vincule uma conta de anúncio com um token de usuário do sistema do Gerenciador de Negócios, quando o login com a Meta não
-              libera a conta.
-            </p>
-            <Button variant="outline" size="sm" onClick={() => setIsTokenDialogOpen(true)} disabled={isPending}>
-              Vincular com token
-            </Button>
-          </div>
-        </details>
+        {adsEnabled && (
+          <details className="group border-t pt-4">
+            <summary className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 flex w-fit cursor-pointer list-none items-center gap-1 rounded text-sm font-medium outline-none focus-visible:ring-[3px] [&::-webkit-details-marker]:hidden">
+              <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
+              Opções avançadas
+            </summary>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <p className="text-muted-foreground max-w-xl text-xs">
+                Vincule uma conta de anúncio com um token de usuário do sistema do Gerenciador de Negócios, quando o login com a Meta não
+                libera a conta.
+              </p>
+              <Button variant="outline" size="sm" onClick={() => setIsTokenDialogOpen(true)} disabled={isPending}>
+                Vincular com token
+              </Button>
+            </div>
+          </details>
+        )}
       </CardContent>
     </Card>
   );

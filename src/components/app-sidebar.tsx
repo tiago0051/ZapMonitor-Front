@@ -20,6 +20,7 @@ import {
   FiHome,
   FiBriefcase,
   FiCalendar,
+  FiCompass,
   FiColumns,
   FiUser,
   FiLogOut,
@@ -65,14 +66,17 @@ type NavItem = {
   anyPermission?: Permission[];
   requiresCrm?: boolean;
   requiresAds?: boolean;
+  requiresOrganic?: boolean;
+  requiresAdsOrOrganic?: boolean;
+  requiresAgency?: boolean;
   // Contadores somados no selo do item
   badges?: BadgeKey[];
   // Texto do selo para quem usa leitor de tela e no balão do menu encolhido
   badgeLabel?: string;
 };
 
-// Itens sem permissão ficam visíveis para qualquer membro do cliente; os do CRM e de anúncios também dependem do plano.
-// Seções sem nenhum item visível somem
+// Itens sem permissão ficam visíveis para qualquer membro do cliente; os do CRM, anúncios, redes sociais e agência também
+// dependem do plano. Seções sem nenhum item visível somem. O marketing fica dividido nas três frentes da agência.
 const navSections: { label: string | null; items: NavItem[] }[] = [
   {
     label: null,
@@ -82,7 +86,53 @@ const navSections: { label: string | null; items: NavItem[] }[] = [
     ],
   },
   {
-    label: "Atendimento",
+    label: "Agência",
+    items: [
+      { title: "Agência", icon: FiCompass, url: "agency", permission: "agency.view", requiresAgency: true },
+      { title: "Estratégias", icon: FiTarget, url: "strategies", permission: "strategies.view" },
+      { title: "Ofertas", icon: FiPackage, url: "offers", permission: "offers.view" },
+      {
+        title: "Planejamento",
+        icon: FiCalendar,
+        url: "planner",
+        permission: "planner.view",
+        badges: ["plannerTasksDue"],
+        badgeLabel: "tarefas vencidas ou para hoje",
+      },
+    ],
+  },
+  {
+    label: "Tráfego pago",
+    items: [
+      {
+        title: "Anúncios",
+        icon: FiSpeaker,
+        url: "ads",
+        permission: "ads.view",
+        requiresAds: true,
+        badges: ["adsApprovals"],
+        badgeLabel: "mudanças esperando aprovação",
+      },
+    ],
+  },
+  {
+    label: "Orgânico",
+    items: [
+      {
+        title: "Postagens",
+        icon: FiInstagram,
+        url: "posts",
+        permission: "posts.view",
+        requiresOrganic: true,
+        badges: ["postsApprovals"],
+        badgeLabel: "postagens esperando aprovação",
+      },
+      // O estúdio também faz criativos de anúncio: basta um dos dois módulos
+      { title: "Estúdio", icon: FiImage, url: "studio", anyPermission: ["ads.manage", "posts.manage"], requiresAdsOrOrganic: true },
+    ],
+  },
+  {
+    label: "WhatsApp e relacionamento",
     items: [
       {
         title: "WhatsApp",
@@ -103,42 +153,8 @@ const navSections: { label: string | null; items: NavItem[] }[] = [
         badgeLabel: "tarefas vencidas ou para hoje",
       },
       { title: "Propostas", icon: FiFileText, url: "proposals", permission: "crm.view", requiresCrm: true },
-      { title: "E-mails", icon: FiMail, url: "email", permission: "email.view" },
-    ],
-  },
-  {
-    label: "Marketing",
-    items: [
-      {
-        title: "Planejamento",
-        icon: FiCalendar,
-        url: "planner",
-        permission: "planner.view",
-        badges: ["plannerTasksDue"],
-        badgeLabel: "tarefas vencidas ou para hoje",
-      },
-      { title: "Ofertas", icon: FiPackage, url: "offers", permission: "offers.view" },
-      { title: "Estratégias", icon: FiTarget, url: "strategies", permission: "strategies.view" },
       { title: "Disparos", icon: FiSend, url: "broadcasts", permission: "broadcasts.view" },
-      {
-        title: "Anúncios",
-        icon: FiSpeaker,
-        url: "ads",
-        permission: "ads.view",
-        requiresAds: true,
-        badges: ["adsApprovals"],
-        badgeLabel: "mudanças esperando aprovação",
-      },
-      {
-        title: "Postagens",
-        icon: FiInstagram,
-        url: "posts",
-        permission: "posts.view",
-        requiresAds: true,
-        badges: ["postsApprovals"],
-        badgeLabel: "postagens esperando aprovação",
-      },
-      { title: "Estúdio", icon: FiImage, url: "studio", anyPermission: ["ads.manage", "posts.manage"], requiresAds: true },
+      { title: "E-mails", icon: FiMail, url: "email", permission: "email.view" },
     ],
   },
   {
@@ -167,7 +183,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { logout, user } = useUserContext();
   const { toggleSidebar, setOpenMobile, isMobile } = useSidebar();
   const baseUrl = useBaseUrl();
-  const { can, canUseCrm, canUseAds, client } = useClientContext();
+  const { can, canUseCrm, canUseAds, client, access } = useClientContext();
   const { pathname } = useLocation();
 
   // No celular o menu é um Sheet: fecha ao navegar
@@ -190,7 +206,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     (!item.permission || can(item.permission)) &&
     (!item.anyPermission || item.anyPermission.some((permission) => can(permission))) &&
     (!item.requiresCrm || canUseCrm) &&
-    (!item.requiresAds || canUseAds);
+    (!item.requiresAds || canUseAds) &&
+    (!item.requiresOrganic || access.organicEnabled) &&
+    (!item.requiresAdsOrOrganic || access.adsEnabled || access.organicEnabled) &&
+    (!item.requiresAgency || access.agencyEnabled);
   const badgeCount = (item: NavItem) => (item.badges ?? []).reduce((total, key) => total + (badges?.[key] ?? 0), 0);
 
   return (
