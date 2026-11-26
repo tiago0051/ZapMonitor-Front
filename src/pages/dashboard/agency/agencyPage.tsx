@@ -23,6 +23,7 @@ import {
   indicatorChange,
   metricLabel,
   objectiveKindLabel,
+  objectiveMix,
   objectiveStatusLabel,
   reportPeriodLabel,
 } from "./agencyUtils";
@@ -87,6 +88,7 @@ export const AgencyPage = () => {
   const primary = active.find((objective) => objective.priority === "PRIMARY");
   const secondaries = active.filter((objective) => objective.priority === "SECONDARY");
   const others = objectives.filter((objective) => objective.status !== "ACTIVE");
+  const mix = objectiveMix(objectives);
   const isGenerating = overview?.reports.some((report) => report.status === "GENERATING");
 
   const objectiveActions = (objective: BusinessObjective) =>
@@ -148,7 +150,7 @@ export const AgencyPage = () => {
                 Objetivo da empresa
               </h2>
               {primary ? (
-                <ObjectiveCard objective={primary} featured actions={objectiveActions(primary)} />
+                <ObjectiveCard objective={primary} featured mix={mix.get(primary.id)} actions={objectiveActions(primary)} />
               ) : (
                 <EmptyState
                   icon={Compass}
@@ -167,7 +169,12 @@ export const AgencyPage = () => {
               {secondaries.length > 0 && (
                 <div className="grid gap-3 md:grid-cols-2">
                   {secondaries.map((objective) => (
-                    <ObjectiveCard key={objective.id} objective={objective} actions={objectiveActions(objective)} />
+                    <ObjectiveCard
+                      key={objective.id}
+                      objective={objective}
+                      mix={mix.get(objective.id)}
+                      actions={objectiveActions(objective)}
+                    />
                   ))}
                 </div>
               )}
@@ -262,9 +269,10 @@ const ObjectiveMenu: FC<{
   </DropdownMenu>
 );
 
-const ObjectiveCard: FC<{ objective: BusinessObjective; featured?: boolean; actions: React.ReactNode }> = ({
+const ObjectiveCard: FC<{ objective: BusinessObjective; featured?: boolean; mix?: number; actions: React.ReactNode }> = ({
   objective,
   featured,
+  mix,
   actions,
 }) => {
   const baseUrl = useBaseUrl();
@@ -275,7 +283,10 @@ const ObjectiveCard: FC<{ objective: BusinessObjective; featured?: boolean; acti
         <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant={featured ? "default" : "secondary"}>{featured ? "Principal" : "Secundário"}</Badge>
-            <span className="text-muted-foreground text-xs">{objectiveKindLabel[objective.kind]}</span>
+            <span className="text-muted-foreground text-xs">
+              {objectiveKindLabel[objective.kind]}
+              {mix !== undefined && mix < 100 && ` · ~${mix}% da pauta`}
+            </span>
           </div>
           <h3 className={cn("font-semibold text-balance", featured ? "text-lg" : "text-base")}>{objective.title}</h3>
           <p className="text-muted-foreground text-xs">

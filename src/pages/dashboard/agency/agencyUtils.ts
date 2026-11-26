@@ -38,7 +38,7 @@ export const objectiveKindLabel: Record<ObjectiveKind, string> = {
 
 export const objectiveKindHint: Record<ObjectiveKind, string> = {
   SELL_OFFER: "Vender mais de um produto, serviço ou plano já cadastrado em Ofertas.",
-  BRAND: "Ser mais vista e lembrada: alcance, engajamento e conversas espontâneas.",
+  BRAND: "Ser mais vista e lembrada: seguidores, alcance, engajamento e conversas que chegam pelo orgânico.",
   REACTIVATE_BASE: "Trazer de volta quem já comprou ou já conversou e sumiu.",
   LAUNCH: "Apresentar algo novo com começo, meio e fim.",
 };
@@ -46,7 +46,7 @@ export const objectiveKindHint: Record<ObjectiveKind, string> = {
 // Indicador sugerido para cada tipo
 export const defaultMetric: Record<ObjectiveKind, ObjectiveMetric> = {
   SELL_OFFER: "SALES",
-  BRAND: "REACH",
+  BRAND: "FOLLOWERS",
   REACTIVATE_BASE: "CONVERSATIONS",
   LAUNCH: "SALES",
 };
@@ -58,6 +58,23 @@ export const metricLabel: Record<ObjectiveMetric, string> = {
   CONVERSATIONS: "Atendimentos",
   REACH: "Alcance das postagens",
   ENGAGEMENT: "Engajamento das postagens",
+  FOLLOWERS: "Seguidores ganhos (Facebook + Instagram)",
+  ORGANIC_CONVERSATIONS: "Conversas pelos links do orgânico",
+};
+
+/** Fatia da pauta de cada objetivo ativo: 70% para o principal e 30% divididos entre os secundários. */
+export const objectiveMix = (objectives: BusinessObjective[]) => {
+  const active = objectives.filter((objective) => objective.status === "ACTIVE");
+  const primary = active.find((objective) => objective.priority === "PRIMARY");
+  const secondaries = active.filter((objective) => objective.priority === "SECONDARY");
+  const mix = new Map<string, number>();
+  if (!primary) secondaries.forEach((objective) => mix.set(objective.id, Math.round(100 / secondaries.length)));
+  else if (!secondaries.length) mix.set(primary.id, 100);
+  else {
+    mix.set(primary.id, 70);
+    secondaries.forEach((objective) => mix.set(objective.id, Math.round(30 / secondaries.length)));
+  }
+  return mix;
 };
 
 export const objectiveStatusLabel: Record<ObjectiveStatus, string> = {

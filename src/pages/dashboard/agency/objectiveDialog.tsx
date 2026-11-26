@@ -27,7 +27,16 @@ type Props = {
 };
 
 const kinds: ObjectiveKind[] = ["SELL_OFFER", "BRAND", "REACTIVATE_BASE", "LAUNCH"];
-const metrics: ObjectiveMetric[] = ["SALES", "REVENUE", "NEW_CONTACTS", "CONVERSATIONS", "REACH", "ENGAGEMENT"];
+const metrics: ObjectiveMetric[] = [
+  "SALES",
+  "REVENUE",
+  "NEW_CONTACTS",
+  "CONVERSATIONS",
+  "REACH",
+  "ENGAGEMENT",
+  "FOLLOWERS",
+  "ORGANIC_CONVERSATIONS",
+];
 
 const toNumber = (value: string) => {
   const parsed = Number(value.replace(",", "."));

@@ -3,7 +3,8 @@ type AgencyFront = "PAID" | "ORGANIC" | "WHATSAPP";
 type ObjectiveKind = "SELL_OFFER" | "BRAND" | "REACTIVATE_BASE" | "LAUNCH";
 type ObjectivePriority = "PRIMARY" | "SECONDARY";
 type ObjectiveStatus = "ACTIVE" | "PAUSED" | "DONE" | "CANCELLED";
-type ObjectiveMetric = "SALES" | "REVENUE" | "NEW_CONTACTS" | "CONVERSATIONS" | "REACH" | "ENGAGEMENT";
+type ObjectiveMetric =
+  "SALES" | "REVENUE" | "NEW_CONTACTS" | "CONVERSATIONS" | "REACH" | "ENGAGEMENT" | "FOLLOWERS" | "ORGANIC_CONVERSATIONS";
 type FrontReportStatus = "GENERATING" | "READY" | "FAILED";
 
 type ObjectiveProgress = {
