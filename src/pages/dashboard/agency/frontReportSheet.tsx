@@ -1,6 +1,8 @@
 import { ErrorState, LoadingState } from "@/components/state-message";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useClientContext } from "@/context/ClientContext/clientContext";
+import { useBaseUrl } from "@/hooks/use-baseUrl";
+import { Link } from "react-router";
 import { cn } from "@/lib/utils";
 import { agencyService } from "@/services/api/agencyService";
 import { useQuery } from "@tanstack/react-query";
@@ -175,6 +177,7 @@ type CountRow = { label?: string; outcome?: string; total: number };
 
 /** Detalhes que cada frente guarda além dos números: plataformas, melhores postagens, saídas dos agentes. */
 const FrontDetails: FC<{ report: FrontReport }> = ({ report }) => {
+  const baseUrl = useBaseUrl();
   const details = report.details ?? {};
   const capacity = report.capacity ?? {};
   const money = (value: number | null) =>
@@ -182,34 +185,84 @@ const FrontDetails: FC<{ report: FrontReport }> = ({ report }) => {
 
   if (report.front === "PAID") {
     const platforms = (details.platforms as PlatformRow[] | undefined) ?? [];
-    if (!platforms.length) return null;
+    const experiments = (details.experiments as { id: string; name: string }[] | undefined) ?? [];
+    const fatigue = (details.fatigue as { id: string; title: string; target: string | null }[] | undefined) ?? [];
+    const attendance = (details.attendance as Record<string, number> | undefined) ?? {};
+    const boost = (details.boostCandidates as { id: string; idea: string; engagement: number }[] | undefined) ?? [];
+    const attendanceLabel: Record<string, string> = {
+      APPLIED: "aplicadas",
+      PENDING_APPROVAL: "esperando aprovação",
+      REJECTED: "recusadas",
+      EXPIRED: "vencidas",
+    };
     return (
-      <section className="space-y-2">
-        <h3 className="text-sm font-semibold">Por plataforma</h3>
-        <div className="overflow-x-auto rounded-lg border">
-          <table className="w-full text-sm">
-            <thead className="text-muted-foreground text-xs">
-              <tr className="text-left">
-                <th className="p-2 font-medium">Plataforma</th>
-                <th className="p-2 font-medium">Investimento</th>
-                <th className="p-2 font-medium">Conversas</th>
-                <th className="p-2 font-medium">Vendas</th>
-                <th className="p-2 font-medium">Custo por venda</th>
-              </tr>
-            </thead>
-            <tbody className="tabular-nums">
-              {platforms.map((row) => (
-                <tr key={row.platform} className="border-t">
-                  <td className="p-2">{row.platform}</td>
-                  <td className="p-2">{money(row.spend)}</td>
-                  <td className="p-2">{row.conversations}</td>
-                  <td className="p-2">{row.sales}</td>
-                  <td className="p-2">{money(row.costPerSale)}</td>
-                </tr>
+      <section className="space-y-4">
+        {platforms.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold">Por plataforma</h3>
+            <div className="overflow-x-auto rounded-lg border">
+              <table className="w-full text-sm">
+                <thead className="text-muted-foreground text-xs">
+                  <tr className="text-left">
+                    <th className="p-2 font-medium">Plataforma</th>
+                    <th className="p-2 font-medium">Investimento</th>
+                    <th className="p-2 font-medium">Conversas</th>
+                    <th className="p-2 font-medium">Vendas</th>
+                    <th className="p-2 font-medium">Custo por venda</th>
+                  </tr>
+                </thead>
+                <tbody className="tabular-nums">
+                  {platforms.map((row) => (
+                    <tr key={row.platform} className="border-t">
+                      <td className="p-2">{row.platform}</td>
+                      <td className="p-2">{money(row.spend)}</td>
+                      <td className="p-2">{row.conversations}</td>
+                      <td className="p-2">{row.sales}</td>
+                      <td className="p-2">{money(row.costPerSale)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+        <CountList title="Testes A/B rodando" rows={experiments.map((item) => ({ label: item.name, total: 1 }))} />
+        {fatigue.length > 0 && (
+          <div className="space-y-1">
+            <p className="text-xs font-medium">Criativos cansados (sugestões do analista)</p>
+            <ul className="text-muted-foreground list-disc space-y-0.5 pl-5 text-sm">
+              {fatigue.map((item) => (
+                <li key={item.id}>
+                  {item.title}
+                  {item.target && ` · ${item.target}`}
+                </li>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </ul>
+          </div>
+        )}
+        {Object.keys(attendance).length > 0 && (
+          <p className="text-muted-foreground text-sm">
+            Verba pelo ritmo do atendimento na semana:{" "}
+            {Object.entries(attendance)
+              .map(([status, total]) => `${total} ${attendanceLabel[status] ?? status.toLowerCase()}`)
+              .join(", ")}
+          </p>
+        )}
+        {boost.length > 0 && (
+          <div className="space-y-1">
+            <p className="text-xs font-medium">Postagens do orgânico para impulsionar</p>
+            <ul className="space-y-1 text-sm">
+              {boost.map((post) => (
+                <li key={post.id} className="flex justify-between gap-3">
+                  <Link to={`${baseUrl}/posts/${post.id}`} className="min-w-0 truncate underline-offset-2 hover:underline">
+                    {post.idea}
+                  </Link>
+                  <span className="text-muted-foreground shrink-0 tabular-nums">{post.engagement} interações</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </section>
     );
   }
