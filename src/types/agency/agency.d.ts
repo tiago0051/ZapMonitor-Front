@@ -26,6 +26,9 @@ type BusinessObjective = {
   description: string | null;
   offerId: string | null;
   offerName: string | null;
+  // Estratégia central que o maestro segue
+  strategyId: string | null;
+  strategyName: string | null;
   metric: ObjectiveMetric;
   target: number | null;
   // AAAA-MM-DD
@@ -44,6 +47,7 @@ type SaveObjectiveBody = {
   title: string;
   description: string | null;
   offerId: string | null;
+  strategyId: string | null;
   metric: ObjectiveMetric;
   target: number | null;
   startsOn: string | null;
@@ -92,4 +96,47 @@ type AgencyOverview = {
   // Frentes que o plano e as conexões permitem
   fronts: AgencyFront[];
   aiIncluded: boolean;
+};
+
+type MaestroCycleStatus = "GENERATING" | "READY" | "FAILED" | "SKIPPED";
+type MaestroDirective = { title: string; why: string; indicator: string | null };
+type MaestroFrontPlan = { front: AgencyFront; focus: string; directives: MaestroDirective[] };
+type MaestroWeekGoal = { title: string; indicator: string | null; target: string | null };
+
+// Situação da pauta (plano do assistente)
+type MaestroAgenda = { status: string; steps: number; done: number };
+
+type MaestroCycle = {
+  id: string;
+  // AAAA-MM-DD da segunda-feira
+  weekStart: string;
+  status: MaestroCycleStatus;
+  diagnosis: string | null;
+  centralMessage: string | null;
+  weekGoals: MaestroWeekGoal[];
+  fronts: MaestroFrontPlan[];
+  planId: string | null;
+  agenda: MaestroAgenda | null;
+  agendaSummary: string | null;
+  skippedReason: string | null;
+  error: string | null;
+  generatedAt: string | null;
+  updatedAt: string;
+};
+
+type AgencyAlert = {
+  id: string;
+  kind: string;
+  level: "INFO" | "WARNING" | "CRITICAL";
+  title: string;
+  detail: string;
+  path: string | null;
+  day: string;
+};
+
+type MaestroSummary = {
+  cycle: MaestroCycle | null;
+  history: { id: string; weekStart: string; status: MaestroCycleStatus }[];
+  // Alertas do último vigia
+  alerts: AgencyAlert[];
 };

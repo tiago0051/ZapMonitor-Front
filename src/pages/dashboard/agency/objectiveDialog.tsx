@@ -7,6 +7,7 @@ import { useClientContext } from "@/context/ClientContext/clientContext";
 import { cn } from "@/lib/utils";
 import { agencyService } from "@/services/api/agencyService";
 import { offerService } from "@/services/api/offerService";
+import { marketingStrategyService } from "@/services/api/marketingStrategyService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
@@ -41,6 +42,7 @@ export const ObjectiveDialog: FC<Props> = ({ onClose, objective, fronts, hasActi
   const [priority, setPriority] = useState<ObjectivePriority>(objective?.priority ?? (hasActivePrimary ? "SECONDARY" : "PRIMARY"));
   const [title, setTitle] = useState(objective?.title ?? "");
   const [offerId, setOfferId] = useState(objective?.offerId ?? "");
+  const [strategyId, setStrategyId] = useState(objective?.strategyId ?? "");
   const [metric, setMetric] = useState<ObjectiveMetric>(objective?.metric ?? defaultMetric.SELL_OFFER);
   const [target, setTarget] = useState(objective?.target?.toString() ?? "");
   const [startsOn, setStartsOn] = useState(objective?.startsOn ?? "");
@@ -55,6 +57,14 @@ export const ObjectiveDialog: FC<Props> = ({ onClose, objective, fronts, hasActi
     enabled: can("offers.view"),
   });
   const offers = (offersQuery.data ?? []).filter((offer) => offer.status === "ACTIVE" || offer.id === objective?.offerId);
+  const strategiesQuery = useQuery({
+    queryKey: ["marketingStrategies", client.id],
+    queryFn: () => marketingStrategyService.findAll(client.id),
+    enabled: can("strategies.view"),
+  });
+  const strategies = (strategiesQuery.data ?? []).filter(
+    (strategy) => strategy.status === "READY" || strategy.id === objective?.strategyId,
+  );
 
   const chooseKind = (next: ObjectiveKind) => {
     setKind(next);
@@ -73,6 +83,7 @@ export const ObjectiveDialog: FC<Props> = ({ onClose, objective, fronts, hasActi
         title: title.trim(),
         description: description.trim() || null,
         offerId: kind === "SELL_OFFER" || offerId ? offerId || null : null,
+        strategyId: strategyId || null,
         metric,
         target: toNumber(target),
         startsOn: startsOn || null,
@@ -158,6 +169,26 @@ export const ObjectiveDialog: FC<Props> = ({ onClose, objective, fronts, hasActi
               {offerId && (metric === "SALES" || metric === "REVENUE") && (
                 <p className="text-muted-foreground text-xs">Contam os negócios ganhos que têm esta oferta nos itens.</p>
               )}
+            </div>
+          )}
+
+          {strategies.length > 0 && (
+            <div className="space-y-1.5">
+              <Label htmlFor="objective-strategy">Estratégia central (opcional)</Label>
+              <select
+                id="objective-strategy"
+                className={selectClassName}
+                value={strategyId}
+                onChange={(event) => setStrategyId(event.target.value)}
+              >
+                <option value="">Nenhuma: o maestro decide sozinho</option>
+                {strategies.map((strategy) => (
+                  <option key={strategy.id} value={strategy.id}>
+                    {strategy.name}
+                  </option>
+                ))}
+              </select>
+              <p className="text-muted-foreground text-xs">O maestro segue os passos desta estratégia ao montar a pauta da semana.</p>
             </div>
           )}
 

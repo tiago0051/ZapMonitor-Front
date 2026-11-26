@@ -28,6 +28,7 @@ import {
 } from "./agencyUtils";
 import { FrontReportSheet } from "./frontReportSheet";
 import { ObjectiveDialog } from "./objectiveDialog";
+import { MaestroWeekCard, WatchAlerts } from "./maestroSection";
 
 /**
  * Agência: o objetivo da empresa com o ritmo da meta e as três frentes (tráfego pago, orgânico, WhatsApp e relacionamento),
@@ -46,6 +47,22 @@ export const AgencyPage = () => {
     refetchInterval: (query) => (query.state.data?.reports.some((report) => report.status === "GENERATING") ? 4000 : false),
   });
   const overview = overviewQuery.data;
+
+  const maestroQuery = useQuery({
+    queryKey: ["agency", client.id, "maestro"],
+    queryFn: () => agencyService.findMaestro(client.id),
+    refetchInterval: (query) => (query.state.data?.cycle?.status === "GENERATING" ? 5000 : false),
+  });
+  const maestro = maestroQuery.data;
+
+  const requestMaestro = useMutation({
+    mutationFn: () => agencyService.requestMaestro(client.id),
+    onError: requestErrorHandling,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["agency", client.id, "maestro"] });
+      toast.success("O maestro está montando a semana. A pauta fica com você para aprovar.");
+    },
+  });
 
   const requestReports = useMutation({
     mutationFn: () => agencyService.requestReports(client.id),
@@ -124,6 +141,8 @@ export const AgencyPage = () => {
               </p>
             )}
 
+            <WatchAlerts alerts={maestro?.alerts ?? []} />
+
             <section className="space-y-3" aria-labelledby="agency-objective">
               <h2 id="agency-objective" className="text-lg font-semibold">
                 Objetivo da empresa
@@ -154,6 +173,13 @@ export const AgencyPage = () => {
               )}
             </section>
 
+            <MaestroWeekCard
+              cycle={maestro?.cycle ?? null}
+              canManage={canManage && overview.aiIncluded}
+              isRequesting={requestMaestro.isPending}
+              onRun={() => requestMaestro.mutate()}
+            />
+
             <section className="space-y-3" aria-labelledby="agency-fronts">
               <h2 id="agency-fronts" className="text-lg font-semibold">
                 Frentes
@@ -165,6 +191,7 @@ export const AgencyPage = () => {
                     front={front}
                     enabled={overview.fronts.includes(front)}
                     report={overview.reports.find((report) => report.front === front)}
+                    plan={maestro?.cycle?.status === "READY" ? maestro.cycle.fronts.find((item) => item.front === front) : undefined}
                     onOpen={() => setOpenFront(front)}
                   />
                 ))}
@@ -261,6 +288,15 @@ const ObjectiveCard: FC<{ objective: BusinessObjective; featured?: boolean; acti
                 ·{" "}
               </>
             )}
+            {objective.strategyId && objective.strategyName && (
+              <>
+                Estratégia central{" "}
+                <Link to={`${baseUrl}/strategies/${objective.strategyId}`} className="underline-offset-2 hover:underline">
+                  {objective.strategyName}
+                </Link>{" "}
+                ·{" "}
+              </>
+            )}
             desde {formatDay(objective.startsOn)}
             {objective.deadline && ` até ${formatDay(objective.deadline)}`}
             {objective.fronts.length > 0 && ` · ${objective.fronts.map((front) => frontInfo[front].label).join(", ")}`}
@@ -305,12 +341,14 @@ const PaceBadge: FC<{ objective: BusinessObjective }> = ({ objective }) => {
   return null;
 };
 
-const FrontCard: FC<{ front: AgencyFront; enabled: boolean; report: FrontReport | undefined; onOpen: () => void }> = ({
-  front,
-  enabled,
-  report,
-  onOpen,
-}) => {
+const FrontCard: FC<{
+  front: AgencyFront;
+  enabled: boolean;
+  report: FrontReport | undefined;
+  // Diretrizes do maestro para a frente nesta semana
+  plan?: MaestroFrontPlan;
+  onOpen: () => void;
+}> = ({ front, enabled, report, plan, onOpen }) => {
   const info = frontInfo[front];
   const headline = report?.status === "READY" ? headlineKeys[front].map((key) => report.indicators.find((item) => item.key === key)) : [];
   const critical = report?.alerts.filter((alert) => alert.level === "CRITICAL").length ?? 0;
@@ -370,6 +408,20 @@ const FrontCard: FC<{ front: AgencyFront; enabled: boolean; report: FrontReport 
           )}
           {report.diagnosis && <p className="text-muted-foreground line-clamp-3 text-sm">{report.diagnosis}</p>}
         </>
+      )}
+
+      {plan && (
+        <div className="space-y-1 border-t pt-3">
+          <p className="text-xs font-semibold">Diretriz da semana</p>
+          {plan.focus && <p className="text-sm">{plan.focus}</p>}
+          <ul className="text-muted-foreground list-disc space-y-0.5 pl-4 text-xs">
+            {plan.directives.map((directive) => (
+              <li key={directive.title} title={directive.why}>
+                {directive.title}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {enabled && report && (
