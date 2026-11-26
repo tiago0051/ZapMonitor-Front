@@ -1,4 +1,5 @@
 import { ErrorState, LoadingState } from "@/components/state-message";
+import { ContentPillarsCard } from "./contentPillarsCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -301,7 +302,7 @@ const BrandForm: FC<{ brand: BrandIdentity }> = ({ brand }) => {
 
 /** Base e identidade da marca do cliente: uma só para anúncios, postagens, e-mails e o assistente. */
 export const BrandIdentitySettings = () => {
-  const { client } = useClientContext();
+  const { client, access } = useClientContext();
   const query = useQuery({
     meta: { errorHandledInline: true },
     queryKey: ["brandIdentity", client.id],
@@ -312,6 +313,9 @@ export const BrandIdentitySettings = () => {
   return (
     <div className="grid gap-6">
       {query.data && <BrandBaseSettings brand={query.data} />}
+      {query.data && access.organicEnabled && (
+        <ContentPillarsCard key={JSON.stringify(query.data.contentPillars ?? [])} pillars={query.data.contentPillars ?? []} />
+      )}
       <Card>
         <CardHeader>
           <CardTitle>Identidade visual</CardTitle>

@@ -1,4 +1,6 @@
 import { EmptyState, ErrorState, LoadingState } from "@/components/state-message";
+import { OrganicLinksDialog } from "./organicLinks";
+import { ArtAgendaPanel } from "./artAgendaPanel";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -10,7 +12,7 @@ import { socialPostService } from "@/services/api/socialPostService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { CircleDashed, Film, GalleryHorizontal, Image as ImageIcon, Plus, Sparkles } from "lucide-react";
+import { CircleDashed, Film, GalleryHorizontal, Image as ImageIcon, Link2, Plus, Sparkles } from "lucide-react";
 import { useState, type FC, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { PostsResults } from "./postsResults";
@@ -37,6 +39,7 @@ const statusFilters: { value: string; label: string }[] = [
   { value: "approval:PENDING", label: "Aguardando aprovação" },
   { value: "approval:CHANGES", label: "Ajuste pedido" },
   { value: "results", label: "Resultados" },
+  { value: "agenda", label: "Pauta de artes" },
 ];
 
 const formatOptions: { value: SocialPostFormat; icon: typeof ImageIcon; hint: string }[] = [
@@ -278,10 +281,15 @@ export const Posts = () => {
   const baseUrl = useBaseUrl();
   // ?view=results abre direto a visão de resultados (link do bloco Orgânico em Anúncios)
   const [searchParams] = useSearchParams();
-  const [status, setStatus] = useState(searchParams.get("view") === "results" ? "results" : "");
-  const showResults = status === "results";
+  // ?tab=agenda abre a pauta de artes (link do aviso de artes para aprovar)
+  const [status, setStatus] = useState(
+    searchParams.get("view") === "results" ? "results" : searchParams.get("tab") === "agenda" ? "agenda" : "",
+  );
+  const showAgenda = status === "agenda";
+  const showResults = status === "results" || showAgenda;
   const [page, setPage] = useState(1);
   const [creating, setCreating] = useState(false);
+  const [linksOpen, setLinksOpen] = useState(false);
 
   const setupQuery = useQuery({
     meta: { errorHandledInline: true },
@@ -316,12 +324,18 @@ export const Posts = () => {
             marca.
           </p>
         </div>
-        {can("posts.manage") && (
-          <Button onClick={() => setCreating(true)}>
-            <Plus className="mr-2 h-4 w-4" aria-hidden />
-            Nova postagem
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setLinksOpen(true)}>
+            <Link2 className="mr-2 h-4 w-4" aria-hidden />
+            Links para o WhatsApp
           </Button>
-        )}
+          {can("posts.manage") && (
+            <Button onClick={() => setCreating(true)}>
+              <Plus className="mr-2 h-4 w-4" aria-hidden />
+              Nova postagem
+            </Button>
+          )}
+        </div>
       </div>
 
       {setupQuery.data && <PostSetupNotice setup={setupQuery.data} />}
@@ -343,7 +357,8 @@ export const Posts = () => {
         ))}
       </div>
 
-      {showResults && <PostsResults />}
+      {showAgenda && <ArtAgendaPanel />}
+      {showResults && !showAgenda && <PostsResults />}
       {!showResults && query.isLoading && <LoadingState label="Carregando postagens..." />}
       {!showResults && query.isError && (
         <ErrorState message="Não foi possível buscar as postagens." onRetry={() => query.refetch()} isRetrying={query.isFetching} />
@@ -413,6 +428,7 @@ export const Posts = () => {
       )}
 
       <NewPostDialog open={creating} onOpenChange={setCreating} setup={setupQuery.data} />
+      <OrganicLinksDialog open={linksOpen} onOpenChange={setLinksOpen} />
     </div>
   );
 };

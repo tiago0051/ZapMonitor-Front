@@ -1,4 +1,5 @@
 import { useConfirm } from "@/components/confirm-dialog";
+import { OrganicLinks } from "./organicLinks";
 import { ErrorState, LoadingState } from "@/components/state-message";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -772,6 +773,16 @@ const PostEditorForm: FC<{ post: SocialPost; setup?: SocialPostSetup; fixedHasht
               <PostBoostDialog post={post} open={boostOpen} onOpenChange={setBoostOpen} />
             </div>
           )}
+
+          <details className="group rounded-xl border p-3">
+            <summary className="cursor-pointer text-sm font-medium">Link para o WhatsApp</summary>
+            <p className="text-muted-foreground mt-2 text-xs">
+              Para o adesivo de link do story ou a legenda do Facebook: quem chega pelo link fica marcado como vindo desta postagem.
+            </p>
+            <div className="mt-3">
+              <OrganicLinks socialPostId={post.id} />
+            </div>
+          </details>
 
           {can("posts.manage") && post.status !== "PUBLISHING" && (
             <Button variant="ghost" className="text-destructive justify-self-start" disabled={remove.isPending} onClick={confirmDelete}>

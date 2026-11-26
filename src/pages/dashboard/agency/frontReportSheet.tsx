@@ -216,14 +216,23 @@ const FrontDetails: FC<{ report: FrontReport }> = ({ report }) => {
 
   if (report.front === "ORGANIC") {
     const topPosts = (details.topPosts as TopPost[] | undefined) ?? [];
+    const groupRows = (key: string) =>
+      ((details[key] as { name: string; posts: number; engagementPerPost: number }[] | undefined) ?? []).map((row) => ({
+        label: `${row.name} (${row.posts})`,
+        total: row.engagementPerPost,
+      }));
     return (
       <section className="space-y-2">
         <h3 className="text-sm font-semibold">Agenda e melhores postagens</h3>
         <p className="text-muted-foreground text-sm">
           {String(capacity.scheduledNextWeek ?? 0)} postagem(ns) para os próximos 7 dias · {String(capacity.pendingApprovals ?? 0)}{" "}
           esperando aprovação
-          {typeof capacity.weeklyArts === "number" ? ` · ${capacity.weeklyArts} arte(s) por semana no plano` : ""}
+          {typeof capacity.weeklyArts === "number"
+            ? ` · ${typeof capacity.artsUsed === "number" ? `${capacity.artsUsed} de ` : ""}${capacity.weeklyArts} arte(s) da semana`
+            : ""}
         </p>
+        <CountList title="Engajamento por postagem, por pilar" rows={groupRows("byPillar")} />
+        <CountList title="Engajamento por postagem, por formato" rows={groupRows("byFormat")} />
         {topPosts.length > 0 && (
           <ul className="space-y-1 text-sm">
             {topPosts.map((post) => (

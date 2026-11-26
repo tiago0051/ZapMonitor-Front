@@ -96,6 +96,11 @@ type SocialPost = {
   approvalNote: string | null;
   approvalRequestedByUserId: string | null;
   approvalRequestedAt: string | null;
+  // Arte da pauta semanal: tema, pilar e alterações já pedidas (2 inclusas)
+  artAgendaId?: string | null;
+  artTheme?: string | null;
+  artPillar?: string | null;
+  artRevisions?: number;
   createdAt: string;
   updatedAt: string;
   media: SocialPostMedia[];
@@ -148,6 +153,8 @@ type BrandIdentity = {
   // Arquivos da base, já lidos como texto
   files: AdBrandSource[];
   fixedHashtags: string[];
+  // Pilares de conteúdo: temas fixos que as postagens revezam
+  contentPillars?: ContentPillar[];
   logoUploaded: boolean;
   hasLogo: boolean;
   logoUrl: string | null;
@@ -160,3 +167,57 @@ type BrandIdentity = {
 };
 
 type BrandPage = { id: string; name: string; canPublish: boolean };
+
+type ContentPillar = { name: string; description: string; share: number };
+
+type ArtAgendaStatus = "GENERATING" | "READY" | "FAILED" | "SKIPPED";
+type ArtRevisionTarget = "CAPTION" | "IMAGE" | "BOTH";
+
+type ArtAgendaSettings = {
+  enabled: boolean;
+  platforms: SocialPlatform[];
+  // 0 = domingo
+  weekdays: number[];
+  hour: number;
+  formats: SocialPostFormat[];
+};
+
+type ArtAgendaItem = {
+  day: string;
+  pillar: string | null;
+  theme: string;
+  format: SocialPostFormat;
+  idea: string;
+  why: string;
+  postId: string | null;
+};
+
+type ArtAgendaWeek = {
+  // AAAA-MM-DD da segunda-feira
+  weekStart: string;
+  usage: { quota: number; used: number; remaining: number };
+  agenda: {
+    id: string;
+    status: ArtAgendaStatus;
+    summary: string | null;
+    skippedReason: string | null;
+    error: string | null;
+    items: ArtAgendaItem[];
+    updatedAt: string;
+  } | null;
+  posts: SocialPost[];
+};
+
+type OrganicLink = {
+  id: string;
+  socialPostId: string | null;
+  code: string;
+  name: string;
+  whatsappConfigurationId: string;
+  message: string;
+  clicks: number;
+  active: boolean;
+  conversations: number;
+  url: string;
+  createdAt: string;
+};
