@@ -1,5 +1,7 @@
 import { ErrorState, LoadingState } from "@/components/state-message";
-import { marketingReportService } from "@/services/api/marketingReportService";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
+import { marketingReportService, marketingReportPdfUrl } from "@/services/api/marketingReportService";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useEffect } from "react";
@@ -27,6 +29,14 @@ export const PublicMarketingReport = () => {
         {query.isError && <ErrorState message="Este relatório não existe mais ou o link expirou. Peça um link novo a quem enviou." />}
         {query.data && (
           <>
+            <div className="mb-4 flex justify-end print:hidden">
+              <Button variant="outline" size="sm" asChild>
+                <a href={marketingReportPdfUrl(token)} download>
+                  <Download className="h-4 w-4" aria-hidden />
+                  Baixar PDF
+                </a>
+              </Button>
+            </div>
             <MarketingReportView data={query.data} />
             <p className="text-muted-foreground mt-8 text-xs">
               Link somente leitura, válido até {format(new Date(query.data.expiresAt), "dd/MM/yyyy")}.

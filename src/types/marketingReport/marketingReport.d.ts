@@ -22,6 +22,35 @@ type MarketingReportData = {
   organic: { posts: number; reach: number | null; engagement: number } | null;
   aiChanges: { date: string; description: string; reason: string | null }[];
   nextSteps: string[];
+  // Agência: objetivos, semanas do maestro e o último relatório de cada frente; ausente sem o maestro
+  agency?: AgencyMonthReport | null;
+};
+
+type AgencyMonthReport = {
+  objectives: {
+    title: string;
+    kind: string;
+    priority: "PRIMARY" | "SECONDARY";
+    metric: string;
+    value: number | null;
+    target: number | null;
+    percent: number | null;
+    onTrack: boolean | null;
+    deadline: string | null;
+  }[];
+  weeks: {
+    weekStart: string;
+    centralMessage: string | null;
+    directives: number;
+    agenda: { status: string; steps: number; done: number } | null;
+    verdicts: { front: string; verdict: "IMPROVED" | "WORSE" | "STABLE" | "NO_DATA" }[];
+  }[];
+  fronts: {
+    front: string;
+    period: string;
+    indicators: { label: string; value: number | null; previous: number | null; unit: "count" | "money" | "percent" | "seconds" }[];
+    diagnosis: string | null;
+  }[];
 };
 
 type MarketingReport = {

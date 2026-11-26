@@ -119,6 +119,7 @@ type MaestroCycle = {
   planId: string | null;
   agenda: MaestroAgenda | null;
   agendaSummary: string | null;
+  outcome?: MaestroOutcome | null;
   skippedReason: string | null;
   error: string | null;
   generatedAt: string | null;
@@ -135,9 +136,20 @@ type AgencyAlert = {
   day: string;
 };
 
+// Diário de decisões: o que aconteceu em cada frente na semana, medido pelo relatório dela
+type MaestroOutcome = {
+  fronts: {
+    front: AgencyFront;
+    verdict: "IMPROVED" | "WORSE" | "STABLE" | "NO_DATA";
+    changes: { key: string; label: string; percent: number; good: boolean }[];
+  }[];
+  objectiveDelta: number | null;
+  agenda: MaestroAgenda | null;
+};
+
 type MaestroSummary = {
   cycle: MaestroCycle | null;
-  history: { id: string; weekStart: string; status: MaestroCycleStatus }[];
+  history: { id: string; weekStart: string; status: MaestroCycleStatus; centralMessage: string | null; outcome: MaestroOutcome | null }[];
   // Alertas do último vigia
   alerts: AgencyAlert[];
 };

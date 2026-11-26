@@ -20,5 +20,9 @@ export const marketingReportService = {
     (await publicApi.get(`/public/marketing-report/${encodeURIComponent(token)}`)).data,
 };
 
+/** PDF do relatório pelo link público: baixa direto da API. */
+export const marketingReportPdfUrl = (token: string) =>
+  `${import.meta.env.VITE_API_URL}/public/marketing-report/${encodeURIComponent(token)}/pdf`;
+
 /** Endereço público do relatório (rota fora do painel). */
 export const marketingReportUrl = (token: string) => `${window.location.origin}/relatorio/${token}`;

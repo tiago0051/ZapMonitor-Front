@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { AlertTriangle, Info, Loader2, MessageCircleQuestionMark, Music2 } from "lucide-react";
 import type { FC } from "react";
 import { Link } from "react-router";
-import { alertTone, formatDay } from "./agencyUtils";
+import { alertTone, formatDay, frontInfo } from "./agencyUtils";
 
 // Situação da pauta em palavras de quem aprova
 const agendaStatusLabel: Record<string, string> = {
@@ -46,6 +46,52 @@ export const WatchAlerts: FC<{ alerts: AgencyAlert[] }> = ({ alerts }) => {
         ))}
       </ul>
     </section>
+  );
+};
+
+const verdictLabel: Record<MaestroOutcome["fronts"][number]["verdict"], string> = {
+  IMPROVED: "melhorou",
+  WORSE: "piorou",
+  STABLE: "ficou estável",
+  NO_DATA: "sem relatório",
+};
+
+/** O que aconteceu na última semana avaliada: o maestro lê isso antes de montar a próxima. */
+export const LastWeekOutcome: FC<{ week: MaestroSummary["history"][number] | undefined }> = ({ week }) => {
+  if (!week?.outcome) return null;
+  return (
+    <div className="bg-muted/40 space-y-1 rounded-lg p-3 text-sm">
+      <p className="font-medium">
+        Resultado da semana de {formatDay(week.weekStart)}
+        {week.centralMessage && <span className="text-muted-foreground font-normal"> · "{week.centralMessage}"</span>}
+      </p>
+      <ul className="space-y-0.5">
+        {week.outcome.fronts.map((front) => (
+          <li key={front.front}>
+            <span
+              className={cn(
+                front.verdict === "IMPROVED" && "text-emerald-700 dark:text-emerald-400",
+                front.verdict === "WORSE" && "text-destructive",
+              )}
+            >
+              {frontInfo[front.front].label} {verdictLabel[front.verdict]}
+            </span>
+            {front.changes.length > 0 && (
+              <span className="text-muted-foreground">
+                {" "}
+                ({front.changes.map((change) => `${change.label} ${change.percent > 0 ? "+" : ""}${change.percent}%`).join(", ")})
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+      {week.outcome.agenda && (
+        <p className="text-muted-foreground text-xs">
+          Pauta: {week.outcome.agenda.done} de {week.outcome.agenda.steps} item(ns) feitos
+          {week.outcome.objectiveDelta !== null && ` · objetivo avançou ${week.outcome.objectiveDelta}`}
+        </p>
+      )}
+    </div>
   );
 };
 

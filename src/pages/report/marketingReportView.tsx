@@ -34,6 +34,8 @@ export const MarketingReportView: FC<{ data: MarketingReportData }> = ({ data })
         <p className="text-muted-foreground text-xs">Números de {format(new Date(data.generatedAt), "dd/MM/yyyy 'às' HH:mm")}</p>
       </header>
 
+      {data.agency && <AgencySection agency={data.agency} />}
+
       <section className="grid gap-3" aria-labelledby="report-ads">
         <h2 id="report-ads" className="font-semibold">
           Anúncios
@@ -132,3 +134,84 @@ export const MarketingReportView: FC<{ data: MarketingReportData }> = ({ data })
     </article>
   );
 };
+
+const verdictText: Record<string, string> = { IMPROVED: "melhorou", WORSE: "piorou", STABLE: "estável", NO_DATA: "sem dados" };
+const dayLabel = (iso: string) => iso.substring(0, 10).split("-").reverse().join("/");
+const indicatorValue = (value: number | null, unit: string) =>
+  value === null
+    ? "—"
+    : unit === "money"
+      ? money(value, "BRL")
+      : unit === "percent"
+        ? `${count(value)}%`
+        : unit === "seconds"
+          ? `${Math.max(1, Math.round(value / 60))} min`
+          : count(value);
+
+/** Parte da agência: objetivos com o andamento, semanas do maestro com o resultado e o último relatório de cada frente. */
+const AgencySection: FC<{ agency: AgencyMonthReport }> = ({ agency }) => (
+  <section className="grid gap-4" aria-labelledby="report-agency">
+    <h2 id="report-agency" className="font-semibold">
+      Agência
+    </h2>
+    {agency.objectives.length > 0 && (
+      <ul className="grid gap-2">
+        {agency.objectives.map((objective) => (
+          <li key={objective.title} className="grid gap-1 rounded-lg border p-3 text-sm">
+            <p className="font-medium">
+              {objective.priority === "PRIMARY" ? "Objetivo principal" : "Objetivo secundário"}: {objective.title}
+            </p>
+            <p className="text-muted-foreground tabular-nums">
+              {objective.metric}: {count(objective.value)}
+              {objective.target !== null && ` de ${count(objective.target)}`}
+              {objective.percent !== null && ` (${count(objective.percent)}%)`}
+              {objective.deadline && ` · prazo ${dayLabel(objective.deadline)}`}
+              {objective.onTrack === true && " · no ritmo"}
+              {objective.onTrack === false && " · abaixo do ritmo"}
+            </p>
+          </li>
+        ))}
+      </ul>
+    )}
+    {agency.fronts.length > 0 && (
+      <div className="grid gap-3 md:grid-cols-3">
+        {agency.fronts.map((front) => (
+          <div key={front.front} className="grid content-start gap-1 rounded-lg border p-3 text-sm">
+            <p className="font-medium">{front.front}</p>
+            <p className="text-muted-foreground text-xs">{front.period}</p>
+            <dl className="grid gap-0.5">
+              {front.indicators.map((indicator) => (
+                <div key={indicator.label} className="flex justify-between gap-2">
+                  <dt className="text-muted-foreground">{indicator.label}</dt>
+                  <dd className="tabular-nums">{indicatorValue(indicator.value, indicator.unit)}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        ))}
+      </div>
+    )}
+    {agency.weeks.length > 0 && (
+      <ul className="grid gap-1 text-sm">
+        {agency.weeks.map((week) => (
+          <li key={week.weekStart}>
+            <span className="font-medium tabular-nums">Semana de {dayLabel(week.weekStart)}</span>
+            {week.centralMessage && <span> · "{week.centralMessage}"</span>}
+            {week.agenda && (
+              <span className="text-muted-foreground">
+                {" "}
+                · pauta {week.agenda.done} de {week.agenda.steps} itens feitos
+              </span>
+            )}
+            {week.verdicts.length > 0 && (
+              <span className="text-muted-foreground">
+                {" "}
+                · {week.verdicts.map((item) => `${item.front} ${verdictText[item.verdict]}`).join(", ")}
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+);

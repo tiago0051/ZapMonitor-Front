@@ -29,7 +29,8 @@ import {
 } from "./agencyUtils";
 import { FrontReportSheet } from "./frontReportSheet";
 import { ObjectiveDialog } from "./objectiveDialog";
-import { MaestroWeekCard, WatchAlerts } from "./maestroSection";
+import { LastWeekOutcome, MaestroWeekCard, WatchAlerts } from "./maestroSection";
+import { MarketingReportButton } from "@/pages/report/marketingReportDialog";
 
 /**
  * Agência: o objetivo da empresa com o ritmo da meta e as três frentes (tráfego pago, orgânico, WhatsApp e relacionamento),
@@ -112,22 +113,25 @@ export const AgencyPage = () => {
               relatório da semana com números, alertas e diagnóstico: é o que o maestro usa para montar a estratégia central.
             </p>
           </div>
-          {canManage && (
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={() => requestReports.mutate()} disabled={requestReports.isPending || isGenerating}>
-                {requestReports.isPending || isGenerating ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4" />
-                )}
-                Gerar relatórios agora
-              </Button>
-              <Button onClick={() => setEditing("new")}>
-                <Plus className="h-4 w-4" />
-                Novo objetivo
-              </Button>
-            </div>
-          )}
+          <div className="flex flex-wrap gap-2">
+            <MarketingReportButton />
+            {canManage && (
+              <>
+                <Button variant="outline" onClick={() => requestReports.mutate()} disabled={requestReports.isPending || isGenerating}>
+                  {requestReports.isPending || isGenerating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                  Gerar relatórios agora
+                </Button>
+                <Button onClick={() => setEditing("new")}>
+                  <Plus className="h-4 w-4" />
+                  Novo objetivo
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
         {overviewQuery.isLoading ? (
@@ -186,6 +190,7 @@ export const AgencyPage = () => {
               isRequesting={requestMaestro.isPending}
               onRun={() => requestMaestro.mutate()}
             />
+            <LastWeekOutcome week={maestro?.history.find((week) => week.outcome)} />
 
             <section className="space-y-3" aria-labelledby="agency-fronts">
               <h2 id="agency-fronts" className="text-lg font-semibold">

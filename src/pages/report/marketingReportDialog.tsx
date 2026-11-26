@@ -4,12 +4,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useClientContext } from "@/context/ClientContext/clientContext";
-import { marketingReportService, marketingReportUrl } from "@/services/api/marketingReportService";
+import { marketingReportService, marketingReportUrl, marketingReportPdfUrl } from "@/services/api/marketingReportService";
 import { requestErrorHandling } from "@/utils/request";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Copy, ExternalLink, FileText, Loader2 } from "lucide-react";
+import { Copy, ExternalLink, FileText, Loader2, Download } from "lucide-react";
 import { useState, type FC } from "react";
 import { toast } from "sonner";
 
@@ -73,8 +73,9 @@ export const MarketingReportButton: FC<{ className?: string }> = ({ className })
           <DialogHeader>
             <DialogTitle>Relatório do mês</DialogTitle>
             <DialogDescription>
-              Gasto, conversas, vendas do CRM, custo por venda, reuniões, o que a IA mudou e os próximos passos, num link que qualquer
-              pessoa abre sem login. O link vale 30 dias e você pode revogar quando quiser.
+              Gasto, conversas, vendas do CRM, custo por venda, reuniões, o que a IA mudou, a agência (objetivos, semanas do maestro e
+              frentes, quando houver) e os próximos passos, num link que qualquer pessoa abre sem login. O link vale 30 dias e você pode
+              revogar quando quiser.
             </DialogDescription>
           </DialogHeader>
 
@@ -139,6 +140,12 @@ export const MarketingReportButton: FC<{ className?: string }> = ({ className })
                         <Button size="sm" variant="ghost" onClick={() => void copyLink(report.token)}>
                           <Copy className="h-4 w-4" aria-hidden />
                           Copiar
+                        </Button>
+                        <Button size="sm" variant="ghost" asChild>
+                          <a href={marketingReportPdfUrl(report.token)} download>
+                            <Download className="h-4 w-4" aria-hidden />
+                            PDF
+                          </a>
                         </Button>
                         <Button
                           size="sm"
