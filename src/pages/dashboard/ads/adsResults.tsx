@@ -9,7 +9,7 @@ import { crmSelectClassName } from "@/pages/dashboard/crm/crmUtils";
 import { metaAdsService } from "@/services/api/metaAdsService";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, RefreshCw } from "lucide-react";
-import { useState, type FC, type ReactNode } from "react";
+import { useMemo, useState, type FC, type ReactNode } from "react";
 import { Bar, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import {
   adPlatformLabel,
@@ -62,6 +62,54 @@ const CardMetric: FC<{ label: string; value: string; highlight?: boolean }> = ({
 const meetingsLabel = (row: AdReportMetrics) =>
   row.meetings ? `${formatCount(row.meetings)} (${formatCount(row.aiMeetings)} IA · ${formatCount(row.manualMeetings)} manuais)` : "0";
 
+type StatusFilter = "active" | "inactive" | "all";
+
+const statusFilterLabel: Record<StatusFilter, string> = { active: "Ativos", inactive: "Inativos", all: "Todos" };
+
+// Ativo é o que está rodando agora; pausado, em análise, com problema, arquivado ou fora da estrutura conta como inativo
+const isActiveRow = (row: AdReportRow) => row.effectiveStatus === "ACTIVE";
+
+const round = (value: number) => Math.round(value * 100) / 100;
+const divide = (numerator: number, denominator: number, multiplier = 1) =>
+  denominator > 0 ? round((numerator / denominator) * multiplier) : null;
+
+/** Total das linhas filtradas, com as mesmas contas de custo do servidor. */
+function sumRows(rows: AdReportRow[]): AdReportMetrics {
+  const sum = (key: keyof AdReportMetrics) => rows.reduce((total, row) => total + (row[key] ?? 0), 0);
+  const spend = round(sum("spend"));
+  const counts = {
+    impressions: sum("impressions"),
+    clicks: sum("clicks"),
+    linkClicks: sum("linkClicks"),
+    metaConversations: sum("metaConversations"),
+    metaLeads: sum("metaLeads"),
+    crmConversations: sum("crmConversations"),
+    crmLeads: sum("crmLeads"),
+    deals: sum("deals"),
+    qualifiedDeals: sum("qualifiedDeals"),
+    wonDeals: sum("wonDeals"),
+    wonValue: sum("wonValue"),
+    meetings: sum("meetings"),
+    aiMeetings: sum("aiMeetings"),
+    manualMeetings: sum("manualMeetings"),
+  };
+
+  return {
+    spend,
+    ...counts,
+    ctr: divide(counts.clicks, counts.impressions, 100),
+    cpc: divide(spend, counts.clicks),
+    cpm: divide(spend, counts.impressions, 1000),
+    costPerConversation: divide(spend, counts.metaConversations),
+    costPerLead: divide(spend, counts.metaLeads),
+    costPerDeal: divide(spend, counts.deals),
+    costPerQualifiedDeal: divide(spend, counts.qualifiedDeals),
+    costPerWonDeal: divide(spend, counts.wonDeals),
+    costPerMeeting: divide(spend, counts.meetings),
+    roas: divide(counts.wonValue, spend),
+  };
+}
+
 /** No celular, cada linha vira um cartão com as métricas principais; o resto abre em "ver mais". */
 const ResultCard: FC<{ row: AdReportRow; currency: string }> = ({ row, currency }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -110,6 +158,7 @@ export const AdsResults: FC<{ account: AdAccount; period: AdsPeriod }> = ({ acco
   const isMobile = useIsMobile();
   const syncAccount = useSyncAccount();
   const [level, setLevel] = useState<AdReportLevel>("campaign");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const { startDate, endDate } = period;
 
   const reportQuery = useQuery({
@@ -121,6 +170,17 @@ export const AdsResults: FC<{ account: AdAccount; period: AdsPeriod }> = ({ acco
   });
   const report = reportQuery.data;
   const currency = report?.currency ?? account.currency;
+
+  const statusCounts = useMemo(() => {
+    const active = report?.rows.filter(isActiveRow).length ?? 0;
+    return { active, inactive: (report?.rows.length ?? 0) - active, all: report?.rows.length ?? 0 };
+  }, [report]);
+  // Com filtro, os totais passam a ser só das linhas mostradas; em "Todos" vale o total da conta que vem do servidor
+  const rows = useMemo(
+    () => (report?.rows ?? []).filter((row) => statusFilter === "all" || isActiveRow(row) === (statusFilter === "active")),
+    [report, statusFilter],
+  );
+  const total = useMemo(() => (report && statusFilter !== "all" ? sumRows(rows) : report?.total), [report, rows, statusFilter]);
 
   return (
     <section className="space-y-4">
@@ -143,6 +203,24 @@ export const AdsResults: FC<{ account: AdAccount; period: AdsPeriod }> = ({ acco
             ))}
           </select>
         </div>
+        <div className="grid gap-1">
+          <Label htmlFor="ads-status" className="text-xs">
+            Status
+          </Label>
+          <select
+            id="ads-status"
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
+            className={cn(crmSelectClassName, "h-8 w-36")}
+          >
+            {(Object.keys(statusFilterLabel) as StatusFilter[]).map((option) => (
+              <option key={option} value={option}>
+                {statusFilterLabel[option]}
+                {report ? ` (${statusCounts[option]})` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {reportQuery.isLoading && <LoadingState className="justify-start py-2" />}
@@ -154,7 +232,7 @@ export const AdsResults: FC<{ account: AdAccount; period: AdsPeriod }> = ({ acco
         />
       )}
 
-      {report && (
+      {report && total && (
         <>
           <div className="bg-primary/5 border-primary/30 flex flex-wrap items-end justify-between gap-4 rounded-lg border p-4">
             <div>
@@ -162,56 +240,60 @@ export const AdsResults: FC<{ account: AdAccount; period: AdsPeriod }> = ({ acco
                 Custo por venda
                 <MetricHelp term="CPA" />
               </p>
-              <p className="text-3xl font-semibold tabular-nums">{formatMoney(report.total.costPerWonDeal, currency)}</p>
+              <p className="text-3xl font-semibold tabular-nums">{formatMoney(total.costPerWonDeal, currency)}</p>
               <p className="text-muted-foreground text-xs">
-                {report.total.wonDeals
-                  ? `${formatMoney(report.total.spend, currency)} gastos ÷ ${formatCount(report.total.wonDeals)} venda(s) ganha(s) no CRM`
+                {total.wonDeals
+                  ? `${formatMoney(total.spend, currency)} gastos ÷ ${formatCount(total.wonDeals)} venda(s) ganha(s) no CRM`
                   : "Nenhuma venda de anúncio ganha no CRM no período"}
               </p>
             </div>
             <p className="text-muted-foreground max-w-md text-xs">
-              É a medida principal: as sugestões, o piloto e os testes comparam campanhas, conjuntos e anúncios por ela. {adPlatformLabel[account.platform]} mostra o
-              custo por conversa ({formatMoney(report.total.costPerConversation, currency)}), que não diz quem comprou.
+              É a medida principal: as sugestões, o piloto e os testes comparam campanhas, conjuntos e anúncios por ela.{" "}
+              {adPlatformLabel[account.platform]} mostra o custo por conversa ({formatMoney(total.costPerConversation, currency)}), que não
+              diz quem comprou.
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-8">
-            <Total label="Gasto" value={formatMoney(report.total.spend, currency)} />
+            <Total label="Gasto" value={formatMoney(total.spend, currency)} />
             <Total
               label="Conversas"
-              value={formatCount(report.total.metaConversations)}
-              hint={`${formatCount(report.total.crmConversations)} chegaram ao WhatsApp`}
+              value={formatCount(total.metaConversations)}
+              hint={`${formatCount(total.crmConversations)} chegaram ao WhatsApp`}
             />
             <Total
               label={<HeadWithHelp label="Custo por conversa" term="CPA" />}
-              value={formatMoney(report.total.costPerConversation, currency)}
+              value={formatMoney(total.costPerConversation, currency)}
             />
-            <Total
-              label="Leads"
-              value={formatCount(report.total.metaLeads)}
-              hint={`${formatCount(report.total.crmLeads)} recebidos no CRM`}
-            />
+            <Total label="Leads" value={formatCount(total.metaLeads)} hint={`${formatCount(total.crmLeads)} recebidos no CRM`} />
             <Total
               label="Negócios"
-              value={formatCount(report.total.deals)}
-              hint={`${formatCount(report.total.qualifiedDeals)} qualificados · ${formatMoney(report.total.costPerQualifiedDeal, currency)} cada`}
+              value={formatCount(total.deals)}
+              hint={`${formatCount(total.qualifiedDeals)} qualificados · ${formatMoney(total.costPerQualifiedDeal, currency)} cada`}
             />
             <Total
               label="Reuniões"
-              value={formatCount(report.total.meetings)}
-              hint={`${formatCount(report.total.aiMeetings)} pela IA · ${formatCount(report.total.manualMeetings)} manuais · ${formatMoney(report.total.costPerMeeting, currency)} cada`}
+              value={formatCount(total.meetings)}
+              hint={`${formatCount(total.aiMeetings)} pela IA · ${formatCount(total.manualMeetings)} manuais · ${formatMoney(total.costPerMeeting, currency)} cada`}
             />
             <Total
               label="Ganhos"
-              value={formatMoney(report.total.wonValue, currency)}
-              hint={`${formatCount(report.total.wonDeals)} negócio(s) · ${formatMoney(report.total.costPerWonDeal, currency)} cada`}
+              value={formatMoney(total.wonValue, currency)}
+              hint={`${formatCount(total.wonDeals)} negócio(s) · ${formatMoney(total.costPerWonDeal, currency)} cada`}
             />
             <Total
               label={<HeadWithHelp label="ROAS" term="ROAS" />}
-              value={report.total.roas === null ? "—" : `${formatCount(report.total.roas, 2)}x`}
+              value={total.roas === null ? "—" : `${formatCount(total.roas, 2)}x`}
               hint="Valor ganho ÷ gasto"
             />
           </div>
+
+          {statusFilter !== "all" && (
+            <p className="text-muted-foreground text-xs">
+              {`Totais só dos ${statusFilterLabel[statusFilter].toLowerCase()} (${formatCount(rows.length)} de ${formatCount(report.rows.length)}).`}
+              {report.days.length > 1 && " O gráfico diário mostra a conta toda."}
+            </p>
+          )}
 
           {report.days.length > 1 && (
             <div className="rounded-lg border p-3">
@@ -239,7 +321,17 @@ export const AdsResults: FC<{ account: AdAccount; period: AdsPeriod }> = ({ acco
             </div>
           )}
 
-          {report.rows.length === 0 ? (
+          {report.rows.length > 0 && rows.length === 0 ? (
+            <EmptyState
+              title={`Nenhum ${statusFilter === "active" ? "ativo" : "inativo"} com resultados no período`}
+              description="Troque o filtro de status para ver os demais."
+              action={
+                <Button size="sm" variant="outline" onClick={() => setStatusFilter("all")}>
+                  Ver todos
+                </Button>
+              }
+            />
+          ) : report.rows.length === 0 ? (
             <EmptyState
               title="Sem resultados no período"
               description="As métricas chegam na sincronização da conta, que roda a cada 6 horas. Se a conta teve anúncios rodando, sincronize agora."
@@ -259,7 +351,7 @@ export const AdsResults: FC<{ account: AdAccount; period: AdsPeriod }> = ({ acco
             />
           ) : isMobile ? (
             <ul className="space-y-2" aria-label={reportLevelLabel[level]}>
-              {report.rows.map((row) => (
+              {rows.map((row) => (
                 <ResultCard key={row.id} row={row} currency={currency} />
               ))}
             </ul>
@@ -292,7 +384,7 @@ export const AdsResults: FC<{ account: AdAccount; period: AdsPeriod }> = ({ acco
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {report.rows.map((row) => {
+                  {rows.map((row) => {
                     return (
                       <TableRow key={row.id}>
                         <TableCell>
@@ -334,9 +426,10 @@ export const AdsResults: FC<{ account: AdAccount; period: AdsPeriod }> = ({ acco
             </div>
           )}
           <p className="text-muted-foreground text-xs">
-            Conversas e leads são contados {account.platform === "META" ? "pela Meta" : `pelo ${adPlatformLabel[account.platform]}`}. Negócios, qualificados e ganhos vêm do CRM: negócios criados no período a partir de um
-            anúncio, e qualificados são os que entraram numa etapa com o evento QualifiedLead ou passaram do corte de nota da IA. Reuniões são as agendadas pela IA no Google Agenda e os negócios que entraram numa etapa
-            marcada como reunião no funil, sem contar canceladas.
+            Conversas e leads são contados {account.platform === "META" ? "pela Meta" : `pelo ${adPlatformLabel[account.platform]}`}.
+            Negócios, qualificados e ganhos vêm do CRM: negócios criados no período a partir de um anúncio, e qualificados são os que
+            entraram numa etapa com o evento QualifiedLead ou passaram do corte de nota da IA. Reuniões são as agendadas pela IA no Google
+            Agenda e os negócios que entraram numa etapa marcada como reunião no funil, sem contar canceladas.
           </p>
           <AdsSignalReadiness account={account} />
           <AdsAttendanceInsights account={account} startDate={startDate} endDate={endDate} />
