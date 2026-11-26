@@ -249,14 +249,52 @@ const FrontDetails: FC<{ report: FrontReport }> = ({ report }) => {
 
   const agentOutcomes = (details.agentOutcomes as CountRow[] | undefined) ?? [];
   const closeOutcomes = (details.closeOutcomes as CountRow[] | undefined) ?? [];
+  const agentFlows = (details.agentFlows as { flowId: string; flow: string; total: number; outputs: CountRow[] }[] | undefined) ?? [];
+  const objections = (details.objections as CountRow[] | undefined) ?? [];
+  const lostReasons = (details.lostReasons as CountRow[] | undefined) ?? [];
+  const numbers =
+    (details.numbers as
+      | { id: string; phoneNumber: string; qualityRating: string | null; messagingLimitTier: string | null; paymentIssue: boolean }[]
+      | undefined) ?? [];
+  const qualityLabel: Record<string, string> = { GREEN: "verde", YELLOW: "amarela", RED: "vermelha" };
   return (
     <section className="space-y-3">
       <h3 className="text-sm font-semibold">Capacidade e resultados das conversas</h3>
       <p className="text-muted-foreground text-sm">
         {String(capacity.queueWaiting ?? 0)} contato(s) na fila agora · {String(capacity.activeAttendants ?? 0)} pessoa(s) atenderam na
         semana
+        {typeof capacity.dailyCapacity === "number" && ` · até ${capacity.dailyCapacity} atendimento(s) num dia`}
       </p>
-      <CountList title="Saídas dos agentes de IA" rows={agentOutcomes.map((row) => ({ label: row.label ?? "", total: row.total }))} />
+      {numbers.length > 0 && (
+        <ul className="space-y-0.5 text-sm">
+          {numbers.map((number) => (
+            <li key={number.id} className="flex flex-wrap justify-between gap-2">
+              <span>{number.phoneNumber}</span>
+              <span className={cn("text-muted-foreground", (number.paymentIssue || number.qualityRating === "RED") && "text-destructive")}>
+                qualidade {number.qualityRating ? (qualityLabel[number.qualityRating] ?? number.qualityRating) : "—"}
+                {number.messagingLimitTier && ` · ${number.messagingLimitTier.replace("TIER_", "")} conversas/24h`}
+                {number.paymentIssue && " · pagamento com problema"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {agentFlows.length > 0 ? (
+        agentFlows.map((flow) => (
+          <CountList
+            key={flow.flowId}
+            title={`Agente de IA · ${flow.flow}`}
+            rows={flow.outputs.map((row) => ({ label: row.label ?? "", total: row.total }))}
+          />
+        ))
+      ) : (
+        <CountList title="Saídas dos agentes de IA" rows={agentOutcomes.map((row) => ({ label: row.label ?? "", total: row.total }))} />
+      )}
+      <CountList
+        title="Objeções nas passagens para a equipe"
+        rows={objections.map((row) => ({ label: row.label ?? "", total: row.total }))}
+      />
+      <CountList title="Motivos de perda" rows={lostReasons.map((row) => ({ label: row.label ?? "", total: row.total }))} />
       <CountList title="Resultados ao encerrar" rows={closeOutcomes.map((row) => ({ label: row.outcome ?? "", total: row.total }))} />
     </section>
   );
