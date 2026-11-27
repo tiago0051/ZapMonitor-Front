@@ -138,6 +138,7 @@ const ResultCard: FC<{ row: AdReportRow; currency: string }> = ({ row, currency 
           <CardMetric label="Leads" value={`${formatCount(row.metaLeads)} (${formatCount(row.crmLeads)} no CRM)`} />
           <CardMetric label="Negócios" value={formatCount(row.deals)} />
           <CardMetric label="Qualificados" value={`${formatCount(row.qualifiedDeals)} · ${qualifiedRate(row)}`} />
+          <CardMetric label="Custo por qualificado" value={formatMoney(row.costPerQualifiedDeal, currency)} />
           <CardMetric label="Reuniões" value={meetingsLabel(row)} />
           <CardMetric label="Custo por reunião" value={formatMoney(row.costPerMeeting, currency)} />
           <CardMetric label="ROAS" value={row.roas === null ? "—" : `${formatCount(row.roas, 2)}x`} />
@@ -258,7 +259,7 @@ export const AdsResults: FC<{ account: AdAccount; period: AdsPeriod }> = ({ acco
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-8">
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-9">
             <Total label="Gasto" value={formatMoney(total.spend, currency)} />
             <Total
               label="Conversas"
@@ -273,7 +274,12 @@ export const AdsResults: FC<{ account: AdAccount; period: AdsPeriod }> = ({ acco
             <Total
               label="Negócios"
               value={formatCount(total.deals)}
-              hint={`${formatCount(total.qualifiedDeals)} qualificados (${qualifiedRate(total)}) · ${formatMoney(total.costPerQualifiedDeal, currency)} cada`}
+              hint={`${formatCount(total.qualifiedDeals)} qualificados (${qualifiedRate(total)})`}
+            />
+            <Total
+              label="Custo por qualificado"
+              value={formatMoney(total.costPerQualifiedDeal, currency)}
+              hint={`Gasto ÷ ${formatCount(total.qualifiedDeals)} lead(s) qualificado(s)`}
             />
             <Total
               label="Reuniões"
@@ -379,6 +385,7 @@ export const AdsResults: FC<{ account: AdAccount; period: AdsPeriod }> = ({ acco
                     <TableHead className="text-right" title="Qualificados ÷ negócios">
                       % qualif.
                     </TableHead>
+                    <TableHead className="text-right">Custo/qualif.</TableHead>
                     <TableHead className="text-right">Reuniões</TableHead>
                     <TableHead className="text-right">Custo/reunião</TableHead>
                     <TableHead className="text-right">Ganhos</TableHead>
@@ -412,6 +419,7 @@ export const AdsResults: FC<{ account: AdAccount; period: AdsPeriod }> = ({ acco
                         <TableCell className="text-right tabular-nums">{formatCount(row.deals)}</TableCell>
                         <TableCell className="text-right tabular-nums">{formatCount(row.qualifiedDeals)}</TableCell>
                         <TableCell className="text-right tabular-nums">{qualifiedRate(row)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatMoney(row.costPerQualifiedDeal, currency)}</TableCell>
                         <TableCell
                           className="text-right tabular-nums"
                           title={`${row.aiMeetings} agendada(s) pela IA · ${row.manualMeetings} manual(is)`}
