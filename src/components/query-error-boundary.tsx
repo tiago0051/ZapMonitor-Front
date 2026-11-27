@@ -1,5 +1,6 @@
 import { QueryErrorResetBoundary } from "@tanstack/react-query";
-import { Component, type ReactNode } from "react";
+import { Component, type ErrorInfo, type ReactNode } from "react";
+import { isStaleVersionError } from "@/utils/staleVersion";
 import { ErrorState } from "./state-message";
 
 type ErrorBoundaryProps = {
@@ -13,6 +14,11 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, { hasError: boolean; e
 
   static getDerivedStateFromError(error: unknown) {
     return { hasError: true, error };
+  }
+
+  componentDidCatch(error: unknown, info: ErrorInfo) {
+    // Fica no console (e nas gravações do Clarity) para saber o que derrubou a tela
+    console.error("Erro na tela:", error, info.componentStack);
   }
 
   retry = () => {
@@ -42,12 +48,22 @@ export const QueryErrorBoundary = ({ message, children, action, renderError }: Q
       <ErrorBoundary
         onReset={reset}
         fallback={(retry, error) =>
-          renderError?.(error) ?? (
+          renderError?.(error) ??
+          (isStaleVersionError(error) ? (
+            // Aba aberta durante uma atualização do sistema: "tentar de novo" não resolve, só recarregar
+            <div className="flex flex-col items-center">
+              <ErrorState
+                message="O sistema foi atualizado. Recarregue a página para continuar."
+                onRetry={() => window.location.reload()}
+                retryLabel="Recarregar"
+              />
+            </div>
+          ) : (
             <div className="flex flex-col items-center">
               <ErrorState message={message} onRetry={retry} />
               {action}
             </div>
-          )
+          ))
         }
       >
         {children}

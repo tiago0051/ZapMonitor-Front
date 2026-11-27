@@ -20,11 +20,13 @@ export const LoadingState: FC<LoadingStateProps> = ({ label = "Carregando...", c
 type ErrorStateProps = {
   message: string;
   onRetry?: () => void;
+  // Texto do botão; padrão "Tentar novamente"
+  retryLabel?: string;
   isRetrying?: boolean;
   className?: string;
 };
 
-export const ErrorState: FC<ErrorStateProps> = ({ message, onRetry, isRetrying, className }) => (
+export const ErrorState: FC<ErrorStateProps> = ({ message, onRetry, retryLabel = "Tentar novamente", isRetrying, className }) => (
   <div role="alert" className={cn("flex flex-col items-center justify-center gap-2 px-4 py-8 text-center", className)}>
     <AlertCircle className="text-destructive h-6 w-6" />
     <p className="text-sm font-medium">{message}</p>
@@ -32,7 +34,7 @@ export const ErrorState: FC<ErrorStateProps> = ({ message, onRetry, isRetrying, 
     {onRetry && (
       <Button variant="outline" size="sm" className="mt-1" onClick={onRetry} disabled={isRetrying}>
         <RotateCw className={cn("h-3.5 w-3.5", isRetrying && "animate-spin")} />
-        Tentar novamente
+        {retryLabel}
       </Button>
     )}
   </div>

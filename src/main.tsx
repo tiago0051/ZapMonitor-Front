@@ -7,8 +7,10 @@ import { Toaster } from "./components/ui/sonner";
 import Clarity from "@microsoft/clarity";
 import { setDefaultOptions } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { listenForStaleVersion } from "./utils/staleVersion";
 
 setDefaultOptions({ locale: ptBR });
+listenForStaleVersion();
 
 const projectId = import.meta.env.VITE_CLARITY;
 
