@@ -1,5 +1,6 @@
 import { ErrorState, LoadingState } from "@/components/state-message";
 import { ContentPillarsCard } from "./contentPillarsCard";
+import { NichesCard } from "./nichesCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -313,6 +314,9 @@ export const BrandIdentitySettings = () => {
   return (
     <div className="grid gap-6">
       {query.data && <BrandBaseSettings brand={query.data} />}
+      {query.data && (access.adsEnabled || access.organicEnabled) && (
+        <NichesCard key={JSON.stringify(query.data.niches ?? [])} niches={query.data.niches ?? []} />
+      )}
       {query.data && access.organicEnabled && (
         <ContentPillarsCard key={JSON.stringify(query.data.contentPillars ?? [])} pillars={query.data.contentPillars ?? []} />
       )}

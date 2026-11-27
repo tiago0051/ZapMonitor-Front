@@ -32,6 +32,13 @@ export const brandIdentityService = {
   generateProfile: async (clientId: string): Promise<BrandIdentity> =>
     (await api.post(`${brandBase(clientId)}/profile/generate`, undefined, { timeout: 180000 })).data,
 
+  saveNiches: async (clientId: string, niches: BrandNiche[]): Promise<BrandIdentity> =>
+    (await api.put(`${brandBase(clientId)}/niches`, { niches })).data,
+
+  /** A IA sugere os nichos pelo que já vende; nada é salvo. Pode levar alguns segundos. */
+  suggestNiches: async (clientId: string): Promise<BrandNiche[]> =>
+    (await api.post(`${brandBase(clientId)}/niches/suggest`, undefined, { timeout: 180000 })).data.niches,
+
   /** PDF escaneado e imagem a IA transcreve na hora. */
   addSource: async (clientId: string, file: File): Promise<BrandIdentity> =>
     (await upload(`${brandBase(clientId)}/source`, file, 180000)).data,

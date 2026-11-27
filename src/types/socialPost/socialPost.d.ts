@@ -155,6 +155,8 @@ type BrandIdentity = {
   fixedHashtags: string[];
   // Pilares de conteúdo: temas fixos que as postagens revezam
   contentPillars?: ContentPillar[];
+  // Nichos para quem a empresa anuncia: 1 principal e até 2 secundários ou em teste
+  niches?: BrandNiche[];
   logoUploaded: boolean;
   hasLogo: boolean;
   logoUrl: string | null;
@@ -169,6 +171,28 @@ type BrandIdentity = {
 type BrandPage = { id: string; name: string; canPublish: boolean };
 
 type ContentPillar = { name: string; description: string; share: number };
+
+type NicheRole = "MAIN" | "SECONDARY" | "TEST";
+
+// Notas de 1 a 5 da IA nos quatro critérios de um bom nicho
+type NicheScores = { pain: number; purchasingPower: number; reach: number; growth: number };
+
+type BrandNiche = {
+  id?: string;
+  name: string;
+  role: NicheRole;
+  who: string;
+  pain: string;
+  desire: string;
+  objections: string[];
+  // Palavras e expressões do próprio cliente
+  words: string[];
+  region: string;
+  // Formas de abordar no anúncio
+  angles: string[];
+  evidence: string;
+  scores: NicheScores | null;
+};
 
 type ArtAgendaStatus = "GENERATING" | "READY" | "FAILED" | "SKIPPED";
 type ArtRevisionTarget = "CAPTION" | "IMAGE" | "BOTH";

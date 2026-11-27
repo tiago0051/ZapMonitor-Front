@@ -1,5 +1,6 @@
 export const STRATEGY_CATEGORY_LABEL: Record<StrategyCategory, string> = {
   FUNDAMENTALS: "Crescimento de marca",
+  NICHE: "Nicho e público-alvo",
   OFFER_AND_MESSAGE: "Oferta e mensagem",
   CREATIVE: "Criativos",
   AUDIENCE_AND_FUNNEL: "Público e funil",
@@ -28,6 +29,7 @@ export const STRATEGY_PURPOSE_LABEL: Record<StrategyPurpose, string> = {
   CREATIVE: "Textos e imagens",
   VIDEO: "Roteiros de vídeo",
   CHAT: "Conversa de estratégia",
+  NICHE: "Escolha de nicho",
 };
 
 export const STRATEGY_PURPOSES = Object.keys(STRATEGY_PURPOSE_LABEL) as StrategyPurpose[];

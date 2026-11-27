@@ -1,5 +1,6 @@
 type StrategyCategory =
   | "FUNDAMENTALS"
+  | "NICHE"
   | "OFFER_AND_MESSAGE"
   | "CREATIVE"
   | "AUDIENCE_AND_FUNNEL"
@@ -12,7 +13,7 @@ type StrategyCategory =
 
 type StrategyChannel = "META" | "GOOGLE" | "TIKTOK" | "WEB";
 
-type StrategyPurpose = "ANALYSIS" | "PLAN" | "CREATIVE" | "VIDEO" | "CHAT";
+type StrategyPurpose = "ANALYSIS" | "PLAN" | "CREATIVE" | "VIDEO" | "CHAT" | "NICHE";
 
 // Padrão do sistema, padrão editado pelo dono ou criado pelo dono
 type StrategyArticleOrigin = "SYSTEM" | "EDITED" | "CUSTOM";
