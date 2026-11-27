@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { crmSelectClassName } from "@/pages/dashboard/crm/crmUtils";
 import { metaAdsService } from "@/services/api/metaAdsService";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, RefreshCw } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, RefreshCw } from "lucide-react";
 import { useMemo, useState, type FC, type ReactNode } from "react";
 import { Bar, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import {
@@ -65,6 +65,66 @@ const meetingsLabel = (row: AdReportMetrics) =>
 // Percentual dos negócios que viraram lead qualificado
 const qualifiedRate = (row: Pick<AdReportMetrics, "deals" | "qualifiedDeals">) =>
   row.deals > 0 ? `${formatCount((row.qualifiedDeals / row.deals) * 100, 1)}%` : "—";
+
+type SortKey =
+  | "name"
+  | "spend"
+  | "ctr"
+  | "metaConversations"
+  | "costPerConversation"
+  | "metaLeads"
+  | "deals"
+  | "qualifiedDeals"
+  | "qualifiedRate"
+  | "costPerQualifiedDeal"
+  | "meetings"
+  | "costPerMeeting"
+  | "wonValue"
+  | "costPerWonDeal"
+  | "roas";
+
+type SortDirection = "asc" | "desc";
+
+const sortLabel: Record<SortKey, string> = {
+  name: "Nome",
+  spend: "Gasto",
+  ctr: "CTR",
+  metaConversations: "Conversas",
+  costPerConversation: "Custo por conversa",
+  metaLeads: "Leads",
+  deals: "Negócios",
+  qualifiedDeals: "Qualificados",
+  qualifiedRate: "% qualificados",
+  costPerQualifiedDeal: "Custo por qualificado",
+  meetings: "Reuniões",
+  costPerMeeting: "Custo por reunião",
+  wonValue: "Ganhos",
+  costPerWonDeal: "Custo por venda",
+  roas: "ROAS",
+};
+
+// Custos começam do menor (o melhor); o resto, do maior. Nome começa de A a Z.
+const defaultDirection = (key: SortKey): SortDirection => (key === "name" || key.startsWith("costPer") ? "asc" : "desc");
+
+const sortValue = (row: AdReportRow, key: SortKey): number | null => {
+  if (key === "name") return null;
+  if (key === "qualifiedRate") return row.deals > 0 ? row.qualifiedDeals / row.deals : null;
+  return row[key];
+};
+
+/** Ordena as linhas; sem valor (custo sem base, por exemplo) fica sempre no fim. */
+function sortRows(rows: AdReportRow[], key: SortKey | null, direction: SortDirection): AdReportRow[] {
+  if (!key) return rows;
+  const factor = direction === "asc" ? 1 : -1;
+
+  return [...rows].sort((first, second) => {
+    if (key === "name") return factor * first.name.localeCompare(second.name, "pt-BR", { sensitivity: "base" });
+    const a = sortValue(first, key);
+    const b = sortValue(second, key);
+    if (a === null || b === null) return a === b ? 0 : a === null ? 1 : -1;
+    return factor * (a - b);
+  });
+}
 
 type StatusFilter = "active" | "inactive" | "all";
 
@@ -164,6 +224,8 @@ export const AdsResults: FC<{ account: AdAccount; period: AdsPeriod }> = ({ acco
   const syncAccount = useSyncAccount();
   const [level, setLevel] = useState<AdReportLevel>("campaign");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const { startDate, endDate } = period;
 
   const reportQuery = useQuery({
@@ -186,6 +248,36 @@ export const AdsResults: FC<{ account: AdAccount; period: AdsPeriod }> = ({ acco
     [report, statusFilter],
   );
   const total = useMemo(() => (report && statusFilter !== "all" ? sumRows(rows) : report?.total), [report, rows, statusFilter]);
+  const sortedRows = useMemo(() => sortRows(rows, sortKey, sortDirection), [rows, sortKey, sortDirection]);
+
+  const sortBy = (key: SortKey) => {
+    if (key === sortKey) setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
+    else {
+      setSortKey(key);
+      setSortDirection(defaultDirection(key));
+    }
+  };
+
+  const sortableHead = (key: SortKey, label: ReactNode, options?: { help?: ReactNode; title?: string; className?: string }) => (
+    <TableHead
+      className={cn("text-right", options?.className)}
+      title={options?.title}
+      aria-sort={sortKey === key ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
+    >
+      <span className="inline-flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => sortBy(key)}
+          className="hover:text-foreground focus-visible:ring-ring/50 inline-flex items-center gap-1 rounded outline-none focus-visible:ring-[3px]"
+        >
+          {label}
+          {sortKey === key &&
+            (sortDirection === "asc" ? <ArrowUp className="h-3 w-3" aria-hidden /> : <ArrowDown className="h-3 w-3" aria-hidden />)}
+        </button>
+        {options?.help}
+      </span>
+    </TableHead>
+  );
 
   return (
     <section className="space-y-4">
@@ -226,6 +318,43 @@ export const AdsResults: FC<{ account: AdAccount; period: AdsPeriod }> = ({ acco
             ))}
           </select>
         </div>
+        {isMobile && (
+          <div className="grid gap-1">
+            <Label htmlFor="ads-sort" className="text-xs">
+              Ordenar por
+            </Label>
+            <div className="flex gap-1">
+              <select
+                id="ads-sort"
+                value={sortKey ?? ""}
+                onChange={(event) => {
+                  const key = (event.target.value || null) as SortKey | null;
+                  setSortKey(key);
+                  if (key) setSortDirection(defaultDirection(key));
+                }}
+                className={cn(crmSelectClassName, "h-8 w-44")}
+              >
+                <option value="">Padrão</option>
+                {(Object.keys(sortLabel) as SortKey[]).map((option) => (
+                  <option key={option} value={option}>
+                    {sortLabel[option]}
+                  </option>
+                ))}
+              </select>
+              {sortKey && (
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="h-8 w-8"
+                  aria-label={sortDirection === "asc" ? "Crescente; inverter" : "Decrescente; inverter"}
+                  onClick={() => setSortDirection((current) => (current === "asc" ? "desc" : "asc"))}
+                >
+                  {sortDirection === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {reportQuery.isLoading && <LoadingState className="justify-start py-2" />}
@@ -361,7 +490,7 @@ export const AdsResults: FC<{ account: AdAccount; period: AdsPeriod }> = ({ acco
             />
           ) : isMobile ? (
             <ul className="space-y-2" aria-label={reportLevelLabel[level]}>
-              {rows.map((row) => (
+              {sortedRows.map((row) => (
                 <ResultCard key={row.id} row={row} currency={currency} />
               ))}
             </ul>
@@ -370,35 +499,25 @@ export const AdsResults: FC<{ account: AdAccount; period: AdsPeriod }> = ({ acco
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="min-w-40 sm:min-w-56">{reportLevelLabel[level].slice(0, -1)}</TableHead>
-                    <TableHead className="text-right">Gasto</TableHead>
-                    <TableHead className="text-right">
-                      <HeadWithHelp label="CTR" term="CTR" />
-                    </TableHead>
-                    <TableHead className="text-right">Conversas</TableHead>
-                    <TableHead className="text-right">
-                      <HeadWithHelp label="Custo/conversa" term="CPA" />
-                    </TableHead>
-                    <TableHead className="text-right">Leads</TableHead>
-                    <TableHead className="text-right">Negócios</TableHead>
-                    <TableHead className="text-right">Qualificados</TableHead>
-                    <TableHead className="text-right" title="Qualificados ÷ negócios">
-                      % qualif.
-                    </TableHead>
-                    <TableHead className="text-right">Custo/qualif.</TableHead>
-                    <TableHead className="text-right">Reuniões</TableHead>
-                    <TableHead className="text-right">Custo/reunião</TableHead>
-                    <TableHead className="text-right">Ganhos</TableHead>
-                    <TableHead className="text-right">
-                      <HeadWithHelp label="Custo/ganho" term="CPA" />
-                    </TableHead>
-                    <TableHead className="text-right">
-                      <HeadWithHelp label="ROAS" term="ROAS" />
-                    </TableHead>
+                    {sortableHead("name", reportLevelLabel[level].slice(0, -1), { className: "min-w-40 text-left sm:min-w-56" })}
+                    {sortableHead("spend", "Gasto")}
+                    {sortableHead("ctr", "CTR", { help: <MetricHelp term="CTR" /> })}
+                    {sortableHead("metaConversations", "Conversas")}
+                    {sortableHead("costPerConversation", "Custo/conversa", { help: <MetricHelp term="CPA" /> })}
+                    {sortableHead("metaLeads", "Leads")}
+                    {sortableHead("deals", "Negócios")}
+                    {sortableHead("qualifiedDeals", "Qualificados")}
+                    {sortableHead("qualifiedRate", "% qualif.", { title: "Qualificados ÷ negócios" })}
+                    {sortableHead("costPerQualifiedDeal", "Custo/qualif.")}
+                    {sortableHead("meetings", "Reuniões")}
+                    {sortableHead("costPerMeeting", "Custo/reunião")}
+                    {sortableHead("wonValue", "Ganhos", { title: "Ordena pelo valor ganho" })}
+                    {sortableHead("costPerWonDeal", "Custo/ganho", { help: <MetricHelp term="CPA" /> })}
+                    {sortableHead("roas", "ROAS", { help: <MetricHelp term="ROAS" /> })}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rows.map((row) => {
+                  {sortedRows.map((row) => {
                     return (
                       <TableRow key={row.id}>
                         <TableCell>
