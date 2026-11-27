@@ -66,6 +66,10 @@ const meetingsLabel = (row: AdReportMetrics) =>
 const qualifiedRate = (row: Pick<AdReportMetrics, "deals" | "qualifiedDeals">) =>
   row.deals > 0 ? `${formatCount((row.qualifiedDeals / row.deals) * 100, 1)}%` : "—";
 
+// Reuniões em relação aos leads qualificados; pode passar de 100% quando há reunião de quem não chegou a qualificar
+const meetingRate = (row: Pick<AdReportMetrics, "qualifiedDeals" | "meetings">) =>
+  row.qualifiedDeals > 0 ? `${formatCount((row.meetings / row.qualifiedDeals) * 100, 1)}%` : "—";
+
 type SortKey =
   | "name"
   | "spend"
@@ -78,6 +82,7 @@ type SortKey =
   | "qualifiedRate"
   | "costPerQualifiedDeal"
   | "meetings"
+  | "meetingRate"
   | "costPerMeeting"
   | "wonValue"
   | "costPerWonDeal"
@@ -97,6 +102,7 @@ const sortLabel: Record<SortKey, string> = {
   qualifiedRate: "% qualificados",
   costPerQualifiedDeal: "Custo por qualificado",
   meetings: "Reuniões",
+  meetingRate: "% reuniões",
   costPerMeeting: "Custo por reunião",
   wonValue: "Ganhos",
   costPerWonDeal: "Custo por venda",
@@ -109,6 +115,7 @@ const defaultDirection = (key: SortKey): SortDirection => (key === "name" || key
 const sortValue = (row: AdReportRow, key: SortKey): number | null => {
   if (key === "name") return null;
   if (key === "qualifiedRate") return row.deals > 0 ? row.qualifiedDeals / row.deals : null;
+  if (key === "meetingRate") return row.qualifiedDeals > 0 ? row.meetings / row.qualifiedDeals : null;
   return row[key];
 };
 
@@ -200,6 +207,7 @@ const ResultCard: FC<{ row: AdReportRow; currency: string }> = ({ row, currency 
           <CardMetric label="Qualificados" value={`${formatCount(row.qualifiedDeals)} · ${qualifiedRate(row)}`} />
           <CardMetric label="Custo por qualificado" value={formatMoney(row.costPerQualifiedDeal, currency)} />
           <CardMetric label="Reuniões" value={meetingsLabel(row)} />
+          <CardMetric label="Reuniões ÷ qualificados" value={meetingRate(row)} />
           <CardMetric label="Custo por reunião" value={formatMoney(row.costPerMeeting, currency)} />
           <CardMetric label="ROAS" value={row.roas === null ? "—" : `${formatCount(row.roas, 2)}x`} />
         </dl>
@@ -413,7 +421,7 @@ export const AdsResults: FC<{ account: AdAccount; period: AdsPeriod }> = ({ acco
             <Total
               label="Reuniões"
               value={formatCount(total.meetings)}
-              hint={`${formatCount(total.aiMeetings)} pela IA · ${formatCount(total.manualMeetings)} manuais · ${formatMoney(total.costPerMeeting, currency)} cada`}
+              hint={`${meetingRate(total)} dos qualificados · ${formatCount(total.aiMeetings)} pela IA · ${formatCount(total.manualMeetings)} manuais · ${formatMoney(total.costPerMeeting, currency)} cada`}
             />
             <Total
               label="Ganhos"
@@ -510,6 +518,7 @@ export const AdsResults: FC<{ account: AdAccount; period: AdsPeriod }> = ({ acco
                     {sortableHead("qualifiedRate", "% qualif.", { title: "Qualificados ÷ negócios" })}
                     {sortableHead("costPerQualifiedDeal", "Custo/qualif.")}
                     {sortableHead("meetings", "Reuniões")}
+                    {sortableHead("meetingRate", "% reunião", { title: "Reuniões ÷ qualificados" })}
                     {sortableHead("costPerMeeting", "Custo/reunião")}
                     {sortableHead("wonValue", "Ganhos", { title: "Ordena pelo valor ganho" })}
                     {sortableHead("costPerWonDeal", "Custo/ganho", { help: <MetricHelp term="CPA" /> })}
@@ -545,6 +554,7 @@ export const AdsResults: FC<{ account: AdAccount; period: AdsPeriod }> = ({ acco
                         >
                           {formatCount(row.meetings)}
                         </TableCell>
+                        <TableCell className="text-right tabular-nums">{meetingRate(row)}</TableCell>
                         <TableCell className="text-right tabular-nums">{formatMoney(row.costPerMeeting, currency)}</TableCell>
                         <TableCell className="text-right whitespace-nowrap tabular-nums">
                           {formatCount(row.wonDeals)} · {formatMoney(row.wonValue, currency)}
@@ -564,7 +574,8 @@ export const AdsResults: FC<{ account: AdAccount; period: AdsPeriod }> = ({ acco
             Conversas e leads são contados {account.platform === "META" ? "pela Meta" : `pelo ${adPlatformLabel[account.platform]}`}.
             Negócios, qualificados e ganhos vêm do CRM: negócios criados no período a partir de um anúncio, e qualificados são os que
             entraram numa etapa com o evento QualifiedLead ou passaram do corte de nota da IA. Reuniões são as agendadas pela IA no Google
-            Agenda e os negócios que entraram numa etapa marcada como reunião no funil, sem contar canceladas.
+            Agenda e os negócios que entraram numa etapa marcada como reunião no funil, sem contar canceladas; o % reunião é reuniões ÷
+            qualificados.
           </p>
           <AdsSignalReadiness account={account} />
           <AdsAttendanceInsights account={account} startDate={startDate} endDate={endDate} />
