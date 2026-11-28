@@ -144,7 +144,7 @@ export const useDealActions = () => {
 
   const lostReasonDialog = (
     <Dialog open={!!pendingLoss} onOpenChange={(open) => !open && setPendingLoss(null)}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Marcar como perdido</DialogTitle>
           <DialogDescription>O motivo fica no histórico do negócio e ajuda a entender por que as vendas não fecham.</DialogDescription>
@@ -152,19 +152,22 @@ export const useDealActions = () => {
         {activeLostReasons.length > 0 && (
           <fieldset className="grid gap-2">
             <legend className="mb-2 text-sm font-medium">Motivo da perda</legend>
-            {[...activeLostReasons, { id: OTHER_REASON, name: "Outro motivo" }].map((reason) => (
-              <label key={reason.id} className="flex cursor-pointer items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="deal-lost-reason-option"
-                  value={reason.id}
-                  checked={lostReasonId === reason.id}
-                  onChange={() => setLostReasonId(reason.id)}
-                  className="accent-primary h-4 w-4"
-                />
-                {reason.name}
-              </label>
-            ))}
+            {/* Com muitos motivos, a lista rola dentro da modal em vez de esticar até o fim da tela */}
+            <div className="grid max-h-[40dvh] gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+              {[...activeLostReasons, { id: OTHER_REASON, name: "Outro motivo" }].map((reason) => (
+                <label key={reason.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name="deal-lost-reason-option"
+                    value={reason.id}
+                    checked={lostReasonId === reason.id}
+                    onChange={() => setLostReasonId(reason.id)}
+                    className="accent-primary h-4 w-4"
+                  />
+                  {reason.name}
+                </label>
+              ))}
+            </div>
           </fieldset>
         )}
         {isWritingReason && !lostReasonsQuery.isLoading && (
