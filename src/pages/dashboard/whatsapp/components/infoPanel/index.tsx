@@ -1,9 +1,10 @@
 import { ContactAvatar } from "@/components/contact-avatar";
-import { Bot, Briefcase, FileAudio, FileText, Film, Image as ImageIcon, Paperclip, Tag, UserRound, ListChecks } from "lucide-react";
+import { Bot, Briefcase, FileAudio, FileText, Film, Image as ImageIcon, Paperclip, UserRound, ListChecks } from "lucide-react";
 import { ContactProfile } from "@/pages/dashboard/contacts/components/contactProfile";
 import { ContactDeals } from "@/pages/dashboard/crm/components/contactDeals";
 import { ConversationScript } from "./conversationScript";
 import { ConversationCoach } from "./conversationCoach";
+import { ContactTags } from "./contactTags";
 import { formatWhatsappText, formatPhoneNumber, formatShortId } from "@/utils/formatString";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { whatsappService } from "@/services/api/whatsappService";
@@ -252,22 +253,7 @@ export function InfoPanel({
             ) : (
               <p className="text-muted-foreground text-xs">Sem resumo disponível.</p>
             )}
-            {selected.categories && selected.categories.length > 0 && (
-              <div className="mt-4">
-                <p className="text-muted-foreground mb-2 text-[11px] font-semibold tracking-wider uppercase">Tags</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {selected.categories.map((t) => (
-                    <span
-                      key={t.id}
-                      className="text-foreground bg-muted inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium"
-                    >
-                      <Tag className="text-muted-foreground h-2.5 w-2.5" />
-                      {t.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+            <ContactTags key={selected.id} contactId={selected.id} categories={selected.categories ?? []} />
           </div>
         ) : rightPanel === "contact" && can("contacts.view") ? (
           <ContactProfile key={selected.id} conversationId={selected.id} compact onDirtyChange={onProfileDirtyChange} />
